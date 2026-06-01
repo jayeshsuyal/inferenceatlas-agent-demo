@@ -1,4 +1,15 @@
+# InferenceAtlas Agent dependencies
+
+# Nebius inference (OpenAI-compatible SDK)
 openai>=1.0.0,<3.0.0
+
+# Tavily search
 tavily-python>=0.3.0
+
+# Composio tool integrations
 composio-openai>=0.6.0
 
+# OpenClaw agent runtime
+# Install from: pip install openclaw
+# (falls back to built-in loop if not installed)
+# openclaw>=0.1.0

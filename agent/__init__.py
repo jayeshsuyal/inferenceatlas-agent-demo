@@ -1,13 +1,11 @@
-"""
-InferenceAtlas Intelligence Agent
-
-Agentic component powered by:
-  - Nebius      : LLM inference backbone (OpenAI-compatible)
-  - Tavily      : live web search for pricing intelligence
-  - Composio    : tool integrations (sheets, GitHub, notifications, etc.)
-  - OpenClaw    : agent runtime / tool-calling orchestration loop
-"""
-
-from .agent import InferenceAtlasAgent
+"""InferenceAtlas public agent package."""
 
 __all__ = ["InferenceAtlasAgent"]
+
+
+def __getattr__(name: str):
+    if name == "InferenceAtlasAgent":
+        from .agent import InferenceAtlasAgent
+
+        return InferenceAtlasAgent
+    raise AttributeError(f"module 'agent' has no attribute {name!r}")

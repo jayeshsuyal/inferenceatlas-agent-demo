@@ -32,21 +32,24 @@ Current public surface:
 
 - README thesis for pre-commit proof packets
 - sample DecisionPacket in `examples/sample_decision_packet.md`
+- generated DecisionPacket artifacts under `examples/generated/`
 - Python agent package scaffold under `agent/`
+- deterministic packet builder in `agent/packet.py`
+- offline packet renderers in `agent/renderers.py`
 - Nebius/Tavily/Composio/OpenClaw integration direction
 - explicit conservative safety stance: no autonomous approval, no production mutation, no real dispatch by default
 
-Current top risk:
+Current top risk after the offline demo landed:
 
-- the README promise that the demo runs without keys must become true in code. This is the first implementation priority.
+- add schema validation, tests, and CI so the no-key demo is continuously verified rather than only manually checked.
 
 ## What We Are Building By June 12
 
 | Workstream | Outcome | Status |
 | --- | --- | --- |
-| Offline deterministic demo | `python3 -m agent.demo` generates a complete DecisionPacket with no API keys | In progress |
+| Offline deterministic demo | `python3 -m agent.demo` generates a complete DecisionPacket with no API keys | Shipped |
 | DecisionPacket schema | JSON schema for required packet fields and safety sections | Planned |
-| Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Planned |
+| Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Shipped |
 | V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Planned |
 | Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Planned |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
@@ -80,10 +83,13 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 
 1. `README.md`
 2. `BUILD_PLAN_TO_JUNE_12.md`
-3. `examples/sample_decision_packet.md`
-4. `docs/V1_CAPABILITY_PASSPORT.md` once added
-5. `docs/SAFETY_CONTRACT.md` once added
-6. `python3 -m agent.demo`
+3. `examples/generated/support_triage_agent.packet.md`
+4. `examples/generated/support_triage_agent.packet.json`
+5. `examples/generated/support_triage_agent.trace.md`
+6. `examples/sample_decision_packet.md`
+7. `docs/V1_CAPABILITY_PASSPORT.md` once added
+8. `docs/SAFETY_CONTRACT.md` once added
+9. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

@@ -58,14 +58,20 @@ User asks whether an AI agent should receive tool access.
 
 ```bash
 cd inferenceatlas-agent-demo
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r agent/requirements.txt
-cp .env.example .env
-python -m agent.demo
+python3 -m agent.demo
 ```
 
-The demo runs without keys using deterministic local packet generation. Add Nebius/Tavily/Composio keys to exercise the agentic path.
+The default demo runs without keys using deterministic local packet generation. It prints a DecisionPacket and writes review artifacts under `examples/generated/`.
+
+To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
+
+```bash
+cp .env.example .env
+IA_LIVE_MODE=1 python3 -m agent.demo
+```
 
 ## Example
 
@@ -73,6 +79,10 @@ See:
 
 ```text
 examples/sample_decision_packet.md
+examples/generated/support_triage_agent.packet.md
+examples/generated/support_triage_agent.packet.json
+examples/generated/support_triage_agent.trace.md
+examples/generated/support_triage_agent.trace.json
 ```
 
 ## Safety Contract
@@ -89,9 +99,10 @@ Humans approve decisions. IA prepares the proof.
 
 ## Roadmap Before June 12
 
-- tighten the agent-access DecisionPacket examples
+- add DecisionPacket schema validation
+- add CI smoke tests for the offline demo and safety defaults
 - add optional live Tavily evidence notes
 - add a short demo video
-- add a polished screenshot/sample output
+- add V1 capability passport and safety contract docs
 
 This repo is a public hackathon wrapper. The private InferenceAtlas v1 product codebase is not exposed here.

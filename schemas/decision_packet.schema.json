@@ -10,13 +10,17 @@
     "generated_by",
     "mode",
     "decision",
+    "source_status",
+    "approval_posture",
     "requested_capability",
+    "tool_access_plan",
     "tool_scope",
     "data_scope",
     "evidence_notes",
     "blocked_claims",
     "missing_proof",
     "reviewer_owners",
+    "reviewer_action_items",
     "next_validation",
     "safety_state"
   ],
@@ -47,12 +51,62 @@
         "raw_prompt": { "type": "string", "minLength": 1 }
       }
     },
+    "source_status": {
+      "type": "object",
+      "required": [
+        "user_prompt",
+        "live_vendor_evidence",
+        "workspace_policy",
+        "tool_auth_state",
+        "reviewer_confirmation",
+        "deterministic_packet"
+      ],
+      "properties": {
+        "user_prompt": { "type": "string", "minLength": 1 },
+        "live_vendor_evidence": { "type": "string", "minLength": 1 },
+        "workspace_policy": { "type": "string", "minLength": 1 },
+        "tool_auth_state": { "type": "string", "minLength": 1 },
+        "reviewer_confirmation": { "type": "string", "minLength": 1 },
+        "deterministic_packet": { "type": "string", "minLength": 1 }
+      }
+    },
+    "approval_posture": {
+      "type": "object",
+      "required": [
+        "production_access",
+        "validation_review",
+        "read_access",
+        "write_access",
+        "compliance_claims"
+      ],
+      "properties": {
+        "production_access": { "type": "string", "const": "blocked" },
+        "validation_review": { "type": "string", "const": "allowed" },
+        "read_access": { "type": "string", "minLength": 1 },
+        "write_access": { "type": "string", "minLength": 1 },
+        "compliance_claims": { "type": "string", "minLength": 1 }
+      }
+    },
     "requested_capability": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "required": ["system", "requested_access", "risk_level", "default_demo_state"]
+      }
+    },
+    "tool_access_plan": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["requested", "demo_allowance", "blocked_actions", "required_proof"],
+        "properties": {
+          "requested": { "type": "string", "minLength": 1 },
+          "demo_allowance": { "type": "string", "minLength": 1 },
+          "blocked_actions": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "required_proof": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
       }
     },
     "tool_scope": {
@@ -97,6 +151,14 @@
       "items": {
         "type": "object",
         "required": ["owner", "review_area", "current_state"]
+      }
+    },
+    "reviewer_action_items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["owner", "action", "blocks"]
       }
     },
     "next_validation": {

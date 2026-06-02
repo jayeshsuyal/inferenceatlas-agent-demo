@@ -41,6 +41,30 @@ def _tool_scope_lines(tool_scope: dict[str, dict[str, list[str]]]) -> str:
     return "\n".join(lines) if lines else "- None"
 
 
+def _key_value_lines(items: dict[str, Any]) -> str:
+    if not items:
+        return "- None"
+    return "\n".join(f"- {key.replace('_', ' ')}: {value}" for key, value in items.items())
+
+
+def _tool_access_plan_lines(tool_access_plan: dict[str, dict[str, Any]]) -> str:
+    lines = []
+    for tool_name in sorted(tool_access_plan):
+        plan = tool_access_plan[tool_name]
+        blocked = ", ".join(plan.get("blocked_actions", [])) or "none"
+        proof = ", ".join(plan.get("required_proof", [])) or "none"
+        lines.extend(
+            [
+                f"- **{tool_name}**",
+                f"  - requested: {plan.get('requested', 'unspecified')}",
+                f"  - demo allowance: {plan.get('demo_allowance', 'unspecified')}",
+                f"  - blocked actions: {blocked}",
+                f"  - required proof: {proof}",
+            ]
+        )
+    return "\n".join(lines) if lines else "- None"
+
+
 def _dict_list_lines(items: list[dict[str, Any]], *, title_key: str, detail_keys: list[str]) -> str:
     lines = []
     for item in items:
@@ -71,9 +95,21 @@ def render_packet_markdown(packet: dict[str, Any]) -> str:
         "",
         decision["review_posture"],
         "",
+        "## Approval Posture",
+        "",
+        _key_value_lines(packet["approval_posture"]),
+        "",
+        "## Source Status",
+        "",
+        _key_value_lines(packet["source_status"]),
+        "",
         "## Requested Capability",
         "",
         _capability_lines(packet["requested_capability"]),
+        "",
+        "## Tool Access Plan",
+        "",
+        _tool_access_plan_lines(packet["tool_access_plan"]),
         "",
         "## Tool Scope",
         "",
@@ -104,6 +140,10 @@ def render_packet_markdown(packet: dict[str, Any]) -> str:
         "## Reviewer Owners",
         "",
         _dict_list_lines(packet["reviewer_owners"], title_key="owner", detail_keys=["review_area", "current_state"]),
+        "",
+        "## Reviewer Action Items",
+        "",
+        _dict_list_lines(packet["reviewer_action_items"], title_key="owner", detail_keys=["action", "blocks"]),
         "",
         "## Next Human Validation",
         "",

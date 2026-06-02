@@ -37,6 +37,7 @@ Current public surface:
 - Python agent package scaffold under `agent/`
 - deterministic packet builder in `agent/packet.py`
 - offline packet renderers in `agent/renderers.py`
+- product-grade packet fields for source status, approval posture, tool access plan, and reviewer action items
 - AI judge manifest in `AI_JUDGE_MANIFEST.json`
 - safety contract in `docs/SAFETY_CONTRACT.md`
 - Nebius/Tavily/Composio/OpenClaw integration direction

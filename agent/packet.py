@@ -38,6 +38,21 @@ def build_support_triage_decision_packet(
             "review_posture": "Approve a scoped validation review before any production permission grant.",
             "raw_prompt": prompt,
         },
+        "source_status": {
+            "user_prompt": "provided",
+            "live_vendor_evidence": "not_fetched_in_offline_mode",
+            "workspace_policy": "missing",
+            "tool_auth_state": "not_connected_in_offline_mode",
+            "reviewer_confirmation": "missing",
+            "deterministic_packet": "generated",
+        },
+        "approval_posture": {
+            "production_access": "blocked",
+            "validation_review": "allowed",
+            "read_access": "candidate_after_scope_review",
+            "write_access": "blocked_until_rollback_and_off_switch_proof",
+            "compliance_claims": "blocked_until_named_reviewer_evidence",
+        },
         "requested_capability": [
             {
                 "system": "GitHub",
@@ -73,6 +88,26 @@ def build_support_triage_decision_packet(
                 "read": ["named project metadata"],
                 "write": ["draft ticket proposal only"],
                 "blocked_until_proven": ["ticket creation in production", "status changes", "assignment changes"],
+            },
+        },
+        "tool_access_plan": {
+            "github": {
+                "requested": "read issues for bug reports and incident context",
+                "demo_allowance": "dry-run read-scope plan only",
+                "blocked_actions": ["issue edits", "repo configuration changes", "workflow dispatch"],
+                "required_proof": ["repository allowlist", "permission level", "audit log owner"],
+            },
+            "slack": {
+                "requested": "summarize incident channels",
+                "demo_allowance": "dry-run named-channel summary plan only",
+                "blocked_actions": ["posting messages", "DM access", "workspace-wide history"],
+                "required_proof": ["channel allowlist", "retention terms", "customer-data boundary"],
+            },
+            "jira": {
+                "requested": "create draft tickets",
+                "demo_allowance": "draft ticket proposal only; no production creation",
+                "blocked_actions": ["ticket creation", "status changes", "assignment changes"],
+                "required_proof": ["project scope", "draft-only mode", "rollback/off-switch plan"],
             },
         },
         "data_scope": {
@@ -169,6 +204,28 @@ def build_support_triage_decision_packet(
                 "current_state": "conditional",
             },
         ],
+        "reviewer_action_items": [
+            {
+                "owner": "Security/Legal",
+                "action": "Confirm allowed data scope, retention, and logging terms",
+                "blocks": "Slack channel summarization and customer incident context access",
+            },
+            {
+                "owner": "Engineering",
+                "action": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+                "blocks": "GitHub/Jira tool connection and any write-action pilot",
+            },
+            {
+                "owner": "Support Ops",
+                "action": "Validate triage workflow fit, escalation rules, and human handoff owner",
+                "blocks": "support operations pilot",
+            },
+            {
+                "owner": "Procurement/Finance",
+                "action": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+                "blocks": "paid production rollout",
+            },
+        ],
         "next_validation": {
             "action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
             "owner": "Security/Legal + Engineering",
@@ -202,6 +259,10 @@ def build_support_triage_trace() -> list[dict[str, str]]:
             "result": "Read paths and write paths are separated before any approval posture is set.",
         },
         {
+            "step": "tool_access_plan",
+            "result": "GitHub, Slack, and Jira get scoped dry-run allowances plus blocked write actions.",
+        },
+        {
             "step": "data_scope",
             "result": "Customer incident context and support escalations are treated as sensitive until policy proof exists.",
         },
@@ -212,6 +273,10 @@ def build_support_triage_trace() -> list[dict[str, str]]:
         {
             "step": "reviewer_routing",
             "result": "Security/Legal, Engineering, Support Ops, and conditional Finance owners are named.",
+        },
+        {
+            "step": "reviewer_action_items",
+            "result": "Each reviewer owner receives the proof task that blocks access from moving forward.",
         },
         {
             "step": "next_validation",

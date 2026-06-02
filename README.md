@@ -10,11 +10,15 @@ InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastru
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket showing:
 
+- source status
+- approval posture
 - requested capability
+- tool access plan
 - tool and data scope
 - missing proof
 - blocked claims
 - reviewer owners
+- reviewer action items
 - next human validation
 
 IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet humans review.
@@ -34,6 +38,7 @@ Instead of granting access, IA builds a reviewable packet:
 ```text
 what can move
 what stays blocked
+which tool actions are dry-run only
 what proof is missing
 who needs to review
 what the next validation should be

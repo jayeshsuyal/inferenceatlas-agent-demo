@@ -31,13 +31,17 @@ These defaults are represented in `examples/generated/support_triage_agent.packe
 
 InferenceAtlas creates a DecisionPacket that shows:
 
+- source status
+- approval posture
 - requested capability
+- tool access plan
 - tool scope
 - data scope
 - evidence notes
 - blocked claims
 - missing proof
 - reviewer owners
+- reviewer action items
 - next human validation
 - safety state
 

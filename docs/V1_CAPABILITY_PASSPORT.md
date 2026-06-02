@@ -34,19 +34,20 @@ The public demo focuses on one high-stakes review moment:
 Should this support triage agent get GitHub, Slack, and Jira access?
 ```
 
-The public output is a DecisionPacket that shows requested capability, tool scope, data scope, evidence notes, blocked claims, missing proof, reviewer owners, next validation, and safety state.
+The public output is a DecisionPacket that shows source status, approval posture, requested capability, tool access plan, tool scope, data scope, evidence notes, blocked claims, missing proof, reviewer owners, reviewer action items, next validation, and safety state.
 
 ## Capability Map
 
 | Private v1 capability family | Public proof artifact | What the artifact proves | What remains private |
 | --- | --- | --- | --- |
 | Ask IA decision coach | `python3 -m agent.demo` and `examples/generated/support_triage_agent.packet.md` | A messy agent-access request becomes a reviewable packet instead of an auto-approval. | Full private Ask IA orchestration, production prompts, UI state, and session logic. |
-| WorkloadProfile | `agent/packet.py` packet fields for raw prompt, requested capability, tool scope, and data scope | The user request is preserved and normalized before recommendation language appears. | Full workload extraction stack, private field enrichment, and production session context. |
-| FactPack | `evidence_notes`, `missing_proof`, and `blocked_claims` in generated JSON | Evidence, assumptions, and missing truths stay separate from recommendation prose. | Full deterministic evidence engines, provider/catalog internals, and private fixtures. |
+| WorkloadProfile | `agent/packet.py` packet fields for raw prompt, source status, requested capability, tool scope, and data scope | The user request is preserved and normalized before recommendation language appears. | Full workload extraction stack, private field enrichment, and production session context. |
+| FactPack | `source_status`, `evidence_notes`, `missing_proof`, and `blocked_claims` in generated JSON | Evidence, assumptions, and missing truths stay separate from recommendation prose. | Full deterministic evidence engines, provider/catalog internals, and private fixtures. |
 | DecisionPacket | `schemas/decision_packet.schema.json` and generated packet JSON | The recommendation object has a stable shape that AI and human reviewers can inspect. | Full private packet builders, historical packet state, and production routing contracts. |
+| Tool access planning | `tool_access_plan` in generated packet JSON and Markdown | Dry-run allowances are separated from blocked write actions for GitHub, Slack, and Jira. | Live Composio account state, private workspace configuration, and production tool grants. |
 | ArtifactProjection | Markdown, JSON, and trace artifacts under `examples/generated/` | The same packet can be projected into multiple review surfaces without changing the underlying safety state. | Private UI projections, Living Document renderer, and production surface handoff code. |
 | Approval Watch / Evidence Watch | `docs/SAFETY_CONTRACT.md` and packet safety fields | Evidence review is separated from approval; new evidence cannot silently grant access. | Private evidence intake UI, reviewer queue, audit trail, and production review state. |
-| Governance | `reviewer_owners` and `next_validation` packet sections | Proof debt becomes owner-routed review work instead of vague "ask someone" copy. | Full governance workflows, buyer-specific approval maps, and private reviewer state. |
+| Governance | `reviewer_owners`, `reviewer_action_items`, and `next_validation` packet sections | Proof debt becomes owner-routed review work instead of vague "ask someone" copy. | Full governance workflows, buyer-specific approval maps, and private reviewer state. |
 | Living Document | Markdown packet artifact and future memo projection | The packet can become a durable leadership/reviewer artifact. | Private Living Document product surface and production document state. |
 | Route Evidence / audit trail | `examples/generated/support_triage_agent.trace.md` and `.json` | The review path is inspectable step by step. | Private event stores, audit logs, review decisions, and queue implementation. |
 | TCO / tokenization / provider lanes | Blocked-claim discipline in the public packet | Unsupported savings, readiness, quality, latency, or compliance claims remain blocked without proof. | Private pricing catalogs, tokenization calibrations, route intelligence, and provider validation engines. |

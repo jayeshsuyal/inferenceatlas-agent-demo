@@ -30,11 +30,34 @@ Do not approve production tool access yet.
 
 Approve a scoped validation review before any production permission grant.
 
+## Approval Posture
+
+- production access: blocked
+- validation review: allowed
+- read access: candidate_after_scope_review
+- write access: blocked_until_rollback_and_off_switch_proof
+- compliance claims: blocked_until_named_reviewer_evidence
+
+## Source Status
+
+- user prompt: provided
+- live vendor evidence: not_fetched_in_offline_mode
+- workspace policy: missing
+- tool auth state: not_connected_in_offline_mode
+- reviewer confirmation: missing
+- deterministic packet: generated
+
 ## Requested Capability
 
 - GitHub: read issues for bug reports and incident context (medium, dry_run_only)
 - Slack: summarize incident channels (high, dry_run_only)
 - Jira: create draft tickets (high, dry_run_only)
+
+## Tool Access Plan
+
+- github: dry-run read-scope plan only; blocks issue edits, repo configuration changes, and workflow dispatch
+- jira: draft ticket proposal only; blocks production ticket creation, status changes, and assignment changes
+- slack: dry-run named-channel summary plan only; blocks posting, DM access, and workspace-wide history
 
 ## Tool Scope
 
@@ -81,6 +104,13 @@ Must define before access:
 - Support Ops
 - Procurement/Finance
 
+## Reviewer Action Items
+
+- Security/Legal: confirm allowed data scope, retention, and logging terms
+- Engineering: provide allowlists, permission boundaries, audit logs, and off-switch proof
+- Support Ops: validate workflow fit, escalation rules, and human handoff owner
+- Procurement/Finance: review paid seats or vendor spend only if live integrations move beyond dry-run
+
 ## Next Human Validation
 
 Action: Run a scoped dry-run pilot review with named repositories, channels, and Jira project.
@@ -114,6 +144,8 @@ Generated artifacts:
 
 - The demo works without API keys.
 - The output is not a generic agent chat response; it is a structured DecisionPacket.
+- Approval posture is explicit: validation review can move, production access stays blocked.
+- The tool access plan separates dry-run allowances from blocked write actions.
 - Production access remains blocked.
 - Write actions remain disabled by default.
 - Composio is dry-run by default.

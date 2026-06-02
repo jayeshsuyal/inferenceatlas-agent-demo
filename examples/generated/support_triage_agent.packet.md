@@ -6,11 +6,46 @@ Do not approve production tool access yet.
 
 Approve a scoped validation review before any production permission grant.
 
+## Approval Posture
+
+- production access: blocked
+- validation review: allowed
+- read access: candidate_after_scope_review
+- write access: blocked_until_rollback_and_off_switch_proof
+- compliance claims: blocked_until_named_reviewer_evidence
+
+## Source Status
+
+- user prompt: provided
+- live vendor evidence: not_fetched_in_offline_mode
+- workspace policy: missing
+- tool auth state: not_connected_in_offline_mode
+- reviewer confirmation: missing
+- deterministic packet: generated
+
 ## Requested Capability
 
 - GitHub: read issues for bug reports and incident context (medium, dry_run_only)
 - Slack: summarize incident channels (high, dry_run_only)
 - Jira: create draft tickets (high, dry_run_only)
+
+## Tool Access Plan
+
+- **github**
+  - requested: read issues for bug reports and incident context
+  - demo allowance: dry-run read-scope plan only
+  - blocked actions: issue edits, repo configuration changes, workflow dispatch
+  - required proof: repository allowlist, permission level, audit log owner
+- **jira**
+  - requested: create draft tickets
+  - demo allowance: draft ticket proposal only; no production creation
+  - blocked actions: ticket creation, status changes, assignment changes
+  - required proof: project scope, draft-only mode, rollback/off-switch plan
+- **slack**
+  - requested: summarize incident channels
+  - demo allowance: dry-run named-channel summary plan only
+  - blocked actions: posting messages, DM access, workspace-wide history
+  - required proof: channel allowlist, retention terms, customer-data boundary
 
 ## Tool Scope
 
@@ -61,6 +96,13 @@ Must define before access:
 - **Engineering**: review area: permission boundaries, rollback, off-switch, audit logs; current state: required_before_write_actions
 - **Support Ops**: review area: workflow fit, escalation rules, human handoff; current state: required_before_pilot
 - **Procurement/Finance**: review area: paid tool/vendor spend if live actions or seats are enabled; current state: conditional
+
+## Reviewer Action Items
+
+- **Security/Legal**: action: Confirm allowed data scope, retention, and logging terms; blocks: Slack channel summarization and customer incident context access
+- **Engineering**: action: Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof; blocks: GitHub/Jira tool connection and any write-action pilot
+- **Support Ops**: action: Validate triage workflow fit, escalation rules, and human handoff owner; blocks: support operations pilot
+- **Procurement/Finance**: action: Review paid seats or vendor spend only if live integrations move beyond dry-run; blocks: paid production rollout
 
 ## Next Human Validation
 

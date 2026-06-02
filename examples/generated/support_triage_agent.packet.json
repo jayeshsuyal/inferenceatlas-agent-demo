@@ -1,4 +1,11 @@
 {
+  "approval_posture": {
+    "compliance_claims": "blocked_until_named_reviewer_evidence",
+    "production_access": "blocked",
+    "read_access": "candidate_after_scope_review",
+    "validation_review": "allowed",
+    "write_access": "blocked_until_rollback_and_off_switch_proof"
+  },
   "blocked_claims": [
     {
       "claim": "Production tool access is approved.",
@@ -110,6 +117,28 @@
       "system": "Jira"
     }
   ],
+  "reviewer_action_items": [
+    {
+      "action": "Confirm allowed data scope, retention, and logging terms",
+      "blocks": "Slack channel summarization and customer incident context access",
+      "owner": "Security/Legal"
+    },
+    {
+      "action": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "owner": "Engineering"
+    },
+    {
+      "action": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "blocks": "support operations pilot",
+      "owner": "Support Ops"
+    },
+    {
+      "action": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "blocks": "paid production rollout",
+      "owner": "Procurement/Finance"
+    }
+  ],
   "reviewer_owners": [
     {
       "current_state": "required_before_access",
@@ -141,6 +170,58 @@
     "requires_human_approval": true
   },
   "schema_version": "decision_packet.v0",
+  "source_status": {
+    "deterministic_packet": "generated",
+    "live_vendor_evidence": "not_fetched_in_offline_mode",
+    "reviewer_confirmation": "missing",
+    "tool_auth_state": "not_connected_in_offline_mode",
+    "user_prompt": "provided",
+    "workspace_policy": "missing"
+  },
+  "tool_access_plan": {
+    "github": {
+      "blocked_actions": [
+        "issue edits",
+        "repo configuration changes",
+        "workflow dispatch"
+      ],
+      "demo_allowance": "dry-run read-scope plan only",
+      "requested": "read issues for bug reports and incident context",
+      "required_proof": [
+        "repository allowlist",
+        "permission level",
+        "audit log owner"
+      ]
+    },
+    "jira": {
+      "blocked_actions": [
+        "ticket creation",
+        "status changes",
+        "assignment changes"
+      ],
+      "demo_allowance": "draft ticket proposal only; no production creation",
+      "requested": "create draft tickets",
+      "required_proof": [
+        "project scope",
+        "draft-only mode",
+        "rollback/off-switch plan"
+      ]
+    },
+    "slack": {
+      "blocked_actions": [
+        "posting messages",
+        "DM access",
+        "workspace-wide history"
+      ],
+      "demo_allowance": "dry-run named-channel summary plan only",
+      "requested": "summarize incident channels",
+      "required_proof": [
+        "channel allowlist",
+        "retention terms",
+        "customer-data boundary"
+      ]
+    }
+  },
   "tool_scope": {
     "github": {
       "blocked_until_proven": [

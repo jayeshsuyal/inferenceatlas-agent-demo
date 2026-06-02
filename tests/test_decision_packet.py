@@ -31,6 +31,22 @@ class DecisionPacketTests(unittest.TestCase):
         self.assertTrue(safety["composio_dry_run"])
         self.assertTrue(safety["requires_human_approval"])
 
+    def test_approval_posture_blocks_production_and_write_access(self) -> None:
+        posture = self.packet["approval_posture"]
+        self.assertEqual(posture["production_access"], "blocked")
+        self.assertEqual(posture["validation_review"], "allowed")
+        self.assertIn("blocked", posture["write_access"])
+        self.assertIn("blocked", posture["compliance_claims"])
+
+    def test_tool_access_plan_stays_dry_run_and_scoped(self) -> None:
+        plan = self.packet["tool_access_plan"]
+        self.assertEqual(set(plan), {"github", "jira", "slack"})
+        self.assertIn("dry-run", plan["github"]["demo_allowance"])
+        self.assertIn("dry-run", plan["slack"]["demo_allowance"])
+        self.assertIn("no production creation", plan["jira"]["demo_allowance"])
+        self.assertIn("ticket creation", plan["jira"]["blocked_actions"])
+        self.assertIn("posting messages", plan["slack"]["blocked_actions"])
+
     def test_packet_keeps_blocked_claims_visible(self) -> None:
         blocked_claims = self.packet["blocked_claims"]
         self.assertGreaterEqual(len(blocked_claims), 3)
@@ -38,22 +54,36 @@ class DecisionPacketTests(unittest.TestCase):
         self.assertIn("Production tool access is approved.", joined)
         self.assertIn("compliance-ready", joined)
 
+    def test_reviewer_action_items_assign_proof_work(self) -> None:
+        action_items = self.packet["reviewer_action_items"]
+        owners = {item["owner"] for item in action_items}
+        self.assertIn("Security/Legal", owners)
+        self.assertIn("Engineering", owners)
+        self.assertTrue(all(item["action"] for item in action_items))
+        self.assertTrue(all(item["blocks"] for item in action_items))
+
     def test_trace_records_review_steps(self) -> None:
         trace = build_support_triage_trace()
         steps = [item["step"] for item in trace]
         self.assertEqual(steps[0], "intake")
+        self.assertIn("tool_access_plan", steps)
         self.assertIn("safety_gate", steps)
+        self.assertIn("reviewer_action_items", steps)
         self.assertEqual(steps[-1], "next_validation")
 
     def test_markdown_renderer_includes_judge_sections(self) -> None:
         rendered = render_packet_markdown(self.packet)
         for heading in [
             "## Verdict",
+            "## Approval Posture",
+            "## Source Status",
             "## Requested Capability",
+            "## Tool Access Plan",
             "## Tool Scope",
             "## Blocked Claims",
             "## Missing Proof",
             "## Reviewer Owners",
+            "## Reviewer Action Items",
             "## Safety State",
         ]:
             self.assertIn(heading, rendered)
@@ -63,6 +93,8 @@ class DecisionPacketTests(unittest.TestCase):
         for field in self.schema["required"]:
             self.assertIn(field, generated)
         self.assertEqual(generated["schema_version"], "decision_packet.v0")
+        self.assertEqual(generated["approval_posture"]["production_access"], "blocked")
+        self.assertIn("github", generated["tool_access_plan"])
         self.assertFalse(generated["safety_state"]["approval_granted"])
         self.assertTrue(generated["safety_state"]["composio_dry_run"])
 

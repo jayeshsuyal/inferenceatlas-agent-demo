@@ -8,6 +8,10 @@
     "step": "scope_split"
   },
   {
+    "result": "GitHub, Slack, and Jira get scoped dry-run allowances plus blocked write actions.",
+    "step": "tool_access_plan"
+  },
+  {
     "result": "Customer incident context and support escalations are treated as sensitive until policy proof exists.",
     "step": "data_scope"
   },
@@ -18,6 +22,10 @@
   {
     "result": "Security/Legal, Engineering, Support Ops, and conditional Finance owners are named.",
     "step": "reviewer_routing"
+  },
+  {
+    "result": "Each reviewer owner receives the proof task that blocks access from moving forward.",
+    "step": "reviewer_action_items"
   },
   {
     "result": "A scoped dry-run pilot review is the next step, not production access.",

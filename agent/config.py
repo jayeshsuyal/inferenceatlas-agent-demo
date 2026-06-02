@@ -1,33 +1,76 @@
 """
-Agent configuration — reads from environment variables.
+Agent configuration — reads from environment variables (see .env.example).
 
-Required env vars:
-    NEBIUS_API_KEY      : Nebius Studio API key
-    TAVILY_API_KEY      : Tavily search API key
-    COMPOSIO_API_KEY    : Composio API key
+LLM (one required):
+    NEBIUS_API_KEY      : Nebius Studio (OpenAI-compatible)
+    OPENAI_API_KEY      : fallback when Nebius is unset
 
 Optional:
-    NEBIUS_BASE_URL     : defaults to Nebius OpenAI-compatible endpoint
-    NEBIUS_MODEL        : model to use (default: meta-llama/Meta-Llama-3.1-70B-Instruct-fast)
+    NEBIUS_BASE_URL / OPENAI_BASE_URL / LLM_BASE_URL
+    NEBIUS_MODEL / OPENAI_MODEL / LLM_MODEL
+    TAVILY_API_KEY      : live web search (skipped if unset)
+    COMPOSIO_API_KEY    : integrations (skipped if unset)
     AGENT_MAX_STEPS     : max tool-call iterations (default: 10)
 """
 
+from __future__ import annotations
+
 import os
 
-NEBIUS_BASE_URL = os.getenv(
-    "NEBIUS_BASE_URL",
-    "https://api.studio.nebius.com/v1/",
-)
-NEBIUS_MODEL = os.getenv(
-    "NEBIUS_MODEL",
-    "meta-llama/Meta-Llama-3.1-70B-Instruct-fast",
-)
-NEBIUS_API_KEY = os.environ.get("NEBIUS_API_KEY", "")
+from ._env import load_dotenv
 
-TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
-COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY", "")
+load_dotenv()
 
-AGENT_MAX_STEPS = int(os.getenv("AGENT_MAX_STEPS", "10"))
+NEBIUS_API_KEY = os.environ.get("NEBIUS_API_KEY", "").strip()
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "").strip()
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "").strip()
+COMPOSIO_API_KEY = os.environ.get("COMPOSIO_API_KEY", "").strip()
+COMPOSIO_DRY_RUN = os.environ.get("COMPOSIO_DRY_RUN", "1").strip() not in ("0", "false", "False")
+
+AGENT_MAX_STEPS = max(8, int(os.getenv("AGENT_MAX_STEPS", "10")))
+
+_LLM_PREFER = os.getenv("LLM_PROVIDER", "").strip().lower()
+
+
+def _use_openai() -> None:
+    global LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_PROVIDER
+    LLM_API_KEY = OPENAI_API_KEY
+    LLM_BASE_URL = os.getenv("LLM_BASE_URL", os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"))
+    LLM_MODEL = os.getenv("LLM_MODEL", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+    LLM_PROVIDER = "openai"
+
+
+def _use_nebius() -> None:
+    global LLM_API_KEY, LLM_BASE_URL, LLM_MODEL, LLM_PROVIDER
+    LLM_API_KEY = NEBIUS_API_KEY
+    LLM_BASE_URL = os.getenv(
+        "LLM_BASE_URL",
+        os.getenv("NEBIUS_BASE_URL", "https://api.studio.nebius.com/v1/"),
+    )
+    LLM_MODEL = os.getenv(
+        "LLM_MODEL",
+        os.getenv("NEBIUS_MODEL", "meta-llama/Llama-3.3-70B-Instruct"),
+    )
+    LLM_PROVIDER = "nebius"
+
+
+if _LLM_PREFER == "openai" and OPENAI_API_KEY:
+    _use_openai()
+elif _LLM_PREFER == "nebius" and NEBIUS_API_KEY:
+    _use_nebius()
+elif NEBIUS_API_KEY:
+    _use_nebius()
+elif OPENAI_API_KEY:
+    _use_openai()
+else:
+    LLM_API_KEY = ""
+    LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.openai.com/v1")
+    LLM_MODEL = os.getenv("LLM_MODEL", os.getenv("OPENAI_MODEL", "gpt-4o-mini"))
+    LLM_PROVIDER = "none"
+
+# Back-compat aliases used by runtime
+NEBIUS_BASE_URL = LLM_BASE_URL
+NEBIUS_MODEL = LLM_MODEL
 
 SYSTEM_PROMPT = """You are the InferenceAtlas Intelligence Agent — an expert in AI infrastructure cost optimization.
 
@@ -40,11 +83,11 @@ You have access to:
 - export_report          : export a cost comparison report via Composio (Google Sheets / Notion / email)
 - composio_action        : run any Composio action by name (GitHub, Slack, HubSpot, etc.)
 
-Workflow for cost questions:
-1. Use tavily_search to get current pricing data if you need live info
-2. Use get_catalog_summary / compare_providers for catalog-grounded analysis
-3. Always ground your numbers — quote sources, provider names, and when prices were last verified
-4. Offer to export a report if the user needs a deliverable
+Workflow:
+1. If the user asks what InferenceAtlas tracks or wants a catalog overview → call get_catalog_summary first.
+2. For cost comparisons or cheapest-model questions → call compare_providers (and tavily_search if live pricing is needed).
+3. Always ground answers in tool results — never invent pricing numbers.
+4. Offer export_report only when the user wants a deliverable.
 
-Never invent pricing numbers. If you're uncertain, search first.
+Never reply with "provide more details" when a tool can answer the question. Use tools proactively.
 """

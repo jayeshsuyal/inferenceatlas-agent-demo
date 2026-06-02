@@ -73,6 +73,7 @@ cd inferenceatlas-agent-demo
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r agent/requirements.txt
+cp .env.example .env
 python3 -m agent.demo
 ```
 
@@ -81,8 +82,21 @@ The default demo runs without keys using deterministic local packet generation. 
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 
 ```bash
-cp .env.example .env
 IA_LIVE_MODE=1 python3 -m agent.demo
+```
+
+### Web UI (custom questions)
+
+```bash
+python -m web
+```
+
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080) — chat with the agent, use example prompts, or type your own requests. Conversations are multi-turn per browser session.
+
+### CLI
+
+```bash
+python -m agent.cli "Compare llm providers for 70B inference"
 ```
 
 ## Builder / CTO Path

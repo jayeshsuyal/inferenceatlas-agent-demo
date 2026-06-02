@@ -20,9 +20,9 @@ from openai import OpenAI
 
 from .config import (
     AGENT_MAX_STEPS,
-    NEBIUS_API_KEY,
-    NEBIUS_BASE_URL,
-    NEBIUS_MODEL,
+    LLM_API_KEY,
+    LLM_BASE_URL,
+    LLM_MODEL,
     SYSTEM_PROMPT,
 )
 from .tools import TOOL_DISPATCH, TOOL_SCHEMAS
@@ -30,8 +30,19 @@ from .tools import TOOL_DISPATCH, TOOL_SCHEMAS
 logger = logging.getLogger("inference_atlas.agent")
 
 
-def _nebius_client() -> OpenAI:
-    return OpenAI(api_key=NEBIUS_API_KEY, base_url=NEBIUS_BASE_URL)
+def _last_assistant_text(history: list[dict]) -> str:
+    for msg in reversed(history):
+        if msg.get("role") == "assistant" and msg.get("content"):
+            return str(msg["content"])
+    return ""
+
+
+def _llm_client() -> OpenAI:
+    if not LLM_API_KEY:
+        raise RuntimeError(
+            "No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env"
+        )
+    return OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
 
 
 # ---------------------------------------------------------------------------
@@ -44,8 +55,8 @@ def _run_with_openclaw(messages: list[dict], stream: bool = False):
         import openclaw  # type: ignore
 
         runner = openclaw.AgentRunner(
-            llm_client=_nebius_client(),
-            model=NEBIUS_MODEL,
+            llm_client=_llm_client(),
+            model=LLM_MODEL,
             tools=TOOL_SCHEMAS,
             tool_dispatch=TOOL_DISPATCH,
             system_prompt=SYSTEM_PROMPT,
@@ -68,12 +79,12 @@ def _run_builtin(messages: list[dict]) -> str:
     Minimal tool-calling loop that replicates OpenClaw's behaviour.
     Runs until the model stops calling tools or max_steps is reached.
     """
-    client = _nebius_client()
+    client = _llm_client()
     history = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
 
     for step in range(AGENT_MAX_STEPS):
         response = client.chat.completions.create(
-            model=NEBIUS_MODEL,
+            model=LLM_MODEL,
             messages=history,
             tools=TOOL_SCHEMAS,
             tool_choice="auto",
@@ -98,17 +109,18 @@ def _run_builtin(messages: list[dict]) -> str:
                 "content": str(result),
             })
 
-    return "[agent] max steps reached without a final answer"
+    last = _last_assistant_text(history)
+    return last or "[agent] max steps reached without a final answer"
 
 
 def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
     """Streaming variant of the built-in loop — yields text chunks."""
-    client = _nebius_client()
+    client = _llm_client()
     history = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
 
     for step in range(AGENT_MAX_STEPS):
         response = client.chat.completions.create(
-            model=NEBIUS_MODEL,
+            model=LLM_MODEL,
             messages=history,
             tools=TOOL_SCHEMAS,
             tool_choice="auto",
@@ -141,10 +153,10 @@ def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
                         if tc.function.arguments:
                             tool_calls_buf[idx]["arguments"] += tc.function.arguments
 
-        if finish_reason != "tool_calls" or not tool_calls_buf:
-            return  # done
+        if not tool_calls_buf:
+            return  # final answer streamed (or empty)
 
-        # Reconstruct assistant message and tool results
+        # Execute tool calls, then loop for the model's follow-up response
         tool_calls_list = []
         for idx in sorted(tool_calls_buf):
             tc = tool_calls_buf[idx]

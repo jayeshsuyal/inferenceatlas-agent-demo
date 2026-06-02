@@ -1,0 +1,1 @@
+"""InferenceAtlas agent web UI."""

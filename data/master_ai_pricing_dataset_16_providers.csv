@@ -1,0 +1,176 @@
+workload_type,provider,billing_type,sku_key,sku_name,model_key,unit_price_usd,unit_name,throughput_value,throughput_unit,memory_gb,latency_p50_ms,latency_p95_ms,region,notes,source_url,source_date,confidence
+llm,openai,per_token,gpt_4o_input,GPT-4o Input,gpt_4o,5.00,1m_tokens,,,,,global,Input tokens,https://platform.openai.com/docs/pricing,2026-02-13,high
+llm,openai,per_token,gpt_4o_output,GPT-4o Output,gpt_4o,15.00,1m_tokens,,,,,global,Output tokens,https://platform.openai.com/docs/pricing,2026-02-13,high
+llm,openai,per_token,gpt_4o_mini_input,GPT-4o Mini Input,gpt_4o_mini,0.15,1m_tokens,,,,,global,Input tokens,https://platform.openai.com/docs/pricing,2026-02-13,high
+llm,openai,per_token,gpt_4o_mini_output,GPT-4o Mini Output,gpt_4o_mini,0.60,1m_tokens,,,,,global,Output tokens,https://platform.openai.com/docs/pricing,2026-02-13,high
+llm,openai,per_token,gpt_5_input,GPT-5 Input,gpt_5,1.25,1m_tokens,,,,,global,Input tokens,https://intuitionlabs.ai/articles/llm-api-pricing-comparison-2025,2025-10-31,high
+llm,openai,per_token,gpt_5_output,GPT-5 Output,gpt_5,10.00,1m_tokens,,,,,global,Output tokens,https://intuitionlabs.ai/articles/llm-api-pricing-comparison-2025,2025-10-31,high
+llm,anthropic,per_token,claude_opus_45_input,Claude Opus 4.5 Input,claude_opus_4_5,5.00,1m_tokens,,,,,global,Input tokens,https://www.anthropic.com/news/claude-opus-4-5,2025-11-24,high
+llm,anthropic,per_token,claude_opus_45_output,Claude Opus 4.5 Output,claude_opus_4_5,25.00,1m_tokens,,,,,global,Output tokens,https://www.anthropic.com/news/claude-opus-4-5,2025-11-24,high
+llm,anthropic,per_token,claude_sonnet_45_input,Claude Sonnet 4.5 Input,claude_sonnet_4_5,3.00,1m_tokens,,,,,global,Input tokens,https://platform.claude.com/docs/en/about-claude/pricing,2026-02-13,high
+llm,anthropic,per_token,claude_sonnet_45_output,Claude Sonnet 4.5 Output,claude_sonnet_4_5,15.00,1m_tokens,,,,,global,Output tokens,https://platform.claude.com/docs/en/about-claude/pricing,2026-02-13,high
+llm,anthropic,per_token,claude_haiku_45_input,Claude Haiku 4.5 Input,claude_haiku_4_5,1.00,1m_tokens,,,,,global,Input tokens,https://platform.claude.com/docs/en/about-claude/pricing,2026-02-13,high
+llm,anthropic,per_token,claude_haiku_45_output,Claude Haiku 4.5 Output,claude_haiku_4_5,5.00,1m_tokens,,,,,global,Output tokens,https://platform.claude.com/docs/en/about-claude/pricing,2026-02-13,high
+llm,fireworks,per_token,deepseek_v3_input,DeepSeek V3 Input,deepseek_v3,0.56,1m_tokens,,,,,global,Input tokens,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,deepseek_v3_output,DeepSeek V3 Output,deepseek_v3,1.68,1m_tokens,,,,,global,Output tokens,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,glm_5_input,GLM-5 Input,glm_5,1.00,1m_tokens,,,,,global,Input tokens,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,glm_5_output,GLM-5 Output,glm_5,3.20,1m_tokens,,,,,global,Output tokens,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,small_models,Small Models <4B,small_models,0.10,1m_tokens,,,,,global,Sub-4B parameter models,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,medium_models,Medium Models 4-16B,medium_models,0.20,1m_tokens,,,,,global,4-16B parameter models,https://fireworks.ai/pricing,2026-02-13,high
+llm,fireworks,per_token,large_models,Large Models >16B,large_models,0.90,1m_tokens,,,,,global,16B+ parameter models,https://fireworks.ai/pricing,2026-02-13,high
+llm,baseten,per_token,glm_47_input,GLM 4.7 Input,glm_4_7,0.60,1m_tokens,,,,,global,Input tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,baseten,per_token,glm_47_output,GLM 4.7 Output,glm_4_7,2.20,1m_tokens,,,,,global,Output tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,baseten,per_token,gpt_oss_120b_input,GPT OSS 120B Input,gpt_oss_120b,0.10,1m_tokens,,,,,global,Input tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,baseten,per_token,gpt_oss_120b_output,GPT OSS 120B Output,gpt_oss_120b,0.50,1m_tokens,,,,,global,Output tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,baseten,per_token,deepseek_v31_input,DeepSeek V3.1 Input,deepseek_v3_1,0.50,1m_tokens,,,,,global,Input tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,baseten,per_token,deepseek_v31_output,DeepSeek V3.1 Output,deepseek_v3_1,1.50,1m_tokens,,,,,global,Output tokens,https://www.baseten.co/products/model-apis/,2026-02-13,high
+llm,together_ai,per_token,llama_4_maverick_input,Llama 4 Maverick Input,llama_4_maverick,0.27,1m_tokens,,,,,global,Input tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,llama_4_maverick_output,Llama 4 Maverick Output,llama_4_maverick,0.85,1m_tokens,,,,,global,Output tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,deepseek_r1_input,DeepSeek-R1-0528 Input,deepseek_r1,3.00,1m_tokens,,,,,global,Input tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,deepseek_r1_output,DeepSeek-R1-0528 Output,deepseek_r1,7.00,1m_tokens,,,,,global,Output tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,deepseek_v31_input,DeepSeek-V3.1 Input,deepseek_v3_1,0.60,1m_tokens,,,,,global,Input tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,deepseek_v31_output,DeepSeek-V3.1 Output,deepseek_v3_1,1.70,1m_tokens,,,,,global,Output tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,gpt_oss_120b_input,gpt-oss-120B Input,gpt_oss_120b,0.15,1m_tokens,,,,,global,Input tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,gpt_oss_120b_output,gpt-oss-120B Output,gpt_oss_120b,0.60,1m_tokens,,,,,global,Output tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,llama_33_70b,Llama 3.3 70B,llama_3_3_70b,0.88,1m_tokens,,,,,global,Input and output same price,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,qwen3_coder_next_input,Qwen3-Coder-Next Input,qwen3_coder_next,0.50,1m_tokens,,,,,global,Input tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,together_ai,per_token,qwen3_coder_next_output,Qwen3-Coder-Next Output,qwen3_coder_next,1.20,1m_tokens,,,,,global,Output tokens,https://www.together.ai/pricing,2026-02-13,high
+llm,cohere,per_token,command_a_input,Command A Input,command_a,2.50,1m_tokens,,,,,global,Input tokens,https://cohere.com/pricing,2026-02-13,high
+llm,cohere,per_token,command_a_output,Command A Output,command_a,10.00,1m_tokens,,,,,global,Output tokens,https://cohere.com/pricing,2026-02-13,high
+llm,cohere,per_token,command_r_input,Command R Input,command_r,0.15,1m_tokens,,,,,global,Input tokens,https://cohere.com/pricing,2026-02-13,high
+llm,cohere,per_token,command_r_output,Command R Output,command_r,0.60,1m_tokens,,,,,global,Output tokens,https://cohere.com/pricing,2026-02-13,high
+llm,modal,per_second,h100_gpu,H100 80GB,h100,3.9492,gpu_hour,,,80,,global,Converted from $0.001097/sec,https://modal.com/pricing,2026-02-13,high
+llm,modal,per_second,a100_80gb,A100 80GB,a100_80gb,2.4984,gpu_hour,,,80,,global,Converted from $0.000694/sec,https://modal.com/pricing,2026-02-13,high
+llm,modal,per_second,a100_40gb,A100 40GB,a100_40gb,2.0988,gpu_hour,,,40,,global,Converted from $0.000583/sec,https://modal.com/pricing,2026-02-13,high
+llm,modal,per_second,l40s,L40S,l40s,1.9512,gpu_hour,,,48,,global,Converted from $0.000542/sec,https://modal.com/pricing,2026-02-13,high
+llm,modal,per_second,a10,A10,a10,1.1016,gpu_hour,,,24,,global,Converted from $0.000306/sec,https://modal.com/pricing,2026-02-13,high
+llm,modal,per_second,t4,T4,t4,0.5904,gpu_hour,,,16,,global,Converted from $0.000164/sec,https://modal.com/pricing,2026-02-13,high
+llm,runpod,hourly,h100_sxm_secure,H100 SXM 80GB Secure,h100_sxm,2.69,gpu_hour,,,80,,global,Secure Cloud pricing,https://www.runpod.io/pricing,2026-02-13,high
+llm,runpod,hourly,a100_sxm_80gb_secure,A100 SXM 80GB Secure,a100_sxm_80gb,1.64,gpu_hour,,,80,,global,Secure Cloud pricing,https://nerdynav.com/runpod-review/,2026-02-13,high
+llm,runpod,hourly,rtx_a5000_secure,RTX A5000 24GB Secure,rtx_a5000,0.29,gpu_hour,,,24,,global,Secure Cloud mid-tier,https://nerdynav.com/runpod-review/,2026-02-13,high
+llm,runpod,hourly,rtx_3090_secure,RTX 3090 24GB Secure,rtx_3090,0.43,gpu_hour,,,24,,global,Secure Cloud popular GPU,https://nerdynav.com/runpod-review/,2026-02-13,high
+llm,runpod,hourly,rtx_3090_community,RTX 3090 24GB Community,rtx_3090,0.22,gpu_hour,,,24,,global,Community Cloud discount,https://nerdynav.com/runpod-review/,2026-02-13,high
+llm,replicate,per_second,a100_80gb,A100 80GB,a100_80gb,0.00140,gpu_second,,,80,,global,Billed by second on-demand,https://replicate.com/pricing,2026-02-13,high
+llm,replicate,per_second,h100_sxm,H100 SXM,h100_sxm,0.00165,gpu_second,,,80,,global,On-demand per-second billing,https://replicate.com/pricing,2026-02-13,high
+llm,replicate,per_second,l40s,L40S,l40s,0.00090,gpu_second,,,48,,global,Mid-tier GPU pricing,https://replicate.com/pricing,2026-02-13,high
+llm,replicate,per_second,t4,T4,t4,0.00015,gpu_second,,,16,,global,Entry-level GPU,https://replicate.com/pricing,2026-02-13,high
+llm,fal_ai,hourly,h100_serverless,H100 Serverless,h100,1.89,gpu_hour,,,80,,global,Starting price per hour,https://fal.ai/pricing,2026-02-13,high
+llm,fal_ai,hourly,h200_serverless,H200 Serverless,h200,2.10,gpu_hour,,,141,,global,High VRAM serverless,https://fal.ai/pricing,2026-02-13,high
+llm,fal_ai,hourly,a100_serverless,A100 Serverless,a100,0.99,gpu_hour,,,40,,global,Cost-effective GPU option,https://fal.ai/pricing,2026-02-13,high
+transcription,openai,per_minute,whisper,Whisper,whisper_1,0.006,audio_min,,,,,global,Speech recognition,https://platform.openai.com/docs/models/whisper-1,2026-02-13,high
+transcription,fireworks,per_second,whisper_v3_large,Whisper v3 Large,whisper_v3_large,0.0015,audio_min,,,,,global,Billed per second,https://fireworks.ai/pricing,2026-02-13,high
+transcription,fireworks,per_second,whisper_v3_turbo,Whisper v3 Large Turbo,whisper_v3_large_turbo,0.0009,audio_min,,,,,global,Faster variant,https://fireworks.ai/pricing,2026-02-13,high
+transcription,together_ai,per_minute,whisper_v3,Whisper Large v3,whisper_v3,0.0015,audio_min,,,,,global,ASR model,https://www.together.ai/pricing,2026-02-13,high
+transcription,deepgram,per_minute,nova_3_mono_payg,Nova-3 Monolingual PAYG,nova_3,0.0077,audio_min,,,,,global,Pay-as-you-go streaming,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,nova_3_mono_growth,Nova-3 Monolingual Growth,nova_3,0.0065,audio_min,,,,,global,Growth plan prepaid credits,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,nova_3_multi_payg,Nova-3 Multilingual PAYG,nova_3_multilingual,0.0092,audio_min,,,,,global,Multilingual pay-as-you-go,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,nova_3_multi_growth,Nova-3 Multilingual Growth,nova_3_multilingual,0.0078,audio_min,,,,,global,Multilingual growth plan,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,flux_payg,Flux PAYG,flux,0.0077,audio_min,,,,,global,Conversational real-time STT,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,flux_growth,Flux Growth,flux,0.0065,audio_min,,,,,global,Flux growth plan,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,nova_12_payg,Nova-1 & 2 PAYG,nova_1_2,0.0058,audio_min,,,,,global,Non-English transcription,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,enhanced_payg,Enhanced PAYG,enhanced,0.0165,audio_min,,,,,global,Lower WER high accuracy,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,base_payg,Base PAYG,base,0.0145,audio_min,,,,,global,Large volume transcription,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,diarization_addon,Speaker Diarization Add-on,addon,0.0020,audio_min,,,,,global,Additional feature cost,https://deepgram.com/pricing,2026-02-13,high
+transcription,deepgram,per_minute,redaction_addon,Redaction Add-on,addon,0.0020,audio_min,,,,,global,PII redaction feature,https://deepgram.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,universal_payg,Universal PAYG,universal,0.15,audio_hour,,,,,global,Converts to $0.0025/min,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,universal_streaming,Universal-Streaming,universal_streaming,0.15,audio_hour,,,,,global,Real-time streaming STT,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,slam_1,Slam-1,slam_1,0.27,audio_hour,,,,,global,Advanced pre-recorded model,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,speaker_id_addon,Speaker Identification,addon,0.02,audio_hour,,,,,global,Speaker diarization add-on,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,sentiment_addon,Sentiment Analysis,addon,0.02,audio_hour,,,,,global,Sentiment analysis add-on,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,pii_redaction_addon,PII Redaction,addon,0.08,audio_hour,,,,,global,PII redaction add-on,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,assemblyai,per_minute,summarization_addon,Summarization,addon,0.03,audio_hour,,,,,global,Auto-summarization add-on,https://www.assemblyai.com/pricing,2026-02-13,high
+transcription,elevenlabs,per_minute,scribe_v2_business,Scribe v2 Business,scribe_v2,0.22,audio_hour,,,,,global,98%+ transcription accuracy,https://elevenlabs.io/pricing/api,2026-02-13,high
+transcription,elevenlabs,per_minute,scribe_v2_scale,Scribe v2 Scale,scribe_v2,0.30,audio_hour,,,,,global,Scale plan transcription,https://elevenlabs.io/pricing/api,2026-02-13,high
+transcription,elevenlabs,per_minute,scribe_v2_pro,Scribe v2 Pro,scribe_v2,0.33,audio_hour,,,,,global,Pro plan transcription,https://elevenlabs.io/pricing/api,2026-02-13,high
+transcription,elevenlabs,per_minute,scribe_v2_realtime_business,Scribe v2 Realtime Business,scribe_v2_realtime,0.39,audio_hour,,,,,150,global,Low latency real-time STT,https://elevenlabs.io/pricing/api,2026-02-13,high
+transcription,elevenlabs,per_minute,scribe_v2_realtime_scale,Scribe v2 Realtime Scale,scribe_v2_realtime,0.42,audio_hour,,,,,150,global,Scale realtime transcription,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,together_ai,per_token,cartesia_sonic_2,Cartesia Sonic-2,cartesia_sonic_2,65.00,1m_chars,,,,,global,Speech synthesis,https://www.together.ai/pricing,2026-02-13,high
+tts,together_ai,per_token,cartesia_sonic_3,Cartesia Sonic-3,cartesia_sonic_3,65.00,1m_chars,,,,,global,Speech synthesis,https://www.together.ai/pricing,2026-02-13,high
+tts,openai,per_token,tts_1,TTS-1,tts_1,0.015,1k_chars,,,,,global,Real-time optimized,https://platform.openai.com/docs/pricing,2026-02-13,high
+tts,openai,per_token,tts_1_hd,TTS-1 HD,tts_1_hd,0.030,1k_chars,,,,,global,High-definition audio,https://platform.openai.com/docs/pricing,2026-02-13,high
+tts,deepgram,per_token,aura_2_payg,Aura-2 PAYG,aura_2,0.030,1k_chars,,,,,global,Sub-200ms latency TTS,https://deepgram.com/pricing,2026-02-13,high
+tts,deepgram,per_token,aura_2_growth,Aura-2 Growth,aura_2,0.027,1k_chars,,,,,global,Growth plan pricing,https://deepgram.com/pricing,2026-02-13,high
+tts,deepgram,per_token,aura_1_payg,Aura-1 PAYG,aura_1,0.0150,1k_chars,,,,,global,Previous gen TTS,https://deepgram.com/pricing,2026-02-13,high
+tts,deepgram,per_token,aura_1_growth,Aura-1 Growth,aura_1,0.0135,1k_chars,,,,,global,Aura-1 growth plan,https://deepgram.com/pricing,2026-02-13,high
+tts,elevenlabs,per_token,flash_turbo_business,Flash/Turbo Business,flash_v2_5,0.06,1k_chars,,,,,75,global,Business tier ultra-low latency,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,flash_turbo_scale,Flash/Turbo Scale,flash_v2_5,0.08,1k_chars,,,,,75,global,Scale plan pricing,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,flash_turbo_pro,Flash/Turbo Pro,flash_v2_5,0.10,1k_chars,,,,,75,global,Pro plan pricing,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,multilingual_v2_business,Multilingual v2/v3 Business,multilingual_v2,0.12,1k_chars,,,,250,300,global,High quality voice generation,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,multilingual_v2_scale,Multilingual v2/v3 Scale,multilingual_v2,0.17,1k_chars,,,,250,300,global,Scale plan high quality,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,multilingual_v2_pro,Multilingual v2/v3 Pro,multilingual_v2,0.20,1k_chars,,,,250,300,global,Pro plan high quality,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_minute,music_business,Music Generation Business,music_gen,0.28,audio_min,,,,,global,Music generation from text,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_minute,voice_isolator_business,Voice Isolator Business,voice_isolator,0.12,audio_min,,,,,global,Removes ambient sounds,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_minute,voice_changer_business,Voice Changer Business,voice_changer,0.12,audio_min,,,,,global,Fast real-time processing,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_token,sound_effects_business,Sound Effects Business,sfx_gen,0.07,generation,,,,,global,Royalty-free sound effects,https://elevenlabs.io/pricing/api,2026-02-13,high
+tts,elevenlabs,per_minute,dubbing_v1_business,Dubbing v1 Business,dubbing_v1,0.24,audio_min,,,,,global,Auto speaker detection,https://elevenlabs.io/pricing/api,2026-02-13,high
+image_gen,openai,per_image,dalle_3_standard_1024,DALL-E 3 Standard 1024,dalle_3,0.040,image,,,,,global,1024x1024 resolution,https://platform.openai.com/docs/pricing,2026-02-13,high
+image_gen,openai,per_image,dalle_3_hd_1024,DALL-E 3 HD 1024,dalle_3,0.080,image,,,,,global,1024x1024 HD quality,https://platform.openai.com/docs/pricing,2026-02-13,high
+image_gen,fireworks,per_image,flux_dev,FLUX.1 dev,flux_1_dev,0.014,image,,,,,global,28 steps default,https://fireworks.ai/pricing,2026-02-13,high
+image_gen,fireworks,per_image,flux_schnell,FLUX.1 schnell,flux_1_schnell,0.0014,image,,,,,global,4 steps default,https://fireworks.ai/pricing,2026-02-13,high
+image_gen,together_ai,per_image,flux_dev,FLUX.1 dev,flux_1_dev,0.025,megapixel,,,,,global,28 default steps,https://www.together.ai/pricing,2026-02-13,high
+image_gen,together_ai,per_image,flux_schnell,FLUX.1 schnell,flux_1_schnell,0.0027,megapixel,,,,,global,4 default steps,https://www.together.ai/pricing,2026-02-13,high
+image_gen,together_ai,per_image,flux_kontext_pro,FLUX.1 Kontext pro,flux_1_kontext_pro,0.04,megapixel,,,,,global,28 default steps,https://www.together.ai/pricing,2026-02-13,high
+image_gen,together_ai,per_image,flux_kontext_max,FLUX.1 Kontext max,flux_1_kontext_max,0.08,megapixel,,,,,global,28 default steps,https://www.together.ai/pricing,2026-02-13,high
+image_gen,baseten,hourly,h200_dedicated,H200 141GB Dedicated,h200,4.99,gpu_hour,,,141,,global,Dedicated deployment,https://www.baseten.co/products/model-apis/,2026-02-13,high
+image_gen,baseten,hourly,h100_dedicated,H100 80GB Dedicated,h100,3.36,gpu_hour,,,80,,global,Dedicated deployment,https://www.baseten.co/products/model-apis/,2026-02-13,high
+image_gen,modal,per_second,h200_gpu,H200 GPU,h200,6.2496,gpu_hour,,,,,global,Converted from $0.001736/sec,https://modal.com/pricing,2026-02-13,high
+image_gen,modal,per_second,l4,L4,l4,0.7992,gpu_hour,,,24,,global,Converted from $0.000222/sec,https://modal.com/pricing,2026-02-13,high
+image_gen,replicate,per_second,a100_image,A100 Image Gen,a100,0.00140,gpu_second,,,80,,global,Image generation workloads,https://replicate.com/pricing,2026-02-13,high
+image_gen,fal_ai,per_second,wan_25,Wan 2.5 Video,wan_25,0.05,video_second,,,,,global,Text to video generation,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_second,kling_25_turbo_pro,Kling 2.5 Turbo Pro Video,kling_25_turbo,0.07,video_second,,,,,global,High quality video gen,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_second,veo_3,Veo 3 Video,veo_3,0.40,video_second,,,,,global,Premium video generation,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_image,ovi_video,Ovi Video,ovi,0.20,video,,,,,global,Image to video conversion,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_image,seedream_v4,Seedream V4,seedream_v4,0.03,image,,,,,global,Text to image generation,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_image,flux_kontext_pro,Flux Kontext Pro,flux_kontext_pro,0.04,image,,,,,global,Advanced image generation,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_image,nanobanana,Nanobanana,nanobanana,0.0398,image,,,,,global,Fast image generation,https://fal.ai/pricing,2026-02-13,high
+image_gen,fal_ai,per_token,qwen_image,Qwen Image,qwen_image,0.02,megapixel,,,,,global,Priced per megapixel,https://fal.ai/pricing,2026-02-13,high
+embedding,openai,per_token,text_embedding_3_small,text-embedding-3-small,text_embedding_3_small,0.02,1m_tokens,,,,,global,1536 dimensions,https://platform.openai.com/docs/pricing,2026-02-13,high
+embedding,openai,per_token,text_embedding_3_large,text-embedding-3-large,text_embedding_3_large,0.13,1m_tokens,,,,,global,3072 dimensions,https://platform.openai.com/docs/pricing,2026-02-13,high
+embedding,cohere,per_token,embed_4_text,Embed 4 Text,embed_4,0.12,1m_tokens,,,,,global,Text embeddings,https://cohere.com/pricing,2026-02-13,high
+embedding,cohere,per_token,embed_4_image,Embed 4 Image,embed_4,0.47,1m_image_tokens,,,,,global,Image embeddings,https://cohere.com/pricing,2026-02-13,high
+embedding,fireworks,per_token,embed_small,Small Embeddings <150M,embed_small,0.008,1m_tokens,,,,,global,Up to 150M parameters,https://fireworks.ai/pricing,2026-02-13,high
+embedding,together_ai,per_token,bge_base_en,BGE-Base-EN v1.5,bge_base_en_v1_5,0.01,1m_tokens,,,,,global,Base model,https://www.together.ai/pricing,2026-02-13,high
+embedding,together_ai,per_token,bge_large_en,BGE-Large-EN v1.5,bge_large_en_v1_5,0.02,1m_tokens,,,,,global,Large model,https://www.together.ai/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_4_large,Voyage-4-Large,voyage_4_large,0.12,1m_tokens,,,,,global,1024 default dimensions,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_4,Voyage-4,voyage_4,0.06,1m_tokens,,,,,global,1024 default dimensions,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_4_lite,Voyage-4-Lite,voyage_4_lite,0.02,1m_tokens,,,,,global,1024 default dimensions,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_context_3,Voyage-Context-3,voyage_context_3,0.18,1m_tokens,,,,,global,Contextualized chunk embeddings,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_code_3,Voyage-Code-3,voyage_code_3,0.18,1m_tokens,,,,,global,Code-specific embeddings,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_finance_2,Voyage-Finance-2,voyage_finance_2,0.12,1m_tokens,,,,,global,Finance domain specialized,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_law_2,Voyage-Law-2,voyage_law_2,0.12,1m_tokens,,,,,global,Legal domain specialized,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_multimodal_35_text,Voyage-Multimodal-3.5 Text,voyage_multimodal_3_5,0.12,1m_tokens,,,,,global,Text portion of multimodal,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+embedding,voyage_ai,per_token,voyage_multimodal_35_pixels,Voyage-Multimodal-3.5 Pixels,voyage_multimodal_3_5,0.60,1b_pixels,,,,,global,Image/video pixel pricing,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+rerank,cohere,per_token,rerank_35,Rerank 3.5,rerank_3_5,2.00,1k_searches,,,,,global,Up to 100 docs per query,https://cohere.com/pricing,2026-02-13,high
+rerank,together_ai,per_token,mxbai_rerank,Mxbai Rerank Large V2,mxbai_rerank_large_v2,0.10,1m_tokens,,,,,global,Reranking model,https://www.together.ai/pricing,2026-02-13,high
+rerank,voyage_ai,per_token,rerank_25,Rerank-2.5,rerank_2_5,0.05,1m_tokens,,,,,global,Assumes 100 docs per request,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+rerank,voyage_ai,per_token,rerank_25_lite,Rerank-2.5-Lite,rerank_2_5_lite,0.02,1m_tokens,,,,,global,Lite reranking model,https://docs.voyageai.com/docs/pricing,2026-02-13,high
+vision,openai,per_token,gpt_4o_vision_input,GPT-4o Vision Input,gpt_4o,5.00,1m_tokens,,,,,global,Image understanding input,https://platform.openai.com/docs/pricing,2026-02-13,high
+vision,openai,per_token,gpt_4o_vision_output,GPT-4o Vision Output,gpt_4o,15.00,1m_tokens,,,,,global,Image understanding output,https://platform.openai.com/docs/pricing,2026-02-13,high
+vision,fireworks,per_token,qwen3_vl_30b_input,Qwen3 VL 30B Input,qwen3_vl_30b,0.15,1m_tokens,,,,,global,Vision-language input,https://fireworks.ai/pricing,2026-02-13,high
+vision,fireworks,per_token,qwen3_vl_30b_output,Qwen3 VL 30B Output,qwen3_vl_30b,0.60,1m_tokens,,,,,global,Vision-language output,https://fireworks.ai/pricing,2026-02-13,high
+vision,together_ai,per_token,qwen3_vl_32b_input,Qwen3-VL-32B Input,qwen3_vl_32b,0.50,1m_tokens,,,,,global,Vision model input,https://www.together.ai/pricing,2026-02-13,high
+vision,together_ai,per_token,qwen3_vl_32b_output,Qwen3-VL-32B Output,qwen3_vl_32b,1.50,1m_tokens,,,,,global,Vision model output,https://www.together.ai/pricing,2026-02-13,high
+vision,google_cloud,per_token,label_detection_tier1,Label Detection Tier 1,vision_api,1.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,label_detection_tier2,Label Detection Tier 2,vision_api,1.00,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,text_detection_tier1,Text Detection (OCR) Tier 1,vision_api,1.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,text_detection_tier2,Text Detection (OCR) Tier 2,vision_api,0.60,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,face_detection_tier1,Face Detection Tier 1,vision_api,1.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,face_detection_tier2,Face Detection Tier 2,vision_api,0.60,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,landmark_detection_tier1,Landmark Detection Tier 1,vision_api,1.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,landmark_detection_tier2,Landmark Detection Tier 2,vision_api,0.60,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,logo_detection_tier1,Logo Detection Tier 1,vision_api,1.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,logo_detection_tier2,Logo Detection Tier 2,vision_api,0.60,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,web_detection_tier1,Web Detection Tier 1,vision_api,3.50,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,object_localization_tier1,Object Localization Tier 1,vision_api,2.25,1k_units,,,,,global,Units 1001-5M per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,google_cloud,per_token,object_localization_tier2,Object Localization Tier 2,vision_api,1.50,1k_units,,,,,global,Units 5M+ per month,https://cloud.google.com/vision/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,detect_labels_tier1,DetectLabels Group 2 Tier 1,rekognition,1.00,1k_images,,,,,us-east-1,First 1M images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,detect_labels_tier2,DetectLabels Group 2 Tier 2,rekognition,0.80,1k_images,,,,,us-east-1,1M-10M images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,detect_labels_tier3,DetectLabels Group 2 Tier 3,rekognition,0.60,1k_images,,,,,us-east-1,10M-100M images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,detect_labels_tier4,DetectLabels Group 2 Tier 4,rekognition,0.40,1k_images,,,,,us-east-1,100M+ images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,face_detection_tier1,Face Detection Group 1 Tier 1,rekognition,1.00,1k_images,,,,,us-east-1,First 1M images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_image,face_search_tier1,Face Search Group 1 Tier 1,rekognition,1.00,1k_images,,,,,us-east-1,First 1M images per month,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_minute,video_label_detection,Video Label Detection,rekognition_video,0.10,video_min,,,,,us-east-1,Stored video analysis,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_minute,video_content_moderation,Video Content Moderation,rekognition_video,0.10,video_min,,,,,us-east-1,Stored video analysis,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_minute,video_face_detection,Video Face Detection,rekognition_video,0.10,video_min,,,,,us-east-1,Stored video analysis,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_minute,video_celebrity_recognition,Video Celebrity Recognition,rekognition_video,0.10,video_min,,,,,us-east-1,Stored video analysis,https://aws.amazon.com/rekognition/pricing,2026-02-13,high
+vision,aws_rekognition,per_minute,video_person_pathing,Video Person Pathing,rekognition_video,0.10,video_min,,,,,us-east-1,Track person movement,https://aws.amazon.com/rekognition/pricing,2026-02-13,high

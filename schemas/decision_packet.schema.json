@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jayeshsuyal/inferenceatlas-agent-demo/schemas/decision_packet.schema.json",
+  "title": "InferenceAtlas Agent DecisionPacket",
+  "description": "Public judge-harness schema for a pre-permission agent access review packet.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "packet_id",
+    "generated_by",
+    "mode",
+    "decision",
+    "requested_capability",
+    "tool_scope",
+    "data_scope",
+    "evidence_notes",
+    "blocked_claims",
+    "missing_proof",
+    "reviewer_owners",
+    "next_validation",
+    "safety_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "decision_packet.v0"
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["offline_deterministic", "live_sponsor"]
+    },
+    "decision": {
+      "type": "object",
+      "required": ["question", "verdict", "review_posture", "raw_prompt"],
+      "properties": {
+        "question": { "type": "string", "minLength": 1 },
+        "verdict": { "type": "string", "minLength": 1 },
+        "review_posture": { "type": "string", "minLength": 1 },
+        "raw_prompt": { "type": "string", "minLength": 1 }
+      }
+    },
+    "requested_capability": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["system", "requested_access", "risk_level", "default_demo_state"]
+      }
+    },
+    "tool_scope": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "data_scope": {
+      "type": "object",
+      "required": ["may_include", "must_define_before_access"],
+      "properties": {
+        "may_include": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "must_define_before_access": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    },
+    "evidence_notes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source", "status", "note"]
+      }
+    },
+    "blocked_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["claim", "reason"]
+      }
+    },
+    "missing_proof": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["item", "owner", "unblocks"]
+      }
+    },
+    "reviewer_owners": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["owner", "review_area", "current_state"]
+      }
+    },
+    "next_validation": {
+      "type": "object",
+      "required": ["action", "owner", "success_criteria"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1 },
+        "owner": { "type": "string", "minLength": 1 },
+        "success_criteria": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    },
+    "safety_state": {
+      "type": "object",
+      "required": [
+        "approval_granted",
+        "external_writes_enabled",
+        "composio_dry_run",
+        "packet_state_mutation",
+        "requires_human_approval",
+        "default_public_demo_posture"
+      ],
+      "properties": {
+        "approval_granted": { "type": "boolean", "const": false },
+        "external_writes_enabled": { "type": "boolean", "const": false },
+        "composio_dry_run": { "type": "boolean", "const": true },
+        "packet_state_mutation": { "type": "boolean", "const": false },
+        "requires_human_approval": { "type": "boolean", "const": true },
+        "default_public_demo_posture": { "type": "string", "const": "review_packet_only" }
+      }
+    }
+  }
+}

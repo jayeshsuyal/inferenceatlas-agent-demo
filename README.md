@@ -101,6 +101,14 @@ Regenerate packet and brief artifacts for all scenarios:
 python3 -m agent.scenarios
 ```
 
+Review any scenario directly from the CLI:
+
+```bash
+python3 -m agent.review --list
+python3 -m agent.review --scenario read_only_analytics_agent
+python3 -m agent.review --scenario admin_code_fix_bot --artifact packet --format json
+```
+
 ## Builder / CTO Path
 
 If you are extending the live sponsor path, use this order:

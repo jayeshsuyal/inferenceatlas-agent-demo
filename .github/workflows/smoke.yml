@@ -37,6 +37,12 @@ jobs:
       - name: Regenerate scenario artifacts
         run: python -m agent.scenarios
 
+      - name: Run scenario review CLI
+        run: |
+          python -m agent.review --list
+          python -m agent.review --scenario admin_code_fix_bot
+          python -m agent.review --scenario read_only_analytics_agent --artifact packet --format json >/tmp/read_only_analytics_agent.cli.packet.json
+
       - name: Parse generated packet artifacts
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json

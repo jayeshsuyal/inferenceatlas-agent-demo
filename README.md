@@ -85,6 +85,7 @@ examples/generated/support_triage_agent.packet.md
 examples/generated/support_triage_agent.packet.json
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
+examples/generated/demo_transcript.md
 ```
 
 ## Safety Contract

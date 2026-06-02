@@ -33,6 +33,7 @@ Current public surface:
 - README thesis for pre-commit proof packets
 - sample DecisionPacket in `examples/sample_decision_packet.md`
 - generated DecisionPacket artifacts under `examples/generated/`
+- no-key demo transcript in `examples/generated/demo_transcript.md`
 - Python agent package scaffold under `agent/`
 - deterministic packet builder in `agent/packet.py`
 - offline packet renderers in `agent/renderers.py`
@@ -59,7 +60,7 @@ Current top risk after the offline demo landed:
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
 | CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
-| Demo transcript | Checked-in transcript showing the expected judge experience | Planned |
+| Demo transcript | Checked-in transcript showing the expected judge experience | Shipped |
 | Short video/GIF | 60-90 second walkthrough for human reviewers | Planned |
 
 ## Definition Of Done
@@ -85,13 +86,14 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 
 1. `README.md`
 2. `BUILD_PLAN_TO_JUNE_12.md`
-3. `examples/generated/support_triage_agent.packet.md`
-4. `examples/generated/support_triage_agent.packet.json`
-5. `examples/generated/support_triage_agent.trace.md`
-6. `examples/sample_decision_packet.md`
-7. `docs/V1_CAPABILITY_PASSPORT.md`
-8. `docs/SAFETY_CONTRACT.md`
-9. `python3 -m agent.demo`
+3. `examples/generated/demo_transcript.md`
+4. `examples/generated/support_triage_agent.packet.md`
+5. `examples/generated/support_triage_agent.packet.json`
+6. `examples/generated/support_triage_agent.trace.md`
+7. `examples/sample_decision_packet.md`
+8. `docs/V1_CAPABILITY_PASSPORT.md`
+9. `docs/SAFETY_CONTRACT.md`
+10. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

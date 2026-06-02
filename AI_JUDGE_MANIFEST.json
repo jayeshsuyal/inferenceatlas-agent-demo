@@ -12,6 +12,7 @@
     "json_packet": "examples/generated/support_triage_agent.packet.json",
     "markdown_trace": "examples/generated/support_triage_agent.trace.md",
     "json_trace": "examples/generated/support_triage_agent.trace.json",
+    "demo_transcript": "examples/generated/demo_transcript.md",
     "schema": "schemas/decision_packet.schema.json",
     "v1_capability_passport": "docs/V1_CAPABILITY_PASSPORT.md"
   },
@@ -45,6 +46,7 @@
     "README.md",
     "BUILD_PLAN_TO_JUNE_12.md",
     "AI_JUDGE_MANIFEST.json",
+    "examples/generated/demo_transcript.md",
     "examples/generated/support_triage_agent.packet.md",
     "examples/generated/support_triage_agent.packet.json",
     "docs/V1_CAPABILITY_PASSPORT.md",

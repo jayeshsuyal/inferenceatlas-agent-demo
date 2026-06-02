@@ -17,7 +17,10 @@
     "demo_transcript": "examples/generated/demo_transcript.md",
     "schema": "schemas/decision_packet.schema.json",
     "decision_brief_schema": "schemas/agent_access_decision_brief.schema.json",
-    "v1_capability_passport": "docs/V1_CAPABILITY_PASSPORT.md"
+    "v1_capability_passport": "docs/V1_CAPABILITY_PASSPORT.md",
+    "cto_handoff": "docs/CTO_HANDOFF.md",
+    "architecture": "docs/ARCHITECTURE.md",
+    "live_integration_contract": "docs/LIVE_INTEGRATION_CONTRACT.md"
   },
   "verification": {
     "ci_workflow": ".github/workflows/smoke.yml",
@@ -42,9 +45,18 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "decision brief", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
+  "builder_handoff_path": [
+    "docs/CTO_HANDOFF.md",
+    "docs/ARCHITECTURE.md",
+    "docs/LIVE_INTEGRATION_CONTRACT.md",
+    "agent/demo.py",
+    "agent/packet.py",
+    "agent/decision_brief.py",
+    "tests/"
+  ],
   "judge_review_path": [
     "README.md",
     "BUILD_PLAN_TO_JUNE_12.md",

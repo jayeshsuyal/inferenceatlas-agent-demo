@@ -41,6 +41,7 @@ Current public surface:
 - offline packet renderers in `agent/renderers.py`
 - product-grade packet fields for source status, approval posture, tool access plan, and reviewer action items
 - reviewer-grade access brief with go/no-go, risk register, reviewer gates, and runtime permission boundary
+- CTO handoff docs in `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md`
 - AI judge manifest in `AI_JUDGE_MANIFEST.json`
 - safety contract in `docs/SAFETY_CONTRACT.md`
 - Nebius/Tavily/Composio/OpenClaw integration direction
@@ -62,6 +63,7 @@ Current top risk after the offline demo landed:
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
+| CTO build handoff | Stable module map, transitional live scaffolding, and integration contract | Shipped |
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
 | CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
@@ -87,6 +89,7 @@ By June 12, the repo is judge-ready when all of the following are true:
 - Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
 - GitHub Actions is green.
 - The repo clearly explains how private v1 capabilities are represented without exposing private code.
+- The CTO can identify stable modules, transitional scaffolding, live integration contracts, and safety invariants without reverse-engineering the repo.
 
 ## Public Review Path
 
@@ -105,6 +108,26 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 11. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
+
+## CTO Build Path
+
+If the CTO opens the repo to continue implementation, this is the intended build order:
+
+1. `docs/CTO_HANDOFF.md`
+2. `docs/ARCHITECTURE.md`
+3. `docs/LIVE_INTEGRATION_CONTRACT.md`
+4. `agent/demo.py`
+5. `agent/packet.py`
+6. `agent/decision_brief.py`
+7. `agent/runtime.py`
+8. `agent/tools.py`
+9. `tests/`
+
+The CTO path should make three things obvious:
+
+- what is stable and should be preserved
+- what is transitional and needs refactor before the live demo
+- how live sponsor integrations can enrich the packet flow without granting access or committing secrets
 
 ## Demo Scenario
 
@@ -140,6 +163,7 @@ The public harness should show the breadth of private v1 through redacted artifa
 | FactPack | Deterministic evidence sample with assumptions and missing values |
 | DecisionPacket | Markdown + JSON packet examples and schema |
 | Agent Access Decision Brief | Markdown + JSON go/no-go artifact and schema |
+| CTO build handoff | Stable module map, architecture, and live integration contract |
 | ArtifactProjection | Same packet projected into judge packet, memo, and review handoff |
 | Approval Watch / Evidence Watch | Evidence intake preview against an existing packet |
 | Governance | Reviewer-owner map and proof-debt checklist |
@@ -210,9 +234,10 @@ Engineering priority order:
 3. Add Markdown and JSON examples.
 4. Add safety contract docs and tests.
 5. Add V1 capability passport artifacts.
-6. Add optional sponsor live paths.
-7. Add CI and judge transcript.
-8. Record the short demo.
+6. Add CTO handoff docs and integration contracts.
+7. Add optional sponsor live paths.
+8. Add CI and judge transcript.
+9. Record the short demo.
 
 Scope discipline:
 
@@ -253,6 +278,7 @@ messy agent-access request
 - add demo transcript
 - add V1 capability passport
 - add safety contract
+- add CTO handoff and live integration contract
 - add redacted private-v1-derived sample artifacts
 
 ### Phase 3: Sponsor depth

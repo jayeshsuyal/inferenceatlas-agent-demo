@@ -6,6 +6,8 @@ Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_
 
 For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
+For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
+
 InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket and an Agent Access Decision Brief showing:
@@ -82,6 +84,22 @@ To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 cp .env.example .env
 IA_LIVE_MODE=1 python3 -m agent.demo
 ```
+
+## Builder / CTO Path
+
+If you are extending the live sponsor path, use this order:
+
+```text
+docs/CTO_HANDOFF.md
+docs/ARCHITECTURE.md
+docs/LIVE_INTEGRATION_CONTRACT.md
+agent/demo.py
+agent/packet.py
+agent/decision_brief.py
+tests/
+```
+
+The current no-key demo and generated artifacts are the safety baseline. Live Nebius, Tavily, Composio, and OpenClaw work should enrich the packet flow without weakening blocked production access, dry-run Composio, or no-key execution.
 
 ## Example
 

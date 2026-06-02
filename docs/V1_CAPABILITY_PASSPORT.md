@@ -9,6 +9,8 @@ The full InferenceAtlas v1 product remains private. This public repo is a judge-
 
 The public harness demonstrates the v1 product contract through schemas, deterministic examples, generated artifacts, tests, CI, and redacted docs.
 
+It also gives the CTO a buildable public structure through handoff docs, architecture notes, and live integration contracts.
+
 The principle is:
 
 ```text
@@ -54,6 +56,7 @@ The public output is a DecisionPacket plus an Agent Access Decision Brief. The p
 | Route Evidence / audit trail | `examples/generated/support_triage_agent.trace.md` and `.json` | The review path is inspectable step by step. | Private event stores, audit logs, review decisions, and queue implementation. |
 | TCO / tokenization / provider lanes | Blocked-claim discipline in the public packet | Unsupported savings, readiness, quality, latency, or compliance claims remain blocked without proof. | Private pricing catalogs, tokenization calibrations, route intelligence, and provider validation engines. |
 | Sponsor runtime path | `IA_LIVE_MODE=1 python3 -m agent.demo` hook and manifest sponsor map | Sponsor integrations have a planned place in the packet flow, while the default path remains no-key and judge-safe. | CTO-held keys, live execution traces, private integration setup, and any non-public account context. |
+| Engineering handoff | `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md` | The public branch is structured enough for live sponsor work without exposing private v1 source. | Private implementation details, production secrets, customer workspaces, and full internal operating cadence. |
 
 ## Current Public Proof Surface
 
@@ -71,6 +74,9 @@ Public files to inspect:
 | AI-readable manifest | `AI_JUDGE_MANIFEST.json` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
+| CTO handoff | `docs/CTO_HANDOFF.md` |
+| Architecture | `docs/ARCHITECTURE.md` |
+| Live integration contract | `docs/LIVE_INTEGRATION_CONTRACT.md` |
 | Packet schema | `schemas/decision_packet.schema.json` |
 | Decision Brief schema | `schemas/agent_access_decision_brief.schema.json` |
 | Packet Markdown | `examples/generated/support_triage_agent.packet.md` |

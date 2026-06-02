@@ -1,0 +1,124 @@
+# CTO Handoff
+
+Status: build handoff for live sponsor path
+Audience: CTO / engineering owner
+Default safety posture: no-key offline demo stays green while live integrations are added
+
+## Start Here
+
+Run the current proof surface:
+
+```bash
+python3 -m agent.demo
+python3 -m unittest discover -s tests
+```
+
+Expected result:
+
+- the demo runs without API keys
+- packet, trace, and decision brief artifacts regenerate under `examples/generated/`
+- production access remains blocked
+- external writes remain disabled
+- Composio remains dry-run by default
+
+## What Is Stable
+
+These pieces are safe to build on:
+
+| Area | Path | Build role |
+| --- | --- | --- |
+| Offline judge harness | `agent/demo.py` | Entry point for no-key and live-mode demo paths. Keep this command stable. |
+| DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
+| Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
+| Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
+| Schemas | `schemas/` | Public contracts for generated JSON artifacts. Update tests with any schema change. |
+| Generated proof | `examples/generated/` | Checked-in artifacts judges and AI reviewers can inspect. Regenerate after behavior changes. |
+| Safety tests | `tests/` | Guardrails for no-key execution, blocked access, dry-run defaults, and artifact shape. |
+| CI smoke | `.github/workflows/smoke.yml` | GitHub Actions proof that the public harness is runnable and safe by default. |
+
+## What Is Transitional
+
+The files below are useful live-mode scaffolding, but still reflect the older cost-optimization agent surface:
+
+| Path | Current state | Recommended action |
+| --- | --- | --- |
+| `agent/config.py` | System prompt and tool descriptions still reference AI cost optimization. | Refactor prompt toward agent-access review before recording the live demo. |
+| `agent/tools.py` | Tavily and Composio wrappers exist, but Composio has a generic action helper. | Add explicit dry-run access-planning helpers before any live action path. |
+| `agent/runtime.py` | Nebius/OpenClaw runtime wrapper exists. | Keep it optional; live mode should enrich packet/trace artifacts and preserve offline fallback. |
+| `agent/agent.py` and `agent/cli.py` | Generic chat wrapper exists. | Useful for live narration, but the judge demo should stay packet-first. |
+
+## Product Spine
+
+The public branch should keep one clear object spine:
+
+```text
+messy agent-access request
+-> source status
+-> evidence notes and missing proof
+-> DecisionPacket
+-> Agent Access Decision Brief
+-> trace
+-> Markdown/JSON artifacts
+```
+
+Live integrations should attach to the spine as structured evidence or scoped tool-access plans. They should not replace the packet with a free-form chat answer.
+
+## Live Build Order
+
+1. Keep `python3 -m agent.demo` green without keys.
+2. Add Tavily evidence notes as structured packet entries.
+3. Add Nebius narration that summarizes the existing packet without changing safety defaults.
+4. Add Composio dry-run access planning for GitHub, Slack, and Jira.
+5. Add OpenClaw step recording into the trace artifact.
+6. Update generated artifacts and tests after each step.
+7. Record the live walkthrough only after offline and live paths both preserve the safety contract.
+
+## Integration Rules
+
+Every live integration should answer four questions before code lands:
+
+| Question | Required answer |
+| --- | --- |
+| What packet fields can this integration enrich? | Name exact fields, for example `evidence_notes`, `tool_access_plan`, or `source_status`. |
+| What can it never change? | Safety defaults, blocked claims, and production approval state. |
+| What artifact proves it ran? | JSON field, Markdown section, trace step, or test assertion. |
+| What happens without keys? | The offline deterministic path still works and generated artifacts still parse. |
+
+## Safety Invariants
+
+Do not merge live-mode work unless these remain true:
+
+- `approval_granted` is `false`
+- `external_writes_enabled` is `false`
+- `composio_dry_run` is `true`
+- production access remains blocked
+- live evidence cannot auto-approve access
+- runtime tool prompts do not replace pre-permission eligibility review
+- no secrets, tokens, private customer data, or private v1 source are committed
+
+## Local Runbook
+
+Use this sequence before pushing:
+
+```bash
+python3 -m json.tool AI_JUDGE_MANIFEST.json >/tmp/manifest_check.json
+python3 -m json.tool schemas/decision_packet.schema.json >/tmp/decision_packet_schema_check.json
+python3 -m json.tool schemas/agent_access_decision_brief.schema.json >/tmp/decision_brief_schema_check.json
+python3 -m py_compile agent/*.py
+env NEBIUS_API_KEY= TAVILY_API_KEY= COMPOSIO_API_KEY= IA_LIVE_MODE= python3 -m agent.demo >/tmp/inferenceatlas_demo.txt
+python3 -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/packet_check.json
+python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/trace_check.json
+python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/brief_check.json
+python3 -m unittest discover -s tests
+```
+
+## CTO Definition Of Done
+
+The repo is ready for the CTO to build on when:
+
+- there is a single documented object spine
+- stable and transitional modules are clearly separated
+- sponsor integrations have explicit contracts
+- generated artifacts are reproducible
+- tests protect the safety posture
+- the live-mode path can be built without weakening the default offline demo

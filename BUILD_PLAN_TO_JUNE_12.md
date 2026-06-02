@@ -1,0 +1,257 @@
+# Build Plan To June 12
+
+Status: public judge harness execution memo
+Owners: founder + CTO
+Target deadline: June 12, 2026, 23:59 PT
+
+## One-Line Thesis
+
+InferenceAtlas is the pre-permission DecisionPacket layer for AI agents: before an agent gets tools, data, spend, or production access, IA shows what can move, what stays blocked, what proof is missing, who must review, and what validation comes next.
+
+## Why This Repo Exists
+
+The full InferenceAtlas v1 product remains private. This public repo is the redacted judge harness for the agent-access wedge.
+
+The public harness should prove the product contract without exposing proprietary implementation code, private customer context, secrets, internal prompts, or the full v1 source tree.
+
+Judges should be able to verify:
+
+- the product thesis
+- the agent-access DecisionPacket contract
+- deterministic sample outputs
+- safety boundaries
+- sponsor integration shape
+- a working no-key demo path
+- a live-mode path for Nebius, Tavily, Composio, and OpenClaw when keys are available
+
+The public repo is not meant to be a code dump. It is meant to be a clean proof surface for a larger private system.
+
+## What Judges Can Verify Today
+
+Current public surface:
+
+- README thesis for pre-commit proof packets
+- sample DecisionPacket in `examples/sample_decision_packet.md`
+- Python agent package scaffold under `agent/`
+- Nebius/Tavily/Composio/OpenClaw integration direction
+- explicit conservative safety stance: no autonomous approval, no production mutation, no real dispatch by default
+
+Current top risk:
+
+- the README promise that the demo runs without keys must become true in code. This is the first implementation priority.
+
+## What We Are Building By June 12
+
+| Workstream | Outcome | Status |
+| --- | --- | --- |
+| Offline deterministic demo | `python3 -m agent.demo` generates a complete DecisionPacket with no API keys | In progress |
+| DecisionPacket schema | JSON schema for required packet fields and safety sections | Planned |
+| Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Planned |
+| V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Planned |
+| Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Planned |
+| Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
+| Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Planned |
+| Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
+| OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
+| CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Planned |
+| Demo transcript | Checked-in transcript showing the expected judge experience | Planned |
+| Short video/GIF | 60-90 second walkthrough for human reviewers | Planned |
+
+## Definition Of Done
+
+By June 12, the repo is judge-ready when all of the following are true:
+
+- `python3 -m agent.demo` works without keys.
+- README behavior matches actual behavior.
+- A judge can understand the product in under five minutes.
+- The main demo produces a DecisionPacket for GitHub/Slack/Jira agent access.
+- Packet output includes requested capability, tool/data scope, missing proof, blocked claims, reviewer owners, next validation, and safety footer.
+- DecisionPacket examples exist in Markdown and JSON.
+- Packet JSON validates against a checked-in schema.
+- Composio is dry-run by default.
+- No external write, approval, dispatch, or mutation happens in the default path.
+- Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
+- GitHub Actions is green.
+- The repo clearly explains how private v1 capabilities are represented without exposing private code.
+
+## Public Review Path
+
+If a judge or AI reviewer opens this repo early, this is the intended review order:
+
+1. `README.md`
+2. `BUILD_PLAN_TO_JUNE_12.md`
+3. `examples/sample_decision_packet.md`
+4. `docs/V1_CAPABILITY_PASSPORT.md` once added
+5. `docs/SAFETY_CONTRACT.md` once added
+6. `python3 -m agent.demo`
+
+The final repo should make this path obvious from the first screen.
+
+## Demo Scenario
+
+Primary scenario:
+
+```text
+Should this support triage agent get GitHub, Slack, and Jira access?
+
+It will read GitHub issues, summarize Slack incident channels, and create Jira draft tickets.
+It may touch customer incident context, engineering bug reports, and support escalations.
+```
+
+Expected packet behavior:
+
+- identify requested tools and data scope
+- separate read access from write access
+- block production access until reviewer ownership and proof exist
+- require Security/Legal review for retention, logging, and customer data exposure
+- require Engineering review for permission boundaries, rollback, and audit logs
+- require Support Ops review for workflow fit and escalation ownership
+- keep Composio actions dry-run by default
+- produce one concrete next validation step
+
+## Private V1 Capability Passport
+
+The public harness should show the breadth of private v1 through redacted artifacts, contracts, and examples rather than full source.
+
+| Private v1 capability family | Public proof artifact |
+| --- | --- |
+| Ask IA decision coach | Offline prompt-to-packet transcript |
+| WorkloadProfile | Redacted sample JSON with source/provenance fields |
+| FactPack | Deterministic evidence sample with assumptions and missing values |
+| DecisionPacket | Markdown + JSON packet examples and schema |
+| ArtifactProjection | Same packet projected into judge packet, memo, and review handoff |
+| Approval Watch / Evidence Watch | Evidence intake preview against an existing packet |
+| Governance | Reviewer-owner map and proof-debt checklist |
+| Living Document | Buyer-ready memo generated from the same packet |
+| Route Evidence / audit trail | Redacted review queue and audit trail sample |
+| TCO/tokenization/provider lanes | Redacted examples showing blocked claims when proof is incomplete |
+
+The principle: private engine, public proof.
+
+## Sponsor Integration Plan
+
+Sponsor integrations should be part of the product behavior, not decorative API calls.
+
+### Nebius
+
+Use Nebius as the optional live inference layer for packet narration, reviewer-ready language, and final packet synthesis.
+
+Offline mode must not depend on Nebius. Nebius enriches the packet; it does not own deterministic truth.
+
+### Tavily
+
+Use Tavily for live evidence notes: current vendor/security/context search, source URLs, and freshness status.
+
+Tavily results should enter the packet as evidence notes, not as unverified final truth.
+
+### Composio
+
+Use Composio to model scoped tool-access requests for GitHub, Slack, and Jira.
+
+Default behavior is dry-run. The public demo must not create tickets, post messages, change repos, or mutate external state.
+
+### OpenClaw
+
+Use OpenClaw as the optional runtime harness for the agent loop, step recording, tool use, and live-mode execution.
+
+Offline deterministic mode remains the fallback path so judging does not depend on keys or network behavior.
+
+## Safety Contract
+
+InferenceAtlas prepares proof packets. Humans approve decisions.
+
+IA does not:
+
+- approve agent access
+- grant tool permissions
+- dispatch Slack/Jira/GitHub actions by default
+- mutate production state
+- certify compliance
+- guarantee savings
+- claim quality lift without eval evidence
+- claim latency or capacity readiness without measurement
+- claim procurement/security/legal approval without named review evidence
+
+Default demo posture:
+
+- dry-run external actions
+- explicit blocked claims
+- visible missing proof
+- reviewer owners named separately from final approval
+- next validation before production access
+
+## CTO Operating Notes
+
+Engineering priority order:
+
+1. Make the no-key offline demo true.
+2. Lock the DecisionPacket schema.
+3. Add Markdown and JSON examples.
+4. Add safety contract docs and tests.
+5. Add V1 capability passport artifacts.
+6. Add optional sponsor live paths.
+7. Add CI and judge transcript.
+8. Record the short demo.
+
+Scope discipline:
+
+- Do not broaden into a generic chatbot.
+- Do not build a dashboard tour.
+- Do not imply autonomous approval.
+- Do not expose private v1 source.
+- Do not overclaim compliance, savings, latency, quality, or procurement readiness.
+- Do not make sponsor integrations decorative.
+
+The first winning surface is one clear loop:
+
+```text
+messy agent-access request
+-> WorkloadProfile-style context
+-> FactPack-style evidence and missing proof
+-> DecisionPacket
+-> blocked claims
+-> reviewer owners
+-> next human validation
+```
+
+## Build Cadence
+
+### Phase 1: Repo credibility
+
+- fix offline no-key demo
+- link this build plan from README
+- make current behavior honest
+- add first packet schema draft
+- add basic tests
+
+### Phase 2: Public proof artifacts
+
+- add packet Markdown and JSON examples
+- add demo transcript
+- add V1 capability passport
+- add safety contract
+- add redacted private-v1-derived sample artifacts
+
+### Phase 3: Sponsor depth
+
+- add Tavily evidence notes
+- add Nebius live narration path
+- add Composio dry-run tool-access plan
+- add OpenClaw runtime path
+- document offline vs live behavior clearly
+
+### Phase 4: Judge polish
+
+- add GitHub Actions
+- add `AI_JUDGE_MANIFEST.json`
+- add screenshot or GIF
+- add 60-90 second video link
+- tag a release before the deadline
+
+## Final Standard
+
+The repo should make one thing obvious:
+
+Most agent demos show an agent taking action. InferenceAtlas shows the missing review layer before action: the proof packet a company needs before giving agents tools, data, spend, or production access.
+
+That is the product we are proving by June 12.

@@ -2,6 +2,8 @@
 
 Hack the High Seas public demo repo.
 
+Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
+
 InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket showing:
@@ -93,4 +95,3 @@ Humans approve decisions. IA prepares the proof.
 - add a polished screenshot/sample output
 
 This repo is a public hackathon wrapper. The private InferenceAtlas v1 product codebase is not exposed here.
-

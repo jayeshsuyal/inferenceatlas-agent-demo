@@ -49,6 +49,16 @@ class CtoHandoffDocsTests(unittest.TestCase):
         ]:
             self.assertIn(expected, readme)
 
+    def test_readme_links_public_contract_without_v1_schema_names(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        contract = (ROOT / "docs" / "CONTRACT.md").read_text(encoding="utf-8")
+
+        self.assertIn("Public Conformance Contract", readme)
+        self.assertIn("Private engine, public proof.", readme)
+        self.assertIn("Private engine, public proof.", contract)
+        for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
+            self.assertNotIn(forbidden, contract)
+
 
 if __name__ == "__main__":
     unittest.main()

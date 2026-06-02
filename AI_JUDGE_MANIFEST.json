@@ -9,6 +9,8 @@
   "scenario_artifact_command": "python3 -m agent.scenarios",
   "scenario_review_command": "python3 -m agent.review --scenario read_only_analytics_agent",
   "scenario_review_json_command": "python3 -m agent.review --scenario admin_code_fix_bot --artifact packet --format json",
+  "public_contract_command": "python3 -m agent.contract --all",
+  "public_contract_artifact_command": "python3 -m agent.contract --all --generated-dir examples/generated",
   "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
   "scenario_matrix": {
     "support_triage_agent": {
@@ -40,6 +42,7 @@
     "demo_transcript": "examples/generated/demo_transcript.md",
     "schema": "schemas/decision_packet.schema.json",
     "decision_brief_schema": "schemas/agent_access_decision_brief.schema.json",
+    "public_contract": "docs/CONTRACT.md",
     "v1_capability_passport": "docs/V1_CAPABILITY_PASSPORT.md",
     "cto_handoff": "docs/CTO_HANDOFF.md",
     "architecture": "docs/ARCHITECTURE.md",
@@ -50,7 +53,8 @@
     "local_tests": "python3 -m unittest discover -s tests",
     "schema_parse": "python3 -m json.tool schemas/decision_packet.schema.json && python3 -m json.tool schemas/agent_access_decision_brief.schema.json",
     "artifact_parse": "python3 -m json.tool examples/generated/support_triage_agent.packet.json && python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json",
-    "cli_review": "python3 -m agent.review --list && python3 -m agent.review --scenario admin_code_fix_bot"
+    "cli_review": "python3 -m agent.review --list && python3 -m agent.review --scenario admin_code_fix_bot",
+    "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated"
   },
   "safety": {
     "approves_access": false,

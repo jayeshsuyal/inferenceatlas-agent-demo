@@ -43,6 +43,11 @@ jobs:
           python -m agent.review --scenario admin_code_fix_bot
           python -m agent.review --scenario read_only_analytics_agent --artifact packet --format json >/tmp/read_only_analytics_agent.cli.packet.json
 
+      - name: Validate public conformance contract
+        run: |
+          python -m agent.contract --all
+          python -m agent.contract --all --generated-dir examples/generated --json >/tmp/public_contract.generated.json
+
       - name: Parse generated packet artifacts
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json

@@ -4,11 +4,13 @@ Hack the High Seas public demo repo.
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
 InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
+
+Private engine, public proof.
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket and an Agent Access Decision Brief showing:
 
@@ -107,6 +109,13 @@ Review any scenario directly from the CLI:
 python3 -m agent.review --list
 python3 -m agent.review --scenario read_only_analytics_agent
 python3 -m agent.review --scenario admin_code_fix_bot --artifact packet --format json
+```
+
+Validate the public conformance contract:
+
+```bash
+python3 -m agent.contract --all
+python3 -m agent.contract --all --generated-dir examples/generated
 ```
 
 ## Builder / CTO Path

@@ -6,7 +6,28 @@
   "default_run_command": "python3 -m agent.demo",
   "works_without_keys": true,
   "live_mode_command": "IA_LIVE_MODE=1 python3 -m agent.demo",
+  "scenario_artifact_command": "python3 -m agent.scenarios",
   "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
+  "scenario_matrix": {
+    "support_triage_agent": {
+      "risk_shape": "medium_to_high",
+      "packet": "examples/generated/support_triage_agent.packet.json",
+      "decision_brief": "examples/generated/support_triage_agent.decision_brief.json",
+      "expected_posture": "scoped_validation_allowed_production_blocked"
+    },
+    "read_only_analytics_agent": {
+      "risk_shape": "low_read_only",
+      "packet": "examples/generated/read_only_analytics_agent.packet.json",
+      "decision_brief": "examples/generated/read_only_analytics_agent.decision_brief.json",
+      "expected_posture": "read_only_validation_allowed"
+    },
+    "admin_code_fix_bot": {
+      "risk_shape": "critical_admin_prod_write",
+      "packet": "examples/generated/admin_code_fix_bot.packet.json",
+      "decision_brief": "examples/generated/admin_code_fix_bot.decision_brief.json",
+      "expected_posture": "validation_blocked_until_security_review"
+    }
+  },
   "primary_artifacts": {
     "markdown_packet": "examples/generated/support_triage_agent.packet.md",
     "json_packet": "examples/generated/support_triage_agent.packet.json",

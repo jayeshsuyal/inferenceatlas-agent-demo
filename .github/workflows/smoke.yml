@@ -34,11 +34,18 @@ jobs:
           IA_LIVE_MODE: ""
         run: python -m agent.demo
 
+      - name: Regenerate scenario artifacts
+        run: python -m agent.scenarios
+
       - name: Parse generated packet artifacts
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json
           python -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/support_triage_agent.trace.json
           python -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/support_triage_agent.decision_brief.json
+          python -m json.tool examples/generated/read_only_analytics_agent.packet.json >/tmp/read_only_analytics_agent.packet.json
+          python -m json.tool examples/generated/read_only_analytics_agent.decision_brief.json >/tmp/read_only_analytics_agent.decision_brief.json
+          python -m json.tool examples/generated/admin_code_fix_bot.packet.json >/tmp/admin_code_fix_bot.packet.json
+          python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
 
       - name: Run unit tests
         env:

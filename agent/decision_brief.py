@@ -18,6 +18,7 @@ def _system_key(system: str) -> str:
 
 def _access_eligibility(packet: dict[str, Any]) -> list[dict[str, Any]]:
     tool_plan = packet["tool_access_plan"]
+    validation_allowed = packet["approval_posture"]["validation_review"] == "allowed"
     eligibility = []
     for capability in packet["requested_capability"]:
         system = capability["system"]
@@ -27,7 +28,11 @@ def _access_eligibility(packet: dict[str, Any]) -> list[dict[str, Any]]:
                 "system": system,
                 "requested_access": capability["requested_access"],
                 "risk_level": capability["risk_level"],
-                "eligibility": "candidate_for_scoped_validation_review",
+                "eligibility": (
+                    "candidate_for_scoped_validation_review"
+                    if validation_allowed
+                    else "blocked_until_security_review"
+                ),
                 "validation_allowance": plan["demo_allowance"],
                 "production_status": "blocked",
                 "required_proof": plan["required_proof"],
@@ -38,6 +43,27 @@ def _access_eligibility(packet: dict[str, Any]) -> list[dict[str, Any]]:
 
 def _access_envelope(packet: dict[str, Any]) -> dict[str, list[str]]:
     tool_plan = packet["tool_access_plan"]
+    if packet["packet_id"] != "ia-agent-access-support-triage-v0":
+        if packet["approval_posture"]["validation_review"] == "allowed":
+            allowed_for_validation = [
+                f"{tool_name}: {plan['demo_allowance']}" for tool_name, plan in tool_plan.items()
+            ]
+        else:
+            allowed_for_validation = ["No validation run until critical reviewer gates are satisfied."]
+        return {
+            "allowed_for_validation": allowed_for_validation,
+            "blocked_in_validation": [
+                f"{tool_name}: {action}"
+                for tool_name in sorted(tool_plan)
+                for action in tool_plan[tool_name]["blocked_actions"]
+            ],
+            "blocked_before_production": [
+                "production access grant",
+                "external write actions",
+                "scope expansion without a new packet",
+                "compliance or safety claims without named reviewer evidence",
+            ],
+        }
     return {
         "allowed_for_validation": [
             "GitHub read-scope review against an approved repository allowlist",
@@ -107,21 +133,32 @@ def build_agent_access_decision_brief(packet: dict[str, Any]) -> dict[str, Any]:
     """Derive the public reviewer brief from a DecisionPacket."""
     safety = packet["safety_state"]
     next_validation = packet["next_validation"]
+    approval_posture = packet["approval_posture"]
+    validation_allowed = approval_posture["validation_review"] == "allowed"
+    if packet["packet_id"] == "ia-agent-access-support-triage-v0":
+        recommended_next_step = "Approve a scoped validation review only."
+        reason = "The request touches sensitive support, engineering, and incident systems without named reviewer proof."
+    elif validation_allowed:
+        recommended_next_step = "Approve a scoped validation review only."
+        reason = "The request is constrained enough for validation, but production access still requires reviewer proof."
+    else:
+        recommended_next_step = "Do not start validation until critical reviewer gates are satisfied."
+        reason = "The request includes admin or production-write authority that must be removed or explicitly approved first."
     return {
         "schema_version": "agent_access_decision_brief.v0",
-        "brief_id": "ia-agent-access-brief-support-triage-v0",
+        "brief_id": packet["packet_id"].replace("ia-agent-access-", "ia-agent-access-brief-"),
         "generated_by": "inferenceatlas-agent-demo",
         "mode": packet["mode"],
         "derived_from_packet_id": packet["packet_id"],
         "decision": {
             "question": packet["decision"]["question"],
             "verdict": "Do not grant production access.",
-            "recommended_next_step": "Approve a scoped validation review only.",
-            "reason": "The request touches sensitive support, engineering, and incident systems without named reviewer proof.",
+            "recommended_next_step": recommended_next_step,
+            "reason": reason,
         },
         "go_no_go": {
             "production_access": False,
-            "scoped_validation_review": True,
+            "scoped_validation_review": validation_allowed,
             "external_writes": False,
             "composio_dry_run": safety["composio_dry_run"],
             "next_validation": next_validation["action"],

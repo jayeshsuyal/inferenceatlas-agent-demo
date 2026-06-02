@@ -159,6 +159,16 @@ def _sponsor_readiness_lines(items: dict[str, str]) -> str:
     return "\n".join(f"- {name}: {description}" for name, description in items.items())
 
 
+def _brief_title(brief: dict[str, Any]) -> str:
+    question = brief["decision"]["question"]
+    prefix = "Should the "
+    marker = " get "
+    if question.startswith(prefix) and marker in question:
+        name = question[len(prefix):question.index(marker)]
+        return name.title()
+    return "Agent"
+
+
 def render_packet_markdown(packet: dict[str, Any]) -> str:
     """Render the DecisionPacket as Markdown."""
     decision = packet["decision"]
@@ -268,7 +278,7 @@ def render_decision_brief_markdown(brief: dict[str, Any]) -> str:
     safety = brief["safety_state"]
 
     sections = [
-        "# Agent Access Decision Brief: Support Triage Agent",
+        f"# Agent Access Decision Brief: {_brief_title(brief)}",
         "",
         "## Decision",
         "",

@@ -47,7 +47,7 @@
       "properties": {
         "question": { "type": "string", "minLength": 1 },
         "verdict": { "type": "string", "const": "Do not grant production access." },
-        "recommended_next_step": { "type": "string", "const": "Approve a scoped validation review only." },
+        "recommended_next_step": { "type": "string", "minLength": 1 },
         "reason": { "type": "string", "minLength": 1 }
       }
     },
@@ -62,7 +62,7 @@
       ],
       "properties": {
         "production_access": { "type": "boolean", "const": false },
-        "scoped_validation_review": { "type": "boolean", "const": true },
+        "scoped_validation_review": { "type": "boolean" },
         "external_writes": { "type": "boolean", "const": false },
         "composio_dry_run": { "type": "boolean", "const": true },
         "next_validation": { "type": "string", "minLength": 1 }
@@ -86,7 +86,10 @@
           "system": { "type": "string", "minLength": 1 },
           "requested_access": { "type": "string", "minLength": 1 },
           "risk_level": { "type": "string", "minLength": 1 },
-          "eligibility": { "type": "string", "const": "candidate_for_scoped_validation_review" },
+          "eligibility": {
+            "type": "string",
+            "enum": ["candidate_for_scoped_validation_review", "blocked_until_security_review"]
+          },
           "validation_allowance": { "type": "string", "minLength": 1 },
           "production_status": { "type": "string", "const": "blocked" },
           "required_proof": { "type": "array", "minItems": 1, "items": { "type": "string" } }

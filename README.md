@@ -85,6 +85,22 @@ cp .env.example .env
 IA_LIVE_MODE=1 python3 -m agent.demo
 ```
 
+## Scenario Proof
+
+The rules engine now covers three deterministic access-review scenarios:
+
+| Scenario | What it proves |
+| --- | --- |
+| `support_triage_agent` | Medium/high-risk support workflow gets scoped validation while production access remains blocked. |
+| `read_only_analytics_agent` | Read-only aggregate analytics scope gets a lighter validation path and fewer reviewer gates. |
+| `admin_code_fix_bot` | Admin/prod-write scope is blocked before validation and escalated to Security/Engineering. |
+
+Regenerate packet and brief artifacts for all scenarios:
+
+```bash
+python3 -m agent.scenarios
+```
+
 ## Builder / CTO Path
 
 If you are extending the live sponsor path, use this order:
@@ -111,6 +127,14 @@ examples/generated/support_triage_agent.packet.md
 examples/generated/support_triage_agent.packet.json
 examples/generated/support_triage_agent.decision_brief.md
 examples/generated/support_triage_agent.decision_brief.json
+examples/generated/read_only_analytics_agent.packet.md
+examples/generated/read_only_analytics_agent.packet.json
+examples/generated/read_only_analytics_agent.decision_brief.md
+examples/generated/read_only_analytics_agent.decision_brief.json
+examples/generated/admin_code_fix_bot.packet.md
+examples/generated/admin_code_fix_bot.packet.json
+examples/generated/admin_code_fix_bot.decision_brief.md
+examples/generated/admin_code_fix_bot.decision_brief.json
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
 examples/generated/demo_transcript.md

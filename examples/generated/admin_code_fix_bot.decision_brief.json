@@ -1,0 +1,119 @@
+{
+  "access_eligibility": [
+    {
+      "eligibility": "blocked_until_security_review",
+      "production_status": "blocked",
+      "requested_access": "push code fixes to production repositories; change organization security settings; trigger production workflows",
+      "required_proof": [
+        "admin scope removal or explicit approval",
+        "repository allowlist",
+        "rollback/off-switch plan",
+        "change-management owner"
+      ],
+      "risk_level": "critical",
+      "system": "GitHub",
+      "validation_allowance": "blocked; admin/write actions require Security and Engineering approval"
+    }
+  ],
+  "access_envelope": {
+    "allowed_for_validation": [
+      "No validation run until critical reviewer gates are satisfied."
+    ],
+    "blocked_before_production": [
+      "production access grant",
+      "external write actions",
+      "scope expansion without a new packet",
+      "compliance or safety claims without named reviewer evidence"
+    ],
+    "blocked_in_validation": [
+      "github: admin scope",
+      "github: production repository mutation",
+      "github: workflow dispatch",
+      "github: permission changes"
+    ]
+  },
+  "brief_id": "ia-agent-access-brief-admin-code-fix-bot-v0",
+  "decision": {
+    "question": "Should the admin code fix bot get GitHub access?",
+    "reason": "The request includes admin or production-write authority that must be removed or explicitly approved first.",
+    "recommended_next_step": "Do not start validation until critical reviewer gates are satisfied.",
+    "verdict": "Do not grant production access."
+  },
+  "derived_from_packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+  "generated_by": "inferenceatlas-agent-demo",
+  "go_no_go": {
+    "composio_dry_run": true,
+    "external_writes": false,
+    "next_validation": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+    "production_access": false,
+    "scoped_validation_review": false
+  },
+  "mode": "offline_deterministic",
+  "reviewer_gates": [
+    {
+      "blocks": "admin validation and all production write actions",
+      "gate": "Reject or remove admin scopes, define repository allowlist, and require rollback/off-switch proof",
+      "owner": "Security/Engineering",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "production workflow dispatch or repository mutation",
+      "gate": "Confirm production change authority and named incident rollback owner",
+      "owner": "Engineering Leadership",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "source-code and production context access",
+      "gate": "Review production infrastructure and source-code exposure boundaries",
+      "owner": "Security/Legal",
+      "required_before": "production_access"
+    }
+  ],
+  "risk_register": [
+    {
+      "mitigation": "Split read and write paths, keep validation scoped, and require a new packet before expansion.",
+      "risk": "excessive agency",
+      "why_it_matters": "The agent is asking for multiple operational systems at once."
+    },
+    {
+      "mitigation": "Require retention, logging, deletion, and channel/repository boundaries before access.",
+      "risk": "sensitive information exposure",
+      "why_it_matters": "Slack incidents, support escalations, and bug reports may contain customer context."
+    },
+    {
+      "mitigation": "Treat tool content as evidence, not authority; preserve source status and reviewer gates.",
+      "risk": "prompt injection via tool content",
+      "why_it_matters": "Issues, tickets, and incident messages can contain instructions that should not become policy."
+    },
+    {
+      "mitigation": "Keep Composio dry-run by default and block write actions until rollback and off-switch proof exists.",
+      "risk": "unauthorized write actions",
+      "why_it_matters": "Jira, GitHub, or Slack mutations can affect customers, incidents, and engineering operations."
+    },
+    {
+      "mitigation": "Require audit log shape for tool calls, evidence intake, reviewer decisions, and future packet updates.",
+      "risk": "missing audit trail",
+      "why_it_matters": "Reviewers need to know what evidence was used, what was blocked, and who approved scope changes."
+    }
+  ],
+  "runtime_permission_boundary": {
+    "inferenceatlas_decision_brief_answers": "Should this agent be eligible for this class of access at all, and what proof is required first?",
+    "runtime_permission_prompt_answers": "Can the agent perform this specific action now?",
+    "why_this_is_different": "Runtime prompts are last-mile execution checks. The Decision Brief is the pre-permission governance review that decides eligibility, missing proof, and reviewer gates before runtime tools are granted."
+  },
+  "safety_state": {
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "default_public_demo_posture": "review_packet_only",
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "agent_access_decision_brief.v0",
+  "sponsor_readiness": {
+    "composio": "Scoped GitHub/Slack/Jira tool planning remains dry-run by default.",
+    "nebius": "Optional live narration layer for reviewer-ready packet language; offline truth remains deterministic.",
+    "openclaw": "Optional live runtime trace should preserve the same blocked-access contract.",
+    "tavily": "Optional live evidence notes with source URLs and freshness status; search results do not auto-approve access."
+  }
+}

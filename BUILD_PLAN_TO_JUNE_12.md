@@ -36,27 +36,29 @@ Current public surface:
 - Python agent package scaffold under `agent/`
 - deterministic packet builder in `agent/packet.py`
 - offline packet renderers in `agent/renderers.py`
+- AI judge manifest in `AI_JUDGE_MANIFEST.json`
+- safety contract in `docs/SAFETY_CONTRACT.md`
 - Nebius/Tavily/Composio/OpenClaw integration direction
 - explicit conservative safety stance: no autonomous approval, no production mutation, no real dispatch by default
 
 Current top risk after the offline demo landed:
 
-- add schema validation, tests, and CI so the no-key demo is continuously verified rather than only manually checked.
+- add live sponsor evidence/tool planning and a short demo video without weakening the no-key safety path.
 
 ## What We Are Building By June 12
 
 | Workstream | Outcome | Status |
 | --- | --- | --- |
 | Offline deterministic demo | `python3 -m agent.demo` generates a complete DecisionPacket with no API keys | Shipped |
-| DecisionPacket schema | JSON schema for required packet fields and safety sections | Planned |
+| DecisionPacket schema | JSON schema for required packet fields and safety sections | Shipped |
 | Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Shipped |
-| V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Planned |
-| Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Planned |
+| V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Shipped |
+| Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Planned |
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
-| CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Planned |
+| CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
 | Demo transcript | Checked-in transcript showing the expected judge experience | Planned |
 | Short video/GIF | 60-90 second walkthrough for human reviewers | Planned |
 
@@ -87,8 +89,8 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 4. `examples/generated/support_triage_agent.packet.json`
 5. `examples/generated/support_triage_agent.trace.md`
 6. `examples/sample_decision_packet.md`
-7. `docs/V1_CAPABILITY_PASSPORT.md` once added
-8. `docs/SAFETY_CONTRACT.md` once added
+7. `docs/V1_CAPABILITY_PASSPORT.md`
+8. `docs/SAFETY_CONTRACT.md`
 9. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.

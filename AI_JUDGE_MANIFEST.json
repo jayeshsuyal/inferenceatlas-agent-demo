@@ -12,7 +12,8 @@
     "json_packet": "examples/generated/support_triage_agent.packet.json",
     "markdown_trace": "examples/generated/support_triage_agent.trace.md",
     "json_trace": "examples/generated/support_triage_agent.trace.json",
-    "schema": "schemas/decision_packet.schema.json"
+    "schema": "schemas/decision_packet.schema.json",
+    "v1_capability_passport": "docs/V1_CAPABILITY_PASSPORT.md"
   },
   "verification": {
     "ci_workflow": ".github/workflows/smoke.yml",
@@ -46,6 +47,7 @@
     "AI_JUDGE_MANIFEST.json",
     "examples/generated/support_triage_agent.packet.md",
     "examples/generated/support_triage_agent.packet.json",
+    "docs/V1_CAPABILITY_PASSPORT.md",
     "docs/SAFETY_CONTRACT.md",
     "python3 -m agent.demo"
   ]

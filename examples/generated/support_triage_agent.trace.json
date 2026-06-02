@@ -1,0 +1,26 @@
+[
+  {
+    "result": "Agent request asks for GitHub, Slack, and Jira access.",
+    "step": "intake"
+  },
+  {
+    "result": "Read paths and write paths are separated before any approval posture is set.",
+    "step": "scope_split"
+  },
+  {
+    "result": "Customer incident context and support escalations are treated as sensitive until policy proof exists.",
+    "step": "data_scope"
+  },
+  {
+    "result": "Production access, compliance readiness, and write-action claims remain blocked.",
+    "step": "safety_gate"
+  },
+  {
+    "result": "Security/Legal, Engineering, Support Ops, and conditional Finance owners are named.",
+    "step": "reviewer_routing"
+  },
+  {
+    "result": "A scoped dry-run pilot review is the next step, not production access.",
+    "step": "next_validation"
+  }
+]

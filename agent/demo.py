@@ -1,45 +1,90 @@
-"""
-Quick demo script — shows the agent in action for the hackathon judges.
+"""Public demo entry point for the hackathon judge harness."""
 
-Run:
-    NEBIUS_API_KEY=... TAVILY_API_KEY=... COMPOSIO_API_KEY=... python agent/demo.py
-"""
-
+import json
 import os
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from agent import InferenceAtlasAgent
+from agent.packet import (
+    DEFAULT_AGENT_ACCESS_PROMPT,
+    build_support_triage_decision_packet,
+    build_support_triage_trace,
+    packet_to_pretty_json,
+)
+from agent.renderers import render_packet_markdown, render_trace_markdown
 
 
-DEMO_QUERIES = [
-    "Give me a quick summary of what InferenceAtlas tracks.",
-    "Search for the current pricing of Mistral Large and compare it against what's in the InferenceAtlas catalog.",
-    "I run 500M tokens/month on GPT-4o. What's the cheapest equivalent model I could switch to without sacrificing quality?",
-]
+ROOT_DIR = Path(__file__).resolve().parents[1]
+GENERATED_DIR = ROOT_DIR / "examples" / "generated"
 
 
-def main():
+def _env_enabled(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _write_offline_artifacts(packet: dict, trace: list[dict[str, str]]) -> list[Path]:
+    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
+
+    packet_md = GENERATED_DIR / "support_triage_agent.packet.md"
+    packet_json = GENERATED_DIR / "support_triage_agent.packet.json"
+    trace_json = GENERATED_DIR / "support_triage_agent.trace.json"
+    trace_md = GENERATED_DIR / "support_triage_agent.trace.md"
+
+    packet_md.write_text(render_packet_markdown(packet), encoding="utf-8")
+    packet_json.write_text(packet_to_pretty_json(packet) + "\n", encoding="utf-8")
+    trace_json.write_text(json.dumps(trace, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    trace_md.write_text(render_trace_markdown(trace), encoding="utf-8")
+
+    return [packet_md, packet_json, trace_json, trace_md]
+
+
+def _run_offline_demo() -> None:
+    packet = build_support_triage_decision_packet(DEFAULT_AGENT_ACCESS_PROMPT)
+    trace = build_support_triage_trace()
+    written = _write_offline_artifacts(packet, trace)
+
+    print("=" * 72)
+    print("InferenceAtlas Agent Demo - Offline DecisionPacket")
+    print("Mode: offline_deterministic | external writes: disabled | Composio: dry-run")
+    print("=" * 72)
+    print()
+    print(render_packet_markdown(packet))
+    print("Generated artifacts:")
+    for path in written:
+        print(f"- {path.relative_to(ROOT_DIR)}")
+
+
+def _run_live_demo() -> None:
     missing = [v for v in ("NEBIUS_API_KEY", "TAVILY_API_KEY", "COMPOSIO_API_KEY") if not os.environ.get(v)]
     if missing:
-        print(f"Missing env vars: {', '.join(missing)}")
-        print("Set them and re-run. Exiting.")
+        print(f"Missing env vars for live mode: {', '.join(missing)}")
+        print("Run without IA_LIVE_MODE for the deterministic no-key judge demo.")
         sys.exit(1)
+
+    from agent import InferenceAtlasAgent
 
     agent = InferenceAtlasAgent()
 
-    print("=" * 70)
-    print("  InferenceAtlas Intelligence Agent — Demo")
-    print("  Nebius · Tavily · Composio · OpenClaw")
-    print("=" * 70)
+    print("=" * 72)
+    print("InferenceAtlas Agent Demo - Live Sponsor Mode")
+    print("Nebius + Tavily + Composio + OpenClaw path")
+    print("Safety: review packet only; keep external writes dry-run by default")
+    print("=" * 72)
+    print()
+    print(f"User: {DEFAULT_AGENT_ACCESS_PROMPT}")
+    print("Agent: ", end="", flush=True)
+    for chunk in agent.stream_chat(DEFAULT_AGENT_ACCESS_PROMPT):
+        print(chunk, end="", flush=True)
+    print()
 
-    for i, query in enumerate(DEMO_QUERIES, 1):
-        print(f"\n[{i}/{len(DEMO_QUERIES)}] User: {query}")
-        print("Agent: ", end="", flush=True)
-        for chunk in agent.stream_chat(query):
-            print(chunk, end="", flush=True)
-        print("\n" + "-" * 70)
+
+def main():
+    if _env_enabled("IA_LIVE_MODE"):
+        _run_live_demo()
+        return
+    _run_offline_demo()
 
 
 if __name__ == "__main__":

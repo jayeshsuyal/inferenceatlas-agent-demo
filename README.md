@@ -4,6 +4,8 @@ Hack the High Seas public demo repo.
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json) and [Safety Contract](docs/SAFETY_CONTRACT.md).
+
 InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket showing:
@@ -87,7 +89,7 @@ examples/generated/support_triage_agent.trace.json
 
 ## Safety Contract
 
-This public demo is intentionally conservative:
+See the full [Safety Contract](docs/SAFETY_CONTRACT.md). This public demo is intentionally conservative:
 
 - no autonomous approval
 - no real dispatch by default

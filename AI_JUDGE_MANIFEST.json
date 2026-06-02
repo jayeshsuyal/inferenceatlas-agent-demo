@@ -1,0 +1,52 @@
+{
+  "project": "InferenceAtlas Agent Demo",
+  "repository_role": "Public redacted judge harness for the private InferenceAtlas v1 product",
+  "one_line": "Pre-permission DecisionPackets for AI agents",
+  "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a reviewable DecisionPacket showing what can move, what stays blocked, what proof is missing, who must review, and what validation comes next.",
+  "default_run_command": "python3 -m agent.demo",
+  "works_without_keys": true,
+  "live_mode_command": "IA_LIVE_MODE=1 python3 -m agent.demo",
+  "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
+  "primary_artifacts": {
+    "markdown_packet": "examples/generated/support_triage_agent.packet.md",
+    "json_packet": "examples/generated/support_triage_agent.packet.json",
+    "markdown_trace": "examples/generated/support_triage_agent.trace.md",
+    "json_trace": "examples/generated/support_triage_agent.trace.json",
+    "schema": "schemas/decision_packet.schema.json"
+  },
+  "verification": {
+    "ci_workflow": ".github/workflows/smoke.yml",
+    "local_tests": "python3 -m unittest discover -s tests",
+    "schema_parse": "python3 -m json.tool schemas/decision_packet.schema.json",
+    "artifact_parse": "python3 -m json.tool examples/generated/support_triage_agent.packet.json"
+  },
+  "safety": {
+    "approves_access": false,
+    "grants_permissions": false,
+    "external_writes_default": false,
+    "composio_dry_run_default": true,
+    "packet_state_mutation_default": false,
+    "requires_human_approval": true,
+    "default_public_demo_posture": "review_packet_only"
+  },
+  "sponsor_stack": {
+    "nebius": "Optional live inference layer for reviewer-ready packet narration",
+    "tavily": "Optional live evidence notes with source URLs and freshness status",
+    "composio": "Optional scoped tool-access planning for GitHub, Slack, and Jira; dry-run by default",
+    "openclaw": "Optional live-mode agent runtime harness"
+  },
+  "private_v1_boundary": {
+    "private_source_exposed": false,
+    "public_proof_surface": ["schemas", "examples", "tests", "CI", "redacted docs"],
+    "principle": "private engine, public proof"
+  },
+  "judge_review_path": [
+    "README.md",
+    "BUILD_PLAN_TO_JUNE_12.md",
+    "AI_JUDGE_MANIFEST.json",
+    "examples/generated/support_triage_agent.packet.md",
+    "examples/generated/support_triage_agent.packet.json",
+    "docs/SAFETY_CONTRACT.md",
+    "python3 -m agent.demo"
+  ]
+}

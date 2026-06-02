@@ -72,7 +72,9 @@ Public files to inspect:
 | Proof | Path |
 | --- | --- |
 | AI-readable manifest | `AI_JUDGE_MANIFEST.json` |
+| Judge review guide | `docs/JUDGE_REVIEW_GUIDE.md` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
+| Public conformance contract | `docs/CONTRACT.md` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
 | CTO handoff | `docs/CTO_HANDOFF.md` |
 | Architecture | `docs/ARCHITECTURE.md` |

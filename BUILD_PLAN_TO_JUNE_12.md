@@ -60,6 +60,8 @@ Current top risk after the offline demo landed:
 | Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Shipped |
 | V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Shipped |
 | Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Shipped |
+| Judge review guide | Five-minute public review path with commands, artifacts, and private boundary | Shipped |
+| Public conformance contract | Runnable public proof contract for packet and decision brief artifacts | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -96,16 +98,18 @@ By June 12, the repo is judge-ready when all of the following are true:
 If a judge or AI reviewer opens this repo early, this is the intended review order:
 
 1. `README.md`
-2. `BUILD_PLAN_TO_JUNE_12.md`
-3. `examples/generated/demo_transcript.md`
-4. `examples/generated/support_triage_agent.decision_brief.md`
-5. `examples/generated/support_triage_agent.packet.md`
-6. `examples/generated/support_triage_agent.packet.json`
-7. `examples/generated/support_triage_agent.trace.md`
-8. `examples/sample_decision_packet.md`
-9. `docs/V1_CAPABILITY_PASSPORT.md`
-10. `docs/SAFETY_CONTRACT.md`
-11. `python3 -m agent.demo`
+2. `docs/JUDGE_REVIEW_GUIDE.md`
+3. `BUILD_PLAN_TO_JUNE_12.md`
+4. `examples/generated/demo_transcript.md`
+5. `examples/generated/support_triage_agent.decision_brief.md`
+6. `examples/generated/support_triage_agent.packet.md`
+7. `examples/generated/support_triage_agent.packet.json`
+8. `examples/generated/support_triage_agent.trace.md`
+9. `examples/sample_decision_packet.md`
+10. `docs/CONTRACT.md`
+11. `docs/V1_CAPABILITY_PASSPORT.md`
+12. `docs/SAFETY_CONTRACT.md`
+13. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

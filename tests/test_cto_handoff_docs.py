@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -58,6 +59,30 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("Private engine, public proof.", contract)
         for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
             self.assertNotIn(forbidden, contract)
+
+    def test_readme_and_manifest_point_to_judge_fast_path(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
+
+        self.assertIn("Judge Fast Path", readme)
+        self.assertIn("docs/JUDGE_REVIEW_GUIDE.md", readme)
+        self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
+        self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
+
+    def test_judge_review_guide_preserves_private_boundary(self) -> None:
+        guide = (ROOT / "docs" / "JUDGE_REVIEW_GUIDE.md").read_text(encoding="utf-8")
+
+        for expected in [
+            "Five-Minute Path",
+            "python3 -m agent.demo",
+            "python3 -m agent.contract --all",
+            "What This Does Not Expose",
+            "Private engine, public proof.",
+        ]:
+            self.assertIn(expected, guide)
+
+        for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
+            self.assertNotIn(forbidden, guide)
 
 
 if __name__ == "__main__":

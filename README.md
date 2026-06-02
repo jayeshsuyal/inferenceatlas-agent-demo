@@ -2,15 +2,32 @@
 
 Hack the High Seas public demo repo.
 
-Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
-
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
-
-For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
-
-InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
+InferenceAtlas is a pre-permission proof-packet layer for AI agents and AI infrastructure decisions.
 
 Private engine, public proof.
+
+## Judge Fast Path
+
+If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), then run:
+
+```bash
+python3 -m agent.demo
+python3 -m agent.review --list
+python3 -m agent.contract --all
+python3 -m unittest discover -s tests
+```
+
+The fastest artifact to skim is the generated access brief:
+
+```text
+examples/generated/support_triage_agent.decision_brief.md
+```
+
+Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
+
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+
+For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
 Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket and an Agent Access Decision Brief showing:
 

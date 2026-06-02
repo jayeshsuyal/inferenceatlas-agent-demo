@@ -8,20 +8,22 @@ For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.js
 
 InferenceAtlas is a pre-commit proof-packet layer for AI agents and AI infrastructure decisions.
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket and an Agent Access Decision Brief showing:
 
 - source status
 - approval posture
+- access eligibility go/no-go
 - requested capability
 - tool access plan
 - tool and data scope
+- risk register
 - missing proof
 - blocked claims
 - reviewer owners
 - reviewer action items
 - next human validation
 
-IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet humans review.
+IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet and access brief humans review.
 
 ## Why This Matters
 
@@ -33,12 +35,13 @@ The demo asks a simple question:
 Should this agent get GitHub, Slack, and Jira access?
 ```
 
-Instead of granting access, IA builds a reviewable packet:
+Instead of granting access, IA builds a reviewable packet and a concise access brief:
 
 ```text
 what can move
 what stays blocked
 which tool actions are dry-run only
+whether the agent is eligible for this class of access
 what proof is missing
 who needs to review
 what the next validation should be
@@ -56,7 +59,7 @@ what the next validation should be
 ```text
 User asks whether an AI agent should receive tool access.
 -> IA gathers context and optional live evidence.
--> IA creates a DecisionPacket.
+-> IA creates a DecisionPacket and Agent Access Decision Brief.
 -> IA blocks unsupported approval/access claims.
 -> IA names reviewer owners and one next human validation.
 ```
@@ -88,6 +91,8 @@ See:
 examples/sample_decision_packet.md
 examples/generated/support_triage_agent.packet.md
 examples/generated/support_triage_agent.packet.json
+examples/generated/support_triage_agent.decision_brief.md
+examples/generated/support_triage_agent.decision_brief.json
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
 examples/generated/demo_transcript.md
@@ -102,15 +107,16 @@ See the full [Safety Contract](docs/SAFETY_CONTRACT.md). This public demo is int
 - no packet state mutation
 - no fake compliance/savings/readiness claims
 - Composio actions are dry-run unless explicitly changed
+- production access is blocked in both the packet and decision brief
 
 Humans approve decisions. IA prepares the proof.
 
 ## Roadmap Before June 12
 
-- add DecisionPacket schema validation
-- add CI smoke tests for the offline demo and safety defaults
+- add live evidence mode without weakening offline safety
+- add sponsor integration notes for CTO live setup
 - add optional live Tavily evidence notes
 - add a short demo video
-- add V1 capability passport and safety contract docs
+- add judge polish: screenshot/GIF, release tag, and final transcript pass
 
 This repo is a public hackathon wrapper. The private InferenceAtlas v1 product codebase is not exposed here.

@@ -22,7 +22,9 @@ jobs:
         run: python -m py_compile agent/*.py
 
       - name: Parse DecisionPacket schema
-        run: python -m json.tool schemas/decision_packet.schema.json >/tmp/decision_packet_schema.json
+        run: |
+          python -m json.tool schemas/decision_packet.schema.json >/tmp/decision_packet_schema.json
+          python -m json.tool schemas/agent_access_decision_brief.schema.json >/tmp/agent_access_decision_brief_schema.json
 
       - name: Run no-key offline demo
         env:
@@ -36,6 +38,7 @@ jobs:
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json
           python -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/support_triage_agent.trace.json
+          python -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/support_triage_agent.decision_brief.json
 
       - name: Run unit tests
         env:

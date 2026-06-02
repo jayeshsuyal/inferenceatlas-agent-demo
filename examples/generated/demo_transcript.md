@@ -38,91 +38,7 @@ Approve a scoped validation review before any production permission grant.
 - write access: blocked_until_rollback_and_off_switch_proof
 - compliance claims: blocked_until_named_reviewer_evidence
 
-## Source Status
-
-- user prompt: provided
-- live vendor evidence: not_fetched_in_offline_mode
-- workspace policy: missing
-- tool auth state: not_connected_in_offline_mode
-- reviewer confirmation: missing
-- deterministic packet: generated
-
-## Requested Capability
-
-- GitHub: read issues for bug reports and incident context (medium, dry_run_only)
-- Slack: summarize incident channels (high, dry_run_only)
-- Jira: create draft tickets (high, dry_run_only)
-
-## Tool Access Plan
-
-- github: dry-run read-scope plan only; blocks issue edits, repo configuration changes, and workflow dispatch
-- jira: draft ticket proposal only; blocks production ticket creation, status changes, and assignment changes
-- slack: dry-run named-channel summary plan only; blocks posting, DM access, and workspace-wide history
-
-## Tool Scope
-
-- github: read [issues, labels, linked incident references] | write [none] | blocked [issue mutation, repo configuration changes]
-- jira: read [named project metadata] | write [draft ticket proposal only] | blocked [ticket creation in production, status changes, assignment changes]
-- slack: read [named incident channels only] | write [none] | blocked [posting messages, DM access, workspace-wide history]
-
-## Data Scope
-
-May include:
-
-- customer incident context
-- engineering bug reports
-- support escalation notes
-- internal incident channel summaries
-
-Must define before access:
-
-- retention period
-- logging policy
-- allowed channel and repository list
-- customer data handling boundary
-- reviewer-owned deletion and rollback process
-
-## Blocked Claims
-
-- Production tool access is approved.
-- Customer-data handling is safe.
-- The agent may create or mutate Jira/GitHub/Slack state.
-- The workflow is compliance-ready.
-
-## Missing Proof
-
-- GitHub repository allowlist and permission level
-- Slack channel allowlist, retention policy, and customer-data boundary
-- Jira project scope, draft-only mode, and rollback/off-switch plan
-- Support escalation workflow and human handoff owner
-- Audit log shape for tool calls, evidence intake, and reviewer decisions
-
-## Reviewer Owners
-
-- Security/Legal
-- Engineering
-- Support Ops
-- Procurement/Finance
-
-## Reviewer Action Items
-
-- Security/Legal: confirm allowed data scope, retention, and logging terms
-- Engineering: provide allowlists, permission boundaries, audit logs, and off-switch proof
-- Support Ops: validate workflow fit, escalation rules, and human handoff owner
-- Procurement/Finance: review paid seats or vendor spend only if live integrations move beyond dry-run
-
-## Next Human Validation
-
-Action: Run a scoped dry-run pilot review with named repositories, channels, and Jira project.
-
-Owner: Security/Legal + Engineering
-
-Success criteria:
-
-- approved data and tool scope
-- audit log reviewed
-- write actions remain draft-only
-- rollback/off-switch owner named
+...
 
 ## Safety State
 
@@ -133,24 +49,33 @@ Success criteria:
 - Requires human approval: True
 - Public demo posture: review_packet_only
 
+Decision brief:
+- Do not grant production access.
+- Runtime boundary: Should this agent be eligible for this class of access at all, and what proof is required first?
+
 Generated artifacts:
 - examples/generated/support_triage_agent.packet.md
 - examples/generated/support_triage_agent.packet.json
 - examples/generated/support_triage_agent.trace.json
 - examples/generated/support_triage_agent.trace.md
+- examples/generated/support_triage_agent.decision_brief.md
+- examples/generated/support_triage_agent.decision_brief.json
 ```
+
+The full packet, trace, and decision brief are checked in as generated artifacts.
 
 ## What Judges Should Notice
 
 - The demo works without API keys.
-- The output is not a generic agent chat response; it is a structured DecisionPacket.
+- The output is not a generic agent chat response; it is a structured DecisionPacket plus a skim-ready Agent Access Decision Brief.
+- The Decision Brief explains the core distinction: runtime permission prompts answer whether a specific action can run now; InferenceAtlas answers whether the agent should be eligible for this class of access at all, and what proof is required first.
 - Approval posture is explicit: validation review can move, production access stays blocked.
 - The tool access plan separates dry-run allowances from blocked write actions.
 - Production access remains blocked.
 - Write actions remain disabled by default.
 - Composio is dry-run by default.
 - Missing proof is visible instead of hidden.
-- Reviewer owners are named before access is approved.
+- Reviewer gates are named before access is approved.
 - The next step is validation, not autonomous execution.
 
 ## Generated Artifacts
@@ -159,6 +84,8 @@ Generated artifacts:
 | --- | --- |
 | Markdown packet | `examples/generated/support_triage_agent.packet.md` |
 | JSON packet | `examples/generated/support_triage_agent.packet.json` |
+| Markdown decision brief | `examples/generated/support_triage_agent.decision_brief.md` |
+| JSON decision brief | `examples/generated/support_triage_agent.decision_brief.json` |
 | Markdown trace | `examples/generated/support_triage_agent.trace.md` |
 | JSON trace | `examples/generated/support_triage_agent.trace.json` |
 
@@ -170,4 +97,4 @@ Run:
 python3 -m unittest discover -s tests
 ```
 
-The tests verify the required packet shape, blocked claims, safety defaults, generated JSON artifact, and no-key demo command.
+The tests verify the required packet shape, decision brief shape, blocked claims, safety defaults, generated JSON artifacts, and no-key demo command.

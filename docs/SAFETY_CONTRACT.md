@@ -25,7 +25,7 @@ Default safety state:
 | Human approval required | `true` |
 | Public demo posture | `review_packet_only` |
 
-These defaults are represented in `examples/generated/support_triage_agent.packet.json` and tested in `tests/test_decision_packet.py`.
+These defaults are represented in `examples/generated/support_triage_agent.packet.json` and `examples/generated/support_triage_agent.decision_brief.json`, then tested in `tests/test_decision_packet.py` and `tests/test_decision_brief.py`.
 
 ## What IA Does
 
@@ -46,6 +46,18 @@ InferenceAtlas creates a DecisionPacket that shows:
 - safety state
 
 The packet is meant to make review work explicit before an agent receives access.
+
+InferenceAtlas also derives an Agent Access Decision Brief from the packet. The brief shows:
+
+- access eligibility go/no-go
+- runtime permission boundary
+- access envelope
+- risk register
+- reviewer gates
+- sponsor readiness
+- safety state
+
+The brief does not grant access. It is a skim-ready reviewer surface derived from the packet.
 
 ## What IA Does Not Do
 
@@ -103,6 +115,8 @@ python3 -m unittest discover -s tests
 ```
 
 The demo should generate the packet artifacts under `examples/generated/`, and tests should verify that approval and external writes are disabled by default.
+
+The demo should also generate the decision brief artifacts under `examples/generated/`, and tests should verify that production access remains blocked while scoped validation review can move forward.
 
 CI runs the same no-key safety path in `.github/workflows/smoke.yml`.
 

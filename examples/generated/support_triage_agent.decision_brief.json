@@ -1,0 +1,158 @@
+{
+  "access_eligibility": [
+    {
+      "eligibility": "candidate_for_scoped_validation_review",
+      "production_status": "blocked",
+      "requested_access": "read issues for bug reports and incident context",
+      "required_proof": [
+        "repository allowlist",
+        "permission level",
+        "audit log owner"
+      ],
+      "risk_level": "medium",
+      "system": "GitHub",
+      "validation_allowance": "dry-run read-scope plan only"
+    },
+    {
+      "eligibility": "candidate_for_scoped_validation_review",
+      "production_status": "blocked",
+      "requested_access": "summarize incident channels",
+      "required_proof": [
+        "channel allowlist",
+        "retention terms",
+        "customer-data boundary"
+      ],
+      "risk_level": "high",
+      "system": "Slack",
+      "validation_allowance": "dry-run named-channel summary plan only"
+    },
+    {
+      "eligibility": "candidate_for_scoped_validation_review",
+      "production_status": "blocked",
+      "requested_access": "create draft tickets",
+      "required_proof": [
+        "project scope",
+        "draft-only mode",
+        "rollback/off-switch plan"
+      ],
+      "risk_level": "high",
+      "system": "Jira",
+      "validation_allowance": "draft ticket proposal only; no production creation"
+    }
+  ],
+  "access_envelope": {
+    "allowed_for_validation": [
+      "GitHub read-scope review against an approved repository allowlist",
+      "Slack named-channel summarization review after retention and customer-data scope are approved",
+      "Jira draft ticket proposal review with no production ticket creation"
+    ],
+    "blocked_before_production": [
+      "production access grant",
+      "external write actions",
+      "workspace-wide Slack access",
+      "customer-data safety or compliance claims without named reviewer evidence",
+      "automated permission expansion without a new packet"
+    ],
+    "blocked_in_validation": [
+      "github: issue edits",
+      "github: repo configuration changes",
+      "github: workflow dispatch",
+      "jira: ticket creation",
+      "jira: status changes",
+      "jira: assignment changes",
+      "slack: posting messages",
+      "slack: DM access",
+      "slack: workspace-wide history"
+    ]
+  },
+  "brief_id": "ia-agent-access-brief-support-triage-v0",
+  "decision": {
+    "question": "Should the support triage agent get GitHub, Slack, and Jira access?",
+    "reason": "The request touches sensitive support, engineering, and incident systems without named reviewer proof.",
+    "recommended_next_step": "Approve a scoped validation review only.",
+    "verdict": "Do not grant production access."
+  },
+  "derived_from_packet_id": "ia-agent-access-support-triage-v0",
+  "generated_by": "inferenceatlas-agent-demo",
+  "go_no_go": {
+    "composio_dry_run": true,
+    "external_writes": false,
+    "next_validation": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "production_access": false,
+    "scoped_validation_review": true
+  },
+  "mode": "offline_deterministic",
+  "reviewer_gates": [
+    {
+      "blocks": "Slack channel summarization and customer incident context access",
+      "gate": "Confirm allowed data scope, retention, and logging terms",
+      "owner": "Security/Legal",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "gate": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "owner": "Engineering",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "support operations pilot",
+      "gate": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "owner": "Support Ops",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "paid production rollout",
+      "gate": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "owner": "Procurement/Finance",
+      "required_before": "paid_rollout"
+    }
+  ],
+  "risk_register": [
+    {
+      "mitigation": "Split read and write paths, keep validation scoped, and require a new packet before expansion.",
+      "risk": "excessive agency",
+      "why_it_matters": "The agent is asking for multiple operational systems at once."
+    },
+    {
+      "mitigation": "Require retention, logging, deletion, and channel/repository boundaries before access.",
+      "risk": "sensitive information exposure",
+      "why_it_matters": "Slack incidents, support escalations, and bug reports may contain customer context."
+    },
+    {
+      "mitigation": "Treat tool content as evidence, not authority; preserve source status and reviewer gates.",
+      "risk": "prompt injection via tool content",
+      "why_it_matters": "Issues, tickets, and incident messages can contain instructions that should not become policy."
+    },
+    {
+      "mitigation": "Keep Composio dry-run by default and block write actions until rollback and off-switch proof exists.",
+      "risk": "unauthorized write actions",
+      "why_it_matters": "Jira, GitHub, or Slack mutations can affect customers, incidents, and engineering operations."
+    },
+    {
+      "mitigation": "Require audit log shape for tool calls, evidence intake, reviewer decisions, and future packet updates.",
+      "risk": "missing audit trail",
+      "why_it_matters": "Reviewers need to know what evidence was used, what was blocked, and who approved scope changes."
+    }
+  ],
+  "runtime_permission_boundary": {
+    "inferenceatlas_decision_brief_answers": "Should this agent be eligible for this class of access at all, and what proof is required first?",
+    "runtime_permission_prompt_answers": "Can the agent perform this specific action now?",
+    "why_this_is_different": "Runtime prompts are last-mile execution checks. The Decision Brief is the pre-permission governance review that decides eligibility, missing proof, and reviewer gates before runtime tools are granted."
+  },
+  "safety_state": {
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "default_public_demo_posture": "review_packet_only",
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "agent_access_decision_brief.v0",
+  "sponsor_readiness": {
+    "composio": "Scoped GitHub/Slack/Jira tool planning remains dry-run by default.",
+    "nebius": "Optional live narration layer for reviewer-ready packet language; offline truth remains deterministic.",
+    "openclaw": "Optional live runtime trace should preserve the same blocked-access contract.",
+    "tavily": "Optional live evidence notes with source URLs and freshness status; search results do not auto-approve access."
+  }
+}

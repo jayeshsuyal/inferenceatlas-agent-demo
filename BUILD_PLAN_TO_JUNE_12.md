@@ -6,7 +6,7 @@ Target deadline: June 12, 2026, 23:59 PT
 
 ## One-Line Thesis
 
-InferenceAtlas is the pre-permission DecisionPacket layer for AI agents: before an agent gets tools, data, spend, or production access, IA shows what can move, what stays blocked, what proof is missing, who must review, and what validation comes next.
+InferenceAtlas is the pre-permission DecisionPacket layer for AI agents: before an agent gets tools, data, spend, or production access, IA shows what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, who must review, and what validation comes next.
 
 ## Why This Repo Exists
 
@@ -18,6 +18,7 @@ Judges should be able to verify:
 
 - the product thesis
 - the agent-access DecisionPacket contract
+- the Agent Access Decision Brief for fast go/no-go review
 - deterministic sample outputs
 - safety boundaries
 - sponsor integration shape
@@ -33,11 +34,13 @@ Current public surface:
 - README thesis for pre-commit proof packets
 - sample DecisionPacket in `examples/sample_decision_packet.md`
 - generated DecisionPacket artifacts under `examples/generated/`
+- generated Agent Access Decision Brief artifacts under `examples/generated/`
 - no-key demo transcript in `examples/generated/demo_transcript.md`
 - Python agent package scaffold under `agent/`
 - deterministic packet builder in `agent/packet.py`
 - offline packet renderers in `agent/renderers.py`
 - product-grade packet fields for source status, approval posture, tool access plan, and reviewer action items
+- reviewer-grade access brief with go/no-go, risk register, reviewer gates, and runtime permission boundary
 - AI judge manifest in `AI_JUDGE_MANIFEST.json`
 - safety contract in `docs/SAFETY_CONTRACT.md`
 - Nebius/Tavily/Composio/OpenClaw integration direction
@@ -57,7 +60,8 @@ Current top risk after the offline demo landed:
 | V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Shipped |
 | Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
-| Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Planned |
+| Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
+| Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
 | CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
@@ -72,9 +76,12 @@ By June 12, the repo is judge-ready when all of the following are true:
 - README behavior matches actual behavior.
 - A judge can understand the product in under five minutes.
 - The main demo produces a DecisionPacket for GitHub/Slack/Jira agent access.
+- The main demo produces an Agent Access Decision Brief that a judge can skim quickly.
 - Packet output includes requested capability, tool/data scope, missing proof, blocked claims, reviewer owners, next validation, and safety footer.
 - DecisionPacket examples exist in Markdown and JSON.
+- Decision Brief examples exist in Markdown and JSON and distinguish pre-permission review from runtime permission prompts.
 - Packet JSON validates against a checked-in schema.
+- Decision Brief JSON validates against a checked-in schema.
 - Composio is dry-run by default.
 - No external write, approval, dispatch, or mutation happens in the default path.
 - Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
@@ -88,13 +95,14 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 1. `README.md`
 2. `BUILD_PLAN_TO_JUNE_12.md`
 3. `examples/generated/demo_transcript.md`
-4. `examples/generated/support_triage_agent.packet.md`
-5. `examples/generated/support_triage_agent.packet.json`
-6. `examples/generated/support_triage_agent.trace.md`
-7. `examples/sample_decision_packet.md`
-8. `docs/V1_CAPABILITY_PASSPORT.md`
-9. `docs/SAFETY_CONTRACT.md`
-10. `python3 -m agent.demo`
+4. `examples/generated/support_triage_agent.decision_brief.md`
+5. `examples/generated/support_triage_agent.packet.md`
+6. `examples/generated/support_triage_agent.packet.json`
+7. `examples/generated/support_triage_agent.trace.md`
+8. `examples/sample_decision_packet.md`
+9. `docs/V1_CAPABILITY_PASSPORT.md`
+10. `docs/SAFETY_CONTRACT.md`
+11. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 
@@ -114,6 +122,7 @@ Expected packet behavior:
 - identify requested tools and data scope
 - separate read access from write access
 - block production access until reviewer ownership and proof exist
+- explain that runtime permission prompts answer specific action approval while IA answers access-class eligibility and proof requirements
 - require Security/Legal review for retention, logging, and customer data exposure
 - require Engineering review for permission boundaries, rollback, and audit logs
 - require Support Ops review for workflow fit and escalation ownership
@@ -130,6 +139,7 @@ The public harness should show the breadth of private v1 through redacted artifa
 | WorkloadProfile | Redacted sample JSON with source/provenance fields |
 | FactPack | Deterministic evidence sample with assumptions and missing values |
 | DecisionPacket | Markdown + JSON packet examples and schema |
+| Agent Access Decision Brief | Markdown + JSON go/no-go artifact and schema |
 | ArtifactProjection | Same packet projected into judge packet, memo, and review handoff |
 | Approval Watch / Evidence Watch | Evidence intake preview against an existing packet |
 | Governance | Reviewer-owner map and proof-debt checklist |
@@ -196,7 +206,7 @@ Default demo posture:
 Engineering priority order:
 
 1. Make the no-key offline demo true.
-2. Lock the DecisionPacket schema.
+2. Lock the DecisionPacket and Decision Brief schemas.
 3. Add Markdown and JSON examples.
 4. Add safety contract docs and tests.
 5. Add V1 capability passport artifacts.
@@ -220,6 +230,7 @@ messy agent-access request
 -> WorkloadProfile-style context
 -> FactPack-style evidence and missing proof
 -> DecisionPacket
+-> Agent Access Decision Brief
 -> blocked claims
 -> reviewer owners
 -> next human validation
@@ -238,6 +249,7 @@ messy agent-access request
 ### Phase 2: Public proof artifacts
 
 - add packet Markdown and JSON examples
+- add decision brief Markdown and JSON examples
 - add demo transcript
 - add V1 capability passport
 - add safety contract

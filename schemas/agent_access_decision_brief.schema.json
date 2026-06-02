@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jayeshsuyal/inferenceatlas-agent-demo/schemas/agent_access_decision_brief.schema.json",
+  "title": "InferenceAtlas Agent Access Decision Brief",
+  "description": "Public judge-harness schema for the concise reviewer-facing access decision derived from a DecisionPacket.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "brief_id",
+    "generated_by",
+    "mode",
+    "derived_from_packet_id",
+    "decision",
+    "go_no_go",
+    "access_eligibility",
+    "access_envelope",
+    "risk_register",
+    "reviewer_gates",
+    "runtime_permission_boundary",
+    "sponsor_readiness",
+    "safety_state"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "agent_access_decision_brief.v0"
+    },
+    "brief_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generated_by": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["offline_deterministic", "live_sponsor"]
+    },
+    "derived_from_packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "type": "object",
+      "required": ["question", "verdict", "recommended_next_step", "reason"],
+      "properties": {
+        "question": { "type": "string", "minLength": 1 },
+        "verdict": { "type": "string", "const": "Do not grant production access." },
+        "recommended_next_step": { "type": "string", "const": "Approve a scoped validation review only." },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "go_no_go": {
+      "type": "object",
+      "required": [
+        "production_access",
+        "scoped_validation_review",
+        "external_writes",
+        "composio_dry_run",
+        "next_validation"
+      ],
+      "properties": {
+        "production_access": { "type": "boolean", "const": false },
+        "scoped_validation_review": { "type": "boolean", "const": true },
+        "external_writes": { "type": "boolean", "const": false },
+        "composio_dry_run": { "type": "boolean", "const": true },
+        "next_validation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "access_eligibility": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "system",
+          "requested_access",
+          "risk_level",
+          "eligibility",
+          "validation_allowance",
+          "production_status",
+          "required_proof"
+        ],
+        "properties": {
+          "system": { "type": "string", "minLength": 1 },
+          "requested_access": { "type": "string", "minLength": 1 },
+          "risk_level": { "type": "string", "minLength": 1 },
+          "eligibility": { "type": "string", "const": "candidate_for_scoped_validation_review" },
+          "validation_allowance": { "type": "string", "minLength": 1 },
+          "production_status": { "type": "string", "const": "blocked" },
+          "required_proof": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+        }
+      }
+    },
+    "access_envelope": {
+      "type": "object",
+      "required": ["allowed_for_validation", "blocked_in_validation", "blocked_before_production"],
+      "properties": {
+        "allowed_for_validation": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "blocked_in_validation": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "blocked_before_production": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+      }
+    },
+    "risk_register": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["risk", "why_it_matters", "mitigation"],
+        "properties": {
+          "risk": { "type": "string", "minLength": 1 },
+          "why_it_matters": { "type": "string", "minLength": 1 },
+          "mitigation": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "reviewer_gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["owner", "gate", "blocks", "required_before"]
+      }
+    },
+    "runtime_permission_boundary": {
+      "type": "object",
+      "required": [
+        "runtime_permission_prompt_answers",
+        "inferenceatlas_decision_brief_answers",
+        "why_this_is_different"
+      ],
+      "properties": {
+        "runtime_permission_prompt_answers": {
+          "type": "string",
+          "const": "Can the agent perform this specific action now?"
+        },
+        "inferenceatlas_decision_brief_answers": {
+          "type": "string",
+          "const": "Should this agent be eligible for this class of access at all, and what proof is required first?"
+        },
+        "why_this_is_different": { "type": "string", "minLength": 1 }
+      }
+    },
+    "sponsor_readiness": {
+      "type": "object",
+      "required": ["nebius", "tavily", "composio", "openclaw"],
+      "properties": {
+        "nebius": { "type": "string", "minLength": 1 },
+        "tavily": { "type": "string", "minLength": 1 },
+        "composio": { "type": "string", "minLength": 1 },
+        "openclaw": { "type": "string", "minLength": 1 }
+      }
+    },
+    "safety_state": {
+      "type": "object",
+      "required": [
+        "approval_granted",
+        "external_writes_enabled",
+        "composio_dry_run",
+        "packet_state_mutation",
+        "requires_human_approval",
+        "default_public_demo_posture"
+      ],
+      "properties": {
+        "approval_granted": { "type": "boolean", "const": false },
+        "external_writes_enabled": { "type": "boolean", "const": false },
+        "composio_dry_run": { "type": "boolean", "const": true },
+        "packet_state_mutation": { "type": "boolean", "const": false },
+        "requires_human_approval": { "type": "boolean", "const": true },
+        "default_public_demo_posture": { "type": "string", "const": "review_packet_only" }
+      }
+    }
+  }
+}

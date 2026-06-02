@@ -79,6 +79,86 @@ def _dict_list_lines(items: list[dict[str, Any]], *, title_key: str, detail_keys
     return "\n".join(lines) if lines else "- None"
 
 
+def _brief_go_no_go_lines(go_no_go: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            f"- production access: {go_no_go['production_access']}",
+            f"- scoped validation review: {go_no_go['scoped_validation_review']}",
+            f"- external writes: {go_no_go['external_writes']}",
+            f"- Composio dry-run: {go_no_go['composio_dry_run']}",
+            f"- next validation: {go_no_go['next_validation']}",
+        ]
+    )
+
+
+def _brief_eligibility_lines(items: list[dict[str, Any]]) -> str:
+    lines = []
+    for item in items:
+        proof = ", ".join(item.get("required_proof", [])) or "none"
+        lines.extend(
+            [
+                f"- **{item.get('system', 'Unknown')}**",
+                f"  - requested: {item.get('requested_access', 'unspecified')}",
+                f"  - eligibility: {item.get('eligibility', 'unspecified')}",
+                f"  - validation allowance: {item.get('validation_allowance', 'unspecified')}",
+                f"  - production status: {item.get('production_status', 'unspecified')}",
+                f"  - required proof: {proof}",
+            ]
+        )
+    return "\n".join(lines) if lines else "- None"
+
+
+def _brief_access_envelope_lines(envelope: dict[str, list[str]]) -> str:
+    return "\n".join(
+        [
+            "Allowed for validation:",
+            "",
+            _bullet(envelope.get("allowed_for_validation", [])),
+            "",
+            "Blocked in validation:",
+            "",
+            _bullet(envelope.get("blocked_in_validation", [])),
+            "",
+            "Blocked before production:",
+            "",
+            _bullet(envelope.get("blocked_before_production", [])),
+        ]
+    )
+
+
+def _risk_register_lines(items: list[dict[str, str]]) -> str:
+    lines = []
+    for item in items:
+        lines.extend(
+            [
+                f"- **{item.get('risk', 'Unnamed risk')}**",
+                f"  - why it matters: {item.get('why_it_matters', 'unspecified')}",
+                f"  - mitigation: {item.get('mitigation', 'unspecified')}",
+            ]
+        )
+    return "\n".join(lines) if lines else "- None"
+
+
+def _reviewer_gate_lines(items: list[dict[str, str]]) -> str:
+    lines = []
+    for item in items:
+        lines.extend(
+            [
+                f"- **{item.get('owner', 'Unnamed owner')}**",
+                f"  - gate: {item.get('gate', 'unspecified')}",
+                f"  - blocks: {item.get('blocks', 'unspecified')}",
+                f"  - required before: {item.get('required_before', 'unspecified')}",
+            ]
+        )
+    return "\n".join(lines) if lines else "- None"
+
+
+def _sponsor_readiness_lines(items: dict[str, str]) -> str:
+    if not items:
+        return "- None"
+    return "\n".join(f"- {name}: {description}" for name, description in items.items())
+
+
 def render_packet_markdown(packet: dict[str, Any]) -> str:
     """Render the DecisionPacket as Markdown."""
     decision = packet["decision"]
@@ -178,4 +258,71 @@ def render_trace_markdown(trace: list[dict[str, str]]) -> str:
     for index, item in enumerate(trace, start=1):
         sections.append(f"{index}. {item['step']}: {item['result']}")
     sections.append("")
+    return "\n".join(sections)
+
+
+def render_decision_brief_markdown(brief: dict[str, Any]) -> str:
+    """Render the Agent Access Decision Brief as Markdown."""
+    decision = brief["decision"]
+    runtime_boundary = brief["runtime_permission_boundary"]
+    safety = brief["safety_state"]
+
+    sections = [
+        "# Agent Access Decision Brief: Support Triage Agent",
+        "",
+        "## Decision",
+        "",
+        f"Question: {decision['question']}",
+        "",
+        f"Verdict: {decision['verdict']}",
+        "",
+        f"Recommended next step: {decision['recommended_next_step']}",
+        "",
+        f"Reason: {decision['reason']}",
+        "",
+        "## Go / No-Go",
+        "",
+        _brief_go_no_go_lines(brief["go_no_go"]),
+        "",
+        "## Runtime Permission Boundary",
+        "",
+        f"- Runtime permission prompts answer: {runtime_boundary['runtime_permission_prompt_answers']}",
+        f"- InferenceAtlas answers: {runtime_boundary['inferenceatlas_decision_brief_answers']}",
+        f"- Why this is different: {runtime_boundary['why_this_is_different']}",
+        "",
+        "## Access Eligibility",
+        "",
+        _brief_eligibility_lines(brief["access_eligibility"]),
+        "",
+        "## Access Envelope",
+        "",
+        _brief_access_envelope_lines(brief["access_envelope"]),
+        "",
+        "## Risk Register",
+        "",
+        _risk_register_lines(brief["risk_register"]),
+        "",
+        "## Reviewer Gates",
+        "",
+        _reviewer_gate_lines(brief["reviewer_gates"]),
+        "",
+        "## Sponsor Readiness",
+        "",
+        _sponsor_readiness_lines(brief["sponsor_readiness"]),
+        "",
+        "## Safety State",
+        "",
+        f"- Approval granted: {safety['approval_granted']}",
+        f"- External writes enabled: {safety['external_writes_enabled']}",
+        f"- Composio dry-run: {safety['composio_dry_run']}",
+        f"- Packet state mutation: {safety['packet_state_mutation']}",
+        f"- Requires human approval: {safety['requires_human_approval']}",
+        f"- Public demo posture: {safety['default_public_demo_posture']}",
+        "",
+        "## Source Packet",
+        "",
+        f"- Derived from packet: {brief['derived_from_packet_id']}",
+        f"- Mode: {brief['mode']}",
+        "",
+    ]
     return "\n".join(sections)

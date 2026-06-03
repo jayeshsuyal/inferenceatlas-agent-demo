@@ -4,7 +4,7 @@ Pre-permission control plane for AI agent tool, data, spend, and production acce
 
 Receipt ID: `ia-agent-trust-receipt-public-v0`
 
-Receipt hash: `569026c1b19d1b7d`
+Receipt hash: `3d8c25106f197c70`
 
 Private engine, public proof.
 
@@ -105,6 +105,13 @@ Never allowed in the public demo:
 - **tavily**: evidence candidate source for current security, vendor, and policy context; default: evidence_notes_only; guardrail: must not turn search results into approval or production readiness
 - **nebius**: optional inference layer for reviewer-ready narration; default: deterministic_fallback_without_key; guardrail: must not own verdicts, blocked claims, or safety state
 - **openclaw**: optional runtime trace harness for agent steps; default: trace_only; guardrail: must not hide blocked attempts or bypass human approval
+
+## Sponsor Adapter Status
+
+- composio: statuses=dry_run_planned; would_execute=False; can_approve_access=False
+- tavily: statuses=evidence_candidates_planned; would_execute=False; can_approve_access=False
+- nebius: statuses=deterministic_narration_fallback; would_execute=False; can_approve_access=False
+- openclaw: statuses=trace_contract_planned; would_execute=False; can_approve_access=False
 
 ## Public Contract Status
 

@@ -15,6 +15,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
+python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -25,6 +26,7 @@ Expected result:
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - the public contract reports all scenarios as `OK`
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
+- sponsor adapters report dry-run contracts and `would_execute=False`
 - the Trust Receipt and Review Room artifacts are generated
 - tests pass
 
@@ -35,12 +37,13 @@ Expected result:
 3. `examples/generated/trust_receipt.md`
 4. `examples/generated/review_room.md`
 5. `policy/agent_access.yml`
-6. `examples/generated/support_triage_agent.decision_brief.md`
-7. `examples/generated/support_triage_agent.packet.md`
-8. `examples/generated/admin_code_fix_bot.packet.json`
-9. `docs/CONTRACT.md`
-10. `docs/SAFETY_CONTRACT.md`
-11. `docs/V1_CAPABILITY_PASSPORT.md`
+6. `agent/adapters/`
+7. `examples/generated/support_triage_agent.decision_brief.md`
+8. `examples/generated/support_triage_agent.packet.md`
+9. `examples/generated/admin_code_fix_bot.packet.json`
+10. `docs/CONTRACT.md`
+11. `docs/SAFETY_CONTRACT.md`
+12. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -50,6 +53,7 @@ Evaluate the public product contract:
 - Does the decision brief give a fast go/no-go surface?
 - Does the Trust Receipt summarize the permission envelope, proof debt, reviewer routing, and safety state?
 - Does the public policy gate block critical/admin/prod-write access?
+- Do sponsor adapters stay dry-run and blocked from approving access?
 - Do low, medium/high, and critical scenarios produce materially different review postures?
 - Does production access remain blocked?
 - Do external writes remain disabled?

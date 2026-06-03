@@ -17,6 +17,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
+python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -157,6 +158,13 @@ python3 -m agent.gate --scenario admin_code_fix_bot
 python3 -m agent.gate --scenario admin_code_fix_bot --json
 ```
 
+Render dry-run sponsor adapter contracts:
+
+```bash
+python3 -m agent.adapters --all
+python3 -m agent.adapters --provider composio --scenario admin_code_fix_bot --json
+```
+
 Generate the Agent Trust Receipt and Review Room:
 
 ```bash
@@ -183,6 +191,7 @@ docs/LIVE_INTEGRATION_CONTRACT.md
 agent/demo.py
 agent/packet.py
 agent/decision_brief.py
+agent/adapters/
 tests/
 ```
 

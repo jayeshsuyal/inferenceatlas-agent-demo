@@ -18,6 +18,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
+python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -34,6 +35,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
+| How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |
 | What should a reviewer skim first? | `examples/generated/support_triage_agent.decision_brief.md` |
 | What complete packet was produced? | `examples/generated/support_triage_agent.packet.md` |
 | Does the engine bend across risk levels? | `python3 -m agent.review --list` |
@@ -54,6 +56,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - reviewer owners and next validation steps are explicit
 - low-risk, medium-risk, and critical-risk scenarios produce materially different review postures
 - the public policy gate blocks critical/admin/prod-write access
+- sponsor integrations enter as dry-run contracts, not live writes or approvals
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
 
 ## What This Does Not Expose
@@ -82,6 +85,7 @@ README thesis
 -> Trust Receipt
 -> Review Room
 -> public policy gate
+-> dry-run sponsor adapter contracts
 -> generated decision brief
 -> generated packet
 -> scenario CLI

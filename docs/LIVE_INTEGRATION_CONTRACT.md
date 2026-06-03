@@ -43,6 +43,15 @@ Generated artifacts must still parse as JSON and pass tests after live fields ar
 
 ## Adapter Output Shape
 
+The public dry-run contracts live in `agent/adapters/` and can be inspected with:
+
+```bash
+python3 -m agent.adapters --all
+python3 -m agent.adapters --all --json
+```
+
+They must stay no-key, non-executing, and blocked from approving access.
+
 Use this shape for new integration outputs before merging them into the packet:
 
 ```json

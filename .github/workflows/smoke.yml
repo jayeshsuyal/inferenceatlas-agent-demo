@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Compile Python modules
-        run: python -m py_compile agent/*.py
+        run: python -m py_compile agent/*.py agent/adapters/*.py
 
       - name: Parse DecisionPacket schema
         run: |
@@ -54,6 +54,11 @@ jobs:
           python -m agent.gate --all --json >/tmp/policy_gate.all.json
           python -m agent.gate --scenario admin_code_fix_bot >/tmp/policy_gate.admin.md
 
+      - name: Render sponsor adapter contracts
+        run: |
+          python -m agent.adapters --all
+          python -m agent.adapters --all --json >/tmp/sponsor_adapters.all.json
+
       - name: Generate trust receipt
         run: |
           python -m agent.trust
@@ -72,6 +77,7 @@ jobs:
           python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
           python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
           python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json
+          python -m json.tool /tmp/sponsor_adapters.all.json >/tmp/sponsor_adapters.all.checked.json
           python -m json.tool policy/agent_access.yml >/tmp/policy_agent_access.json
 
       - name: Run unit tests

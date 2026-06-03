@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from .adapters import ADAPTER_NAMES, build_all_adapter_results
 from .contract import validate_all
 from .gate import evaluate_all as evaluate_policy_gates
 from .scenarios import (
@@ -193,6 +194,34 @@ def _build_sponsor_runtime_plan() -> dict[str, dict[str, Any]]:
     }
 
 
+def _sponsor_adapter_status() -> dict[str, Any]:
+    scenario_results = {
+        scenario_name: build_all_adapter_results(scenario_name)
+        for scenario_name in SCENARIOS
+    }
+    provider_summary: dict[str, dict[str, Any]] = {}
+    for provider in ADAPTER_NAMES:
+        provider_results = [scenario_results[scenario_name][provider] for scenario_name in SCENARIOS]
+        provider_summary[provider] = {
+            "contract_version": provider_results[0]["contract_version"],
+            "scenarios": list(SCENARIOS),
+            "statuses": sorted({result["status"] for result in provider_results}),
+            "requires_api_key": any(result["requires_api_key"] for result in provider_results),
+            "would_execute": any(result["would_execute"] for result in provider_results),
+            "can_approve_access": any(result["can_approve_access"] for result in provider_results),
+            "can_grant_permissions": any(result["can_grant_permissions"] for result in provider_results),
+            "can_mutate_external_state": any(result["can_mutate_external_state"] for result in provider_results),
+            "receipt_fields": sorted({result["receipt_field"] for result in provider_results}),
+        }
+    return {
+        "mode": "offline_dry_run_contract",
+        "providers": provider_summary,
+        "all_adapters_non_executing": all(not summary["would_execute"] for summary in provider_summary.values()),
+        "all_adapters_non_approving": all(not summary["can_approve_access"] for summary in provider_summary.values()),
+        "all_adapters_without_keys": all(not summary["requires_api_key"] for summary in provider_summary.values()),
+    }
+
+
 def _contract_status() -> dict[str, Any]:
     results = validate_all()
     return {
@@ -259,6 +288,7 @@ def build_trust_receipt() -> dict[str, Any]:
         "proof_debt_ledger": _build_proof_debt_ledger(packets),
         "reviewer_routing": _build_reviewer_routing(briefs),
         "sponsor_runtime_plan": _build_sponsor_runtime_plan(),
+        "sponsor_adapter_status": _sponsor_adapter_status(),
         "evidence_plan": {
             "default": "offline evidence notes only",
             "live_tavily_role": "source candidates and freshness signals",
@@ -338,6 +368,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "python3 -m agent.review --list",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
+            "python3 -m agent.adapters --all",
             "python3 -m agent.trust",
             "python3 -m unittest discover -s tests",
         ],
@@ -345,6 +376,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.md",
             "policy/agent_access.yml",
+            "agent/adapters/",
             "examples/generated/support_triage_agent.decision_brief.md",
             "examples/generated/admin_code_fix_bot.packet.json",
             "docs/CONTRACT.md",
@@ -357,6 +389,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "Agent Access Decision Brief",
             "Trust Receipt",
             "public policy gate",
+            "dry-run sponsor adapter contracts",
             "public contract validation",
             "optional sponsor/runtime/evidence enrichment",
         ],
@@ -375,6 +408,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             for item in receipt["reviewer_routing"]
         ],
         "sponsor_runtime_plan": receipt["sponsor_runtime_plan"],
+        "sponsor_adapter_status": receipt["sponsor_adapter_status"],
         "public_contract_status": receipt["public_contract_status"],
         "policy_gate_status": receipt["policy_gate_status"],
         "safety_state": receipt["safety_state"],
@@ -498,6 +532,19 @@ def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
         "",
         _sponsor_plan_lines(receipt["sponsor_runtime_plan"]),
         "",
+        "## Sponsor Adapter Status",
+        "",
+        _bullet(
+            [
+                (
+                    f"{provider}: statuses={', '.join(summary['statuses'])}; "
+                    f"would_execute={summary['would_execute']}; "
+                    f"can_approve_access={summary['can_approve_access']}"
+                )
+                for provider, summary in receipt["sponsor_adapter_status"]["providers"].items()
+            ]
+        ),
+        "",
         "## Public Contract Status",
         "",
         f"- contract: {receipt['public_contract_status']['contract']}",
@@ -595,6 +642,15 @@ def render_review_room_markdown(review_room: dict[str, Any]) -> str:
             [
                 f"{scenario}: {result['decision']}"
                 for scenario, result in review_room["policy_gate_status"]["results"].items()
+            ]
+        ),
+        "",
+        "## Sponsor Adapter Status",
+        "",
+        _bullet(
+            [
+                f"{provider}: {', '.join(summary['statuses'])}; would_execute={summary['would_execute']}"
+                for provider, summary in review_room["sponsor_adapter_status"]["providers"].items()
             ]
         ),
         "",

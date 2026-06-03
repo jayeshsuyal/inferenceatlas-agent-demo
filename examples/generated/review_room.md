@@ -2,7 +2,7 @@
 
 Before an AI agent gets access, issue the Trust Receipt.
 
-Trust Receipt hash: `569026c1b19d1b7d`
+Trust Receipt hash: `3d8c25106f197c70`
 
 ## Copy-Paste Review Commands
 
@@ -11,6 +11,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
+python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -24,6 +25,7 @@ python3 -m unittest discover -s tests
 - Agent Access Decision Brief
 - Trust Receipt
 - public policy gate
+- dry-run sponsor adapter contracts
 - public contract validation
 - optional sponsor/runtime/evidence enrichment
 
@@ -55,6 +57,7 @@ python3 -m unittest discover -s tests
 - examples/generated/trust_receipt.md
 - examples/generated/review_room.md
 - policy/agent_access.yml
+- agent/adapters/
 - examples/generated/support_triage_agent.decision_brief.md
 - examples/generated/admin_code_fix_bot.packet.json
 - docs/CONTRACT.md
@@ -64,6 +67,13 @@ python3 -m unittest discover -s tests
 - support_triage_agent: VALIDATION_ALLOWED_WITH_GATES
 - read_only_analytics_agent: VALIDATION_ALLOWED_WITH_GATES
 - admin_code_fix_bot: BLOCKED
+
+## Sponsor Adapter Status
+
+- composio: dry_run_planned; would_execute=False
+- tavily: evidence_candidates_planned; would_execute=False
+- nebius: deterministic_narration_fallback; would_execute=False
+- openclaw: trace_contract_planned; would_execute=False
 
 ## Safety State
 

@@ -444,6 +444,90 @@
     }
   ],
   "schema_version": "agent_trust_receipt.v0",
+  "sponsor_adapter_status": {
+    "all_adapters_non_approving": true,
+    "all_adapters_non_executing": true,
+    "all_adapters_without_keys": true,
+    "mode": "offline_dry_run_contract",
+    "providers": {
+      "composio": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "contract_version": "sponsor_adapter_contract.v0",
+        "receipt_fields": [
+          "permission_envelope.dry_run_only"
+        ],
+        "requires_api_key": false,
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "statuses": [
+          "dry_run_planned"
+        ],
+        "would_execute": false
+      },
+      "nebius": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "contract_version": "sponsor_adapter_contract.v0",
+        "receipt_fields": [
+          "inference_plan"
+        ],
+        "requires_api_key": false,
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "statuses": [
+          "deterministic_narration_fallback"
+        ],
+        "would_execute": false
+      },
+      "openclaw": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "contract_version": "sponsor_adapter_contract.v0",
+        "receipt_fields": [
+          "runtime_trace_plan"
+        ],
+        "requires_api_key": false,
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "statuses": [
+          "trace_contract_planned"
+        ],
+        "would_execute": false
+      },
+      "tavily": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "contract_version": "sponsor_adapter_contract.v0",
+        "receipt_fields": [
+          "evidence_plan"
+        ],
+        "requires_api_key": false,
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "statuses": [
+          "evidence_candidates_planned"
+        ],
+        "would_execute": false
+      }
+    }
+  },
   "sponsor_runtime_plan": {
     "composio": {
       "must_not_do": "execute writes or grant tool permissions by default",
@@ -470,6 +554,6 @@
       "role": "evidence candidate source for current security, vendor, and policy context"
     }
   },
-  "trust_receipt_hash": "569026c1b19d1b7d",
+  "trust_receipt_hash": "3d8c25106f197c70",
   "trust_receipt_id": "ia-agent-trust-receipt-public-v0"
 }

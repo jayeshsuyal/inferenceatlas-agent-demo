@@ -48,6 +48,7 @@ The public output is a DecisionPacket plus an Agent Access Decision Brief. The p
 | FactPack | `source_status`, `evidence_notes`, `missing_proof`, and `blocked_claims` in generated JSON | Evidence, assumptions, and missing truths stay separate from recommendation prose. | Full deterministic evidence engines, provider/catalog internals, and private fixtures. |
 | DecisionPacket | `schemas/decision_packet.schema.json` and generated packet JSON | The recommendation object has a stable shape that AI and human reviewers can inspect. | Full private packet builders, historical packet state, and production routing contracts. |
 | Agent Access Decision Brief | `schemas/agent_access_decision_brief.schema.json` and generated brief JSON/Markdown | A packet can become a skim-ready access eligibility decision without exposing private review logic. | Private review surfaces, account-specific approval maps, and production eligibility scoring. |
+| Agent Trust Gateway | `examples/generated/trust_receipt.md` and `examples/generated/review_room.md` | Scenario spread, permission envelope, proof debt, reviewer routing, sponsor runtime plan, safety state, and private boundary are joined into one public control-plane artifact. | Private control-plane implementation, production routing, customer-specific policy, and account state. |
 | Tool access planning | `tool_access_plan` in generated packet JSON and Markdown | Dry-run allowances are separated from blocked write actions for GitHub, Slack, and Jira. | Live Composio account state, private workspace configuration, and production tool grants. |
 | ArtifactProjection | Markdown, JSON, and trace artifacts under `examples/generated/` | The same packet can be projected into multiple review surfaces without changing the underlying safety state. | Private UI projections, Living Document renderer, and production surface handoff code. |
 | Approval Watch / Evidence Watch | `docs/SAFETY_CONTRACT.md` and packet safety fields | Evidence review is separated from approval; new evidence cannot silently grant access. | Private evidence intake UI, reviewer queue, audit trail, and production review state. |
@@ -75,6 +76,8 @@ Public files to inspect:
 | Judge review guide | `docs/JUDGE_REVIEW_GUIDE.md` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
 | Public conformance contract | `docs/CONTRACT.md` |
+| Trust Receipt | `examples/generated/trust_receipt.md` |
+| Review Room | `examples/generated/review_room.md` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
 | CTO handoff | `docs/CTO_HANDOFF.md` |
 | Architecture | `docs/ARCHITECTURE.md` |

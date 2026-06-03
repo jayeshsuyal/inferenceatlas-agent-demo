@@ -2,7 +2,7 @@
 
 Hack the High Seas public demo repo.
 
-InferenceAtlas is a pre-permission proof-packet layer for AI agents and AI infrastructure decisions.
+InferenceAtlas is a pre-permission control plane for AI agents and AI infrastructure decisions.
 
 Private engine, public proof.
 
@@ -16,10 +16,17 @@ Then run:
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
+python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
 
-The fastest artifact to skim is the generated access brief:
+The fastest artifact to skim is the generated Trust Receipt:
+
+```text
+examples/generated/trust_receipt.md
+```
+
+The fastest scenario-specific artifact is the generated access brief:
 
 ```text
 examples/generated/support_triage_agent.decision_brief.md
@@ -31,22 +38,26 @@ For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.js
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket and an Agent Access Decision Brief showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, and Trust Receipt showing:
 
 - source status
+- scenario blast-radius diff
 - approval posture
 - access eligibility go/no-go
+- permission envelope
 - requested capability
 - tool access plan
 - tool and data scope
 - risk register
+- proof debt ledger
 - missing proof
 - blocked claims
 - reviewer owners
 - reviewer action items
 - next human validation
+- safety state
 
-IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet and access brief humans review.
+IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, and Trust Receipt humans review.
 
 ## Why This Matters
 
@@ -137,6 +148,21 @@ python3 -m agent.contract --all
 python3 -m agent.contract --all --generated-dir examples/generated
 ```
 
+Generate the Agent Trust Receipt and Review Room:
+
+```bash
+python3 -m agent.trust
+```
+
+This writes:
+
+```text
+examples/generated/trust_receipt.md
+examples/generated/trust_receipt.json
+examples/generated/review_room.md
+examples/generated/review_room.json
+```
+
 ## Builder / CTO Path
 
 If you are extending the live sponsor path, use this order:
@@ -171,6 +197,10 @@ examples/generated/admin_code_fix_bot.packet.md
 examples/generated/admin_code_fix_bot.packet.json
 examples/generated/admin_code_fix_bot.decision_brief.md
 examples/generated/admin_code_fix_bot.decision_brief.json
+examples/generated/trust_receipt.md
+examples/generated/trust_receipt.json
+examples/generated/review_room.md
+examples/generated/review_room.json
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
 examples/generated/demo_transcript.md

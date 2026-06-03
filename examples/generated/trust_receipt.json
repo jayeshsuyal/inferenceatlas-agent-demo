@@ -1,0 +1,445 @@
+{
+  "agent_identity": {
+    "environment": "prod",
+    "human_sponsor": "design_partner_named_owner_required",
+    "identity_status": "not_connected_in_public_demo",
+    "subject": "public scenario set"
+  },
+  "blast_radius_diff": [
+    {
+      "highest_risk": "high",
+      "posture": "Approve a scoped validation review before any production permission grant.",
+      "production_access": false,
+      "scenario": "support_triage_agent",
+      "scoped_validation_review": true,
+      "tier": "medium_high_cross_system_workflow"
+    },
+    {
+      "highest_risk": "low",
+      "posture": "Approve a scoped read-only validation review after data owner scope confirmation.",
+      "production_access": false,
+      "scenario": "read_only_analytics_agent",
+      "scoped_validation_review": true,
+      "tier": "low_read_only_or_bounded_scope"
+    },
+    {
+      "highest_risk": "critical",
+      "posture": "Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved.",
+      "production_access": false,
+      "scenario": "admin_code_fix_bot",
+      "scoped_validation_review": false,
+      "tier": "critical_admin_or_production_write"
+    }
+  ],
+  "derived_artifacts": {
+    "review_room_json": "examples/generated/review_room.json",
+    "review_room_markdown": "examples/generated/review_room.md",
+    "trust_receipt_json": "examples/generated/trust_receipt.json",
+    "trust_receipt_markdown": "examples/generated/trust_receipt.md"
+  },
+  "design_partner_signal": {
+    "pilot_shape": "one workflow, three representative agents, dry-run review, no production writes",
+    "what_partner_validates": [
+      "whether access requests become reviewable faster",
+      "whether proof debt is routed to the right owners",
+      "whether dry-run envelopes match security expectations",
+      "whether sponsor/runtime/evidence traces help reviewers without approving access"
+    ]
+  },
+  "evidence_plan": {
+    "default": "offline evidence notes only",
+    "guardrail": "evidence can reduce proof debt only after reviewer inspection",
+    "live_tavily_role": "source candidates and freshness signals"
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "inference_plan": {
+    "default": "deterministic packet and brief builders own truth",
+    "guardrail": "LLM output must not own verdicts, blocked claims, or safety state",
+    "live_nebius_role": "reviewer-ready narration and summary projection"
+  },
+  "mode": "offline_deterministic",
+  "permission_envelope": {
+    "allowed_for_validation": [
+      "support_triage_agent: GitHub read-scope review against an approved repository allowlist",
+      "support_triage_agent: Slack named-channel summarization review after retention and customer-data scope are approved",
+      "support_triage_agent: Jira draft ticket proposal review with no production ticket creation",
+      "read_only_analytics_agent: bigquery: read-only validation plan only",
+      "read_only_analytics_agent: looker: read-only validation plan only",
+      "admin_code_fix_bot: No validation run until critical reviewer gates are satisfied."
+    ],
+    "blocked_before_production": [
+      "production access grant",
+      "external write actions",
+      "workspace-wide Slack access",
+      "customer-data safety or compliance claims without named reviewer evidence",
+      "automated permission expansion without a new packet",
+      "scope expansion without a new packet",
+      "compliance or safety claims without named reviewer evidence"
+    ],
+    "blocked_in_validation": [
+      "support_triage_agent: github: issue edits",
+      "support_triage_agent: github: repo configuration changes",
+      "support_triage_agent: github: workflow dispatch",
+      "support_triage_agent: jira: ticket creation",
+      "support_triage_agent: jira: status changes",
+      "support_triage_agent: jira: assignment changes",
+      "support_triage_agent: slack: posting messages",
+      "support_triage_agent: slack: DM access",
+      "support_triage_agent: slack: workspace-wide history",
+      "read_only_analytics_agent: bigquery: writes",
+      "read_only_analytics_agent: bigquery: exports",
+      "read_only_analytics_agent: bigquery: permission changes",
+      "read_only_analytics_agent: looker: writes",
+      "read_only_analytics_agent: looker: exports",
+      "read_only_analytics_agent: looker: permission changes",
+      "admin_code_fix_bot: github: admin scope",
+      "admin_code_fix_bot: github: production repository mutation",
+      "admin_code_fix_bot: github: workflow dispatch",
+      "admin_code_fix_bot: github: permission changes"
+    ],
+    "dry_run_only": [
+      "support_triage_agent: github -> dry-run read-scope plan only",
+      "support_triage_agent: slack -> dry-run named-channel summary plan only",
+      "support_triage_agent: jira -> draft ticket proposal only; no production creation",
+      "read_only_analytics_agent: bigquery -> read-only validation plan only",
+      "read_only_analytics_agent: looker -> read-only validation plan only",
+      "admin_code_fix_bot: github -> blocked; admin/write actions require Security and Engineering approval"
+    ],
+    "never_allowed_in_public_demo": [
+      "production access grant",
+      "external writes",
+      "tool permission expansion without a new packet",
+      "compliance, safety, readiness, or savings claims without named proof",
+      "live sponsor action without explicit non-default enablement"
+    ]
+  },
+  "private_boundary": {
+    "not_exposed": [
+      "private v1 source code",
+      "private prompts",
+      "production routing logic",
+      "private reviewer queues",
+      "customer or workspace context",
+      "live sponsor tokens",
+      "account-specific tool grants"
+    ],
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false,
+    "public_repo_role": "redacted judge harness and public proof surface"
+  },
+  "product_frame": {
+    "name": "InferenceAtlas Agent Trust Gateway",
+    "one_line": "Pre-permission control plane for AI agent tool, data, spend, and production access.",
+    "public_surface": "Agent Access Review Room",
+    "receipt_name": "Trust Receipt"
+  },
+  "proof_debt_ledger": [
+    {
+      "item": "GitHub repository allowlist and permission level",
+      "owner": "Engineering",
+      "scenario": "support_triage_agent",
+      "status": "missing",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "item": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "owner": "Security/Legal",
+      "scenario": "support_triage_agent",
+      "status": "missing",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "item": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "owner": "Engineering",
+      "scenario": "support_triage_agent",
+      "status": "missing",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "item": "Support escalation workflow and human handoff owner",
+      "owner": "Support Ops",
+      "scenario": "support_triage_agent",
+      "status": "missing",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "scenario": "support_triage_agent",
+      "status": "missing",
+      "unblocks": "reviewable pilot packet"
+    },
+    {
+      "item": "BigQuery read-only allowlist and credential proof",
+      "owner": "Data/Engineering",
+      "scenario": "read_only_analytics_agent",
+      "status": "missing",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "item": "Looker read-only allowlist and credential proof",
+      "owner": "Data/Engineering",
+      "scenario": "read_only_analytics_agent",
+      "status": "missing",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "item": "Data owner confirmation that requested metrics are aggregate and non-customer-specific",
+      "owner": "Data/Analytics",
+      "scenario": "read_only_analytics_agent",
+      "status": "missing",
+      "unblocks": "read-only analytics validation"
+    },
+    {
+      "item": "GitHub admin scope removal or explicit break-glass approval",
+      "owner": "Security/Engineering",
+      "scenario": "admin_code_fix_bot",
+      "status": "missing",
+      "unblocks": "admin access rejection review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "scenario": "admin_code_fix_bot",
+      "status": "missing",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "public_contract_status": {
+    "contract": "agent_access_public.v0",
+    "results": {
+      "admin_code_fix_bot": [],
+      "read_only_analytics_agent": [],
+      "support_triage_agent": []
+    },
+    "status": "ok"
+  },
+  "reviewer_routing": [
+    {
+      "gates": [
+        {
+          "blocks": "Slack channel summarization and customer incident context access",
+          "gate": "Confirm allowed data scope, retention, and logging terms",
+          "required_before": "production_access",
+          "scenario": "support_triage_agent"
+        },
+        {
+          "blocks": "source-code and production context access",
+          "gate": "Review production infrastructure and source-code exposure boundaries",
+          "required_before": "production_access",
+          "scenario": "admin_code_fix_bot"
+        }
+      ],
+      "owner": "Security/Legal",
+      "scenarios": [
+        "support_triage_agent",
+        "admin_code_fix_bot"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "GitHub/Jira tool connection and any write-action pilot",
+          "gate": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+          "required_before": "production_access",
+          "scenario": "support_triage_agent"
+        },
+        {
+          "blocks": "warehouse/dashboard connection",
+          "gate": "Provide read-only credential proof and audit log owner",
+          "required_before": "production_access",
+          "scenario": "read_only_analytics_agent"
+        }
+      ],
+      "owner": "Engineering",
+      "scenarios": [
+        "support_triage_agent",
+        "read_only_analytics_agent"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "support operations pilot",
+          "gate": "Validate triage workflow fit, escalation rules, and human handoff owner",
+          "required_before": "production_access",
+          "scenario": "support_triage_agent"
+        }
+      ],
+      "owner": "Support Ops",
+      "scenarios": [
+        "support_triage_agent"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "paid production rollout",
+          "gate": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+          "required_before": "paid_rollout",
+          "scenario": "support_triage_agent"
+        }
+      ],
+      "owner": "Procurement/Finance",
+      "scenarios": [
+        "support_triage_agent"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "read-only analytics validation",
+          "gate": "Confirm metrics are aggregate, allowlisted, and non-customer-specific",
+          "required_before": "production_access",
+          "scenario": "read_only_analytics_agent"
+        }
+      ],
+      "owner": "Data/Analytics",
+      "scenarios": [
+        "read_only_analytics_agent"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "admin validation and all production write actions",
+          "gate": "Reject or remove admin scopes, define repository allowlist, and require rollback/off-switch proof",
+          "required_before": "production_access",
+          "scenario": "admin_code_fix_bot"
+        }
+      ],
+      "owner": "Security/Engineering",
+      "scenarios": [
+        "admin_code_fix_bot"
+      ]
+    },
+    {
+      "gates": [
+        {
+          "blocks": "production workflow dispatch or repository mutation",
+          "gate": "Confirm production change authority and named incident rollback owner",
+          "required_before": "production_access",
+          "scenario": "admin_code_fix_bot"
+        }
+      ],
+      "owner": "Engineering Leadership",
+      "scenarios": [
+        "admin_code_fix_bot"
+      ]
+    }
+  ],
+  "runtime_trace_plan": {
+    "default": "offline generated trace only",
+    "guardrail": "runtime trace must preserve blocked access and human approval boundary",
+    "live_openclaw_role": "record runtime steps and blocked/allowed outcomes"
+  },
+  "safety_state": {
+    "all_scenarios_production_blocked": true,
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "production_access_granted": false,
+    "requires_human_approval": true
+  },
+  "scenario_matrix": [
+    {
+      "agent_name": "support triage agent",
+      "blast_radius_tier": "medium_high_cross_system_workflow",
+      "brief_id": "ia-agent-access-brief-support-triage-v0",
+      "composio_dry_run": true,
+      "environment": "prod",
+      "external_writes": false,
+      "highest_risk": "high",
+      "missing_proof_count": 5,
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "production_access": false,
+      "purpose": "Read GitHub issues, summarize Slack incident channels, and create Jira draft tickets.",
+      "requested_systems": [
+        "GitHub",
+        "Slack",
+        "Jira"
+      ],
+      "review_posture": "Approve a scoped validation review before any production permission grant.",
+      "reviewer_gate_count": 4,
+      "scenario": "support_triage_agent",
+      "scoped_validation_review": true,
+      "verdict": "Do not approve production tool access yet.",
+      "write_access": "blocked_until_rollback_and_off_switch_proof"
+    },
+    {
+      "agent_name": "read-only analytics agent",
+      "blast_radius_tier": "low_read_only_or_bounded_scope",
+      "brief_id": "ia-agent-access-brief-read-only-analytics-v0",
+      "composio_dry_run": true,
+      "environment": "prod",
+      "external_writes": false,
+      "highest_risk": "low",
+      "missing_proof_count": 3,
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "production_access": false,
+      "purpose": "Read aggregate product usage tables, inspect saved dashboards, and summarize internal business metrics.",
+      "requested_systems": [
+        "BigQuery",
+        "Looker"
+      ],
+      "review_posture": "Approve a scoped read-only validation review after data owner scope confirmation.",
+      "reviewer_gate_count": 2,
+      "scenario": "read_only_analytics_agent",
+      "scoped_validation_review": true,
+      "verdict": "Do not approve production access yet; allow read-only validation review.",
+      "write_access": "not_requested"
+    },
+    {
+      "agent_name": "admin code fix bot",
+      "blast_radius_tier": "critical_admin_or_production_write",
+      "brief_id": "ia-agent-access-brief-admin-code-fix-bot-v0",
+      "composio_dry_run": true,
+      "environment": "prod",
+      "external_writes": false,
+      "highest_risk": "critical",
+      "missing_proof_count": 2,
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "production_access": false,
+      "purpose": "Push code fixes to production repositories, change organization security settings, and trigger workflows.",
+      "requested_systems": [
+        "GitHub"
+      ],
+      "review_posture": "Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved.",
+      "reviewer_gate_count": 3,
+      "scenario": "admin_code_fix_bot",
+      "scoped_validation_review": false,
+      "verdict": "Do not approve this access request.",
+      "write_access": "blocked_due_to_admin_and_production_mutation"
+    }
+  ],
+  "schema_version": "agent_trust_receipt.v0",
+  "sponsor_runtime_plan": {
+    "composio": {
+      "must_not_do": "execute writes or grant tool permissions by default",
+      "public_default": "dry_run_only",
+      "receipt_field": "permission_envelope.dry_run_only",
+      "role": "tool access planner and dry-run action surface"
+    },
+    "nebius": {
+      "must_not_do": "own verdicts, blocked claims, or safety state",
+      "public_default": "deterministic_fallback_without_key",
+      "receipt_field": "inference_plan",
+      "role": "optional inference layer for reviewer-ready narration"
+    },
+    "openclaw": {
+      "must_not_do": "hide blocked attempts or bypass human approval",
+      "public_default": "trace_only",
+      "receipt_field": "runtime_trace_plan",
+      "role": "optional runtime trace harness for agent steps"
+    },
+    "tavily": {
+      "must_not_do": "turn search results into approval or production readiness",
+      "public_default": "evidence_notes_only",
+      "receipt_field": "evidence_plan",
+      "role": "evidence candidate source for current security, vendor, and policy context"
+    }
+  },
+  "trust_receipt_hash": "ed67331633c85a94",
+  "trust_receipt_id": "ia-agent-trust-receipt-public-v0"
+}

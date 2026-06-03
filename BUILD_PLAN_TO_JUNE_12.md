@@ -62,6 +62,7 @@ Current top risk after the offline demo landed:
 | Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Shipped |
 | Judge review guide | Five-minute public review path with commands, artifacts, and private boundary | Shipped |
 | Public conformance contract | Runnable public proof contract for packet and decision brief artifacts | Shipped |
+| Agent Trust Receipt | One public control-plane artifact joining scenarios, proof debt, permission envelope, reviewer routing, sponsor runtime plan, and safety state | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -86,6 +87,8 @@ By June 12, the repo is judge-ready when all of the following are true:
 - Decision Brief examples exist in Markdown and JSON and distinguish pre-permission review from runtime permission prompts.
 - Packet JSON validates against a checked-in schema.
 - Decision Brief JSON validates against a checked-in schema.
+- Trust Receipt and Review Room artifacts exist in Markdown and JSON.
+- Trust Receipt covers blast-radius diff, permission envelope, proof debt ledger, reviewer routing, sponsor runtime plan, safety state, and private boundary.
 - Composio is dry-run by default.
 - No external write, approval, dispatch, or mutation happens in the default path.
 - Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
@@ -99,17 +102,19 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 
 1. `README.md`
 2. `docs/JUDGE_REVIEW_GUIDE.md`
-3. `BUILD_PLAN_TO_JUNE_12.md`
-4. `examples/generated/demo_transcript.md`
-5. `examples/generated/support_triage_agent.decision_brief.md`
-6. `examples/generated/support_triage_agent.packet.md`
-7. `examples/generated/support_triage_agent.packet.json`
-8. `examples/generated/support_triage_agent.trace.md`
-9. `examples/sample_decision_packet.md`
-10. `docs/CONTRACT.md`
-11. `docs/V1_CAPABILITY_PASSPORT.md`
-12. `docs/SAFETY_CONTRACT.md`
-13. `python3 -m agent.demo`
+3. `examples/generated/trust_receipt.md`
+4. `examples/generated/review_room.md`
+5. `BUILD_PLAN_TO_JUNE_12.md`
+6. `examples/generated/demo_transcript.md`
+7. `examples/generated/support_triage_agent.decision_brief.md`
+8. `examples/generated/support_triage_agent.packet.md`
+9. `examples/generated/support_triage_agent.packet.json`
+10. `examples/generated/support_triage_agent.trace.md`
+11. `examples/sample_decision_packet.md`
+12. `docs/CONTRACT.md`
+13. `docs/V1_CAPABILITY_PASSPORT.md`
+14. `docs/SAFETY_CONTRACT.md`
+15. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

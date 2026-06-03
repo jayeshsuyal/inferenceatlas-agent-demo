@@ -270,6 +270,6 @@ Humans approve decisions. IA prepares the proof.
 - add sponsor integration notes for CTO live setup
 - add optional live Tavily evidence notes
 - add a short demo video
-- add judge polish: release tag, demo recording, and final transcript pass
+- add judge polish: release tag and demo recording
 
 This repo is a public hackathon wrapper. The private InferenceAtlas v1 product codebase is not exposed here.

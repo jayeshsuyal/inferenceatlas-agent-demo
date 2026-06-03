@@ -74,7 +74,7 @@ Current top risk after the offline demo landed:
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
 | CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
-| Demo transcript | Checked-in transcript showing the expected judge experience | Shipped |
+| Demo transcript | Checked-in full judge path covering demo, scenarios, contract, gate, adapters, Trust Receipt, Review Room, walkthrough, and tests | Shipped |
 | Short video/GIF | 60-90 second walkthrough for human reviewers | Planned |
 
 ## Definition Of Done

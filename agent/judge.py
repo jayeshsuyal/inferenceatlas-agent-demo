@@ -16,6 +16,7 @@ from .proof_health import build_proof_health_report, write_proof_health_artifact
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifacts
+from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
 from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
 
@@ -29,6 +30,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.contract --all",
     "python3 -m agent.gate --all",
     "python3 -m agent.adapters --all",
+    "python3 -m agent.sponsor_readiness",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
     "python3 -m agent.proof_health",
@@ -41,6 +43,8 @@ PRIMARY_ARTIFACTS = [
     "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "examples/generated/demo_transcript.md",
     "examples/generated/trust_receipt.md",
+    "examples/generated/sponsor_live_readiness.md",
+    "examples/generated/sponsor_live_readiness.json",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",
     "examples/generated/support_triage_agent.proof_health.md",
@@ -85,6 +89,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written = []
     written.extend(write_scenario_artifacts(output_dir))
     written.extend(_write_support_trace(output_dir))
+    written.extend(write_sponsor_live_readiness_artifacts(output_dir=output_dir))
     written.extend(write_trust_artifacts(output_dir))
     written.append(write_review_room_html(output_dir))
     written.extend(write_proof_health_artifacts(output_dir=output_dir))
@@ -133,6 +138,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     contract_results = validate_all(generated_dir=GENERATED_DIR)
     gate_results = evaluate_all()
     adapter_summary = _adapter_summary()
+    sponsor_readiness = build_sponsor_live_readiness()
     trust_receipt = build_trust_receipt()
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
@@ -193,6 +199,23 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             for scenario_name, result in gate_results.items()
         },
         "sponsor_adapters": adapter_summary,
+        "sponsor_live_readiness": {
+            "all_contracts_ready": sponsor_readiness["summary"]["all_contracts_ready"],
+            "default_path_requires_keys": sponsor_readiness["summary"]["default_path_requires_keys"],
+            "all_non_executing": sponsor_readiness["summary"]["all_non_executing"],
+            "all_non_approving": sponsor_readiness["summary"]["all_non_approving"],
+            "all_non_granting": sponsor_readiness["summary"]["all_non_granting"],
+            "all_non_mutating": sponsor_readiness["summary"]["all_non_mutating"],
+            "human_review_required": sponsor_readiness["summary"]["human_review_required"],
+            "providers": [
+                {
+                    "provider": provider["provider"],
+                    "proof_pack_type": provider["proof_pack_type"],
+                    "live_value": provider["live_value"],
+                }
+                for provider in sponsor_readiness["providers"]
+            ],
+        },
         "safety": {
             "approves_access": False,
             "grants_permissions": False,
@@ -218,6 +241,13 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or not all(item["exists"] for item in report["artifact_checklist"])
         or not report["safety"]["all_adapters_non_executing"]
         or not report["safety"]["all_adapters_non_approving"]
+        or not report["sponsor_live_readiness"]["all_contracts_ready"]
+        or report["sponsor_live_readiness"]["default_path_requires_keys"]
+        or not report["sponsor_live_readiness"]["all_non_executing"]
+        or not report["sponsor_live_readiness"]["all_non_approving"]
+        or not report["sponsor_live_readiness"]["all_non_granting"]
+        or not report["sponsor_live_readiness"]["all_non_mutating"]
+        or not report["sponsor_live_readiness"]["human_review_required"]
         or any(item["production_access"] for item in report["scenario_matrix"])
         or any(item["approval_granted"] for item in report["scenario_matrix"])
         or not report["access_speed_layer"]["all_routes_immediate"]
@@ -354,6 +384,32 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             )
         )
 
+    readiness = report["sponsor_live_readiness"]
+    lines.extend(
+        [
+            "",
+            "## Sponsor Live Readiness",
+            "",
+            "- all contracts ready: {ready}".format(ready=readiness["all_contracts_ready"]),
+            "- default path requires keys: {requires_keys}".format(
+                requires_keys=readiness["default_path_requires_keys"]
+            ),
+            "- all non-executing: {non_executing}".format(non_executing=readiness["all_non_executing"]),
+            "- all non-approving: {non_approving}".format(non_approving=readiness["all_non_approving"]),
+            "- all non-granting: {non_granting}".format(non_granting=readiness["all_non_granting"]),
+            "- all non-mutating: {non_mutating}".format(non_mutating=readiness["all_non_mutating"]),
+            "",
+        ]
+    )
+    for provider in readiness["providers"]:
+        lines.append(
+            "- {provider}: proof={proof}; live_value={live_value}".format(
+                provider=provider["provider"],
+                proof=provider["proof_pack_type"],
+                live_value=provider["live_value"],
+            )
+        )
+
     lines.extend(["", "## Artifact Checklist", ""])
     for item in report["artifact_checklist"]:
         lines.append(f"- [{_status(item['exists'])}] `{item['path']}`")
@@ -368,12 +424,13 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "3. Skim `examples/generated/review_room.html`.",
             "4. Read `examples/generated/trust_receipt.md`.",
             "5. Read `examples/generated/support_triage_agent.proof_health.md`.",
-            "6. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "7. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "8. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "9. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "10. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "11. Confirm sponsor adapters stay dry-run and non-approving.",
+            "6. Read `examples/generated/sponsor_live_readiness.md`.",
+            "7. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "8. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "9. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "10. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "11. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "12. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

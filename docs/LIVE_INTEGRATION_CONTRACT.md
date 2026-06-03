@@ -49,9 +49,19 @@ The public dry-run contracts live in `agent/adapters/` and can be inspected with
 ```bash
 python3 -m agent.adapters --all
 python3 -m agent.adapters --all --json
+python3 -m agent.sponsor_readiness
 ```
 
 They must stay no-key, non-executing, and blocked from approving access.
+
+The Sponsor Live Readiness report shows the CTO where each sponsor can add live proof and which artifact should change:
+
+| Provider | Live proof role | Default public boundary |
+| --- | --- | --- |
+| Nebius | Reviewer-ready narration over locked packet fields. | Cannot change verdict, safety state, or blocked claims. |
+| Tavily | Source-backed evidence notes with URLs and freshness. | Cannot reduce proof debt without human review. |
+| Composio | Dry-run permission diff for requested actions. | Cannot grant permissions or execute writes by default. |
+| OpenClaw | Runtime trace entries for attempted and blocked steps. | Cannot bypass packet safety state. |
 
 Use this shape for new integration outputs before merging them into the packet:
 

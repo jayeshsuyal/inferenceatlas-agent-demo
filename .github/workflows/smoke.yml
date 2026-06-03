@@ -31,6 +31,8 @@ jobs:
           ia-contract --all
           ia-proof-health --no-write
           ia-proof-health --no-write --json >/tmp/installed_proof_health.json
+          ia-sponsor-readiness --no-write
+          ia-sponsor-readiness --no-write --json >/tmp/installed_sponsor_readiness.json
           ia-trial examples/requests/support_triage_trial.yml
           ia-trial examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_report.json
 
@@ -71,6 +73,8 @@ jobs:
         run: |
           python -m agent.adapters --all
           python -m agent.adapters --all --json >/tmp/sponsor_adapters.all.json
+          python -m agent.sponsor_readiness
+          python -m agent.sponsor_readiness --no-write --json >/tmp/sponsor_live_readiness.json
 
       - name: Generate trust receipt
         run: |
@@ -106,6 +110,7 @@ jobs:
           python -m json.tool examples/generated/admin_code_fix_bot.packet.json >/tmp/admin_code_fix_bot.packet.json
           python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
           python -m json.tool examples/generated/trust_receipt.json >/tmp/trust_receipt.json
+          python -m json.tool examples/generated/sponsor_live_readiness.json >/tmp/sponsor_live_readiness.artifact.json
           python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
           python -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/support_triage_agent.proof_health.json
           python -m json.tool examples/generated/support_triage_trial_report.json >/tmp/support_triage_trial_report.json
@@ -118,10 +123,12 @@ jobs:
           python -m json.tool /tmp/installed_trial_report.json >/tmp/installed_trial_report.checked.json
           python -m json.tool /tmp/installed_proof_health.json >/tmp/installed_proof_health.checked.json
           python -m json.tool /tmp/proof_health.json >/tmp/proof_health.checked.json
+          python -m json.tool /tmp/installed_sponsor_readiness.json >/tmp/installed_sponsor_readiness.checked.json
           python -m json.tool /tmp/design_partner_trial_report.json >/tmp/design_partner_trial_report.checked.json
           python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
           python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json
           python -m json.tool /tmp/sponsor_adapters.all.json >/tmp/sponsor_adapters.all.checked.json
+          python -m json.tool /tmp/sponsor_live_readiness.json >/tmp/sponsor_live_readiness.checked.json
           python -m json.tool policy/agent_access.yml >/tmp/policy_agent_access.json
 
       - name: Run unit tests

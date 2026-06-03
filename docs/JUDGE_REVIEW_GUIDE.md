@@ -25,6 +25,7 @@ python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
+python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
@@ -55,6 +56,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |
+| Are sponsor tools ready to add live proof safely? | `python3 -m agent.sponsor_readiness` and `examples/generated/sponsor_live_readiness.md` |
 | What should a reviewer skim first? | `examples/generated/support_triage_agent.decision_brief.md` |
 | What complete packet was produced? | `examples/generated/support_triage_agent.packet.md` |
 | Does the engine bend across risk levels? | `python3 -m agent.review --list` |
@@ -76,6 +78,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - low-risk, medium-risk, and critical-risk scenarios produce materially different review postures
 - the public policy gate blocks critical/admin/prod-write access
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
+- Sponsor Live Readiness shows where Nebius, Tavily, Composio, and OpenClaw add proof without becoming approval authorities
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
@@ -117,6 +120,7 @@ README thesis
 -> Review Room walkthrough and screenshot
 -> public policy gate
 -> dry-run sponsor adapter contracts
+-> sponsor live readiness
 -> generated decision brief
 -> generated packet
 -> scenario CLI

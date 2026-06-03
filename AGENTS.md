@@ -25,6 +25,7 @@ python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
+python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
@@ -40,6 +41,7 @@ Expected result:
 - the public contract reports all scenarios as `OK`
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
 - sponsor adapters report dry-run contracts and `would_execute=False`
+- sponsor live readiness reports all contracts ready, all non-executing, and all non-approving
 - the Trust Receipt, Review Room, and static Review Room HTML artifacts are generated
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the design-partner trial runner converts a role-level request into a report, packet, and access brief
@@ -58,19 +60,20 @@ Expected result:
 8. `examples/requests/support_triage_trial.yml`
 9. `examples/generated/support_triage_trial_report.md`
 10. `examples/generated/trust_receipt.md`
-11. `examples/generated/review_room.md`
-12. `examples/generated/review_room.html`
-13. `examples/generated/support_triage_agent.proof_health.md`
-14. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-15. `examples/generated/review_room.desktop.jpg`
-16. `policy/agent_access.yml`
-17. `agent/adapters/`
-18. `examples/generated/support_triage_agent.decision_brief.md`
-19. `examples/generated/support_triage_agent.packet.md`
-20. `examples/generated/admin_code_fix_bot.packet.json`
-21. `docs/CONTRACT.md`
-22. `docs/SAFETY_CONTRACT.md`
-23. `docs/V1_CAPABILITY_PASSPORT.md`
+11. `examples/generated/sponsor_live_readiness.md`
+12. `examples/generated/review_room.md`
+13. `examples/generated/review_room.html`
+14. `examples/generated/support_triage_agent.proof_health.md`
+15. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+16. `examples/generated/review_room.desktop.jpg`
+17. `policy/agent_access.yml`
+18. `agent/adapters/`
+19. `examples/generated/support_triage_agent.decision_brief.md`
+20. `examples/generated/support_triage_agent.packet.md`
+21. `examples/generated/admin_code_fix_bot.packet.json`
+22. `docs/CONTRACT.md`
+23. `docs/SAFETY_CONTRACT.md`
+24. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -85,6 +88,7 @@ Evaluate the public product contract:
 - Does Proof Health show packet drift, stale assumptions, expired reviewer gates, and the next human refresh action?
 - Does the public policy gate block critical/admin/prod-write access?
 - Do sponsor adapters stay dry-run and blocked from approving access?
+- Does Sponsor Live Readiness show where Nebius, Tavily, Composio, and OpenClaw add proof without approval power?
 - Do low, medium/high, and critical scenarios produce materially different review postures?
 - Does `docs/DESIGN_PARTNER_BRIEF.md` make the one-workflow trial path concrete without asking for secrets?
 - Do `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/*.yml` give a concrete trial input surface without exposing secrets?

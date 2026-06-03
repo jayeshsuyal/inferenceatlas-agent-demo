@@ -47,6 +47,7 @@ python3 -m agent.review --list
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
+python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
@@ -63,6 +64,7 @@ ia-review --list
 ia-contract --all
 ia-gate --all
 ia-adapters --all
+ia-sponsor-readiness
 ia-trust
 ia-review-room
 ia-proof-health
@@ -73,6 +75,12 @@ The fastest artifact to skim is the generated Trust Receipt:
 
 ```text
 examples/generated/trust_receipt.md
+```
+
+The fastest sponsor-tool artifact is the Sponsor Live Readiness report:
+
+```text
+examples/generated/sponsor_live_readiness.md
 ```
 
 The fastest visual artifact to skim is the static Review Room:
@@ -181,6 +189,12 @@ InferenceAtlas uses sponsor integrations as proof contributors, not approval aut
 - Composio: permission diff for allowed validation actions, blocked actions, and required proof
 - Nebius: reviewer-ready narration contract with verdict and safety fields locked
 - OpenClaw: runtime trace plan for attempted steps, policy decisions, and blocked outcomes
+
+The Sponsor Live Readiness report shows where live Nebius, Tavily, Composio, and OpenClaw work would appear once keys are supplied by the CTO:
+
+```bash
+python3 -m agent.sponsor_readiness
+```
 
 Every sponsor path remains dry-run, non-approving, non-mutating, and human-reviewed by default.
 
@@ -314,6 +328,7 @@ Render dry-run sponsor adapter contracts:
 ```bash
 python3 -m agent.adapters --all
 python3 -m agent.adapters --provider composio --scenario admin_code_fix_bot --json
+python3 -m agent.sponsor_readiness
 ```
 
 Generate the Agent Trust Receipt and Review Room:
@@ -329,6 +344,8 @@ This writes:
 ```text
 examples/generated/trust_receipt.md
 examples/generated/trust_receipt.json
+examples/generated/sponsor_live_readiness.md
+examples/generated/sponsor_live_readiness.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html
@@ -398,6 +415,8 @@ examples/generated/admin_code_fix_bot.decision_brief.md
 examples/generated/admin_code_fix_bot.decision_brief.json
 examples/generated/trust_receipt.md
 examples/generated/trust_receipt.json
+examples/generated/sponsor_live_readiness.md
+examples/generated/sponsor_live_readiness.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html

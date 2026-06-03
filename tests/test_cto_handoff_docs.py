@@ -23,6 +23,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "agent/decision_brief.py",
             "agent/proof_health.py",
             "agent/renderers.py",
+            "agent/sponsor_readiness.py",
             "agent/config.py",
             "agent/tools.py",
             "What Is Stable",
@@ -40,6 +41,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "live integrations do not auto-approve access",
             "no external writes in the default public path",
             "Proof Health reports drift and reviewer refresh work without approving access",
+            "Sponsor Live Readiness",
         ]:
             self.assertIn(expected, contract)
 
@@ -105,14 +107,21 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.gate --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.sponsor_readiness", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.proof_health", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
+        self.assertIn("examples/generated/sponsor_live_readiness.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
+        self.assertEqual(manifest["sponsor_live_readiness_command"], "python3 -m agent.sponsor_readiness")
+        self.assertEqual(
+            manifest["sponsor_live_readiness_json_command"],
+            "python3 -m agent.sponsor_readiness --no-write --json",
+        )
         self.assertEqual(
             manifest["design_partner_trial_runner_command"],
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
@@ -128,6 +137,14 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
         self.assertEqual(manifest["primary_artifacts"]["trust_receipt_markdown"], "examples/generated/trust_receipt.md")
+        self.assertEqual(
+            manifest["primary_artifacts"]["sponsor_live_readiness_markdown"],
+            "examples/generated/sponsor_live_readiness.md",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["sponsor_live_readiness_json"],
+            "examples/generated/sponsor_live_readiness.json",
+        )
         self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
         self.assertEqual(
@@ -170,10 +187,12 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
+            "python3 -m agent.sponsor_readiness",
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
             "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
+            "examples/generated/sponsor_live_readiness.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.proof_health.md",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",
@@ -205,10 +224,12 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
+            "python3 -m agent.sponsor_readiness",
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
             "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
+            "examples/generated/sponsor_live_readiness.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.proof_health.md",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",

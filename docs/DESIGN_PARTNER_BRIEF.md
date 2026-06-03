@@ -47,6 +47,7 @@ python3 -m agent.judge
 
 ```text
 examples/generated/trust_receipt.md
+examples/generated/sponsor_live_readiness.md
 examples/generated/review_room.html
 examples/generated/support_triage_agent.proof_health.md
 examples/generated/support_triage_trial_report.md
@@ -87,6 +88,7 @@ python3 -m agent.trial examples/requests/support_triage_trial.yml
 - Does proof debt become concrete owner work?
 - Does Proof Health show when stale assumptions and reviewer gates need refresh?
 - Does the sponsor adapter plan stay dry-run and non-approving?
+- Does Sponsor Live Readiness show where live proof can appear without requiring a live write?
 
 ## Trial Outputs
 
@@ -99,6 +101,7 @@ A successful trial should produce:
 - one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked
 - one dry-run tool-access plan for the relevant integration layer
+- one sponsor live-readiness report showing which live proof hooks are ready and still non-approving
 - one next human validation step
 
 The output is not an approval. It is the proof packet a human approval process can review.

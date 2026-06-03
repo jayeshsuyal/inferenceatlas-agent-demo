@@ -30,6 +30,7 @@ Run this path from a clean checkout:
 ```bash
 python3 -m agent.judge
 python3 -m agent.proof_health
+python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.review_room
 python3 -m unittest discover -s tests
@@ -41,6 +42,7 @@ Or use the installed commands:
 pip install -e .
 ia-judge
 ia-proof-health
+ia-sponsor-readiness
 ia-trial examples/requests/support_triage_trial.yml
 ia-review-room
 ```
@@ -49,6 +51,7 @@ In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
 - a role-level trial request converted into a report, packet, and access brief
+- a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
 - a Proof Health report that shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - three risk postures: low-risk read-only, medium/high-risk proof-routed, and critical/admin blocked fast
@@ -59,6 +62,7 @@ In five minutes, a reviewer should see:
 | Surface | What it proves |
 | --- | --- |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
+| `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
 | `examples/generated/review_room.html` | A static visual review room works without a web app, scripts, secrets, or external assets. |
@@ -75,6 +79,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
 | Public trial request files | The trial runner derives a report, packet, and access brief from the request file. |
 | Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
+| Sponsor readiness contracts | The readiness report derives provider value, visible outputs, CTO next steps, and safety boundaries from the adapter contracts. |
 | Conservative safety defaults | The outputs preserve blocked approvals, blocked grants, blocked writes, dry-run sponsor posture, and human approval requirement. |
 | Sponsor adapter contracts | Sponsor outputs enrich evidence, narration, permission diff, and runtime trace planning without approval power. |
 | Public artifact paths | `python3 -m agent.judge` regenerates the public artifacts and checks that they exist. |

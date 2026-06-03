@@ -18,6 +18,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
             "examples/requests/design_partner_trial.yml",
             "examples/requests/support_triage_trial.yml",
             "examples/generated/support_triage_trial_report.md",
+            "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.decision_brief.md",
@@ -27,6 +28,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
             "one Trust Receipt",
             "one DecisionPacket",
             "one Agent Access Decision Brief",
+            "one Proof Health report",
             "one policy-gate result",
             "one dry-run tool-access plan",
             "one next human validation step",
@@ -70,6 +72,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
         self.assertIn("examples/requests/design_partner_trial.yml", manifest["judge_review_path"])
         self.assertIn("examples/requests/support_triage_trial.yml", manifest["judge_review_path"])
         self.assertIn("design partner brief", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("proof health", manifest["private_v1_boundary"]["public_proof_surface"])
 
     def test_design_partner_brief_does_not_expose_private_schema_names(self) -> None:
         brief = (ROOT / "docs" / "DESIGN_PARTNER_BRIEF.md").read_text(encoding="utf-8")

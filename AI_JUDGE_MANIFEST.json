@@ -5,8 +5,9 @@
   "thesis_sentence": "Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.",
   "readme_headline": "InferenceAtlas — Public Agent-Access Review Harness",
   "readme_badges": ["tests passing", "CI green", "public contract v0", "safety: dry-run default"],
-  "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a Trust Receipt, DecisionPacket, and Agent Access Decision Brief showing what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, who must review, and what validation comes next.",
+  "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a Trust Receipt, DecisionPacket, Agent Access Decision Brief, and Proof Health report showing what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, what may drift, who must review, and what validation comes next.",
   "agent_reviewer_instructions": "AGENTS.md",
+  "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
   "product_tour": "docs/PRODUCT_TOUR.md",
   "public_contract_doc": "docs/CONTRACT.md",
@@ -26,6 +27,7 @@
     "ia-adapters --all",
     "ia-trust",
     "ia-review-room",
+    "ia-proof-health",
     "ia-trial examples/requests/support_triage_trial.yml"
   ],
   "default_run_command": "python3 -m agent.demo",
@@ -50,9 +52,14 @@
   "review_room_html_command": "python3 -m agent.review_room",
   "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
   "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
+  "proof_health_command": "python3 -m agent.proof_health",
+  "proof_health_json_command": "python3 -m agent.proof_health --no-write --json",
+  "proof_health_surface": "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
   "product_review_path": [
     "docs/PRODUCT_TOUR.md",
     "python3 -m agent.judge",
+    "python3 -m agent.proof_health",
+    "examples/generated/support_triage_agent.proof_health.md",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "examples/generated/support_triage_trial_report.md",
     "examples/generated/review_room.html"
@@ -66,6 +73,7 @@
     "python3 -m agent.adapters --all",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
+    "python3 -m agent.proof_health",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests"
   ],
@@ -104,8 +112,11 @@
     "review_room_markdown": "examples/generated/review_room.md",
     "review_room_json": "examples/generated/review_room.json",
     "review_room_html": "examples/generated/review_room.html",
+    "proof_health_markdown": "examples/generated/support_triage_agent.proof_health.md",
+    "proof_health_json": "examples/generated/support_triage_agent.proof_health.json",
     "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
+    "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "design_partner_trial_template": "examples/requests/design_partner_trial.yml",
@@ -140,6 +151,7 @@
     "design_partner_trial_runner": "python3 -m agent.trial examples/requests/support_triage_trial.yml --write && python3 -m json.tool examples/generated/support_triage_trial_report.json",
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
     "review_room_html": "python3 -m agent.review_room",
+    "proof_health": "python3 -m agent.proof_health && python3 -m json.tool examples/generated/support_triage_agent.proof_health.json",
     "design_partner_brief": "test -s docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "test -s docs/DESIGN_PARTNER_TRIAL_KIT.md && test -s examples/requests/design_partner_trial.yml && test -s examples/requests/support_triage_trial.yml",
     "review_room_walkthrough": "test -s docs/REVIEW_ROOM_WALKTHROUGH.md && test -s examples/generated/review_room.desktop.jpg"
@@ -161,7 +173,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "judge harness", "trust receipt", "review room", "review room walkthrough", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "judge harness", "agentic review expected output", "trust receipt", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -175,6 +187,7 @@
   ],
   "judge_review_path": [
     "AGENTS.md",
+    "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "README.md",
     "docs/PRODUCT_TOUR.md",
     "docs/JUDGE_REVIEW_GUIDE.md",
@@ -189,6 +202,9 @@
     "examples/generated/support_triage_trial_report.md",
     "examples/generated/support_triage_trial_report.json",
     "examples/generated/trust_receipt.md",
+    "python3 -m agent.proof_health",
+    "examples/generated/support_triage_agent.proof_health.md",
+    "examples/generated/support_triage_agent.proof_health.json",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",
     "docs/REVIEW_ROOM_WALKTHROUGH.md",

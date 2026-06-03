@@ -40,6 +40,14 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertFalse(report["design_partner_trial"]["production_access"])
         self.assertFalse(report["design_partner_trial"]["approves_access"])
         self.assertFalse(report["design_partner_trial"]["grants_permissions"])
+        self.assertEqual(report["proof_health"]["scenario"], "support_triage_agent")
+        self.assertEqual(report["proof_health"]["overall_status"], "drifting")
+        self.assertEqual(report["proof_health"]["overall_score"], 67)
+        self.assertTrue(report["proof_health"]["human_review_required"])
+        self.assertFalse(report["proof_health"]["approves_access"])
+        self.assertFalse(report["proof_health"]["grants_permissions"])
+        self.assertFalse(report["proof_health"]["executes_external_writes"])
+        self.assertFalse(report["proof_health"]["mutates_production"])
 
     def test_judge_report_names_primary_artifacts(self) -> None:
         report = build_judge_report(write_artifacts=False)
@@ -47,9 +55,12 @@ class JudgeHarnessTests(unittest.TestCase):
 
         for expected in [
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "examples/generated/demo_transcript.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
+            "examples/generated/support_triage_agent.proof_health.md",
+            "examples/generated/support_triage_agent.proof_health.json",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -66,6 +77,7 @@ class JudgeHarnessTests(unittest.TestCase):
 
         self.assertIn("# InferenceAtlas Judge Harness", markdown)
         self.assertIn("docs/PRODUCT_TOUR.md", markdown)
+        self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", markdown)
         self.assertIn("admin_code_fix_bot", markdown)
         self.assertIn("BLOCKED", markdown)
         self.assertIn("examples/generated/review_room.html", markdown)
@@ -78,6 +90,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("proof_routed_scoped_validation", markdown)
         self.assertIn("blocked_fast", markdown)
         self.assertIn("Design Partner Trial Runner", markdown)
+        self.assertIn("Proof Health", markdown)
+        self.assertIn("examples/generated/support_triage_agent.proof_health.md", markdown)
         self.assertIn("examples/requests/support_triage_trial.yml", markdown)
 
     def test_judge_cli_default_renders_markdown(self) -> None:
@@ -89,6 +103,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("admin_code_fix_bot", result.stdout)
         self.assertIn("Access Speed Layer", result.stdout)
         self.assertIn("Design Partner Trial Runner", result.stdout)
+        self.assertIn("Proof Health", result.stdout)
+        self.assertIn("next human health check", result.stdout)
         self.assertIn("blocked_fast", result.stdout)
         self.assertIn("proof=permission_diff", result.stdout)
         self.assertIn("human_review_required=True", result.stdout)
@@ -105,6 +121,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
+        self.assertEqual(report["proof_health"]["overall_status"], "drifting")
+        self.assertFalse(report["proof_health"]["approves_access"])
 
 
 if __name__ == "__main__":

@@ -38,6 +38,7 @@ class PublicContractTests(unittest.TestCase):
             "## What Must Be Shown",
             "## What Must Stay Blocked",
             "## Reviewer Gates",
+            "## Proof Health Contract",
             "## Conformance",
             "## Sponsor Adapter Boundary",
             "## Private Boundary",

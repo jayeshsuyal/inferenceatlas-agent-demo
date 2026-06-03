@@ -52,6 +52,7 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_BRIEF.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
+            "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/support_triage_trial_report.md",
             "policy/agent_access.yml",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
@@ -132,6 +133,7 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
         self.assertIn("design partner trial kit", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner trial runner", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("trial request templates", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("proof health", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for expected in [
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -139,6 +141,8 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "examples/requests/support_triage_trial.yml",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial_report.json",
+            "examples/generated/support_triage_agent.proof_health.md",
+            "examples/generated/support_triage_agent.proof_health.json",
         ]:
             self.assertIn(expected, artifact_paths)
             self.assertIn(expected, markdown)

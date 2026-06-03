@@ -12,10 +12,11 @@ If you are reviewing quickly, use this order:
 1. Read the Product Tour.
 2. Run the one-command judge harness.
 3. Run the no-key demo if you want the full packet output.
-4. Inspect the generated decision brief.
-5. Inspect the scenario matrix.
-6. Validate the public conformance contract.
-7. Check the safety defaults and tests.
+4. Inspect the generated Proof Health report.
+5. Inspect the generated decision brief.
+6. Inspect the scenario matrix.
+7. Validate the public conformance contract.
+8. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -26,6 +27,7 @@ python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
@@ -34,18 +36,22 @@ The default path is deterministic and works without API keys.
 
 If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 
+For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`.
+
 ## What To Inspect
 
 | Question | Public artifact |
 | --- | --- |
 | What does the product do? | `docs/PRODUCT_TOUR.md` and `README.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
+| What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
 | What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
+| Does the packet lifecycle show drift before stale access? | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` |
 | What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |
@@ -71,6 +77,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - the public policy gate blocks critical/admin/prod-write access
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
+- the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
 - the Design Partner Trial Kit and trial runner give that trial a concrete public input and output path without adding live writes or private source exposure
 
@@ -97,6 +104,7 @@ The strongest review signal is not a single artifact. It is the chain:
 ```text
 README thesis
 -> Product Tour
+-> Agentic Review Expected Output
 -> one-command judge harness
 -> Design Partner Brief
 -> Design Partner Trial Kit
@@ -105,6 +113,7 @@ README thesis
 -> Trust Receipt
 -> Review Room
 -> static Review Room HTML
+-> Proof Health
 -> Review Room walkthrough and screenshot
 -> public policy gate
 -> dry-run sponsor adapter contracts

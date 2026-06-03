@@ -29,6 +29,7 @@ Run this path from a clean checkout:
 
 ```bash
 python3 -m agent.judge
+python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.review_room
 python3 -m unittest discover -s tests
@@ -39,6 +40,7 @@ Or use the installed commands:
 ```bash
 pip install -e .
 ia-judge
+ia-proof-health
 ia-trial examples/requests/support_triage_trial.yml
 ia-review-room
 ```
@@ -48,6 +50,7 @@ In five minutes, a reviewer should see:
 - a judge harness that works without keys
 - a role-level trial request converted into a report, packet, and access brief
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
+- a Proof Health report that shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - three risk postures: low-risk read-only, medium/high-risk proof-routed, and critical/admin blocked fast
 - safety defaults that keep approvals, grants, writes, and production mutation off
 
@@ -59,6 +62,7 @@ In five minutes, a reviewer should see:
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
 | `examples/generated/review_room.html` | A static visual review room works without a web app, scripts, secrets, or external assets. |
+| `examples/generated/support_triage_agent.proof_health.md` | Proof Health shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check before access expands. |
 | `docs/CONTRACT.md` | The public proof contract is written down and validated by tests. |
 | `policy/agent_access.yml` | Critical/admin/prod-write access is blocked by policy before validation. |
 
@@ -70,6 +74,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | --- | --- |
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
 | Public trial request files | The trial runner derives a report, packet, and access brief from the request file. |
+| Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
 | Conservative safety defaults | The outputs preserve blocked approvals, blocked grants, blocked writes, dry-run sponsor posture, and human approval requirement. |
 | Sponsor adapter contracts | Sponsor outputs enrich evidence, narration, permission diff, and runtime trace planning without approval power. |
 | Public artifact paths | `python3 -m agent.judge` regenerates the public artifacts and checks that they exist. |
@@ -91,6 +96,7 @@ Instead of showing an agent posting, changing, spending, deploying, or mutating,
 - proof debt before it becomes shadow approval
 - reviewer ownership before access moves
 - dry-run sponsor participation before live integrations
+- packet drift before stale access becomes hidden approval
 - a safe next validation step before production access
 
 That is the product stance: agent access should be reviewable before it is executable.
@@ -140,6 +146,7 @@ It does not:
 It does:
 
 - produce a proof packet
+- show packet drift and stale assumptions
 - make missing proof visible
 - route reviewers
 - block unsupported claims

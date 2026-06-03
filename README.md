@@ -9,7 +9,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
 ![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
 
-InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, access brief, policy-gate result, proof debt, reviewer routing, and next validation plan humans need to review.
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
@@ -36,7 +36,7 @@ ia-judge
 
 ## Judge Fast Path
 
-If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
+If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md) and [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md).
 
 Then run:
 
@@ -49,6 +49,7 @@ python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
@@ -64,6 +65,7 @@ ia-gate --all
 ia-adapters --all
 ia-trust
 ia-review-room
+ia-proof-health
 ia-trial examples/requests/support_triage_trial.yml
 ```
 
@@ -77,6 +79,12 @@ The fastest visual artifact to skim is the static Review Room:
 
 ```text
 examples/generated/review_room.html
+```
+
+The fastest lifecycle artifact is the generated Proof Health report:
+
+```text
+examples/generated/support_triage_agent.proof_health.md
 ```
 
 The fastest walkthrough artifact is:
@@ -100,11 +108,11 @@ examples/generated/support_triage_trial_report.md
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Product Tour](docs/PRODUCT_TOUR.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Product Tour](docs/PRODUCT_TOUR.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, and Trust Receipt showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, and Proof Health report showing:
 
 - source status
 - scenario blast-radius diff
@@ -116,6 +124,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - tool and data scope
 - risk register
 - proof debt ledger
+- packet drift signals
 - missing proof
 - blocked claims
 - reviewer owners
@@ -123,7 +132,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - next human validation
 - safety state
 
-IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, and Trust Receipt humans review.
+IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, Trust Receipt, and Proof Health report humans review.
 
 ## Why This Matters
 
@@ -312,6 +321,7 @@ Generate the Agent Trust Receipt and Review Room:
 ```bash
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.proof_health
 ```
 
 This writes:
@@ -322,6 +332,8 @@ examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html
+examples/generated/support_triage_agent.proof_health.md
+examples/generated/support_triage_agent.proof_health.json
 ```
 
 Run the design-partner trial sample:
@@ -389,6 +401,8 @@ examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html
+examples/generated/support_triage_agent.proof_health.md
+examples/generated/support_triage_agent.proof_health.json
 examples/generated/review_room.desktop.jpg
 docs/REVIEW_ROOM_WALKTHROUGH.md
 policy/agent_access.yml

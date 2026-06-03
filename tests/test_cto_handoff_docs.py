@@ -21,6 +21,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "agent/demo.py",
             "agent/packet.py",
             "agent/decision_brief.py",
+            "agent/proof_health.py",
             "agent/renderers.py",
             "agent/config.py",
             "agent/tools.py",
@@ -38,6 +39,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "production access is still blocked",
             "live integrations do not auto-approve access",
             "no external writes in the default public path",
+            "Proof Health reports drift and reviewer refresh work without approving access",
         ]:
             self.assertIn(expected, contract)
 
@@ -47,6 +49,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "CTO Handoff",
             "Architecture",
             "Live Integration Contract",
+            "Proof Health",
         ]:
             self.assertIn(expected, readme)
 
@@ -89,6 +92,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("docs/JUDGE_REVIEW_GUIDE.md", readme)
         self.assertIn("AGENTS.md", readme)
         self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
+        self.assertEqual(manifest["agentic_review_expected_output"], "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
         self.assertEqual(manifest["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
@@ -103,8 +107,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.proof_health", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
         self.assertEqual(
@@ -113,13 +119,31 @@ class CtoHandoffDocsTests(unittest.TestCase):
         )
         self.assertEqual(manifest["trust_receipt_command"], "python3 -m agent.trust")
         self.assertEqual(manifest["review_room_html_command"], "python3 -m agent.review_room")
+        self.assertEqual(manifest["proof_health_command"], "python3 -m agent.proof_health")
+        self.assertEqual(manifest["proof_health_json_command"], "python3 -m agent.proof_health --no-write --json")
+        self.assertEqual(
+            manifest["proof_health_surface"],
+            "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
+        )
         self.assertEqual(manifest["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
         self.assertEqual(manifest["primary_artifacts"]["trust_receipt_markdown"], "examples/generated/trust_receipt.md")
         self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
+        self.assertEqual(
+            manifest["primary_artifacts"]["proof_health_markdown"],
+            "examples/generated/support_triage_agent.proof_health.md",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["proof_health_json"],
+            "examples/generated/support_triage_agent.proof_health.json",
+        )
         self.assertEqual(manifest["primary_artifacts"]["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
+        self.assertEqual(
+            manifest["primary_artifacts"]["agentic_review_expected_output"],
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
+        )
         self.assertEqual(manifest["primary_artifacts"]["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
@@ -137,6 +161,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         for expected in [
             "Five-Minute Path",
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -147,8 +172,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.adapters --all",
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
+            "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
+            "examples/generated/support_triage_agent.proof_health.md",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",
             "examples/generated/review_room.desktop.jpg",
             "policy/agent_access.yml",
@@ -167,6 +194,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "Agent Reviewer Instructions",
             "Do not request secrets",
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -179,8 +207,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.adapters --all",
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
+            "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
+            "examples/generated/support_triage_agent.proof_health.md",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",
             "examples/generated/review_room.desktop.jpg",
             "policy/agent_access.yml",

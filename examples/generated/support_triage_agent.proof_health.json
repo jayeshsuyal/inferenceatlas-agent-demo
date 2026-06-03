@@ -1,0 +1,102 @@
+{
+  "generated_by": "inferenceatlas-agent-demo",
+  "headline": "Agent-access proof packets age; InferenceAtlas makes drift visible before access moves.",
+  "health_timeline": [
+    {
+      "checkpoint": "day_0",
+      "drifted_facts": [],
+      "expired_reviewer_gates": [],
+      "human_action": "Run scoped validation review only.",
+      "open_proof_items": 5,
+      "score": 84,
+      "stale_assumptions": [],
+      "status": "current",
+      "summary": "Packet is reviewable for scoped validation; production remains blocked."
+    },
+    {
+      "checkpoint": "day_30",
+      "drifted_facts": [
+        "Slack channel allowlist may have changed since intake.",
+        "Jira project scope needs confirmation before draft-ticket validation."
+      ],
+      "expired_reviewer_gates": [
+        "Security/Legal data-boundary review has not been refreshed within 30 days."
+      ],
+      "human_action": "Refresh reviewer gates before any broader validation.",
+      "open_proof_items": 5,
+      "score": 67,
+      "stale_assumptions": [
+        "Incident-channel retention terms still match the original request.",
+        "Repository allowlist still reflects the current support workflow."
+      ],
+      "status": "drifting",
+      "summary": "Tool scope and data-boundary assumptions need reviewer refresh before validation expands."
+    },
+    {
+      "checkpoint": "day_60",
+      "drifted_facts": [
+        "Audit-log expectations may no longer match the runtime plan.",
+        "Support escalation workflow owner needs reconfirmation."
+      ],
+      "expired_reviewer_gates": [
+        "Engineering allowlist review expired.",
+        "Support Ops workflow-fit review expired."
+      ],
+      "human_action": "Issue a new packet or rerun the trial request.",
+      "open_proof_items": 5,
+      "score": 42,
+      "stale_assumptions": [
+        "Customer-data boundary proof remains unchanged.",
+        "Rollback and off-switch ownership is still named."
+      ],
+      "status": "stale",
+      "summary": "Packet should not be reused without a new proof review."
+    }
+  ],
+  "mode": "offline_deterministic",
+  "next_human_health_check": "day_30_security_engineering_review",
+  "overall_score": 67,
+  "overall_status": "drifting",
+  "packet_drift_signals": [
+    "tool scope changed",
+    "data boundary changed",
+    "reviewer gate expired",
+    "proof item still open"
+  ],
+  "packet_lifecycle": [
+    "created",
+    "reviewable",
+    "drifting",
+    "stale_without_refresh"
+  ],
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "proof_health_id": "ia-agent-proof-health-public-v0",
+  "proof_health_summary": {
+    "current_checkpoints": 1,
+    "drifting_checkpoints": 1,
+    "human_review_required": true,
+    "open_proof_items": 5,
+    "stale_checkpoints": 1
+  },
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "scenario": "support_triage_agent",
+  "schema_version": "agent_proof_health.v0",
+  "source_brief_artifact": "examples/generated/support_triage_agent.decision_brief.json",
+  "source_packet_artifact": "examples/generated/support_triage_agent.packet.json",
+  "source_review_state": {
+    "composio_dry_run": true,
+    "decision": "Do not grant production access.",
+    "external_writes": false,
+    "production_access": false,
+    "scoped_validation_review": true
+  }
+}

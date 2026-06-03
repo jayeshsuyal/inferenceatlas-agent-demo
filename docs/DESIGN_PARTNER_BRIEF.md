@@ -14,7 +14,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 The design-partner question is:
 
 ```text
-Can IA turn one messy agent-access request into a reviewable Trust Receipt, DecisionPacket, access brief, policy-gate result, and next validation plan that Security, Engineering, Legal, Ops, and Finance can actually act on?
+Can IA turn one messy agent-access request into a reviewable Trust Receipt, DecisionPacket, access brief, Proof Health report, policy-gate result, and next validation plan that Security, Engineering, Legal, Ops, and Finance can actually act on?
 ```
 
 The public repo proves the contract. A design partner validates the workflow on real internal access requests.
@@ -48,6 +48,7 @@ python3 -m agent.judge
 ```text
 examples/generated/trust_receipt.md
 examples/generated/review_room.html
+examples/generated/support_triage_agent.proof_health.md
 examples/generated/support_triage_trial_report.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
@@ -84,6 +85,7 @@ python3 -m agent.trial examples/requests/support_triage_trial.yml
 - Does the policy gate block the right class of access?
 - Does reviewer routing remove ambiguity?
 - Does proof debt become concrete owner work?
+- Does Proof Health show when stale assumptions and reviewer gates need refresh?
 - Does the sponsor adapter plan stay dry-run and non-approving?
 
 ## Trial Outputs
@@ -93,6 +95,7 @@ A successful trial should produce:
 - one Trust Receipt for the selected workflow
 - one DecisionPacket with tool scope, data scope, missing proof, blocked claims, reviewers, and safety state
 - one Agent Access Decision Brief for fast review
+- one Proof Health report showing Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked
 - one dry-run tool-access plan for the relevant integration layer

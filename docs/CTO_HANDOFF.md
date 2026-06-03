@@ -16,7 +16,7 @@ python3 -m unittest discover -s tests
 Expected result:
 
 - the demo runs without API keys
-- packet, trace, and decision brief artifacts regenerate under `examples/generated/`
+- packet, trace, decision brief, and Proof Health artifacts regenerate under `examples/generated/`
 - production access remains blocked
 - external writes remain disabled
 - Composio remains dry-run by default
@@ -30,6 +30,7 @@ These pieces are safe to build on:
 | Offline judge harness | `agent/demo.py` | Entry point for no-key and live-mode demo paths. Keep this command stable. |
 | DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
+| Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
 | Schemas | `schemas/` | Public contracts for generated JSON artifacts. Update tests with any schema change. |
 | Generated proof | `examples/generated/` | Checked-in artifacts judges and AI reviewers can inspect. Regenerate after behavior changes. |
@@ -57,6 +58,7 @@ messy agent-access request
 -> evidence notes and missing proof
 -> DecisionPacket
 -> Agent Access Decision Brief
+-> Proof Health
 -> trace
 -> Markdown/JSON artifacts
 ```
@@ -70,8 +72,9 @@ Live integrations should attach to the spine as structured evidence or scoped to
 3. Add Nebius narration that summarizes the existing packet without changing safety defaults.
 4. Add Composio dry-run access planning for GitHub, Slack, and Jira.
 5. Add OpenClaw step recording into the trace artifact.
-6. Update generated artifacts and tests after each step.
-7. Record the live walkthrough only after offline and live paths both preserve the safety contract.
+6. Preserve Proof Health as a lifecycle projection; live evidence may refresh drift inputs but cannot auto-approve access.
+7. Update generated artifacts and tests after each step.
+8. Record the live walkthrough only after offline and live paths both preserve the safety contract.
 
 ## Integration Rules
 
@@ -109,6 +112,8 @@ env NEBIUS_API_KEY= TAVILY_API_KEY= COMPOSIO_API_KEY= IA_LIVE_MODE= python3 -m a
 python3 -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/packet_check.json
 python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/trace_check.json
 python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/brief_check.json
+python3 -m agent.proof_health --no-write
+python3 -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/proof_health_check.json
 python3 -m unittest discover -s tests
 ```
 

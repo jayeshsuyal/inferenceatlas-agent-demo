@@ -69,6 +69,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("AGENTS.md", readme)
         self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
+        self.assertEqual(manifest["judge_harness_command"], "python3 -m agent.judge")
+        self.assertEqual(manifest["judge_harness_json_command"], "python3 -m agent.judge --json")
+        self.assertIn("python3 -m agent.judge", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.gate --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
@@ -92,6 +95,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
 
         for expected in [
             "Five-Minute Path",
+            "python3 -m agent.judge",
             "python3 -m agent.demo",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
@@ -117,6 +121,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         for expected in [
             "Agent Reviewer Instructions",
             "Do not request secrets",
+            "python3 -m agent.judge",
             "python3 -m agent.demo",
             "python3 -m agent.review --list",
             "python3 -m agent.contract --all",

@@ -10,6 +10,7 @@ class DemoTranscriptTests(unittest.TestCase):
         transcript = (ROOT / "examples" / "generated" / "demo_transcript.md").read_text(encoding="utf-8")
 
         for expected in [
+            "python3 -m agent.judge",
             "python3 -m agent.demo",
             "python3 -m agent.review --list",
             "python3 -m agent.contract --all",
@@ -40,6 +41,7 @@ class DemoTranscriptTests(unittest.TestCase):
             "Approval granted: False",
             "External writes enabled: False",
             "Composio dry-run: True",
+            "# InferenceAtlas Judge Harness",
             "can_approve_access=False",
             "Private engine, public proof.",
         ]:

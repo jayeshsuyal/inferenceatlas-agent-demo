@@ -5,6 +5,8 @@
   "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a Trust Receipt, DecisionPacket, and Agent Access Decision Brief showing what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, who must review, and what validation comes next.",
   "agent_reviewer_instructions": "AGENTS.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
+  "judge_harness_command": "python3 -m agent.judge",
+  "judge_harness_json_command": "python3 -m agent.judge --json",
   "default_run_command": "python3 -m agent.demo",
   "works_without_keys": true,
   "live_mode_command": "IA_LIVE_MODE=1 python3 -m agent.demo",
@@ -23,6 +25,7 @@
   "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
   "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
   "five_minute_review_commands": [
+    "python3 -m agent.judge",
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
     "python3 -m agent.contract --all",
@@ -85,6 +88,7 @@
     "local_tests": "python3 -m unittest discover -s tests",
     "schema_parse": "python3 -m json.tool schemas/decision_packet.schema.json && python3 -m json.tool schemas/agent_access_decision_brief.schema.json",
     "artifact_parse": "python3 -m json.tool examples/generated/support_triage_agent.packet.json && python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json",
+    "judge_harness": "python3 -m agent.judge && python3 -m agent.judge --json",
     "cli_review": "python3 -m agent.review --list && python3 -m agent.review --scenario admin_code_fix_bot",
     "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated",
     "policy_gate": "python3 -m agent.gate --all --json && python3 -m agent.gate --scenario admin_code_fix_bot",
@@ -110,7 +114,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "trust receipt", "review room", "review room walkthrough", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "judge harness", "trust receipt", "review room", "review room walkthrough", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -128,6 +132,7 @@
     "docs/JUDGE_REVIEW_GUIDE.md",
     "BUILD_PLAN_TO_JUNE_12.md",
     "AI_JUDGE_MANIFEST.json",
+    "python3 -m agent.judge",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",

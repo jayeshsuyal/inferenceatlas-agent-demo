@@ -7,13 +7,15 @@ Purpose: make the repo reviewable in five minutes without exposing private v1 so
 
 If you are reviewing quickly, use this order:
 
-1. Run the no-key demo.
-2. Inspect the generated decision brief.
-3. Inspect the scenario matrix.
-4. Validate the public conformance contract.
-5. Check the safety defaults and tests.
+1. Run the one-command judge harness.
+2. Run the no-key demo if you want the full packet output.
+3. Inspect the generated decision brief.
+4. Inspect the scenario matrix.
+5. Validate the public conformance contract.
+6. Check the safety defaults and tests.
 
 ```bash
+python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
@@ -33,6 +35,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 | Question | Public artifact |
 | --- | --- |
 | What does the product do? | `README.md` |
+| What is the one-command judge path? | `python3 -m agent.judge` |
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
@@ -84,6 +87,7 @@ The strongest review signal is not a single artifact. It is the chain:
 
 ```text
 README thesis
+-> one-command judge harness
 -> no-key demo
 -> Trust Receipt
 -> Review Room

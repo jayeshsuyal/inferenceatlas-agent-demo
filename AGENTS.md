@@ -11,6 +11,7 @@ Do not request secrets, API keys, live sponsor tokens, customer data, private pr
 Run:
 
 ```bash
+python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
@@ -23,6 +24,7 @@ python3 -m unittest discover -s tests
 
 Expected result:
 
+- the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - the public contract reports all scenarios as `OK`
@@ -54,6 +56,7 @@ Expected result:
 
 Evaluate the public product contract:
 
+- Does `python3 -m agent.judge` summarize the full safe review path in one command?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does the decision brief give a fast go/no-go surface?
 - Does the Trust Receipt summarize the permission envelope, proof debt, reviewer routing, and safety state?

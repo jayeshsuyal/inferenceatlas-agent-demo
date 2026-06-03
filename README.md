@@ -13,6 +13,7 @@ If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REV
 Then run:
 
 ```bash
+python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
@@ -126,6 +127,14 @@ python3 -m agent.demo
 
 The default demo runs without keys using deterministic local packet generation. It prints a DecisionPacket and writes review artifacts under `examples/generated/`.
 
+For the one-command judge harness, run:
+
+```bash
+python3 -m agent.judge
+```
+
+This regenerates the offline public proof artifacts, validates the public contract, evaluates the policy gate, summarizes dry-run sponsor adapters, and prints the artifact checklist.
+
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 
 ```bash
@@ -146,6 +155,7 @@ The rules engine now covers three deterministic access-review scenarios:
 Regenerate packet and brief artifacts for all scenarios:
 
 ```bash
+python3 -m agent.judge
 python3 -m agent.scenarios
 ```
 

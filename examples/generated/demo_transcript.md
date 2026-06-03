@@ -9,6 +9,7 @@ This transcript is the public demo path. It does not call live vendors, request 
 ## Command Path
 
 ```bash
+python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
@@ -19,7 +20,35 @@ python3 -m agent.review_room
 python3 -m unittest discover -s tests
 ```
 
-## 1. No-Key DecisionPacket Demo
+## 1. One-Command Judge Harness
+
+Command:
+
+```bash
+python3 -m agent.judge
+```
+
+Expected output signal:
+
+```text
+# InferenceAtlas Judge Harness
+
+- mode: offline_deterministic
+- live keys required: False
+- external writes enabled: False
+- approval granted: False
+- private source exposed: False
+
+## Scenario Matrix
+
+| support_triage_agent | VALIDATION_ALLOWED_WITH_GATES | True | False |
+| read_only_analytics_agent | VALIDATION_ALLOWED_WITH_GATES | True | False |
+| admin_code_fix_bot | BLOCKED | False | False |
+```
+
+Review signal: a judge or AI reviewer can run one command and see scenario spread, public contract status, sponsor adapter safety, and the artifact checklist without needing secrets or live integrations.
+
+## 2. No-Key DecisionPacket Demo
 
 Command:
 
@@ -68,7 +97,7 @@ examples/generated/support_triage_agent.decision_brief.md
 examples/generated/support_triage_agent.decision_brief.json
 ```
 
-## 2. Scenario Spread
+## 3. Scenario Spread
 
 Command:
 
@@ -91,7 +120,7 @@ Review signal:
 - support triage can move into scoped validation while production stays blocked
 - admin/prod-write code fixing is blocked before validation
 
-## 3. Public Contract
+## 4. Public Contract
 
 Command:
 
@@ -110,7 +139,7 @@ Public contract: agent_access_public.v0
 
 Review signal: the public proof surface is not just prose. It is a runnable contract over the generated packet and decision brief artifacts.
 
-## 4. Policy Gate
+## 5. Policy Gate
 
 Command:
 
@@ -137,7 +166,7 @@ Expected output signal:
 
 Review signal: IA does not flatten risk. The same review engine relaxes for low-risk read-only access, permits gated validation for scoped support access, and blocks critical admin/prod-write access.
 
-## 5. Sponsor Adapter Contracts
+## 6. Sponsor Adapter Contracts
 
 Command:
 
@@ -157,7 +186,7 @@ Sponsor adapter contracts:
 
 Review signal: sponsor integrations are represented as contracts in the packet flow. They do not approve access, grant permissions, or mutate external state by default.
 
-## 6. Trust Receipt And Review Room
+## 7. Trust Receipt And Review Room
 
 Command:
 
@@ -193,7 +222,7 @@ Review signal:
 - Static Review Room HTML works without a web app, keys, scripts, or external assets.
 - Walkthrough and screenshot give a CTO or founder a safe recording path.
 
-## 7. Unit Tests
+## 8. Unit Tests
 
 Command:
 
@@ -206,7 +235,7 @@ Expected output:
 ```text
 ....................................................................
 ----------------------------------------------------------------------
-Ran 71 tests in 1.xs
+Ran 76 tests in 1.xs
 
 OK
 ```

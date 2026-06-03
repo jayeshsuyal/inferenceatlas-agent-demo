@@ -8,33 +8,37 @@ Or interactive REPL:
     python -m agent.cli
 """
 
-import sys
+from __future__ import annotations
+
 import logging
+import sys
 
 logging.basicConfig(level=logging.WARNING)
 
 from .agent import InferenceAtlasAgent
+from .config import COMPOSIO_API_KEY, LLM_API_KEY, LLM_MODEL, LLM_PROVIDER, TAVILY_API_KEY
 
 
-def _check_env() -> list[str]:
-    import os
-    missing = []
-    for var in ("NEBIUS_API_KEY", "TAVILY_API_KEY", "COMPOSIO_API_KEY"):
-        if not os.environ.get(var):
-            missing.append(var)
-    return missing
+def _warn_missing() -> None:
+    if not LLM_API_KEY:
+        print("Missing LLM API key. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env")
+        sys.exit(1)
+    optional = []
+    if not TAVILY_API_KEY:
+        optional.append("TAVILY_API_KEY")
+    if not COMPOSIO_API_KEY:
+        optional.append("COMPOSIO_API_KEY")
+    if optional:
+        print(f"[warn] Optional env vars not set: {', '.join(optional)}")
+        print("       Live search / Composio exports will be skipped.\n")
 
 
 def main() -> None:
-    missing = _check_env()
-    if missing:
-        print(f"[warn] Missing env vars: {', '.join(missing)}")
-        print("       Set them before running the agent for full functionality.\n")
+    _warn_missing()
 
     agent = InferenceAtlasAgent()
 
     if len(sys.argv) > 1:
-        # Single-turn from CLI arg
         query = " ".join(sys.argv[1:])
         print(f"Query: {query}\n")
         print("Agent: ", end="", flush=True)
@@ -43,9 +47,8 @@ def main() -> None:
         print()
         return
 
-    # Interactive REPL
     print("InferenceAtlas Intelligence Agent")
-    print("Tech stack: Nebius (inference) · Tavily (search) · Composio (tools) · OpenClaw (runtime)")
+    print(f"LLM: {LLM_PROVIDER} ({LLM_MODEL}) · Tavily · Composio · OpenClaw")
     print("Type 'exit' or Ctrl-C to quit.\n")
 
     while True:

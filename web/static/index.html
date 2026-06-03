@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InferenceAtlas Agent</title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="layout">
+      <header class="header">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">◈</span>
+          <div>
+            <h1>InferenceAtlas</h1>
+            <p class="tagline">Intelligence Agent</p>
+          </div>
+        </div>
+        <div class="stack" id="stack-pills"></div>
+        <button type="button" class="btn-ghost" id="btn-reset" title="New conversation">
+          New chat
+        </button>
+      </header>
+
+      <aside class="sidebar">
+        <h2>Example prompts</h2>
+        <p class="sidebar-hint">Click to send, or type your own question below.</p>
+        <ul class="examples" id="examples-list"></ul>
+        <div class="catalog" id="catalog-info"></div>
+      </aside>
+
+      <main class="chat-panel">
+        <div class="messages" id="messages" role="log" aria-live="polite">
+          <div class="message assistant welcome">
+            <div class="bubble">
+              <p>
+                Ask anything about AI inference costs, provider pricing, or catalog
+                comparisons. I can search the web (Tavily), query the InferenceAtlas
+                catalog, and compare providers.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form class="composer" id="chat-form">
+          <textarea
+            id="message-input"
+            rows="2"
+            placeholder="Ask a question… e.g. Compare llm providers for 70B inference"
+            required
+          ></textarea>
+          <button type="submit" class="btn-primary" id="btn-send">
+            <span class="send-label">Send</span>
+            <span class="spinner" hidden aria-hidden="true"></span>
+          </button>
+        </form>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

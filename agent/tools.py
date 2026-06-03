@@ -13,15 +13,19 @@ import os
 import sys
 from typing import Any
 
+from .config import COMPOSIO_API_KEY, COMPOSIO_DRY_RUN, TAVILY_API_KEY
+
 # ---------------------------------------------------------------------------
 # Tavily search
 # ---------------------------------------------------------------------------
 
 def tavily_search(query: str, max_results: int = 5) -> str:
     """Search the web for current AI pricing or provider news."""
+    if not TAVILY_API_KEY:
+        return "[tavily_search skipped] TAVILY_API_KEY is not set."
     try:
         from tavily import TavilyClient
-        client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+        client = TavilyClient(api_key=TAVILY_API_KEY)
         results = client.search(query=query, max_results=max_results, search_depth="advanced")
         items = results.get("results", [])
         if not items:
@@ -65,6 +69,15 @@ def get_catalog_summary() -> str:
     )
 
 
+def _clean_optional_str(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if text.lower() in ("", "none", "null", "n/a"):
+        return ""
+    return text
+
+
 def compare_providers(workload_type: str, model_size: str = "", top_n: int = 5) -> str:
     """
     Compare providers for a given workload type and optional model size filter.
@@ -74,6 +87,14 @@ def compare_providers(workload_type: str, model_size: str = "", top_n: int = 5) 
     if not rows:
         return "Catalog not available."
 
+    workload_type = _clean_optional_str(workload_type) or "llm"
+    model_size = _clean_optional_str(model_size)
+    try:
+        top_n = int(top_n)
+    except (TypeError, ValueError):
+        top_n = 5
+    top_n = max(1, min(top_n, 20))
+
     filtered = [
         r for r in rows
         if workload_type.lower() in r.get("workload_type", r.get("type", "")).lower()
@@ -81,14 +102,22 @@ def compare_providers(workload_type: str, model_size: str = "", top_n: int = 5) 
     if model_size:
         filtered = [
             r for r in filtered
-            if model_size.lower() in r.get("model", r.get("model_name", "")).lower()
+            if model_size.lower()
+            in str(r.get("model_key", r.get("model", r.get("model_name", "")))).lower()
         ]
     if not filtered:
         return f"No catalog entries found for workload_type='{workload_type}' model_size='{model_size}'."
 
     # Sort by a numeric price field — try common column names
     price_col = None
-    for col in ["price_per_1m_tokens", "price_per_token", "cost_per_1k", "price", "input_cost_per_token"]:
+    for col in [
+        "unit_price_usd",
+        "price_per_1m_tokens",
+        "price_per_token",
+        "cost_per_1k",
+        "price",
+        "input_cost_per_token",
+    ]:
         if col in (filtered[0] or {}):
             price_col = col
             break
@@ -103,7 +132,7 @@ def compare_providers(workload_type: str, model_size: str = "", top_n: int = 5) 
     lines = [f"Top {len(top)} options for '{workload_type}':"]
     for r in top:
         provider = r.get("provider", "?")
-        model = r.get("model", r.get("model_name", "?"))
+        model = r.get("model_key", r.get("model", r.get("model_name", "?")))
         price = r.get(price_col, "?") if price_col else "see catalog"
         lines.append(f"  • {provider} / {model} — {price_col or 'price'}: {price}")
     return "\n".join(lines)
@@ -122,9 +151,21 @@ def export_report(content: str, destination: str = "google_sheets") -> str:
 
 def composio_action(action_name: str, params: dict | None = None) -> str:
     """Run any Composio action by name with the given params dict."""
+    if not COMPOSIO_API_KEY:
+        return f"[composio_action skipped] COMPOSIO_API_KEY is not set. action={action_name}"
+    if COMPOSIO_DRY_RUN:
+        return json.dumps(
+            {
+                "dry_run": True,
+                "action": action_name,
+                "params": params or {},
+                "message": "Composio dry-run enabled (COMPOSIO_DRY_RUN=1).",
+            },
+            indent=2,
+        )
     try:
         from composio_openai import ComposioToolSet
-        toolset = ComposioToolSet(api_key=os.environ.get("COMPOSIO_API_KEY"))
+        toolset = ComposioToolSet(api_key=COMPOSIO_API_KEY)
         result = toolset.execute_action(
             action=action_name,
             params=params or {},

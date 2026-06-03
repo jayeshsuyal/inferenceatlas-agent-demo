@@ -1,5 +1,9 @@
 """InferenceAtlas public agent package."""
 
+from ._env import load_dotenv
+
+load_dotenv()
+
 __all__ = ["InferenceAtlasAgent"]
 
 

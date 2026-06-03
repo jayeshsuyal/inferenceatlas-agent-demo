@@ -9,12 +9,13 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 
 If you are reviewing quickly, use this order:
 
-1. Run the one-command judge harness.
-2. Run the no-key demo if you want the full packet output.
-3. Inspect the generated decision brief.
-4. Inspect the scenario matrix.
-5. Validate the public conformance contract.
-6. Check the safety defaults and tests.
+1. Read the Product Tour.
+2. Run the one-command judge harness.
+3. Run the no-key demo if you want the full packet output.
+4. Inspect the generated decision brief.
+5. Inspect the scenario matrix.
+6. Validate the public conformance contract.
+7. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -37,7 +38,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 
 | Question | Public artifact |
 | --- | --- |
-| What does the product do? | `README.md` |
+| What does the product do? | `docs/PRODUCT_TOUR.md` and `README.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
@@ -95,6 +96,7 @@ The strongest review signal is not a single artifact. It is the chain:
 
 ```text
 README thesis
+-> Product Tour
 -> one-command judge harness
 -> Design Partner Brief
 -> Design Partner Trial Kit

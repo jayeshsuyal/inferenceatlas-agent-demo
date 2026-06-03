@@ -46,6 +46,7 @@ class JudgeHarnessTests(unittest.TestCase):
         artifact_paths = {item["path"] for item in report["artifact_checklist"]}
 
         for expected in [
+            "docs/PRODUCT_TOUR.md",
             "examples/generated/demo_transcript.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
@@ -64,6 +65,7 @@ class JudgeHarnessTests(unittest.TestCase):
         markdown = render_judge_report_markdown(build_judge_report(write_artifacts=False))
 
         self.assertIn("# InferenceAtlas Judge Harness", markdown)
+        self.assertIn("docs/PRODUCT_TOUR.md", markdown)
         self.assertIn("admin_code_fix_bot", markdown)
         self.assertIn("BLOCKED", markdown)
         self.assertIn("examples/generated/review_room.html", markdown)

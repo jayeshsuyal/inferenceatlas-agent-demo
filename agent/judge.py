@@ -35,6 +35,7 @@ JUDGE_COMMANDS = [
 ]
 
 PRIMARY_ARTIFACTS = [
+    "docs/PRODUCT_TOUR.md",
     "examples/generated/demo_transcript.md",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
@@ -324,14 +325,15 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "",
             "## Next Human Review",
             "",
-            "1. Skim `examples/generated/review_room.html`.",
-            "2. Read `examples/generated/trust_receipt.md`.",
-            "3. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "4. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "5. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "6. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "7. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "8. Confirm sponsor adapters stay dry-run and non-approving.",
+            "1. Read `docs/PRODUCT_TOUR.md`.",
+            "2. Skim `examples/generated/review_room.html`.",
+            "3. Read `examples/generated/trust_receipt.md`.",
+            "4. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "5. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "6. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "7. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "8. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "9. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

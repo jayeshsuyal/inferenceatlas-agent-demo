@@ -55,6 +55,7 @@ class JudgeHarnessTests(unittest.TestCase):
 
         for expected in [
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "examples/generated/demo_transcript.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
@@ -76,6 +77,7 @@ class JudgeHarnessTests(unittest.TestCase):
 
         self.assertIn("# InferenceAtlas Judge Harness", markdown)
         self.assertIn("docs/PRODUCT_TOUR.md", markdown)
+        self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", markdown)
         self.assertIn("admin_code_fix_bot", markdown)
         self.assertIn("BLOCKED", markdown)
         self.assertIn("examples/generated/review_room.html", markdown)

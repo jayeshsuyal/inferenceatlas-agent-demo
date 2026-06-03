@@ -36,12 +36,15 @@ The default path is deterministic and works without API keys.
 
 If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 
+For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`.
+
 ## What To Inspect
 
 | Question | Public artifact |
 | --- | --- |
 | What does the product do? | `docs/PRODUCT_TOUR.md` and `README.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
+| What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
 | What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
@@ -101,6 +104,7 @@ The strongest review signal is not a single artifact. It is the chain:
 ```text
 README thesis
 -> Product Tour
+-> Agentic Review Expected Output
 -> one-command judge harness
 -> Design Partner Brief
 -> Design Partner Trial Kit

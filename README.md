@@ -36,7 +36,7 @@ ia-judge
 
 ## Judge Fast Path
 
-If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
+If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md) and [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md).
 
 Then run:
 
@@ -108,7 +108,7 @@ examples/generated/support_triage_trial_report.md
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Product Tour](docs/PRODUCT_TOUR.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Product Tour](docs/PRODUCT_TOUR.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 

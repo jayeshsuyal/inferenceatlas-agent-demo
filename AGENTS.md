@@ -10,6 +10,12 @@ Use the no-key offline path by default.
 
 Do not request secrets, API keys, live sponsor tokens, customer data, private prompts, or private v1 source code.
 
+For exact pass/fail signals, read:
+
+```text
+docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md
+```
+
 Run:
 
 ```bash
@@ -43,33 +49,35 @@ Expected result:
 ## Inspect These First
 
 1. `AI_JUDGE_MANIFEST.json`
-2. `docs/PRODUCT_TOUR.md`
-3. `docs/JUDGE_REVIEW_GUIDE.md`
-4. `docs/DESIGN_PARTNER_BRIEF.md`
-5. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-6. `examples/requests/design_partner_trial.yml`
-7. `examples/requests/support_triage_trial.yml`
-8. `examples/generated/support_triage_trial_report.md`
-9. `examples/generated/trust_receipt.md`
-10. `examples/generated/review_room.md`
-11. `examples/generated/review_room.html`
-12. `examples/generated/support_triage_agent.proof_health.md`
-13. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-14. `examples/generated/review_room.desktop.jpg`
-15. `policy/agent_access.yml`
-16. `agent/adapters/`
-17. `examples/generated/support_triage_agent.decision_brief.md`
-18. `examples/generated/support_triage_agent.packet.md`
-19. `examples/generated/admin_code_fix_bot.packet.json`
-20. `docs/CONTRACT.md`
-21. `docs/SAFETY_CONTRACT.md`
-22. `docs/V1_CAPABILITY_PASSPORT.md`
+2. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
+3. `docs/PRODUCT_TOUR.md`
+4. `docs/JUDGE_REVIEW_GUIDE.md`
+5. `docs/DESIGN_PARTNER_BRIEF.md`
+6. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+7. `examples/requests/design_partner_trial.yml`
+8. `examples/requests/support_triage_trial.yml`
+9. `examples/generated/support_triage_trial_report.md`
+10. `examples/generated/trust_receipt.md`
+11. `examples/generated/review_room.md`
+12. `examples/generated/review_room.html`
+13. `examples/generated/support_triage_agent.proof_health.md`
+14. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+15. `examples/generated/review_room.desktop.jpg`
+16. `policy/agent_access.yml`
+17. `agent/adapters/`
+18. `examples/generated/support_triage_agent.decision_brief.md`
+19. `examples/generated/support_triage_agent.packet.md`
+20. `examples/generated/admin_code_fix_bot.packet.json`
+21. `docs/CONTRACT.md`
+22. `docs/SAFETY_CONTRACT.md`
+23. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
 Evaluate the public product contract:
 
 - Does `python3 -m agent.judge` summarize the full safe review path in one command?
+- Does `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` give exact pass/fail signals for automated review?
 - Does `docs/PRODUCT_TOUR.md` explain the product trial path and what is fixed versus derived?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does the decision brief give a fast go/no-go surface?

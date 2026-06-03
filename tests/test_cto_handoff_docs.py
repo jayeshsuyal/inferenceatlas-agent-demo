@@ -92,6 +92,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("docs/JUDGE_REVIEW_GUIDE.md", readme)
         self.assertIn("AGENTS.md", readme)
         self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
+        self.assertEqual(manifest["agentic_review_expected_output"], "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
         self.assertEqual(manifest["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
@@ -139,6 +140,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
         )
         self.assertEqual(manifest["primary_artifacts"]["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
+        self.assertEqual(
+            manifest["primary_artifacts"]["agentic_review_expected_output"],
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
+        )
         self.assertEqual(manifest["primary_artifacts"]["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
@@ -156,6 +161,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         for expected in [
             "Five-Minute Path",
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -188,6 +194,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "Agent Reviewer Instructions",
             "Do not request secrets",
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",

@@ -7,6 +7,7 @@
   "readme_badges": ["tests passing", "CI green", "public contract v0", "safety: dry-run default"],
   "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a Trust Receipt, DecisionPacket, Agent Access Decision Brief, and Proof Health report showing what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, what may drift, who must review, and what validation comes next.",
   "agent_reviewer_instructions": "AGENTS.md",
+  "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
   "product_tour": "docs/PRODUCT_TOUR.md",
   "public_contract_doc": "docs/CONTRACT.md",
@@ -115,6 +116,7 @@
     "proof_health_json": "examples/generated/support_triage_agent.proof_health.json",
     "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
+    "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "design_partner_trial_template": "examples/requests/design_partner_trial.yml",
@@ -171,7 +173,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "judge harness", "trust receipt", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "judge harness", "agentic review expected output", "trust receipt", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -185,6 +187,7 @@
   ],
   "judge_review_path": [
     "AGENTS.md",
+    "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "README.md",
     "docs/PRODUCT_TOUR.md",
     "docs/JUDGE_REVIEW_GUIDE.md",

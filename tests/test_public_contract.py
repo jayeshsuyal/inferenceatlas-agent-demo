@@ -41,6 +41,7 @@ class PublicContractTests(unittest.TestCase):
             "## Proof Health Contract",
             "## Conformance",
             "## Sponsor Adapter Boundary",
+            "## Sponsor Live Readiness",
             "## Private Boundary",
             "python3 -m agent.contract --all",
             "python3 -m agent.contract --all --generated-dir examples/generated",

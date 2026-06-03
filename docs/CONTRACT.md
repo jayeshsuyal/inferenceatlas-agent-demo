@@ -166,6 +166,33 @@ Sponsor adapters may enrich the public review surface, but they cannot own the a
 | Nebius | Narration or summary projections. | It must not own verdicts, safety state, or blocked claims. |
 | OpenClaw | Trace steps with blocked/allowed outcomes. | It must not hide blocked attempts or mutate production state. |
 
+## Sponsor Live Readiness
+
+A conforming public readiness report must show whether sponsor integrations are contract-ready for live enrichment without requiring keys in the default path.
+
+The readiness surface must show:
+
+- provider name
+- live value
+- visible output artifacts
+- next CTO setup step
+- whether the default path requires keys
+- whether the provider can execute, approve, grant, or mutate state
+- whether human review remains required
+
+Run:
+
+```bash
+python3 -m agent.sponsor_readiness
+```
+
+Expected public artifacts:
+
+```text
+examples/generated/sponsor_live_readiness.md
+examples/generated/sponsor_live_readiness.json
+```
+
 ## Private Boundary
 
 The public contract must not expose:

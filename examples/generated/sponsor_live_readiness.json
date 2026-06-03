@@ -1,0 +1,178 @@
+{
+  "default_public_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "live_calls_made": false,
+    "mutates_production": false,
+    "requires_human_review": true,
+    "works_without_keys": true
+  },
+  "environment_inspected": false,
+  "generated_by": "inferenceatlas-agent-demo",
+  "headline": "Sponsor tools enrich proof; they do not approve access.",
+  "mode": "offline_readiness_contract",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "providers": [
+    {
+      "adapter_status": "dry_run_planned",
+      "cannot_do": [
+        "approve access",
+        "grant permissions",
+        "execute writes",
+        "reduce proof debt automatically"
+      ],
+      "env": {
+        "configured": false,
+        "configured_vars": [],
+        "inspected": false,
+        "missing_vars": [],
+        "note": "Environment variables are not inspected in the default public path."
+      },
+      "live_value": "Dry-run permission diff for GitHub, Slack, and Jira actions.",
+      "next_cto_step": "Keep Composio dry-run by default; emit action plans without granting permissions or writing.",
+      "proof_pack_type": "permission_diff",
+      "provider": "composio",
+      "readiness": "contract_ready",
+      "safety_boundary": {
+        "blocked_from_approving_access": true,
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "human_review_required": true,
+        "requires_api_key_in_default_path": false,
+        "would_execute": false
+      },
+      "scenario": "support_triage_agent",
+      "visible_outputs": [
+        "tool-by-tool permission diff",
+        "blocked action list",
+        "required proof per action"
+      ]
+    },
+    {
+      "adapter_status": "evidence_candidates_planned",
+      "cannot_do": [
+        "approve access",
+        "grant permissions",
+        "declare compliance",
+        "reduce proof debt automatically"
+      ],
+      "env": {
+        "configured": false,
+        "configured_vars": [],
+        "inspected": false,
+        "missing_vars": [],
+        "note": "Environment variables are not inspected in the default public path."
+      },
+      "live_value": "Source-backed evidence notes with URL and freshness fields.",
+      "next_cto_step": "Fetch evidence candidates for missing proof; require human review before proof debt changes.",
+      "proof_pack_type": "evidence_candidate_plan",
+      "provider": "tavily",
+      "readiness": "contract_ready",
+      "safety_boundary": {
+        "blocked_from_approving_access": true,
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "human_review_required": true,
+        "requires_api_key_in_default_path": false,
+        "would_execute": false
+      },
+      "scenario": "support_triage_agent",
+      "visible_outputs": [
+        "evidence notes",
+        "source URL slots",
+        "freshness status"
+      ]
+    },
+    {
+      "adapter_status": "deterministic_narration_fallback",
+      "cannot_do": [
+        "approve access",
+        "grant permissions",
+        "change verdict",
+        "change safety state"
+      ],
+      "env": {
+        "configured": false,
+        "configured_vars": [],
+        "inspected": false,
+        "missing_vars": [],
+        "note": "Environment variables are not inspected in the default public path."
+      },
+      "live_value": "Reviewer-ready narration over locked packet fields.",
+      "next_cto_step": "Connect Nebius only as a narration layer; keep verdict, blocked claims, and safety state locked.",
+      "proof_pack_type": "locked_field_narration",
+      "provider": "nebius",
+      "readiness": "contract_ready",
+      "safety_boundary": {
+        "blocked_from_approving_access": true,
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "human_review_required": true,
+        "requires_api_key_in_default_path": false,
+        "would_execute": false
+      },
+      "scenario": "support_triage_agent",
+      "visible_outputs": [
+        "reviewer summary projection",
+        "demo transcript narration note",
+        "trace step for model narration"
+      ]
+    },
+    {
+      "adapter_status": "trace_contract_planned",
+      "cannot_do": [
+        "approve access",
+        "grant permissions",
+        "execute runtime steps",
+        "hide blocked attempts"
+      ],
+      "env": {
+        "configured": false,
+        "configured_vars": [],
+        "inspected": false,
+        "missing_vars": [],
+        "note": "Environment variables are not inspected in the default public path."
+      },
+      "live_value": "Runtime trace plan for attempted steps, policy decisions, and blocked outcomes.",
+      "next_cto_step": "Record the live agent loop as trace evidence; do not let runtime checks replace pre-permission review.",
+      "proof_pack_type": "runtime_trace_plan",
+      "provider": "openclaw",
+      "readiness": "contract_ready",
+      "safety_boundary": {
+        "blocked_from_approving_access": true,
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "human_review_required": true,
+        "requires_api_key_in_default_path": false,
+        "would_execute": false
+      },
+      "scenario": "support_triage_agent",
+      "visible_outputs": [
+        "runtime trace steps",
+        "policy decisions",
+        "blocked outcome records"
+      ]
+    }
+  ],
+  "readiness_id": "ia-sponsor-live-readiness-public-v0",
+  "scenario": "support_triage_agent",
+  "schema_version": "sponsor_live_readiness.v0",
+  "summary": {
+    "all_contracts_ready": true,
+    "all_non_approving": true,
+    "all_non_executing": true,
+    "all_non_granting": true,
+    "all_non_mutating": true,
+    "default_path_requires_keys": false,
+    "human_review_required": true,
+    "provider_count": 4
+  }
+}

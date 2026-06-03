@@ -10,12 +10,14 @@ Run the current proof surface:
 
 ```bash
 python3 -m agent.demo
+python3 -m agent.sponsor_readiness
 python3 -m unittest discover -s tests
 ```
 
 Expected result:
 
 - the demo runs without API keys
+- sponsor live readiness shows where Nebius, Tavily, Composio, and OpenClaw can add proof without approval power
 - packet, trace, decision brief, and Proof Health artifacts regenerate under `examples/generated/`
 - production access remains blocked
 - external writes remain disabled
@@ -34,6 +36,7 @@ These pieces are safe to build on:
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
 | Schemas | `schemas/` | Public contracts for generated JSON artifacts. Update tests with any schema change. |
 | Generated proof | `examples/generated/` | Checked-in artifacts judges and AI reviewers can inspect. Regenerate after behavior changes. |
+| Sponsor readiness | `agent/sponsor_readiness.py` | CTO-facing map for live sponsor value, visible artifacts, and safety boundaries. |
 | Safety tests | `tests/` | Guardrails for no-key execution, blocked access, dry-run defaults, and artifact shape. |
 | CI smoke | `.github/workflows/smoke.yml` | GitHub Actions proof that the public harness is runnable and safe by default. |
 
@@ -68,13 +71,14 @@ Live integrations should attach to the spine as structured evidence or scoped to
 ## Live Build Order
 
 1. Keep `python3 -m agent.demo` green without keys.
-2. Add Tavily evidence notes as structured packet entries.
-3. Add Nebius narration that summarizes the existing packet without changing safety defaults.
-4. Add Composio dry-run access planning for GitHub, Slack, and Jira.
-5. Add OpenClaw step recording into the trace artifact.
-6. Preserve Proof Health as a lifecycle projection; live evidence may refresh drift inputs but cannot auto-approve access.
-7. Update generated artifacts and tests after each step.
-8. Record the live walkthrough only after offline and live paths both preserve the safety contract.
+2. Run `python3 -m agent.sponsor_readiness --inspect-env` locally to confirm which sponsor keys are configured without printing values.
+3. Add Tavily evidence notes as structured packet entries.
+4. Add Nebius narration that summarizes the existing packet without changing safety defaults.
+5. Add Composio dry-run access planning for GitHub, Slack, and Jira.
+6. Add OpenClaw step recording into the trace artifact.
+7. Preserve Proof Health as a lifecycle projection; live evidence may refresh drift inputs but cannot auto-approve access.
+8. Update generated artifacts and tests after each step.
+9. Record the live walkthrough only after offline and live paths both preserve the safety contract.
 
 ## Integration Rules
 
@@ -109,6 +113,7 @@ python3 -m json.tool schemas/decision_packet.schema.json >/tmp/decision_packet_s
 python3 -m json.tool schemas/agent_access_decision_brief.schema.json >/tmp/decision_brief_schema_check.json
 python3 -m py_compile agent/*.py
 env NEBIUS_API_KEY= TAVILY_API_KEY= COMPOSIO_API_KEY= IA_LIVE_MODE= python3 -m agent.demo >/tmp/inferenceatlas_demo.txt
+python3 -m agent.sponsor_readiness --no-write
 python3 -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/packet_check.json
 python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/trace_check.json
 python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/brief_check.json

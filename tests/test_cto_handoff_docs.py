@@ -101,8 +101,13 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
+        self.assertEqual(
+            manifest["design_partner_trial_runner_command"],
+            "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+        )
         self.assertEqual(manifest["trust_receipt_command"], "python3 -m agent.trust")
         self.assertEqual(manifest["review_room_html_command"], "python3 -m agent.review_room")
         self.assertEqual(manifest["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
@@ -115,6 +120,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
         self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
+        self.assertEqual(
+            manifest["primary_artifacts"]["support_triage_trial_report_markdown"],
+            "examples/generated/support_triage_trial_report.md",
+        )
         self.assertEqual(manifest["primary_artifacts"]["policy_gate"], "policy/agent_access.yml")
         self.assertEqual(manifest["primary_artifacts"]["sponsor_adapters"], "agent/adapters/")
 

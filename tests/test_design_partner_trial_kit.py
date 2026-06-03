@@ -52,8 +52,10 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_BRIEF.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
+            "examples/generated/support_triage_trial_report.md",
             "policy/agent_access.yml",
-            "This kit does not add a public parser or live integration path.",
+            "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+            "public offline trial runner",
             "Private engine, public proof.",
         ]:
             self.assertIn(expected, kit)
@@ -128,12 +130,15 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
         self.assertEqual(manifest["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
         self.assertEqual(manifest["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertIn("design partner trial kit", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("design partner trial runner", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("trial request templates", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for expected in [
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
             "examples/requests/design_partner_trial.yml",
             "examples/requests/support_triage_trial.yml",
+            "examples/generated/support_triage_trial_report.md",
+            "examples/generated/support_triage_trial_report.json",
         ]:
             self.assertIn(expected, artifact_paths)
             self.assertIn(expected, markdown)

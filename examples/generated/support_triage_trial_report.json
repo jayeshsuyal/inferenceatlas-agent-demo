@@ -1,0 +1,230 @@
+{
+  "access_speed_lane": {
+    "decision_time": "immediate",
+    "highest_risk": "high",
+    "lane": "proof_routed_scoped_validation",
+    "production_access": false,
+    "reason": "Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.",
+    "safe_next_step": "Approve a scoped validation review before any production permission grant.",
+    "scoped_validation_review": true,
+    "user_impact": "replaces_back_and_forth_with_owner_routing"
+  },
+  "candidate_agent": {
+    "business_owner": "Support Ops",
+    "current_approval_path": "manual_security_engineering_support_ops_review",
+    "name": "support_triage_agent",
+    "purpose": "Read issue and incident context, summarize support escalation signals, and prepare draft follow-up work for a human support lead.",
+    "requested_environment": "validation_only"
+  },
+  "decision_brief_summary": {
+    "brief_id": "ia-agent-access-brief-support-triage-v0",
+    "next_validation": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "production_access": false,
+    "recommended_next_step": "Approve a scoped validation review only.",
+    "scoped_validation_review": true
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "mode": "offline_deterministic",
+  "packet_summary": {
+    "approval_posture": {
+      "compliance_claims": "blocked_until_named_reviewer_evidence",
+      "production_access": "blocked",
+      "read_access": "candidate_after_scope_review",
+      "validation_review": "allowed",
+      "write_access": "blocked_until_rollback_and_off_switch_proof"
+    },
+    "blocked_claim_count": 4,
+    "missing_proof_count": 5,
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "requested_systems": [
+      "GitHub",
+      "Slack",
+      "Jira"
+    ],
+    "review_posture": "Approve a scoped validation review before any production permission grant.",
+    "verdict": "Do not approve production tool access yet."
+  },
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "proof_debt": {
+    "derived_blocked_claims": [
+      {
+        "claim": "Production tool access is approved.",
+        "reason": "No named Security/Legal reviewer and no tool scope proof."
+      },
+      {
+        "claim": "Customer-data handling is safe.",
+        "reason": "Retention, logging, deletion, and channel/repository boundaries are not proven."
+      },
+      {
+        "claim": "The agent may create or mutate Jira/GitHub/Slack state.",
+        "reason": "Write actions require rollback/off-switch proof and explicit human approval."
+      },
+      {
+        "claim": "The workflow is compliance-ready.",
+        "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
+      }
+    ],
+    "derived_missing_proof": [
+      {
+        "item": "GitHub repository allowlist and permission level",
+        "owner": "Engineering",
+        "unblocks": "read-only repository evidence review"
+      },
+      {
+        "item": "Slack channel allowlist, retention policy, and customer-data boundary",
+        "owner": "Security/Legal",
+        "unblocks": "incident-channel summarization review"
+      },
+      {
+        "item": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+        "owner": "Engineering",
+        "unblocks": "draft ticket validation"
+      },
+      {
+        "item": "Support escalation workflow and human handoff owner",
+        "owner": "Support Ops",
+        "unblocks": "triage workflow fit review"
+      },
+      {
+        "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+        "owner": "Security/Engineering",
+        "unblocks": "reviewable pilot packet"
+      }
+    ],
+    "request_missing_proof": [
+      {
+        "item": "GitHub repository allowlist and permission level",
+        "owner": "Engineering",
+        "unblocks": "read-only repository evidence review"
+      },
+      {
+        "item": "Slack channel allowlist, retention policy, and customer-data boundary",
+        "owner": "Security/Legal",
+        "unblocks": "named-channel summarization review"
+      },
+      {
+        "item": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+        "owner": "Engineering",
+        "unblocks": "draft ticket validation"
+      },
+      {
+        "item": "Support escalation workflow and human handoff owner",
+        "owner": "Support Ops",
+        "unblocks": "scoped triage workflow validation"
+      }
+    ],
+    "request_unsupported_claims": [
+      {
+        "claim": "Production tool access is approved.",
+        "reason": "No named reviewer approval and no complete tool scope proof."
+      },
+      {
+        "claim": "Customer-data handling is safe.",
+        "reason": "Retention, logging, deletion, and channel/repository boundaries are not proven."
+      },
+      {
+        "claim": "The agent may create or mutate Jira, GitHub, or Slack state.",
+        "reason": "Write actions require rollback/off-switch proof and explicit human approval."
+      }
+    ]
+  },
+  "request_path": "examples/requests/support_triage_trial.yml",
+  "request_readiness": "ready_for_scoped_trial",
+  "request_schema_version": "design_partner_trial_request.v0",
+  "request_status": "public_sample_no_secrets",
+  "requested_risk_flags": {
+    "admin_scopes_requested": false,
+    "external_writes_requested": false,
+    "production_access_requested": false,
+    "risk_flags_present": []
+  },
+  "reviewer_routing": {
+    "derived_action_items": [
+      {
+        "action": "Confirm allowed data scope, retention, and logging terms",
+        "blocks": "Slack channel summarization and customer incident context access",
+        "owner": "Security/Legal"
+      },
+      {
+        "action": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+        "blocks": "GitHub/Jira tool connection and any write-action pilot",
+        "owner": "Engineering"
+      },
+      {
+        "action": "Validate triage workflow fit, escalation rules, and human handoff owner",
+        "blocks": "support operations pilot",
+        "owner": "Support Ops"
+      },
+      {
+        "action": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+        "blocks": "paid production rollout",
+        "owner": "Procurement/Finance"
+      }
+    ],
+    "derived_reviewer_owners": [
+      {
+        "current_state": "required_before_access",
+        "owner": "Security/Legal",
+        "review_area": "customer-data exposure, retention, logging, policy boundary"
+      },
+      {
+        "current_state": "required_before_write_actions",
+        "owner": "Engineering",
+        "review_area": "permission boundaries, rollback, off-switch, audit logs"
+      },
+      {
+        "current_state": "required_before_pilot",
+        "owner": "Support Ops",
+        "review_area": "workflow fit, escalation rules, human handoff"
+      },
+      {
+        "current_state": "conditional",
+        "owner": "Procurement/Finance",
+        "review_area": "paid tool/vendor spend if live actions or seats are enabled"
+      }
+    ],
+    "request_roles": {
+      "conditional": [
+        "Procurement/Finance"
+      ],
+      "required": [
+        "Security/Legal",
+        "Engineering",
+        "Support Ops"
+      ]
+    }
+  },
+  "safety": {
+    "composio_dry_run_default": true,
+    "input_defaults": {
+      "access_approval_granted": false,
+      "composio_dry_run_default": true,
+      "external_writes_enabled": false,
+      "human_approval_required": true,
+      "packet_state_mutation_allowed": false,
+      "permission_grant_allowed": false,
+      "production_mutation_allowed": false
+    },
+    "public_runner_approves_access": false,
+    "public_runner_executes_external_writes": false,
+    "public_runner_grants_permissions": false,
+    "public_runner_mutates_production": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "design_partner_trial_report.v0",
+  "validation": {
+    "errors": [],
+    "warnings": []
+  },
+  "written_artifacts": [
+    "examples/generated/support_triage_trial_report.md",
+    "examples/generated/support_triage_trial_report.json",
+    "examples/generated/support_triage_trial.packet.md",
+    "examples/generated/support_triage_trial.packet.json",
+    "examples/generated/support_triage_trial.decision_brief.md",
+    "examples/generated/support_triage_trial.decision_brief.json"
+  ]
+}

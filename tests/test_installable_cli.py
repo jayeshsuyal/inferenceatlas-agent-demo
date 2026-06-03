@@ -13,6 +13,7 @@ EXPECTED_SCRIPTS = {
     "ia-judge": "agent.judge:main",
     "ia-review": "agent.review:main",
     "ia-review-room": "agent.review_room:main",
+    "ia-trial": "agent.trial:main",
     "ia-trust": "agent.trust:main",
 }
 
@@ -71,8 +72,10 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-judge", readme)
         self.assertIn("ia-review --list", readme)
         self.assertIn("ia-contract --all", readme)
+        self.assertIn("ia-trial examples/requests/support_triage_trial.yml", readme)
         self.assertIn("python -m pip install -e .", workflow)
         self.assertIn("ia-judge --no-write", workflow)
+        self.assertIn("ia-trial examples/requests/support_triage_trial.yml", workflow)
 
 
 if __name__ == "__main__":

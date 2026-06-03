@@ -1,0 +1,264 @@
+{
+  "approval_posture": {
+    "compliance_claims": "blocked_until_named_reviewer_evidence",
+    "production_access": "blocked",
+    "read_access": "candidate_after_scope_review",
+    "validation_review": "allowed",
+    "write_access": "blocked_until_rollback_and_off_switch_proof"
+  },
+  "blocked_claims": [
+    {
+      "claim": "Production tool access is approved.",
+      "reason": "No named Security/Legal reviewer and no tool scope proof."
+    },
+    {
+      "claim": "Customer-data handling is safe.",
+      "reason": "Retention, logging, deletion, and channel/repository boundaries are not proven."
+    },
+    {
+      "claim": "The agent may create or mutate Jira/GitHub/Slack state.",
+      "reason": "Write actions require rollback/off-switch proof and explicit human approval."
+    },
+    {
+      "claim": "The workflow is compliance-ready.",
+      "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
+    }
+  ],
+  "data_scope": {
+    "may_include": [
+      "customer incident context",
+      "engineering bug reports",
+      "linked incident references",
+      "support escalation notes",
+      "internal incident channel summaries"
+    ],
+    "must_define_before_access": [
+      "retention period",
+      "logging policy",
+      "allowed channel and repository list",
+      "customer data handling boundary",
+      "reviewer-owned deletion and rollback process"
+    ]
+  },
+  "decision": {
+    "question": "Should the support triage agent get GitHub, Slack, and Jira access?",
+    "raw_prompt": "Should this support triage agent get GitHub, Slack, Jira access? It will read issues from named repositories; read labels and linked incident references; summarize named incident channels; propose draft tickets. Requested environment: validation_only. Current approval path: manual_security_engineering_support_ops_review.",
+    "review_posture": "Approve a scoped validation review before any production permission grant.",
+    "verdict": "Do not approve production tool access yet."
+  },
+  "evidence_notes": [
+    {
+      "note": "No live vendor, policy, or workspace evidence was fetched in offline mode.",
+      "source": "offline harness",
+      "status": "deterministic"
+    },
+    {
+      "note": "The public demo path prepares review packets and does not grant access.",
+      "source": "safety contract",
+      "status": "enforced_by_default"
+    }
+  ],
+  "generated_by": "inferenceatlas-agent-demo",
+  "missing_proof": [
+    {
+      "item": "GitHub repository allowlist and permission level",
+      "owner": "Engineering",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "item": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "owner": "Security/Legal",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "item": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "owner": "Engineering",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "item": "Support escalation workflow and human handoff owner",
+      "owner": "Support Ops",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "mode": "offline_deterministic",
+  "next_validation": {
+    "action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "owner": "Security/Legal + Engineering",
+    "success_criteria": [
+      "approved data and tool scope",
+      "audit log reviewed",
+      "write actions remain draft-only",
+      "rollback/off-switch owner named"
+    ]
+  },
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "requested_capability": [
+    {
+      "default_demo_state": "dry_run_only",
+      "requested_access": "read issues from named repositories; read labels and linked incident references",
+      "risk_level": "medium",
+      "system": "GitHub"
+    },
+    {
+      "default_demo_state": "dry_run_only",
+      "requested_access": "summarize named incident channels",
+      "risk_level": "high",
+      "system": "Slack"
+    },
+    {
+      "default_demo_state": "dry_run_only",
+      "requested_access": "propose draft tickets",
+      "risk_level": "high",
+      "system": "Jira"
+    }
+  ],
+  "reviewer_action_items": [
+    {
+      "action": "Confirm allowed data scope, retention, and logging terms",
+      "blocks": "Slack channel summarization and customer incident context access",
+      "owner": "Security/Legal"
+    },
+    {
+      "action": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "owner": "Engineering"
+    },
+    {
+      "action": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "blocks": "support operations pilot",
+      "owner": "Support Ops"
+    },
+    {
+      "action": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "blocks": "paid production rollout",
+      "owner": "Procurement/Finance"
+    }
+  ],
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_access",
+      "owner": "Security/Legal",
+      "review_area": "customer-data exposure, retention, logging, policy boundary"
+    },
+    {
+      "current_state": "required_before_write_actions",
+      "owner": "Engineering",
+      "review_area": "permission boundaries, rollback, off-switch, audit logs"
+    },
+    {
+      "current_state": "required_before_pilot",
+      "owner": "Support Ops",
+      "review_area": "workflow fit, escalation rules, human handoff"
+    },
+    {
+      "current_state": "conditional",
+      "owner": "Procurement/Finance",
+      "review_area": "paid tool/vendor spend if live actions or seats are enabled"
+    }
+  ],
+  "safety_state": {
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "default_public_demo_posture": "review_packet_only",
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "decision_packet.v0",
+  "source_status": {
+    "deterministic_packet": "generated",
+    "live_vendor_evidence": "not_fetched_in_offline_mode",
+    "reviewer_confirmation": "missing",
+    "tool_auth_state": "not_connected_in_offline_mode",
+    "user_prompt": "provided",
+    "workspace_policy": "missing"
+  },
+  "tool_access_plan": {
+    "github": {
+      "blocked_actions": [
+        "issue edits",
+        "repo configuration changes",
+        "workflow dispatch"
+      ],
+      "demo_allowance": "dry-run read-scope plan only",
+      "requested": "read issues from named repositories; read labels and linked incident references",
+      "required_proof": [
+        "repository allowlist",
+        "permission level",
+        "audit log owner"
+      ]
+    },
+    "jira": {
+      "blocked_actions": [
+        "ticket creation",
+        "status changes",
+        "assignment changes"
+      ],
+      "demo_allowance": "draft ticket proposal only; no production creation",
+      "requested": "propose draft tickets",
+      "required_proof": [
+        "project scope",
+        "draft-only mode",
+        "rollback/off-switch plan"
+      ]
+    },
+    "slack": {
+      "blocked_actions": [
+        "posting messages",
+        "DM access",
+        "workspace-wide history"
+      ],
+      "demo_allowance": "dry-run named-channel summary plan only",
+      "requested": "summarize named incident channels",
+      "required_proof": [
+        "channel allowlist",
+        "retention terms",
+        "customer-data boundary"
+      ]
+    }
+  },
+  "tool_scope": {
+    "github": {
+      "blocked_until_proven": [
+        "issue mutation",
+        "repo configuration changes"
+      ],
+      "read": [
+        "issues",
+        "labels",
+        "linked incident references"
+      ],
+      "write": []
+    },
+    "jira": {
+      "blocked_until_proven": [
+        "ticket creation in production",
+        "status changes",
+        "assignment changes"
+      ],
+      "read": [
+        "named project metadata"
+      ],
+      "write": [
+        "draft ticket proposal only"
+      ]
+    },
+    "slack": {
+      "blocked_until_proven": [
+        "posting messages",
+        "DM access",
+        "workspace-wide history"
+      ],
+      "read": [
+        "named incident channels only"
+      ],
+      "write": []
+    }
+  }
+}

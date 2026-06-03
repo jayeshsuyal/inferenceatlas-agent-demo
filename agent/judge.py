@@ -16,6 +16,7 @@ from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
+from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
 
 
 JUDGE_HARNESS_VERSION = "agent_judge_harness.v0"
@@ -29,6 +30,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.adapters --all",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
+    "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests",
 ]
 
@@ -42,6 +44,10 @@ PRIMARY_ARTIFACTS = [
     "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "examples/requests/design_partner_trial.yml",
     "examples/requests/support_triage_trial.yml",
+    "examples/generated/support_triage_trial_report.md",
+    "examples/generated/support_triage_trial_report.json",
+    "examples/generated/support_triage_trial.packet.json",
+    "examples/generated/support_triage_trial.decision_brief.json",
     "examples/generated/review_room.desktop.jpg",
     "policy/agent_access.yml",
     "agent/adapters/",
@@ -75,6 +81,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(_write_support_trace(output_dir))
     written.extend(write_trust_artifacts(output_dir))
     written.append(write_review_room_html(output_dir))
+    written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     return written
 
 
@@ -120,6 +127,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     gate_results = evaluate_all()
     adapter_summary = _adapter_summary()
     trust_receipt = build_trust_receipt()
+    trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
 
     return {
         "schema_version": JUDGE_HARNESS_VERSION,
@@ -139,6 +147,17 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             for scenario_name in SCENARIOS
         ],
         "access_speed_layer": trust_receipt["access_speed_layer"],
+        "design_partner_trial": {
+            "request_path": trial_report["request_path"],
+            "request_readiness": trial_report["request_readiness"],
+            "access_speed_lane": trial_report["access_speed_lane"]["lane"],
+            "production_access": trial_report["decision_brief_summary"]["production_access"],
+            "scoped_validation_review": trial_report["decision_brief_summary"]["scoped_validation_review"],
+            "validation_errors": trial_report["validation"]["errors"],
+            "approves_access": trial_report["safety"]["public_runner_approves_access"],
+            "grants_permissions": trial_report["safety"]["public_runner_grants_permissions"],
+            "executes_external_writes": trial_report["safety"]["public_runner_executes_external_writes"],
+        },
         "public_contract": {
             "status": "ok" if all(errors == [] for errors in contract_results.values()) else "fail",
             "results": contract_results,
@@ -181,6 +200,11 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or any(item["approval_granted"] for item in report["scenario_matrix"])
         or not report["access_speed_layer"]["all_routes_immediate"]
         or any(item["production_access"] for item in report["access_speed_layer"]["routes"])
+        or bool(report["design_partner_trial"]["validation_errors"])
+        or report["design_partner_trial"]["production_access"]
+        or report["design_partner_trial"]["approves_access"]
+        or report["design_partner_trial"]["grants_permissions"]
+        or report["design_partner_trial"]["executes_external_writes"]
     )
 
 
@@ -250,6 +274,23 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             )
         )
 
+    trial = report["design_partner_trial"]
+    lines.extend(
+        [
+            "",
+            "## Design Partner Trial Runner",
+            "",
+            f"- request: `{trial['request_path']}`",
+            f"- readiness: {trial['request_readiness']}",
+            f"- access speed lane: {trial['access_speed_lane']}",
+            f"- scoped validation review: {trial['scoped_validation_review']}",
+            f"- production access: {trial['production_access']}",
+            f"- approves access: {trial['approves_access']}",
+            f"- grants permissions: {trial['grants_permissions']}",
+            f"- executes external writes: {trial['executes_external_writes']}",
+        ]
+    )
+
     lines.extend(
         [
             "",
@@ -287,9 +328,10 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "2. Read `examples/generated/trust_receipt.md`.",
             "3. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
             "4. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "5. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "6. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "7. Confirm sponsor adapters stay dry-run and non-approving.",
+            "5. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "6. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "7. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "8. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

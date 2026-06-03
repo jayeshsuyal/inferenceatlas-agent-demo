@@ -25,6 +25,7 @@ python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
 
@@ -40,6 +41,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 | What is the one-command judge path? | `python3 -m agent.judge` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
+| What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
@@ -69,7 +71,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
-- the Design Partner Trial Kit gives that trial a concrete public input template without adding live writes or private source exposure
+- the Design Partner Trial Kit and trial runner give that trial a concrete public input and output path without adding live writes or private source exposure
 
 ## What This Does Not Expose
 
@@ -96,6 +98,7 @@ README thesis
 -> one-command judge harness
 -> Design Partner Brief
 -> Design Partner Trial Kit
+-> Design Partner Trial Runner
 -> no-key demo
 -> Trust Receipt
 -> Review Room

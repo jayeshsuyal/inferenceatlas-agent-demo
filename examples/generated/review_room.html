@@ -126,11 +126,31 @@
     </div>
     <div class="hash">
       <span class="pill neutral"><span>Trust Receipt</span><strong>ia-agent-trust-receipt-public-v0</strong></span>
-      <span class="pill ok"><span>Hash</span><strong>43367e239140041e</strong></span>
+      <span class="pill ok"><span>Hash</span><strong>cd5a62ed2124f48c</strong></span>
       <span class="pill neutral"><span>Mode</span><strong>offline deterministic</strong></span>
       <span class="pill ok"><span>External writes</span><strong>False</strong></span>
     </div>
   </header>
+
+  <section class="section panel callout">
+    <h2>Access Speed Layer</h2>
+    <p>The packet is the speed layer: safe requests move faster, risky requests are routed, critical requests are blocked immediately.</p>
+    <div class="hash">
+      <span class="pill ok"><span>Decision time</span><strong>immediate</strong></span>
+      <span class="pill ok"><span>Auto generated</span><strong>True</strong></span>
+      <span class="pill ok"><span>Fast lane</span><strong>1</strong></span>
+      <span class="pill warn"><span>Proof routed</span><strong>1</strong></span>
+      <span class="pill danger"><span>Blocked fast</span><strong>1</strong></span>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid three">
+      <article class="panel compact"><h3>support_triage_agent</h3><span class="pill warn"><span>lane</span><strong>proof_routed_scoped_validation</strong></span><span class="pill ok"><span>Decision time</span><strong>immediate</strong></span><p>Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.</p><small>Impact: replaces_back_and_forth_with_owner_routing</small><small>Safe next step: Approve a scoped validation review before any production permission grant.</small><small>Proof items: 5; reviewer gates: 4</small></article>
+<article class="panel compact"><h3>read_only_analytics_agent</h3><span class="pill ok"><span>lane</span><strong>fast_lane_scoped_validation</strong></span><span class="pill ok"><span>Decision time</span><strong>immediate</strong></span><p>Low-risk read-only access can move to scoped validation after owner scope confirmation.</p><small>Impact: accelerates_safe_validation</small><small>Safe next step: Approve a scoped read-only validation review after data owner scope confirmation.</small><small>Proof items: 3; reviewer gates: 2</small></article>
+<article class="panel compact"><h3>admin_code_fix_bot</h3><span class="pill danger"><span>lane</span><strong>blocked_fast</strong></span><span class="pill ok"><span>Decision time</span><strong>immediate</strong></span><p>Critical/admin/prod-write access is blocked before validation with exact reviewer gates.</p><small>Impact: prevents_slow_unsafe_escalation</small><small>Safe next step: Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved.</small><small>Proof items: 2; reviewer gates: 3</small></article>
+    </div>
+  </section>
 
   <section class="section panel">
     <h2>Scenario Matrix</h2>

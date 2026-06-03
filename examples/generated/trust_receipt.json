@@ -1,4 +1,59 @@
 {
+  "access_speed_layer": {
+    "all_routes_immediate": true,
+    "blocked_fast_count": 1,
+    "decision_time": "immediate",
+    "fast_lane_count": 1,
+    "has_blocked_fast_lane": true,
+    "has_fast_lane": true,
+    "has_proof_routed_lane": true,
+    "headline": "The packet is the speed layer: safe requests move faster, risky requests are routed, critical requests are blocked immediately.",
+    "manual_back_and_forth_replaced": true,
+    "manual_back_and_forth_replaced_by": [
+      "scenario blast-radius diff",
+      "permission envelope",
+      "proof debt ledger",
+      "reviewer routing",
+      "safe next validation step"
+    ],
+    "packet_generated_automatically": true,
+    "proof_routed_count": 1,
+    "routes": [
+      {
+        "decision_time": "immediate",
+        "lane": "proof_routed_scoped_validation",
+        "missing_proof_count": 5,
+        "production_access": false,
+        "reason": "Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.",
+        "reviewer_gate_count": 4,
+        "safe_next_step": "Approve a scoped validation review before any production permission grant.",
+        "scenario": "support_triage_agent",
+        "user_impact": "replaces_back_and_forth_with_owner_routing"
+      },
+      {
+        "decision_time": "immediate",
+        "lane": "fast_lane_scoped_validation",
+        "missing_proof_count": 3,
+        "production_access": false,
+        "reason": "Low-risk read-only access can move to scoped validation after owner scope confirmation.",
+        "reviewer_gate_count": 2,
+        "safe_next_step": "Approve a scoped read-only validation review after data owner scope confirmation.",
+        "scenario": "read_only_analytics_agent",
+        "user_impact": "accelerates_safe_validation"
+      },
+      {
+        "decision_time": "immediate",
+        "lane": "blocked_fast",
+        "missing_proof_count": 2,
+        "production_access": false,
+        "reason": "Critical/admin/prod-write access is blocked before validation with exact reviewer gates.",
+        "reviewer_gate_count": 3,
+        "safe_next_step": "Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved.",
+        "scenario": "admin_code_fix_bot",
+        "user_impact": "prevents_slow_unsafe_escalation"
+      }
+    ]
+  },
   "agent_identity": {
     "environment": "prod",
     "human_sponsor": "design_partner_named_owner_required",
@@ -678,6 +733,6 @@
       "role": "evidence candidate source for current security, vendor, and policy context"
     }
   },
-  "trust_receipt_hash": "43367e239140041e",
+  "trust_receipt_hash": "cd5a62ed2124f48c",
   "trust_receipt_id": "ia-agent-trust-receipt-public-v0"
 }

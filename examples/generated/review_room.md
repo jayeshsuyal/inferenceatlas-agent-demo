@@ -2,7 +2,7 @@
 
 Before an AI agent gets access, issue the Trust Receipt.
 
-Trust Receipt hash: `43367e239140041e`
+Trust Receipt hash: `cd5a62ed2124f48c`
 
 ## Copy-Paste Review Commands
 
@@ -31,6 +31,21 @@ python3 -m unittest discover -s tests
 - dry-run sponsor adapter contracts
 - public contract validation
 - optional sponsor/runtime/evidence enrichment
+
+## Access Speed Layer
+
+The packet is the speed layer: safe requests move faster, risky requests are routed, critical requests are blocked immediately.
+
+- Decision time: immediate
+- packet generated automatically: True
+- manual back-and-forth replaced: True
+- fast lane routes: 1
+- proof-routed routes: 1
+- blocked-fast routes: 1
+
+- **support_triage_agent** (proof_routed_scoped_validation): Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners. Decision time: immediate; safe next step: Approve a scoped validation review before any production permission grant; proof items: 5; reviewer gates: 4.
+- **read_only_analytics_agent** (fast_lane_scoped_validation): Low-risk read-only access can move to scoped validation after owner scope confirmation. Decision time: immediate; safe next step: Approve a scoped read-only validation review after data owner scope confirmation; proof items: 3; reviewer gates: 2.
+- **admin_code_fix_bot** (blocked_fast): Critical/admin/prod-write access is blocked before validation with exact reviewer gates. Decision time: immediate; safe next step: Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved; proof items: 2; reviewer gates: 3.
 
 ## Scenario Matrix
 

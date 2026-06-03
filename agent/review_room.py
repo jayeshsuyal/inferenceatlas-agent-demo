@@ -93,6 +93,29 @@ def _proof_pack_cards(providers: dict[str, dict[str, Any]]) -> str:
     return "\n".join(cards)
 
 
+def _speed_layer_cards(routes: list[dict[str, Any]]) -> str:
+    cards = []
+    lane_tones = {
+        "fast_lane_scoped_validation": "ok",
+        "proof_routed_scoped_validation": "warn",
+        "blocked_fast": "danger",
+    }
+    for route in routes:
+        tone = lane_tones[route["lane"]]
+        cards.append(
+            '<article class="panel compact">'
+            f"<h3>{_e(route['scenario'])}</h3>"
+            f"{_pill('lane', route['lane'], tone=tone)}"
+            f"{_pill('Decision time', route['decision_time'], tone='ok')}"
+            f"<p>{_e(route['reason'])}</p>"
+            f"<small>Impact: {_e(route['user_impact'])}</small>"
+            f"<small>Safe next step: {_e(route['safe_next_step'])}</small>"
+            f"<small>Proof items: {_e(route['missing_proof_count'])}; reviewer gates: {_e(route['reviewer_gate_count'])}</small>"
+            "</article>"
+        )
+    return "\n".join(cards)
+
+
 def _list_items(items: list[str], *, limit: int | None = None) -> str:
     visible = items if limit is None else items[:limit]
     rendered = "".join(f"<li>{_e(item)}</li>" for item in visible)
@@ -125,6 +148,7 @@ def render_review_room_html(review_room: dict[str, Any]) -> str:
     gate_results = review_room["policy_gate_status"]["results"]
     adapter_status = review_room["sponsor_adapter_status"]["providers"]
     sponsor_proof_pack = review_room["sponsor_proof_pack"]
+    speed_layer = review_room["access_speed_layer"]
     envelope = review_room["permission_envelope"]
     proof = review_room["proof_debt_summary"]
     artifact_links = "".join(f"<li><code>{_e(item)}</code></li>" for item in review_room["first_artifacts_to_inspect"])
@@ -262,6 +286,24 @@ def render_review_room_html(review_room: dict[str, Any]) -> str:
       {_pill("External writes", review_room["safety_state"]["external_writes_enabled"], tone="ok")}
     </div>
   </header>
+
+  <section class="section panel callout">
+    <h2>Access Speed Layer</h2>
+    <p>{_e(speed_layer["headline"])}</p>
+    <div class="hash">
+      {_pill("Decision time", speed_layer["decision_time"], tone="ok")}
+      {_pill("Auto generated", speed_layer["packet_generated_automatically"], tone="ok")}
+      {_pill("Fast lane", speed_layer["fast_lane_count"], tone="ok")}
+      {_pill("Proof routed", speed_layer["proof_routed_count"], tone="warn")}
+      {_pill("Blocked fast", speed_layer["blocked_fast_count"], tone="danger")}
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid three">
+      {_speed_layer_cards(speed_layer["routes"])}
+    </div>
+  </section>
 
   <section class="section panel">
     <h2>Scenario Matrix</h2>

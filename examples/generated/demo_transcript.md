@@ -44,9 +44,17 @@ Expected output signal:
 | support_triage_agent | VALIDATION_ALLOWED_WITH_GATES | True | False |
 | read_only_analytics_agent | VALIDATION_ALLOWED_WITH_GATES | True | False |
 | admin_code_fix_bot | BLOCKED | False | False |
+
+## Access Speed Layer
+
+The packet is the speed layer: safe requests move faster, risky requests are routed, critical requests are blocked immediately.
+
+| support_triage_agent | proof_routed_scoped_validation | immediate | False |
+| read_only_analytics_agent | fast_lane_scoped_validation | immediate | False |
+| admin_code_fix_bot | blocked_fast | immediate | False |
 ```
 
-Review signal: a judge or AI reviewer can run one command and see scenario spread, public contract status, sponsor adapter safety, and the artifact checklist without needing secrets or live integrations.
+Review signal: a judge or AI reviewer can run one command and see scenario spread, access-speed routing, public contract status, sponsor adapter safety, and the artifact checklist without needing secrets or live integrations.
 
 ## 2. No-Key DecisionPacket Demo
 

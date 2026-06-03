@@ -131,6 +131,16 @@ who needs to review
 what the next validation should be
 ```
 
+## Access Speed Layer
+
+The packet is generated automatically, so it should speed review instead of creating paperwork. IA routes each access request immediately:
+
+- low-risk read-only requests enter a fast-lane scoped validation path
+- medium/high-risk requests keep scoped validation moving while proof debt routes to named owners
+- critical/admin/prod-write requests are blocked fast with exact reviewer gates
+
+The visible proof is in `examples/generated/trust_receipt.json`, `examples/generated/review_room.md`, and `examples/generated/review_room.html`.
+
 ## Agent Stack
 
 - Nebius: OpenAI-compatible inference backbone

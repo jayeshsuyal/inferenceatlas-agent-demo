@@ -29,6 +29,7 @@ Expected result:
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
 - sponsor adapters report dry-run contracts and `would_execute=False`
 - the Trust Receipt, Review Room, and static Review Room HTML artifacts are generated
+- the Review Room walkthrough and screenshot are available for visual skim review
 - tests pass
 
 ## Inspect These First
@@ -38,14 +39,16 @@ Expected result:
 3. `examples/generated/trust_receipt.md`
 4. `examples/generated/review_room.md`
 5. `examples/generated/review_room.html`
-6. `policy/agent_access.yml`
-7. `agent/adapters/`
-8. `examples/generated/support_triage_agent.decision_brief.md`
-9. `examples/generated/support_triage_agent.packet.md`
-10. `examples/generated/admin_code_fix_bot.packet.json`
-11. `docs/CONTRACT.md`
-12. `docs/SAFETY_CONTRACT.md`
-13. `docs/V1_CAPABILITY_PASSPORT.md`
+6. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+7. `examples/generated/review_room.desktop.jpg`
+8. `policy/agent_access.yml`
+9. `agent/adapters/`
+10. `examples/generated/support_triage_agent.decision_brief.md`
+11. `examples/generated/support_triage_agent.packet.md`
+12. `examples/generated/admin_code_fix_bot.packet.json`
+13. `docs/CONTRACT.md`
+14. `docs/SAFETY_CONTRACT.md`
+15. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 

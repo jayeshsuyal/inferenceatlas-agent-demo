@@ -2,7 +2,7 @@
 
 Before an AI agent gets access, issue the Trust Receipt.
 
-Trust Receipt hash: `6b5caa082cc32f27`
+Trust Receipt hash: `0dea66161b1ad9f8`
 
 ## Copy-Paste Review Commands
 
@@ -26,6 +26,7 @@ python3 -m unittest discover -s tests
 - Agent Access Decision Brief
 - Trust Receipt
 - static Review Room HTML
+- walkthrough-ready visual review
 - public policy gate
 - dry-run sponsor adapter contracts
 - public contract validation
@@ -59,6 +60,8 @@ python3 -m unittest discover -s tests
 - examples/generated/trust_receipt.md
 - examples/generated/review_room.md
 - examples/generated/review_room.html
+- docs/REVIEW_ROOM_WALKTHROUGH.md
+- examples/generated/review_room.desktop.jpg
 - policy/agent_access.yml
 - agent/adapters/
 - examples/generated/support_triage_agent.decision_brief.md

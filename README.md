@@ -35,6 +35,13 @@ The fastest visual artifact to skim is the static Review Room:
 examples/generated/review_room.html
 ```
 
+The fastest walkthrough artifact is:
+
+```text
+docs/REVIEW_ROOM_WALKTHROUGH.md
+examples/generated/review_room.desktop.jpg
+```
+
 The fastest scenario-specific artifact is the generated access brief:
 
 ```text
@@ -189,6 +196,13 @@ examples/generated/review_room.json
 examples/generated/review_room.html
 ```
 
+Review the 60-90 second walkthrough script and checked-in screenshot:
+
+```text
+docs/REVIEW_ROOM_WALKTHROUGH.md
+examples/generated/review_room.desktop.jpg
+```
+
 ## Builder / CTO Path
 
 If you are extending the live sponsor path, use this order:
@@ -229,6 +243,8 @@ examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html
+examples/generated/review_room.desktop.jpg
+docs/REVIEW_ROOM_WALKTHROUGH.md
 policy/agent_access.yml
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
@@ -254,6 +270,6 @@ Humans approve decisions. IA prepares the proof.
 - add sponsor integration notes for CTO live setup
 - add optional live Tavily evidence notes
 - add a short demo video
-- add judge polish: screenshot/GIF, release tag, and final transcript pass
+- add judge polish: release tag, demo recording, and final transcript pass
 
 This repo is a public hackathon wrapper. The private InferenceAtlas v1 product codebase is not exposed here.

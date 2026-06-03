@@ -36,6 +36,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
+| What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |
 | What should a reviewer skim first? | `examples/generated/support_triage_agent.decision_brief.md` |
@@ -87,6 +88,7 @@ README thesis
 -> Trust Receipt
 -> Review Room
 -> static Review Room HTML
+-> Review Room walkthrough and screenshot
 -> public policy gate
 -> dry-run sponsor adapter contracts
 -> generated decision brief

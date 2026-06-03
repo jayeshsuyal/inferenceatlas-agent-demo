@@ -66,6 +66,7 @@ Current top risk after the offline demo landed:
 | Public policy gate | Policy-as-code gate that blocks critical/admin/prod-write access and allows lower-risk validation only with gates | Shipped |
 | Dry-run sponsor adapters | Composio/Tavily/Nebius/OpenClaw adapter contracts with no keys, no writes, and no approval authority | Shipped |
 | Static Review Room HTML | Serverless visual artifact generated from the Review Room JSON | Shipped |
+| Review Room walkthrough | 60-90 second talk track plus checked-in screenshot for skim review and demo recording | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -92,6 +93,7 @@ By June 12, the repo is judge-ready when all of the following are true:
 - Decision Brief JSON validates against a checked-in schema.
 - Trust Receipt and Review Room artifacts exist in Markdown and JSON.
 - Static Review Room HTML exists and is generated from the same public review data.
+- Review Room walkthrough and screenshot exist for skim review and demo recording.
 - Trust Receipt covers blast-radius diff, permission envelope, proof debt ledger, reviewer routing, sponsor runtime plan, safety state, and private boundary.
 - Public policy gate evaluates all scenarios and blocks `admin_code_fix_bot`.
 - Sponsor adapters run without keys and report `would_execute=false`.
@@ -111,19 +113,21 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 3. `examples/generated/trust_receipt.md`
 4. `examples/generated/review_room.md`
 5. `examples/generated/review_room.html`
-6. `policy/agent_access.yml`
-7. `agent/adapters/`
-8. `BUILD_PLAN_TO_JUNE_12.md`
-9. `examples/generated/demo_transcript.md`
-10. `examples/generated/support_triage_agent.decision_brief.md`
-11. `examples/generated/support_triage_agent.packet.md`
-12. `examples/generated/support_triage_agent.packet.json`
-13. `examples/generated/support_triage_agent.trace.md`
-14. `examples/sample_decision_packet.md`
-15. `docs/CONTRACT.md`
-16. `docs/V1_CAPABILITY_PASSPORT.md`
-17. `docs/SAFETY_CONTRACT.md`
-18. `python3 -m agent.demo`
+6. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+7. `examples/generated/review_room.desktop.jpg`
+8. `policy/agent_access.yml`
+9. `agent/adapters/`
+10. `BUILD_PLAN_TO_JUNE_12.md`
+11. `examples/generated/demo_transcript.md`
+12. `examples/generated/support_triage_agent.decision_brief.md`
+13. `examples/generated/support_triage_agent.packet.md`
+14. `examples/generated/support_triage_agent.packet.json`
+15. `examples/generated/support_triage_agent.trace.md`
+16. `examples/sample_decision_packet.md`
+17. `docs/CONTRACT.md`
+18. `docs/V1_CAPABILITY_PASSPORT.md`
+19. `docs/SAFETY_CONTRACT.md`
+20. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

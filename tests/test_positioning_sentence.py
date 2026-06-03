@@ -15,6 +15,7 @@ CANONICAL_TEXT_SURFACES = [
     "README.md",
     "AGENTS.md",
     "docs/PRODUCT_TOUR.md",
+    "docs/PRODUCT_QUALITY_AUDIT.md",
     "docs/JUDGE_REVIEW_GUIDE.md",
     "docs/DESIGN_PARTNER_BRIEF.md",
 ]

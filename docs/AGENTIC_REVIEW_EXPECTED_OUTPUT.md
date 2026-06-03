@@ -83,7 +83,7 @@ Expected pass signals:
 - policy gate blocks critical/admin/prod-write scope
 - sponsor adapters remain dry-run, non-executing, and non-approving
 - Trust Receipt, Review Room, Proof Health, and trial report artifacts exist
-- unit tests pass; the current public suite contains 120 tests
+- unit tests pass in the current public suite
 
 ## What To Inspect After Commands Pass
 
@@ -91,12 +91,13 @@ Inspect these in order:
 
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/PRODUCT_TOUR.md`
-3. `examples/generated/review_room.html`
-4. `examples/generated/trust_receipt.md`
-5. `examples/generated/support_triage_agent.proof_health.md`
-6. `examples/generated/support_triage_trial_report.md`
-7. `docs/CONTRACT.md`
-8. `docs/SAFETY_CONTRACT.md`
+3. `docs/PRODUCT_QUALITY_AUDIT.md`
+4. `examples/generated/review_room.html`
+5. `examples/generated/trust_receipt.md`
+6. `examples/generated/support_triage_agent.proof_health.md`
+7. `examples/generated/support_triage_trial_report.md`
+8. `docs/CONTRACT.md`
+9. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 

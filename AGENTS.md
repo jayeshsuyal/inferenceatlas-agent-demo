@@ -22,6 +22,8 @@ Run:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.packet_diff
+python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
@@ -38,6 +40,8 @@ Expected result:
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
+- Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
+- Packet Outcome Memo converts the support-triage packet into a scoped-validation human decision
 - the public contract reports all scenarios as `OK`
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
 - sponsor adapters report dry-run contracts and `would_execute=False`
@@ -62,20 +66,22 @@ Expected result:
 9. `examples/requests/support_triage_trial.yml`
 10. `examples/generated/support_triage_trial_report.md`
 11. `examples/generated/trust_receipt.md`
-12. `examples/generated/sponsor_live_readiness.md`
-13. `examples/generated/review_room.md`
-14. `examples/generated/review_room.html`
-15. `examples/generated/support_triage_agent.proof_health.md`
-16. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-17. `examples/generated/review_room.desktop.jpg`
-18. `policy/agent_access.yml`
-19. `agent/adapters/`
-20. `examples/generated/support_triage_agent.decision_brief.md`
-21. `examples/generated/support_triage_agent.packet.md`
-22. `examples/generated/admin_code_fix_bot.packet.json`
-23. `docs/CONTRACT.md`
-24. `docs/SAFETY_CONTRACT.md`
-25. `docs/V1_CAPABILITY_PASSPORT.md`
+12. `examples/generated/packet_diff.md`
+13. `examples/generated/support_triage_agent.outcome_memo.md`
+14. `examples/generated/sponsor_live_readiness.md`
+15. `examples/generated/review_room.md`
+16. `examples/generated/review_room.html`
+17. `examples/generated/support_triage_agent.proof_health.md`
+18. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+19. `examples/generated/review_room.desktop.jpg`
+20. `policy/agent_access.yml`
+21. `agent/adapters/`
+22. `examples/generated/support_triage_agent.decision_brief.md`
+23. `examples/generated/support_triage_agent.packet.md`
+24. `examples/generated/admin_code_fix_bot.packet.json`
+25. `docs/CONTRACT.md`
+26. `docs/SAFETY_CONTRACT.md`
+27. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -86,6 +92,8 @@ Evaluate the public product contract:
 - Does `docs/PRODUCT_TOUR.md` explain the product trial path and what is fixed versus derived?
 - Does `docs/PRODUCT_QUALITY_AUDIT.md` keep the public product spine coherent under fast iteration?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
+- Does `examples/generated/packet_diff.md` prove the packet bends across low, medium/high, and critical access?
+- Does `examples/generated/support_triage_agent.outcome_memo.md` turn the packet into a clear human decision?
 - Does the decision brief give a fast go/no-go surface?
 - Does the Trust Receipt summarize the permission envelope, proof debt, reviewer routing, and safety state?
 - Does Proof Health show packet drift, stale assumptions, expired reviewer gates, and the next human refresh action?

@@ -9,7 +9,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
 ![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
 
-InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Packet Outcome Memo, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
@@ -44,6 +44,8 @@ Then run:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.packet_diff
+python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
@@ -61,6 +63,8 @@ Or use the installed command set:
 pip install -e .
 ia-judge
 ia-review --list
+ia-packet-diff
+ia-outcome-memo
 ia-contract --all
 ia-gate --all
 ia-adapters --all
@@ -75,6 +79,18 @@ The fastest artifact to skim is the generated Trust Receipt:
 
 ```text
 examples/generated/trust_receipt.md
+```
+
+The fastest proof that the packet bends across risk levels is:
+
+```text
+examples/generated/packet_diff.md
+```
+
+The fastest human decision artifact is:
+
+```text
+examples/generated/support_triage_agent.outcome_memo.md
 ```
 
 The fastest sponsor-tool artifact is the Sponsor Live Readiness report:
@@ -126,12 +142,14 @@ For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.js
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, and Proof Health report showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, Packet Diff, Packet Outcome Memo, and Proof Health report showing:
 
 - source status
 - scenario blast-radius diff
 - approval posture
 - access eligibility go/no-go
+- risk-level packet diff
+- packet outcome memo
 - permission envelope
 - requested capability
 - tool access plan
@@ -146,7 +164,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - next human validation
 - safety state
 
-IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, Trust Receipt, and Proof Health report humans review.
+IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, Trust Receipt, Packet Diff, Packet Outcome Memo, and Proof Health report humans review.
 
 ## Why This Matters
 
@@ -210,6 +228,8 @@ Every sponsor path remains dry-run, non-approving, non-mutating, and human-revie
 User asks whether an AI agent should receive tool access.
 -> IA gathers context and optional live evidence.
 -> IA creates a DecisionPacket and Agent Access Decision Brief.
+-> IA compares packet outcomes across risk levels.
+-> IA converts the selected packet into a human outcome memo.
 -> IA blocks unsupported approval/access claims.
 -> IA names reviewer owners and one next human validation.
 ```

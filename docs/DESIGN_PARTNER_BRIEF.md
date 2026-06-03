@@ -47,6 +47,8 @@ python3 -m agent.judge
 
 ```text
 examples/generated/trust_receipt.md
+examples/generated/packet_diff.md
+examples/generated/support_triage_agent.outcome_memo.md
 examples/generated/sponsor_live_readiness.md
 examples/generated/review_room.html
 examples/generated/support_triage_agent.proof_health.md
@@ -82,6 +84,8 @@ python3 -m agent.trial examples/requests/support_triage_trial.yml
 6. Compare IA output against the current internal approval path:
 
 - Does the Trust Receipt make blast radius visible faster?
+- Does Packet Diff prove lower-risk and critical requests move differently?
+- Does the Packet Outcome Memo make the meeting decision obvious?
 - Does the access brief give a clearer go/no-go?
 - Does the policy gate block the right class of access?
 - Does reviewer routing remove ambiguity?
@@ -97,6 +101,8 @@ A successful trial should produce:
 - one Trust Receipt for the selected workflow
 - one DecisionPacket with tool scope, data scope, missing proof, blocked claims, reviewers, and safety state
 - one Agent Access Decision Brief for fast review
+- one Packet Diff showing how the review posture changes across risk levels
+- one Packet Outcome Memo naming what can move, what stays blocked, proof owners, and refresh timing
 - one Proof Health report showing Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked

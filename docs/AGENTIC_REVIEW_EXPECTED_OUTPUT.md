@@ -23,6 +23,8 @@ Expected human-readable signals:
 - approval granted is `False`
 - private source exposed is `False`
 - scenario matrix includes `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
+- Packet Diff reports relaxed read-only, proof-routed, and blocked critical lanes
+- Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -54,6 +56,11 @@ Expected JSON pass signals:
 - `proof_health.approves_access` is `false`
 - `proof_health.grants_permissions` is `false`
 - `proof_health.executes_external_writes` is `false`
+- `packet_diff.has_relaxed_read_only_lane` is `true`
+- `packet_diff.has_proof_routed_lane` is `true`
+- `packet_diff.has_blocked_critical_lane` is `true`
+- `packet_outcome_memo.decision_code` is `scoped_validation_only`
+- `packet_outcome_memo.production_access` is `false`
 - `safety.all_adapters_non_executing` is `true`
 - `safety.all_adapters_non_approving` is `true`
 - `private_boundary.private_source_exposed` is `false`
@@ -66,6 +73,8 @@ An agentic reviewer can use this complete no-key path:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.packet_diff
+python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
@@ -80,6 +89,8 @@ Expected pass signals:
 
 - the demo runs without API keys
 - public contract reports all scenarios as `OK`
+- Packet Diff proves the three public scenarios differ in load-bearing fields
+- Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
 - policy gate blocks critical/admin/prod-write scope
 - sponsor adapters remain dry-run, non-executing, and non-approving
 - Trust Receipt, Review Room, Proof Health, and trial report artifacts exist
@@ -92,12 +103,14 @@ Inspect these in order:
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/PRODUCT_TOUR.md`
 3. `docs/PRODUCT_QUALITY_AUDIT.md`
-4. `examples/generated/review_room.html`
-5. `examples/generated/trust_receipt.md`
-6. `examples/generated/support_triage_agent.proof_health.md`
-7. `examples/generated/support_triage_trial_report.md`
-8. `docs/CONTRACT.md`
-9. `docs/SAFETY_CONTRACT.md`
+4. `examples/generated/packet_diff.md`
+5. `examples/generated/support_triage_agent.outcome_memo.md`
+6. `examples/generated/review_room.html`
+7. `examples/generated/trust_receipt.md`
+8. `examples/generated/support_triage_agent.proof_health.md`
+9. `examples/generated/support_triage_trial_report.md`
+10. `docs/CONTRACT.md`
+11. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 
@@ -108,6 +121,8 @@ Treat these as review failures:
 - approval granted becomes `true`
 - sponsor adapters can execute writes by default
 - sponsor adapters can approve access
+- Packet Diff no longer shows all three risk lanes
+- Packet Outcome Memo approves access, grants permissions, or enables writes
 - Proof Health approves, grants, writes, or mutates production
 - `admin_code_fix_bot` is not blocked
 - public contract status is not `ok`
@@ -123,6 +138,8 @@ agent request
 -> proof packet
 -> access brief
 -> trust receipt
+-> packet diff
+-> outcome memo
 -> proof health
 -> human review
 ```

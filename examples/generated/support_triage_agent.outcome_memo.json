@@ -1,0 +1,153 @@
+{
+  "can_move": [
+    "GitHub read-scope review against an approved repository allowlist",
+    "Slack named-channel summarization review after retention and customer-data scope are approved",
+    "Jira draft ticket proposal review with no production ticket creation"
+  ],
+  "decision": {
+    "code": "scoped_validation_only",
+    "composio_dry_run": true,
+    "external_writes": false,
+    "policy_gate": "VALIDATION_ALLOWED_WITH_GATES",
+    "policy_reason": "Scoped validation may proceed, but open proof debt remains owner-routed.",
+    "production_access": false,
+    "scoped_validation_review": true,
+    "summary": "Move this agent into scoped validation only; keep production access and external writes blocked."
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "meeting_close": {
+    "blocked_sentence": "Keep blocked items blocked until named proof owners close the proof debt.",
+    "decision_sentence": "Move this agent into scoped validation only; keep production access and external writes blocked.",
+    "refresh_sentence": "Refresh the packet at day_30_security_engineering_review before broader validation."
+  },
+  "mode": "offline_deterministic",
+  "outcome_memo_id": "ia-agent-packet-outcome-memo-public-v0",
+  "packet_refresh": {
+    "next_human_health_check": "day_30_security_engineering_review",
+    "refresh_reason": "Packet assumptions, tool scope, data boundaries, and reviewer gates can drift before access expands.",
+    "score": 67,
+    "status": "drifting"
+  },
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "proof_debt_assignments": [
+    {
+      "owner": "Engineering",
+      "proof_needed": "GitHub repository allowlist and permission level",
+      "status": "missing",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "owner": "Security/Legal",
+      "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "status": "missing",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "owner": "Engineering",
+      "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "status": "missing",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "owner": "Support Ops",
+      "proof_needed": "Support escalation workflow and human handoff owner",
+      "status": "missing",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "owner": "Security/Engineering",
+      "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "status": "missing",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "reviewer_routes": [
+    {
+      "blocks": "Slack channel summarization and customer incident context access",
+      "decision_needed": "Confirm allowed data scope, retention, and logging terms",
+      "owner": "Security/Legal",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "decision_needed": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "owner": "Engineering",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "support operations pilot",
+      "decision_needed": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "owner": "Support Ops",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "paid production rollout",
+      "decision_needed": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "owner": "Procurement/Finance",
+      "required_before": "paid_rollout"
+    }
+  ],
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "scenario": "support_triage_agent",
+  "schema_version": "agent_packet_outcome_memo.v0",
+  "source_artifacts": {
+    "decision_brief": "examples/generated/support_triage_agent.decision_brief.json",
+    "packet": "examples/generated/support_triage_agent.packet.json",
+    "proof_health": "examples/generated/support_triage_agent.proof_health.json"
+  },
+  "sponsor_proof_slots": [
+    {
+      "authority": "proof_contributor_not_approval_authority",
+      "proof_type": "permission_diff",
+      "provider": "composio",
+      "where_it_helps": "Dry-run permission diff for GitHub, Slack, and Jira actions."
+    },
+    {
+      "authority": "proof_contributor_not_approval_authority",
+      "proof_type": "evidence_candidate_plan",
+      "provider": "tavily",
+      "where_it_helps": "Source-backed evidence notes with URL and freshness fields."
+    },
+    {
+      "authority": "proof_contributor_not_approval_authority",
+      "proof_type": "locked_field_narration",
+      "provider": "nebius",
+      "where_it_helps": "Reviewer-ready narration over locked packet fields."
+    },
+    {
+      "authority": "proof_contributor_not_approval_authority",
+      "proof_type": "runtime_trace_plan",
+      "provider": "openclaw",
+      "where_it_helps": "Runtime trace plan for attempted steps, policy decisions, and blocked outcomes."
+    }
+  ],
+  "stays_blocked": [
+    "github: issue edits",
+    "github: repo configuration changes",
+    "github: workflow dispatch",
+    "jira: ticket creation",
+    "jira: status changes",
+    "jira: assignment changes",
+    "slack: posting messages",
+    "slack: DM access",
+    "slack: workspace-wide history",
+    "production access grant",
+    "external write actions",
+    "workspace-wide Slack access",
+    "customer-data safety or compliance claims without named reviewer evidence",
+    "automated permission expansion without a new packet",
+    "Production tool access is approved.",
+    "Customer-data handling is safe.",
+    "The agent may create or mutate Jira/GitHub/Slack state.",
+    "The workflow is compliance-ready."
+  ]
+}

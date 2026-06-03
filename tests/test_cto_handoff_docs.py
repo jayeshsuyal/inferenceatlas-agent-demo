@@ -20,6 +20,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         for expected in [
             "agent/demo.py",
             "agent/packet.py",
+            "agent/packet_diff.py",
+            "agent/outcome_memo.py",
             "agent/decision_brief.py",
             "agent/proof_health.py",
             "agent/renderers.py",
@@ -104,6 +106,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["judge_harness_command"], "python3 -m agent.judge")
         self.assertEqual(manifest["judge_harness_json_command"], "python3 -m agent.judge --json")
         self.assertIn("python3 -m agent.judge", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.packet_diff", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.outcome_memo", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.gate --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
@@ -113,6 +117,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.proof_health", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
+        self.assertIn("examples/generated/packet_diff.md", manifest["product_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
         self.assertIn("examples/generated/sponsor_live_readiness.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
@@ -130,6 +136,13 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["review_room_html_command"], "python3 -m agent.review_room")
         self.assertEqual(manifest["proof_health_command"], "python3 -m agent.proof_health")
         self.assertEqual(manifest["proof_health_json_command"], "python3 -m agent.proof_health --no-write --json")
+        self.assertEqual(manifest["packet_diff_command"], "python3 -m agent.packet_diff")
+        self.assertEqual(manifest["packet_diff_json_command"], "python3 -m agent.packet_diff --no-write --json")
+        self.assertEqual(manifest["packet_outcome_memo_command"], "python3 -m agent.outcome_memo")
+        self.assertEqual(
+            manifest["packet_outcome_memo_json_command"],
+            "python3 -m agent.outcome_memo --no-write --json",
+        )
         self.assertEqual(
             manifest["proof_health_surface"],
             "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
@@ -154,6 +167,16 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(
             manifest["primary_artifacts"]["proof_health_json"],
             "examples/generated/support_triage_agent.proof_health.json",
+        )
+        self.assertEqual(manifest["primary_artifacts"]["packet_diff_markdown"], "examples/generated/packet_diff.md")
+        self.assertEqual(manifest["primary_artifacts"]["packet_diff_json"], "examples/generated/packet_diff.json")
+        self.assertEqual(
+            manifest["primary_artifacts"]["packet_outcome_memo_markdown"],
+            "examples/generated/support_triage_agent.outcome_memo.md",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["packet_outcome_memo_json"],
+            "examples/generated/support_triage_agent.outcome_memo.json",
         )
         self.assertEqual(manifest["primary_artifacts"]["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
@@ -184,6 +207,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
             "examples/requests/design_partner_trial.yml",
             "python3 -m agent.demo",
+            "python3 -m agent.packet_diff",
+            "python3 -m agent.outcome_memo",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
@@ -192,6 +217,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.review_room",
             "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
+            "examples/generated/packet_diff.md",
+            "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/sponsor_live_readiness.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.proof_health.md",
@@ -221,6 +248,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "examples/requests/support_triage_trial.yml",
             "python3 -m agent.demo",
             "python3 -m agent.review --list",
+            "python3 -m agent.packet_diff",
+            "python3 -m agent.outcome_memo",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
@@ -229,6 +258,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.review_room",
             "python3 -m agent.proof_health",
             "examples/generated/trust_receipt.md",
+            "examples/generated/packet_diff.md",
+            "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/sponsor_live_readiness.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.proof_health.md",

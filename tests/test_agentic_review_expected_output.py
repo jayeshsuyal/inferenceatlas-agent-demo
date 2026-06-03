@@ -18,6 +18,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "Status: public AI reviewer checklist",
             "python3 -m agent.judge --no-write",
             "python3 -m agent.judge --no-write --json",
+            "python3 -m agent.packet_diff",
+            "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
@@ -25,6 +27,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`policy_gate.admin_code_fix_bot.decision` is `BLOCKED`",
             "`proof_health.human_review_required` is `true`",
             "`proof_health.approves_access` is `false`",
+            "`packet_diff.has_blocked_critical_lane` is `true`",
+            "`packet_outcome_memo.decision_code` is `scoped_validation_only`",
+            "`packet_outcome_memo.production_access` is `false`",
             "`private_boundary.private_source_exposed` is `false`",
             "unit tests pass in the current public suite",
             "Failure Signals",
@@ -50,7 +55,11 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
         )
         self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [agents, readme, guide]:
             self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", surface)

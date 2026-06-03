@@ -31,6 +31,8 @@ These pieces are safe to build on:
 | --- | --- | --- |
 | Offline judge harness | `agent/demo.py` | Entry point for no-key and live-mode demo paths. Keep this command stable. |
 | DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
+| Packet Diff projection | `agent/packet_diff.py` | Scenario comparison surface proving low, medium/high, and critical requests produce different load-bearing fields. |
+| Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
@@ -60,7 +62,9 @@ messy agent-access request
 -> source status
 -> evidence notes and missing proof
 -> DecisionPacket
+-> Packet Diff
 -> Agent Access Decision Brief
+-> Packet Outcome Memo
 -> Proof Health
 -> trace
 -> Markdown/JSON artifacts

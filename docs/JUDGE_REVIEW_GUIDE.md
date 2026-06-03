@@ -12,17 +12,21 @@ If you are reviewing quickly, use this order:
 1. Read the Product Tour.
 2. Read the Product Quality Audit.
 3. Run the one-command judge harness.
-4. Run the no-key demo if you want the full packet output.
-5. Inspect the generated Proof Health report.
-6. Inspect the generated decision brief.
-7. Inspect the scenario matrix.
-8. Validate the public conformance contract.
-9. Check the safety defaults and tests.
+4. Inspect the generated Packet Diff.
+5. Inspect the generated Packet Outcome Memo.
+6. Run the no-key demo if you want the full packet output.
+7. Inspect the generated Proof Health report.
+8. Inspect the generated decision brief.
+9. Inspect the scenario matrix.
+10. Validate the public conformance contract.
+11. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.packet_diff
+python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
@@ -48,6 +52,8 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What keeps the product surface premium? | `docs/PRODUCT_QUALITY_AUDIT.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
 | What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
+| Does the packet bend across risk? | `python3 -m agent.packet_diff` and `examples/generated/packet_diff.md` |
+| What decision should a human leave with? | `python3 -m agent.outcome_memo` and `examples/generated/support_triage_agent.outcome_memo.md` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
 | What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
@@ -78,6 +84,8 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - unsupported approval/compliance/readiness claims stay blocked
 - reviewer owners and next validation steps are explicit
 - low-risk, medium-risk, and critical-risk scenarios produce materially different review postures
+- Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
+- Packet Outcome Memo turns the packet into can-move, stays-blocked, proof-owner, and refresh decisions
 - the public policy gate blocks critical/admin/prod-write access
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
 - Sponsor Live Readiness shows where Nebius, Tavily, Composio, and OpenClaw add proof without becoming approval authorities
@@ -113,6 +121,8 @@ README thesis
 -> Product Quality Audit
 -> Agentic Review Expected Output
 -> one-command judge harness
+-> Packet Diff
+-> Packet Outcome Memo
 -> Design Partner Brief
 -> Design Partner Trial Kit
 -> Design Partner Trial Runner

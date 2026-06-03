@@ -29,6 +29,8 @@ Run this path from a clean checkout:
 
 ```bash
 python3 -m agent.judge
+python3 -m agent.packet_diff
+python3 -m agent.outcome_memo
 python3 -m agent.proof_health
 python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
@@ -41,6 +43,8 @@ Or use the installed commands:
 ```bash
 pip install -e .
 ia-judge
+ia-packet-diff
+ia-outcome-memo
 ia-proof-health
 ia-sponsor-readiness
 ia-trial examples/requests/support_triage_trial.yml
@@ -51,6 +55,8 @@ In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
 - a role-level trial request converted into a report, packet, and access brief
+- a Packet Diff proving low, medium/high, and critical requests move differently
+- a Packet Outcome Memo converting the support-triage packet into a human decision
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
 - a Proof Health report that shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
@@ -63,6 +69,8 @@ In five minutes, a reviewer should see:
 | --- | --- |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
 | `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |
+| `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
+| `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
@@ -78,6 +86,8 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Fixed public fixture | Derived product behavior |
 | --- | --- |
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
+| Packet Diff | The three scenarios produce different load-bearing fields while production access and writes stay blocked. |
+| Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
 | Public trial request files | The trial runner derives a report, packet, and access brief from the request file. |
 | Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
 | Sponsor readiness contracts | The readiness report derives provider value, visible outputs, CTO next steps, and safety boundaries from the adapter contracts. |
@@ -101,6 +111,8 @@ Instead of showing an agent posting, changing, spending, deploying, or mutating,
 - blocked claims before they become false confidence
 - proof debt before it becomes shadow approval
 - reviewer ownership before access moves
+- packet diff before reviewers assume all scenarios are hardcoded alike
+- outcome memo before a meeting ends without a decision
 - dry-run sponsor participation before live integrations
 - packet drift before stale access becomes hidden approval
 - a safe next validation step before production access

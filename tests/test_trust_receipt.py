@@ -32,6 +32,9 @@ class TrustReceiptTests(unittest.TestCase):
         self.assertEqual(receipt["policy_gate_status"]["results"]["admin_code_fix_bot"]["decision"], "BLOCKED")
         self.assertTrue(receipt["sponsor_adapter_status"]["all_adapters_non_executing"])
         self.assertTrue(receipt["sponsor_adapter_status"]["all_adapters_non_approving"])
+        self.assertTrue(receipt["sponsor_proof_pack"]["all_non_executing"])
+        self.assertTrue(receipt["sponsor_proof_pack"]["all_non_approving"])
+        self.assertTrue(receipt["sponsor_proof_pack"]["all_human_review_required"])
 
     def test_trust_receipt_proves_verdict_spread(self) -> None:
         receipt = build_trust_receipt()
@@ -71,6 +74,30 @@ class TrustReceiptTests(unittest.TestCase):
         self.assertEqual(review_room["public_contract_status"]["status"], "ok")
         self.assertEqual(review_room["policy_gate_status"]["results"]["admin_code_fix_bot"]["decision"], "BLOCKED")
         self.assertTrue(review_room["sponsor_adapter_status"]["all_adapters_non_executing"])
+        self.assertIn("Sponsor tools enrich proof packets", review_room["sponsor_proof_pack"]["headline"])
+        self.assertEqual(
+            set(review_room["sponsor_proof_pack"]["providers"]),
+            {"composio", "tavily", "nebius", "openclaw"},
+        )
+
+    def test_sponsor_proof_pack_names_value_without_approval_power(self) -> None:
+        receipt = build_trust_receipt()
+
+        expected_types = {
+            "composio": "permission_diff",
+            "tavily": "evidence_candidate_plan",
+            "nebius": "locked_field_narration",
+            "openclaw": "runtime_trace_plan",
+        }
+        for provider, expected_type in expected_types.items():
+            proof = receipt["sponsor_proof_pack"]["providers"][provider]
+            self.assertEqual(proof["proof_type"], expected_type)
+            self.assertGreater(proof["contribution_count"], 0)
+            self.assertTrue(proof["human_review_required"])
+            self.assertFalse(proof["would_execute"])
+            self.assertFalse(proof["can_approve_access"])
+            self.assertFalse(proof["can_grant_permissions"])
+            self.assertFalse(proof["can_mutate_external_state"])
 
     def test_trust_cli_writes_machine_readable_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

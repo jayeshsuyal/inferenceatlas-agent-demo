@@ -4,7 +4,7 @@ Pre-permission control plane for AI agent tool, data, spend, and production acce
 
 Receipt ID: `ia-agent-trust-receipt-public-v0`
 
-Receipt hash: `0dea66161b1ad9f8`
+Receipt hash: `43367e239140041e`
 
 Private engine, public proof.
 
@@ -105,6 +105,15 @@ Never allowed in the public demo:
 - **tavily**: evidence candidate source for current security, vendor, and policy context; default: evidence_notes_only; guardrail: must not turn search results into approval or production readiness
 - **nebius**: optional inference layer for reviewer-ready narration; default: deterministic_fallback_without_key; guardrail: must not own verdicts, blocked claims, or safety state
 - **openclaw**: optional runtime trace harness for agent steps; default: trace_only; guardrail: must not hide blocked attempts or bypass human approval
+
+## Sponsor Proof Pack
+
+Sponsor tools enrich proof packets; they do not approve agents.
+
+- **composio** (permission_diff): Shows the exact requested tool actions, validation-only allowances, blocked actions, and proof required before any tool grant. Visible output: tool-by-tool permission diff and dry-run invocation plan. Contributions: 6; human review required: True; cannot: approve access, grant permissions, execute writes, reduce proof debt automatically.
+- **tavily** (evidence_candidate_plan): Turns missing proof into reviewer-safe evidence queries with freshness and source placeholders. Visible output: evidence query plan with owners, source URL slots, and freshness state. Contributions: 10; human review required: True; cannot: approve access, grant permissions, declare compliance, reduce proof debt automatically.
+- **nebius** (locked_field_narration): Projects deterministic packet truth into reviewer-ready language while keeping safety-critical fields locked. Visible output: narration contract with editable language fields and locked verdict fields. Contributions: 9; human review required: True; cannot: approve access, grant permissions, change verdict, change safety state.
+- **openclaw** (runtime_trace_plan): Shows how attempted agent steps would be traced with policy decisions before any live action. Visible output: runtime trace contract for blocked and dry-run steps. Contributions: 9; human review required: True; cannot: approve access, grant permissions, execute runtime steps, hide blocked attempts.
 
 ## Sponsor Adapter Status
 

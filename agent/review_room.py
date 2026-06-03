@@ -77,6 +77,22 @@ def _adapter_cards(providers: dict[str, dict[str, Any]]) -> str:
     return "\n".join(cards)
 
 
+def _proof_pack_cards(providers: dict[str, dict[str, Any]]) -> str:
+    cards = []
+    for provider, proof in providers.items():
+        cards.append(
+            '<article class="panel compact">'
+            f"<h3>{_e(provider)}</h3>"
+            f"{_pill('proof', proof['proof_type'], tone='neutral')}"
+            f"{_pill('contributions', proof['contribution_count'], tone='ok')}"
+            f"{_pill('human review', proof['human_review_required'], tone='ok')}"
+            f"<p>{_e(proof['value_added'])}</p>"
+            f"<small>Cannot: {_e(', '.join(proof['cannot_do']))}</small>"
+            "</article>"
+        )
+    return "\n".join(cards)
+
+
 def _list_items(items: list[str], *, limit: int | None = None) -> str:
     visible = items if limit is None else items[:limit]
     rendered = "".join(f"<li>{_e(item)}</li>" for item in visible)
@@ -108,6 +124,7 @@ def render_review_room_html(review_room: dict[str, Any]) -> str:
     """Render the static Review Room HTML artifact."""
     gate_results = review_room["policy_gate_status"]["results"]
     adapter_status = review_room["sponsor_adapter_status"]["providers"]
+    sponsor_proof_pack = review_room["sponsor_proof_pack"]
     envelope = review_room["permission_envelope"]
     proof = review_room["proof_debt_summary"]
     artifact_links = "".join(f"<li><code>{_e(item)}</code></li>" for item in review_room["first_artifacts_to_inspect"])
@@ -258,6 +275,14 @@ def render_review_room_html(review_room: dict[str, Any]) -> str:
     <h2>Policy Gate Status</h2>
     <div class="grid three">
       {_policy_gate_cards(gate_results)}
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Sponsor Proof Pack</h2>
+    <p>{_e(sponsor_proof_pack["headline"])}</p>
+    <div class="grid four">
+      {_proof_pack_cards(sponsor_proof_pack["providers"])}
     </div>
   </section>
 

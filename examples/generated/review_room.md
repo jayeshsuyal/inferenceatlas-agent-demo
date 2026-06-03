@@ -2,7 +2,7 @@
 
 Before an AI agent gets access, issue the Trust Receipt.
 
-Trust Receipt hash: `0dea66161b1ad9f8`
+Trust Receipt hash: `43367e239140041e`
 
 ## Copy-Paste Review Commands
 
@@ -80,6 +80,15 @@ python3 -m unittest discover -s tests
 - tavily: evidence_candidates_planned; would_execute=False
 - nebius: deterministic_narration_fallback; would_execute=False
 - openclaw: trace_contract_planned; would_execute=False
+
+## Sponsor Proof Pack
+
+Sponsor tools enrich proof packets; they do not approve agents.
+
+- **composio** (permission_diff): Shows the exact requested tool actions, validation-only allowances, blocked actions, and proof required before any tool grant. Visible output: tool-by-tool permission diff and dry-run invocation plan. Contributions: 6; human review required: True; cannot: approve access, grant permissions, execute writes, reduce proof debt automatically.
+- **tavily** (evidence_candidate_plan): Turns missing proof into reviewer-safe evidence queries with freshness and source placeholders. Visible output: evidence query plan with owners, source URL slots, and freshness state. Contributions: 10; human review required: True; cannot: approve access, grant permissions, declare compliance, reduce proof debt automatically.
+- **nebius** (locked_field_narration): Projects deterministic packet truth into reviewer-ready language while keeping safety-critical fields locked. Visible output: narration contract with editable language fields and locked verdict fields. Contributions: 9; human review required: True; cannot: approve access, grant permissions, change verdict, change safety state.
+- **openclaw** (runtime_trace_plan): Shows how attempted agent steps would be traced with policy decisions before any live action. Visible output: runtime trace contract for blocked and dry-run steps. Contributions: 9; human review required: True; cannot: approve access, grant permissions, execute runtime steps, hide blocked attempts.
 
 ## Safety State
 

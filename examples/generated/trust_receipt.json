@@ -458,6 +458,10 @@
         "can_grant_permissions": false,
         "can_mutate_external_state": false,
         "contract_version": "sponsor_adapter_contract.v0",
+        "human_review_required": true,
+        "proof_pack_types": [
+          "permission_diff"
+        ],
         "receipt_fields": [
           "permission_envelope.dry_run_only"
         ],
@@ -470,6 +474,7 @@
         "statuses": [
           "dry_run_planned"
         ],
+        "value_added": "Shows the exact requested tool actions, validation-only allowances, blocked actions, and proof required before any tool grant.",
         "would_execute": false
       },
       "nebius": {
@@ -477,6 +482,10 @@
         "can_grant_permissions": false,
         "can_mutate_external_state": false,
         "contract_version": "sponsor_adapter_contract.v0",
+        "human_review_required": true,
+        "proof_pack_types": [
+          "locked_field_narration"
+        ],
         "receipt_fields": [
           "inference_plan"
         ],
@@ -489,6 +498,7 @@
         "statuses": [
           "deterministic_narration_fallback"
         ],
+        "value_added": "Projects deterministic packet truth into reviewer-ready language while keeping safety-critical fields locked.",
         "would_execute": false
       },
       "openclaw": {
@@ -496,6 +506,10 @@
         "can_grant_permissions": false,
         "can_mutate_external_state": false,
         "contract_version": "sponsor_adapter_contract.v0",
+        "human_review_required": true,
+        "proof_pack_types": [
+          "runtime_trace_plan"
+        ],
         "receipt_fields": [
           "runtime_trace_plan"
         ],
@@ -508,6 +522,7 @@
         "statuses": [
           "trace_contract_planned"
         ],
+        "value_added": "Shows how attempted agent steps would be traced with policy decisions before any live action.",
         "would_execute": false
       },
       "tavily": {
@@ -515,6 +530,10 @@
         "can_grant_permissions": false,
         "can_mutate_external_state": false,
         "contract_version": "sponsor_adapter_contract.v0",
+        "human_review_required": true,
+        "proof_pack_types": [
+          "evidence_candidate_plan"
+        ],
         "receipt_fields": [
           "evidence_plan"
         ],
@@ -527,6 +546,108 @@
         "statuses": [
           "evidence_candidates_planned"
         ],
+        "value_added": "Turns missing proof into reviewer-safe evidence queries with freshness and source placeholders.",
+        "would_execute": false
+      }
+    }
+  },
+  "sponsor_proof_pack": {
+    "all_human_review_required": true,
+    "all_non_approving": true,
+    "all_non_executing": true,
+    "headline": "Sponsor tools enrich proof packets; they do not approve agents.",
+    "mode": "offline_dry_run_contract",
+    "providers": {
+      "composio": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "cannot_do": [
+          "approve access",
+          "grant permissions",
+          "execute writes",
+          "reduce proof debt automatically"
+        ],
+        "contribution_count": 6,
+        "human_review_required": true,
+        "proof_type": "permission_diff",
+        "reviewer_question": "Which actions can be validated safely, and which actions must stay blocked?",
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "value_added": "Shows the exact requested tool actions, validation-only allowances, blocked actions, and proof required before any tool grant.",
+        "visible_output": "tool-by-tool permission diff and dry-run invocation plan",
+        "would_execute": false
+      },
+      "nebius": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "cannot_do": [
+          "approve access",
+          "grant permissions",
+          "change verdict",
+          "change safety state"
+        ],
+        "contribution_count": 9,
+        "human_review_required": true,
+        "proof_type": "locked_field_narration",
+        "reviewer_question": "Can the packet be explained faster without letting an LLM own the access decision?",
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "value_added": "Projects deterministic packet truth into reviewer-ready language while keeping safety-critical fields locked.",
+        "visible_output": "narration contract with editable language fields and locked verdict fields",
+        "would_execute": false
+      },
+      "openclaw": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "cannot_do": [
+          "approve access",
+          "grant permissions",
+          "execute runtime steps",
+          "hide blocked attempts"
+        ],
+        "contribution_count": 9,
+        "human_review_required": true,
+        "proof_type": "runtime_trace_plan",
+        "reviewer_question": "What would the runtime record when an agent attempts tool access?",
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "value_added": "Shows how attempted agent steps would be traced with policy decisions before any live action.",
+        "visible_output": "runtime trace contract for blocked and dry-run steps",
+        "would_execute": false
+      },
+      "tavily": {
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "cannot_do": [
+          "approve access",
+          "grant permissions",
+          "declare compliance",
+          "reduce proof debt automatically"
+        ],
+        "contribution_count": 10,
+        "human_review_required": true,
+        "proof_type": "evidence_candidate_plan",
+        "reviewer_question": "What evidence should reviewers inspect before reducing proof debt?",
+        "scenarios": [
+          "support_triage_agent",
+          "read_only_analytics_agent",
+          "admin_code_fix_bot"
+        ],
+        "value_added": "Turns missing proof into reviewer-safe evidence queries with freshness and source placeholders.",
+        "visible_output": "evidence query plan with owners, source URL slots, and freshness state",
         "would_execute": false
       }
     }
@@ -557,6 +678,6 @@
       "role": "evidence candidate source for current security, vendor, and policy context"
     }
   },
-  "trust_receipt_hash": "0dea66161b1ad9f8",
+  "trust_receipt_hash": "43367e239140041e",
   "trust_receipt_id": "ia-agent-trust-receipt-public-v0"
 }

@@ -14,9 +14,10 @@ def _render_human(results: dict[str, dict]) -> str:
     lines = ["Sponsor adapter contracts:"]
     for provider, result in results.items():
         lines.append(
-            "- {provider}: {status} | would_execute={would_execute} | can_approve_access={can_approve}".format(
+            "- {provider}: {status} | proof={proof_type} | would_execute={would_execute} | can_approve_access={can_approve}".format(
                 provider=provider,
                 status=result["status"],
+                proof_type=result["proof_pack"]["proof_type"],
                 would_execute=result["would_execute"],
                 can_approve=result["can_approve_access"],
             )

@@ -138,6 +138,17 @@ what the next validation should be
 - Composio: integration action layer, dry-run by default
 - OpenClaw: optional agent runtime, with a built-in fallback loop
 
+## Sponsor Proof Pack
+
+InferenceAtlas uses sponsor integrations as proof contributors, not approval authorities:
+
+- Tavily: evidence candidate plan with freshness and source slots
+- Composio: permission diff for allowed validation actions, blocked actions, and required proof
+- Nebius: reviewer-ready narration contract with verdict and safety fields locked
+- OpenClaw: runtime trace plan for attempted steps, policy decisions, and blocked outcomes
+
+Every sponsor path remains dry-run, non-approving, non-mutating, and human-reviewed by default.
+
 ## Demo Flow
 
 ```text

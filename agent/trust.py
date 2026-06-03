@@ -212,6 +212,9 @@ def _sponsor_adapter_status() -> dict[str, Any]:
             "can_grant_permissions": any(result["can_grant_permissions"] for result in provider_results),
             "can_mutate_external_state": any(result["can_mutate_external_state"] for result in provider_results),
             "receipt_fields": sorted({result["receipt_field"] for result in provider_results}),
+            "proof_pack_types": sorted({result["proof_pack"]["proof_type"] for result in provider_results}),
+            "human_review_required": all(result["human_review_required"] for result in provider_results),
+            "value_added": provider_results[0]["proof_pack"]["value_added"],
         }
     return {
         "mode": "offline_dry_run_contract",
@@ -219,6 +222,51 @@ def _sponsor_adapter_status() -> dict[str, Any]:
         "all_adapters_non_executing": all(not summary["would_execute"] for summary in provider_summary.values()),
         "all_adapters_non_approving": all(not summary["can_approve_access"] for summary in provider_summary.values()),
         "all_adapters_without_keys": all(not summary["requires_api_key"] for summary in provider_summary.values()),
+    }
+
+
+def _proof_contribution_count(result: dict[str, Any]) -> int:
+    provider = result["provider"]
+    if provider == "composio":
+        return len(result["action_plans"])
+    if provider == "tavily":
+        return len(result["evidence_candidates"])
+    if provider == "openclaw":
+        return len(result["trace_steps"])
+    return len(result.get("reviewer_narration_contract", {}).get("draft_outputs", []))
+
+
+def _build_sponsor_proof_pack() -> dict[str, Any]:
+    scenario_results = {
+        scenario_name: build_all_adapter_results(scenario_name)
+        for scenario_name in SCENARIOS
+    }
+    providers: dict[str, dict[str, Any]] = {}
+    for provider in ADAPTER_NAMES:
+        provider_results = [scenario_results[scenario_name][provider] for scenario_name in SCENARIOS]
+        first = provider_results[0]
+        proof_pack = first["proof_pack"]
+        providers[provider] = {
+            "proof_type": proof_pack["proof_type"],
+            "value_added": proof_pack["value_added"],
+            "visible_output": proof_pack["visible_output"],
+            "reviewer_question": proof_pack["reviewer_question"],
+            "cannot_do": proof_pack["cannot_do"],
+            "human_review_required": all(result["human_review_required"] for result in provider_results),
+            "scenarios": list(SCENARIOS),
+            "contribution_count": sum(_proof_contribution_count(result) for result in provider_results),
+            "would_execute": any(result["would_execute"] for result in provider_results),
+            "can_approve_access": any(result["can_approve_access"] for result in provider_results),
+            "can_grant_permissions": any(result["can_grant_permissions"] for result in provider_results),
+            "can_mutate_external_state": any(result["can_mutate_external_state"] for result in provider_results),
+        }
+    return {
+        "headline": "Sponsor tools enrich proof packets; they do not approve agents.",
+        "mode": "offline_dry_run_contract",
+        "providers": providers,
+        "all_human_review_required": all(item["human_review_required"] for item in providers.values()),
+        "all_non_executing": all(not item["would_execute"] for item in providers.values()),
+        "all_non_approving": all(not item["can_approve_access"] for item in providers.values()),
     }
 
 
@@ -288,6 +336,7 @@ def build_trust_receipt() -> dict[str, Any]:
         "proof_debt_ledger": _build_proof_debt_ledger(packets),
         "reviewer_routing": _build_reviewer_routing(briefs),
         "sponsor_runtime_plan": _build_sponsor_runtime_plan(),
+        "sponsor_proof_pack": _build_sponsor_proof_pack(),
         "sponsor_adapter_status": _sponsor_adapter_status(),
         "evidence_plan": {
             "default": "offline evidence notes only",
@@ -417,6 +466,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             for item in receipt["reviewer_routing"]
         ],
         "sponsor_runtime_plan": receipt["sponsor_runtime_plan"],
+        "sponsor_proof_pack": receipt["sponsor_proof_pack"],
         "sponsor_adapter_status": receipt["sponsor_adapter_status"],
         "public_contract_status": receipt["public_contract_status"],
         "policy_gate_status": receipt["policy_gate_status"],
@@ -488,6 +538,25 @@ def _sponsor_plan_lines(items: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _sponsor_proof_pack_lines(items: dict[str, dict[str, Any]]) -> str:
+    lines = []
+    for sponsor, proof in items.items():
+        cannot_do = ", ".join(proof["cannot_do"])
+        lines.append(
+            "- **{sponsor}** ({proof_type}): {value_added} Visible output: {visible}. "
+            "Contributions: {count}; human review required: {review}; cannot: {cannot}.".format(
+                sponsor=sponsor,
+                proof_type=proof["proof_type"],
+                value_added=proof["value_added"],
+                visible=proof["visible_output"],
+                count=proof["contribution_count"],
+                review=proof["human_review_required"],
+                cannot=cannot_do,
+            )
+        )
+    return "\n".join(lines)
+
+
 def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
     """Render a Trust Receipt as Markdown."""
     envelope = receipt["permission_envelope"]
@@ -540,6 +609,12 @@ def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
         "## Sponsor Runtime Plan",
         "",
         _sponsor_plan_lines(receipt["sponsor_runtime_plan"]),
+        "",
+        "## Sponsor Proof Pack",
+        "",
+        receipt["sponsor_proof_pack"]["headline"],
+        "",
+        _sponsor_proof_pack_lines(receipt["sponsor_proof_pack"]["providers"]),
         "",
         "## Sponsor Adapter Status",
         "",
@@ -662,6 +737,12 @@ def render_review_room_markdown(review_room: dict[str, Any]) -> str:
                 for provider, summary in review_room["sponsor_adapter_status"]["providers"].items()
             ]
         ),
+        "",
+        "## Sponsor Proof Pack",
+        "",
+        review_room["sponsor_proof_pack"]["headline"],
+        "",
+        _sponsor_proof_pack_lines(review_room["sponsor_proof_pack"]["providers"]),
         "",
         "## Safety State",
         "",

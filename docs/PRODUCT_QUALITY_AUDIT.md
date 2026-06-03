@@ -22,6 +22,7 @@ agent-access question
 -> Agent Access Decision Brief
 -> Trust Receipt
 -> Packet Outcome Memo
+-> Artifact Integrity Gate
 -> Review Room
 -> Proof Health
 -> Sponsor Live Readiness
@@ -42,13 +43,14 @@ A reviewer should be able to follow this order without needing private source co
 5. `python3 -m agent.judge`
 6. `examples/generated/packet_diff.md`
 7. `examples/generated/support_triage_agent.outcome_memo.md`
-8. `examples/generated/review_room.html`
-9. `examples/generated/trust_receipt.md`
-10. `examples/generated/support_triage_agent.proof_health.md`
-11. `examples/generated/sponsor_live_readiness.md`
-12. `docs/DESIGN_PARTNER_BRIEF.md`
-13. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-14. `examples/generated/support_triage_trial_report.md`
+8. `python3 -m agent.verify_artifacts`
+9. `examples/generated/review_room.html`
+10. `examples/generated/trust_receipt.md`
+11. `examples/generated/support_triage_agent.proof_health.md`
+12. `examples/generated/sponsor_live_readiness.md`
+13. `docs/DESIGN_PARTNER_BRIEF.md`
+14. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+15. `examples/generated/support_triage_trial_report.md`
 
 This order is the product-quality baseline. It gives a skim reviewer a clear story, gives an agentic reviewer a command path, gives a CTO a build path, and gives a design partner a trial path.
 
@@ -61,6 +63,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 | Agent Access Decision Brief | Compress the packet into a fast go/no-go review surface. | Must make scoped validation, production access, missing proof, and next validation obvious. |
 | Trust Receipt | Give the fastest audit-style summary. | Must join permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
 | Packet Outcome Memo | Convert the packet into a human decision. | Must name what can move, what stays blocked, proof owners, reviewer routes, and refresh timing without approving access. |
+| Artifact Integrity Gate | Prove deterministic proof artifacts are fresh and generated inventory is clean. | Must regenerate deterministic artifacts, validate static review assets, and fail when outputs drift or unexpected generated files are checked in. |
 | Review Room | Put the review into one static room. | Must work without a server, scripts, secrets, or external assets. |
 | Proof Health | Show whether a packet is current enough to keep using. | Must show drift, stale assumptions, expired reviewer gates, and the next human refresh action without approving access. |
 | Sponsor Live Readiness | Show where Nebius, Tavily, Composio, and OpenClaw can add live proof. | Must keep every provider non-executing, non-approving, non-granting, and non-mutating by default. |
@@ -98,6 +101,7 @@ Before a PR claims the product surface is stronger, it should preserve these sig
 - `python3 -m unittest discover -s tests` passes.
 - `python3 -m py_compile agent/*.py agent/adapters/*.py web/*.py` passes.
 - `python3 -m json.tool AI_JUDGE_MANIFEST.json` passes.
+- `python3 -m agent.verify_artifacts` passes.
 - The artifact checklist includes the review surfaces a judge should skim.
 - The public boundary tests stay clean.
 - The Review Room, Trust Receipt, Packet Diff, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, and trial report remain generated public artifacts.
@@ -112,6 +116,7 @@ Use this as the quick premium-quality review:
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |
+| Can a reviewer trust the public proof inventory is fresh? | `python3 -m agent.verify_artifacts` byte-compares regenerated outputs against `examples/generated/`, validates static review assets, and fails on unexpected generated files. |
 | Can a CTO build on it safely? | `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md` preserve dry-run and human-review defaults. |
 | Can a design partner trial it? | `docs/DESIGN_PARTNER_TRIAL_KIT.md`, request samples, and the trial runner convert one workflow into public outputs. |
 | Can sponsor tools help without taking over? | Sponsor Live Readiness shows proof contribution while keeping execution, approval, grants, and mutation off. |

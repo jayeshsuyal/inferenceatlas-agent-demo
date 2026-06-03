@@ -43,6 +43,7 @@ ia-review-room = "agent.review_room:main"
 ia-sponsor-readiness = "agent.sponsor_readiness:main"
 ia-trial = "agent.trial:main"
 ia-trust = "agent.trust:main"
+ia-verify-artifacts = "agent.verify_artifacts:main"
 
 [tool.setuptools.packages.find]
 include = ["agent*", "web*"]

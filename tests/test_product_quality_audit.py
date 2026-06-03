@@ -24,6 +24,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "Agent Access Decision Brief",
             "Trust Receipt",
             "Packet Outcome Memo",
+            "Artifact Integrity Gate",
             "Review Room",
             "Proof Health",
             "Sponsor Live Readiness",
@@ -46,6 +47,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "python3 -m agent.judge",
             "examples/generated/packet_diff.md",
             "examples/generated/support_triage_agent.outcome_memo.md",
+            "python3 -m agent.verify_artifacts",
             "examples/generated/review_room.html",
             "examples/generated/trust_receipt.md",
             "examples/generated/support_triage_agent.proof_health.md",
@@ -79,10 +81,13 @@ class ProductQualityAuditTests(unittest.TestCase):
         )
         self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", manifest["product_review_path"])
         self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("product quality audit", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [readme, agents, guide, tour, expected_output]:
             self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", surface)
+            self.assertIn("python3 -m agent.verify_artifacts", surface)
 
     def test_judge_harness_names_product_quality_audit(self) -> None:
         report = build_judge_report(write_artifacts=False)

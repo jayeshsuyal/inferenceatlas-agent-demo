@@ -9,13 +9,14 @@ Private engine, public proof.
 
 ## Default Review Command
 
-Run the no-key judge path first:
+Run the no-key judge path first, then verify the checked-in proof artifacts:
 
 ```bash
 python3 -m agent.judge --no-write
+python3 -m agent.verify_artifacts
 ```
 
-Expected human-readable signals:
+Expected human-readable signals across that two-command path:
 
 - mode is `offline_deterministic`
 - live keys required is `False`
@@ -25,6 +26,7 @@ Expected human-readable signals:
 - scenario matrix includes `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - Packet Diff reports relaxed read-only, proof-routed, and blocked critical lanes
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
+- Artifact Integrity Gate reports `33 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -33,13 +35,14 @@ Expected human-readable signals:
 
 ## Machine-Readable Review
 
-For a strict parser, run:
+For a strict parser, run both JSON surfaces:
 
 ```bash
 python3 -m agent.judge --no-write --json
+python3 -m agent.verify_artifacts --json
 ```
 
-Expected JSON pass signals:
+Expected judge JSON pass signals:
 
 - `mode` is `offline_deterministic`
 - `public_contract.status` is `ok`
@@ -65,6 +68,14 @@ Expected JSON pass signals:
 - `safety.all_adapters_non_approving` is `true`
 - `private_boundary.private_source_exposed` is `false`
 
+Expected artifact verifier JSON pass signals:
+
+- `status` is `ok`
+- `summary.generated_artifacts_verified` is `33`
+- `summary.stale_artifacts` is `0`
+- `summary.unexpected_checked_in_artifacts` is `0`
+- `summary.missing_static_assets` is `0`
+
 ## Full Command Set
 
 An agentic reviewer can use this complete no-key path:
@@ -82,6 +93,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
@@ -91,6 +103,7 @@ Expected pass signals:
 - public contract reports all scenarios as `OK`
 - Packet Diff proves the three public scenarios differ in load-bearing fields
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
+- Artifact Integrity Gate proves deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in
 - policy gate blocks critical/admin/prod-write scope
 - sponsor adapters remain dry-run, non-executing, and non-approving
 - Trust Receipt, Review Room, Proof Health, and trial report artifacts exist
@@ -123,6 +136,7 @@ Treat these as review failures:
 - sponsor adapters can approve access
 - Packet Diff no longer shows all three risk lanes
 - Packet Outcome Memo approves access, grants permissions, or enables writes
+- Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts
 - Proof Health approves, grants, writes, or mutates production
 - `admin_code_fix_bot` is not blocked
 - public contract status is not `ok`
@@ -141,6 +155,7 @@ agent request
 -> packet diff
 -> outcome memo
 -> proof health
+-> artifact integrity gate
 -> human review
 ```
 

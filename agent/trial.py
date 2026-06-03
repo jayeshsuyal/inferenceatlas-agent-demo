@@ -589,10 +589,7 @@ def write_trial_artifacts(
         output_dir / f"{stem}.decision_brief.md",
         output_dir / f"{stem}.decision_brief.json",
     ]
-    report["written_artifacts"] = [
-        str(path.relative_to(ROOT_DIR) if path.is_relative_to(ROOT_DIR) else path)
-        for path in paths
-    ]
+    report["written_artifacts"] = [f"examples/generated/{path.name}" for path in paths]
     paths[0].write_text(render_trial_report_markdown(report), encoding="utf-8")
     paths[1].write_text(trial_report_to_pretty_json(report) + "\n", encoding="utf-8")
     paths[2].write_text(render_packet_markdown(packet), encoding="utf-8")

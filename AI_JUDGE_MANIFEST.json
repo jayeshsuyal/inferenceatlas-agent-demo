@@ -32,7 +32,8 @@
     "ia-trust",
     "ia-review-room",
     "ia-proof-health",
-    "ia-trial examples/requests/support_triage_trial.yml"
+    "ia-trial examples/requests/support_triage_trial.yml",
+    "ia-verify-artifacts"
   ],
   "default_run_command": "python3 -m agent.demo",
   "works_without_keys": true,
@@ -46,6 +47,9 @@
   "packet_outcome_memo_command": "python3 -m agent.outcome_memo",
   "packet_outcome_memo_json_command": "python3 -m agent.outcome_memo --no-write --json",
   "packet_outcome_memo_surface": "examples/generated/support_triage_agent.outcome_memo.md and examples/generated/support_triage_agent.outcome_memo.json",
+  "artifact_integrity_command": "python3 -m agent.verify_artifacts",
+  "artifact_integrity_json_command": "python3 -m agent.verify_artifacts --json",
+  "artifact_integrity_gate": "33 generated artifacts byte-compared against deterministic generator output; 2 static review assets checked for validity; unexpected checked-in generated files fail the gate",
   "public_contract_command": "python3 -m agent.contract --all",
   "public_contract_artifact_command": "python3 -m agent.contract --all --generated-dir examples/generated",
   "policy_gate_command": "python3 -m agent.gate --all",
@@ -76,6 +80,7 @@
     "examples/generated/packet_diff.md",
     "python3 -m agent.outcome_memo",
     "examples/generated/support_triage_agent.outcome_memo.md",
+    "python3 -m agent.verify_artifacts",
     "python3 -m agent.proof_health",
     "examples/generated/support_triage_agent.proof_health.md",
     "python3 -m agent.sponsor_readiness",
@@ -98,6 +103,7 @@
     "python3 -m agent.review_room",
     "python3 -m agent.proof_health",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+    "python3 -m agent.verify_artifacts",
     "python3 -m unittest discover -s tests"
   ],
   "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
@@ -177,6 +183,7 @@
     "cli_review": "python3 -m agent.review --list && python3 -m agent.review --scenario admin_code_fix_bot",
     "packet_diff": "python3 -m agent.packet_diff && python3 -m json.tool examples/generated/packet_diff.json",
     "packet_outcome_memo": "python3 -m agent.outcome_memo && python3 -m json.tool examples/generated/support_triage_agent.outcome_memo.json",
+    "artifact_integrity": "python3 -m agent.verify_artifacts && python3 -m agent.verify_artifacts --json",
     "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated",
     "policy_gate": "python3 -m agent.gate --all --json && python3 -m agent.gate --scenario admin_code_fix_bot",
     "sponsor_adapters": "python3 -m agent.adapters --all --json",
@@ -207,7 +214,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "packet outcome memo", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "packet outcome memo", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -235,6 +242,7 @@
     "python3 -m agent.outcome_memo",
     "examples/generated/support_triage_agent.outcome_memo.md",
     "examples/generated/support_triage_agent.outcome_memo.json",
+    "python3 -m agent.verify_artifacts",
     "docs/DESIGN_PARTNER_BRIEF.md",
     "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "examples/requests/design_partner_trial.yml",

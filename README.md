@@ -54,6 +54,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
@@ -73,6 +74,7 @@ ia-trust
 ia-review-room
 ia-proof-health
 ia-trial examples/requests/support_triage_trial.yml
+ia-verify-artifacts
 ```
 
 The fastest artifact to skim is the generated Trust Receipt:
@@ -136,6 +138,12 @@ The fastest product-trial artifact is:
 examples/generated/support_triage_trial_report.md
 ```
 
+The fastest proof that deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in is:
+
+```bash
+python3 -m agent.verify_artifacts
+```
+
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
 For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Product Tour](docs/PRODUCT_TOUR.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
@@ -150,6 +158,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - access eligibility go/no-go
 - risk-level packet diff
 - packet outcome memo
+- artifact integrity status
 - permission envelope
 - requested capability
 - tool access plan

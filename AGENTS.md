@@ -32,6 +32,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
@@ -50,6 +51,7 @@ Expected result:
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the design-partner trial runner converts a role-level request into a report, packet, and access brief
 - the Product Quality Audit names the premium spine and safety guardrails
+- Artifact Integrity Gate reports deterministic proof artifacts as fresh, static review assets as valid, and no unexpected generated file as checked in
 - the Review Room walkthrough and screenshot are available for visual skim review
 - tests pass
 
@@ -94,6 +96,7 @@ Evaluate the public product contract:
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does `examples/generated/packet_diff.md` prove the packet bends across low, medium/high, and critical access?
 - Does `examples/generated/support_triage_agent.outcome_memo.md` turn the packet into a clear human decision?
+- Does `python3 -m agent.verify_artifacts` prove deterministic proof artifacts are fresh and no unexpected generated file is checked in?
 - Does the decision brief give a fast go/no-go surface?
 - Does the Trust Receipt summarize the permission envelope, proof debt, reviewer routing, and safety state?
 - Does Proof Health show packet drift, stale assumptions, expired reviewer gates, and the next human refresh action?

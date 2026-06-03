@@ -85,10 +85,12 @@ class CtoHandoffDocsTests(unittest.TestCase):
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 
         self.assertIn("Judge Fast Path", readme)
+        self.assertIn("docs/PRODUCT_TOUR.md", readme)
         self.assertIn("docs/JUDGE_REVIEW_GUIDE.md", readme)
         self.assertIn("AGENTS.md", readme)
         self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
+        self.assertEqual(manifest["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
         self.assertEqual(manifest["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
         self.assertEqual(manifest["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
@@ -102,6 +104,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
+        self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
         self.assertEqual(
@@ -113,6 +116,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
         self.assertEqual(manifest["primary_artifacts"]["trust_receipt_markdown"], "examples/generated/trust_receipt.md")
+        self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
         self.assertEqual(manifest["primary_artifacts"]["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
@@ -132,6 +136,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
 
         for expected in [
             "Five-Minute Path",
+            "docs/PRODUCT_TOUR.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -161,6 +166,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         for expected in [
             "Agent Reviewer Instructions",
             "Do not request secrets",
+            "docs/PRODUCT_TOUR.md",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",

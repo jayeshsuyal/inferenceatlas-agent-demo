@@ -14,6 +14,7 @@ POSITIONING_SENTENCE = (
 CANONICAL_TEXT_SURFACES = [
     "README.md",
     "AGENTS.md",
+    "docs/PRODUCT_TOUR.md",
     "docs/JUDGE_REVIEW_GUIDE.md",
     "docs/DESIGN_PARTNER_BRIEF.md",
 ]

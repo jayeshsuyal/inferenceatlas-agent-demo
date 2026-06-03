@@ -11,13 +11,21 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 
 InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, access brief, policy-gate result, proof debt, reviewer routing, and next validation plan humans need to review.
 
-Run the full public judge path:
+This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
+
+Start with the product tour: [Product Tour](docs/PRODUCT_TOUR.md).
+
+Then run the full public judge path:
 
 ```bash
 python3 -m agent.judge
 ```
 
-This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
+Run the design-partner trial sample:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+```
 
 Install the public harness commands:
 
@@ -28,7 +36,7 @@ ia-judge
 
 ## Judge Fast Path
 
-If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
+If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
 
 Then run:
 
@@ -84,9 +92,15 @@ The fastest scenario-specific artifact is the generated access brief:
 examples/generated/support_triage_agent.decision_brief.md
 ```
 
+The fastest product-trial artifact is:
+
+```text
+examples/generated/support_triage_trial_report.md
+```
+
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Product Tour](docs/PRODUCT_TOUR.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 

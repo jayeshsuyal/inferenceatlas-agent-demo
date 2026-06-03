@@ -77,6 +77,9 @@ Public files to inspect:
 | AI-readable manifest | `AI_JUDGE_MANIFEST.json` |
 | Judge review guide | `docs/JUDGE_REVIEW_GUIDE.md` |
 | Design partner brief | `docs/DESIGN_PARTNER_BRIEF.md` |
+| Design partner trial kit | `docs/DESIGN_PARTNER_TRIAL_KIT.md` |
+| Trial request template | `examples/requests/design_partner_trial.yml` |
+| Support triage trial sample | `examples/requests/support_triage_trial.yml` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
 | Public conformance contract | `docs/CONTRACT.md` |
 | One-command judge harness | `python3 -m agent.judge` |

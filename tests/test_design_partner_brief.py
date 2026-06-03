@@ -14,6 +14,9 @@ class DesignPartnerBriefTests(unittest.TestCase):
             "Design Partner Brief",
             "One-Afternoon Trial",
             "python3 -m agent.judge",
+            "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+            "examples/requests/design_partner_trial.yml",
+            "examples/requests/support_triage_trial.yml",
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.decision_brief.md",
@@ -53,8 +56,17 @@ class DesignPartnerBriefTests(unittest.TestCase):
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 
         self.assertEqual(manifest["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
+        self.assertEqual(manifest["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
+        self.assertEqual(manifest["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
+        self.assertEqual(manifest["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
+        self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
+        self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
+        self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertIn("docs/DESIGN_PARTNER_BRIEF.md", manifest["judge_review_path"])
+        self.assertIn("docs/DESIGN_PARTNER_TRIAL_KIT.md", manifest["judge_review_path"])
+        self.assertIn("examples/requests/design_partner_trial.yml", manifest["judge_review_path"])
+        self.assertIn("examples/requests/support_triage_trial.yml", manifest["judge_review_path"])
         self.assertIn("design partner brief", manifest["private_v1_boundary"]["public_proof_surface"])
 
     def test_design_partner_brief_does_not_expose_private_schema_names(self) -> None:

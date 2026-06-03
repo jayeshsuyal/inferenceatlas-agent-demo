@@ -1,0 +1,86 @@
+schema_version: design_partner_trial_request.v0
+status: public_template_no_secrets
+purpose: >
+  Fill this with one real agent-access workflow before a CTO, Security lead,
+  AI platform owner, or design partner evaluates InferenceAtlas.
+
+redaction_boundary:
+  do_not_include:
+    - production credentials
+    - live sponsor tokens
+    - customer data
+    - private prompts
+    - private v1 source code
+    - account-specific permission grants
+    - write-enabled Composio actions
+  public_repo_posture: role_level_descriptions_only
+
+candidate_agent:
+  name: replace_with_agent_name
+  business_owner: replace_with_owner_role
+  purpose: replace_with_the_agent_job_to_be_done
+  requested_environment: replace_with_dev_stage_or_validation_only
+  current_approval_path: replace_with_current_internal_review_process
+
+requested_access:
+  production_access_requested: false
+  admin_scopes_requested: false
+  external_writes_requested: false
+  tools:
+    - system: replace_with_tool_name
+      requested_actions:
+        - replace_with_read_or_draft_action
+      blocked_actions:
+        - replace_with_write_admin_or_production_action
+      data_classes:
+        - replace_with_role_level_data_class
+      proposed_demo_allowance: dry_run_or_read_only_validation_only
+  data_classes:
+    - replace_with_role_level_data_class
+
+proof_debt:
+  missing_proof:
+    - item: replace_with_missing_policy_or_scope_proof
+      owner: replace_with_reviewer_role
+      unblocks: replace_with_validation_step_unblocked_by_this_proof
+  unsupported_claims:
+    - claim: replace_with_claim_that_must_not_be_approved_yet
+      reason: replace_with_reason_the_claim_is_not_proven
+
+reviewer_routing:
+  required_reviewers:
+    - role: Security
+      review_area: data_exposure_retention_logging_policy_boundary
+    - role: Engineering
+      review_area: permission_boundary_audit_logs_off_switch_rollback
+    - role: Ops
+      review_area: workflow_fit_escalation_human_handoff
+  conditional_reviewers:
+    - role: Finance
+      condition: paid_seats_vendor_spend_or_live_integration_costs
+    - role: Legal
+      condition: customer_data_regulated_data_or_retention_terms
+
+safety_defaults:
+  access_approval_granted: false
+  permission_grant_allowed: false
+  external_writes_enabled: false
+  production_mutation_allowed: false
+  packet_state_mutation_allowed: false
+  composio_dry_run_default: true
+  human_approval_required: true
+
+trial_outputs:
+  expected_artifacts:
+    - Trust Receipt
+    - DecisionPacket
+    - Agent Access Decision Brief
+    - policy-gate result
+    - dry-run tool-access plan
+    - next human validation step
+  success_criteria:
+    - blast_radius_is_visible
+    - proof_debt_has_named_owners
+    - risky_access_stays_blocked
+    - low_risk_validation_can_move_with_gates
+    - sponsor_adapters_remain_dry_run_and_non_approving

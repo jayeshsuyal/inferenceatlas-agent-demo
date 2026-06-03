@@ -6,6 +6,9 @@
   "agent_reviewer_instructions": "AGENTS.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
   "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
+  "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+  "design_partner_trial_template": "examples/requests/design_partner_trial.yml",
+  "support_triage_trial_sample": "examples/requests/support_triage_trial.yml",
   "judge_harness_command": "python3 -m agent.judge",
   "judge_harness_json_command": "python3 -m agent.judge --json",
   "default_run_command": "python3 -m agent.demo",
@@ -73,6 +76,9 @@
     "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
     "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
+    "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+    "design_partner_trial_template": "examples/requests/design_partner_trial.yml",
+    "support_triage_trial_sample": "examples/requests/support_triage_trial.yml",
     "policy_gate": "policy/agent_access.yml",
     "sponsor_adapters": "agent/adapters/",
     "agent_reviewer_instructions": "AGENTS.md",
@@ -98,6 +104,7 @@
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
     "review_room_html": "python3 -m agent.review_room",
     "design_partner_brief": "test -s docs/DESIGN_PARTNER_BRIEF.md",
+    "design_partner_trial_kit": "test -s docs/DESIGN_PARTNER_TRIAL_KIT.md && test -s examples/requests/design_partner_trial.yml && test -s examples/requests/support_triage_trial.yml",
     "review_room_walkthrough": "test -s docs/REVIEW_ROOM_WALKTHROUGH.md && test -s examples/generated/review_room.desktop.jpg"
   },
   "safety": {
@@ -117,7 +124,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "judge harness", "trust receipt", "review room", "review room walkthrough", "design partner brief", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "judge harness", "trust receipt", "review room", "review room walkthrough", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -137,6 +144,9 @@
     "AI_JUDGE_MANIFEST.json",
     "python3 -m agent.judge",
     "docs/DESIGN_PARTNER_BRIEF.md",
+    "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+    "examples/requests/design_partner_trial.yml",
+    "examples/requests/support_triage_trial.yml",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",

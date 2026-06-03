@@ -17,6 +17,8 @@ Can IA turn one messy agent-access request into a reviewable Trust Receipt, Deci
 
 The public repo proves the contract. A design partner validates the workflow on real internal access requests.
 
+For the fillable request shape, use `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.
+
 ## Best-Fit Design Partner
 
 The strongest trial partner is a team that is about to give an AI agent access to internal tools or sensitive operating data.
@@ -49,7 +51,15 @@ policy/agent_access.yml
 docs/REVIEW_ROOM_WALKTHROUGH.md
 ```
 
-3. Pick one real internal agent-access workflow and map it into the same review questions:
+3. Open the public request kit:
+
+```text
+docs/DESIGN_PARTNER_TRIAL_KIT.md
+examples/requests/design_partner_trial.yml
+examples/requests/support_triage_trial.yml
+```
+
+4. Pick one real internal agent-access workflow and map it into the same review questions:
 
 - What tools does the agent want?
 - What data classes can it touch?
@@ -58,7 +68,7 @@ docs/REVIEW_ROOM_WALKTHROUGH.md
 - Which reviewer owners must sign off?
 - What validation can happen before production access?
 
-4. Compare IA output against the current internal approval path:
+5. Compare IA output against the current internal approval path:
 
 - Does the Trust Receipt make blast radius visible faster?
 - Does the access brief give a clearer go/no-go?
@@ -139,6 +149,12 @@ The CTO can add live Nebius, Tavily, Composio, or OpenClaw enrichment without ch
 Bring one real agent-access request and one reviewer who owns the risk.
 
 Do not start with a broad platform rollout. Start with a single agent where the current approval path is slow, ambiguous, or too informal for the access being requested.
+
+Use the public template for the first pass:
+
+```text
+examples/requests/design_partner_trial.yml
+```
 
 The strongest first partner meeting ends with this decision:
 

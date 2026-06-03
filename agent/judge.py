@@ -39,6 +39,9 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/review_room.html",
     "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "docs/DESIGN_PARTNER_BRIEF.md",
+    "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+    "examples/requests/design_partner_trial.yml",
+    "examples/requests/support_triage_trial.yml",
     "examples/generated/review_room.desktop.jpg",
     "policy/agent_access.yml",
     "agent/adapters/",
@@ -247,9 +250,10 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "1. Skim `examples/generated/review_room.html`.",
             "2. Read `examples/generated/trust_receipt.md`.",
             "3. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "4. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "5. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "6. Confirm sponsor adapters stay dry-run and non-approving.",
+            "4. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "5. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "6. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "7. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

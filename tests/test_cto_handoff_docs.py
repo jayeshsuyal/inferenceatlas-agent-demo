@@ -70,6 +70,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
         self.assertEqual(manifest["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
+        self.assertEqual(manifest["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
+        self.assertEqual(manifest["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
+        self.assertEqual(manifest["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertEqual(manifest["judge_harness_command"], "python3 -m agent.judge")
         self.assertEqual(manifest["judge_harness_json_command"], "python3 -m agent.judge --json")
         self.assertIn("python3 -m agent.judge", manifest["five_minute_review_commands"])
@@ -89,6 +92,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["review_room_walkthrough"], "docs/REVIEW_ROOM_WALKTHROUGH.md")
         self.assertEqual(manifest["primary_artifacts"]["review_room_screenshot"], "examples/generated/review_room.desktop.jpg")
         self.assertEqual(manifest["primary_artifacts"]["design_partner_brief"], "docs/DESIGN_PARTNER_BRIEF.md")
+        self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_kit"], "docs/DESIGN_PARTNER_TRIAL_KIT.md")
+        self.assertEqual(manifest["primary_artifacts"]["design_partner_trial_template"], "examples/requests/design_partner_trial.yml")
+        self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertEqual(manifest["primary_artifacts"]["policy_gate"], "policy/agent_access.yml")
         self.assertEqual(manifest["primary_artifacts"]["sponsor_adapters"], "agent/adapters/")
 
@@ -99,6 +105,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "Five-Minute Path",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
+            "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+            "examples/requests/design_partner_trial.yml",
             "python3 -m agent.demo",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
@@ -126,6 +134,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "Do not request secrets",
             "python3 -m agent.judge",
             "docs/DESIGN_PARTNER_BRIEF.md",
+            "docs/DESIGN_PARTNER_TRIAL_KIT.md",
+            "examples/requests/design_partner_trial.yml",
+            "examples/requests/support_triage_trial.yml",
             "python3 -m agent.demo",
             "python3 -m agent.review --list",
             "python3 -m agent.contract --all",

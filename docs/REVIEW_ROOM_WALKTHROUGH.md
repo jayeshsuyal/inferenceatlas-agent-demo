@@ -71,3 +71,5 @@ The pilot ask is simple: pick one agent-access workflow, run it through the Trus
 The public demo proves the contract. A design partner validates the workflow on real internal access requests.
 
 For the trial shape, use `docs/DESIGN_PARTNER_BRIEF.md`.
+
+For the fillable request shape, use `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.

@@ -139,9 +139,12 @@ For the design-partner trial path, read:
 
 ```text
 docs/DESIGN_PARTNER_BRIEF.md
+docs/DESIGN_PARTNER_TRIAL_KIT.md
+examples/requests/design_partner_trial.yml
+examples/requests/support_triage_trial.yml
 ```
 
-It defines the one-afternoon CTO/platform-owner evaluation: bring one real agent-access workflow, produce the review packet, compare against the current approval path, and keep secrets, writes, approvals, and private v1 source out of the public repo.
+It defines the one-afternoon CTO/platform-owner evaluation: bring one real agent-access workflow, use the public request template, produce the review packet, compare against the current approval path, and keep secrets, writes, approvals, and private v1 source out of the public repo.
 
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 

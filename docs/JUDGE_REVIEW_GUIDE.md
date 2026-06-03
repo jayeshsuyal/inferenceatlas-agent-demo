@@ -22,6 +22,8 @@ python3 -m unittest discover -s tests
 
 The default path is deterministic and works without API keys.
 
+If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
+
 ## What To Inspect
 
 | Question | Public artifact |

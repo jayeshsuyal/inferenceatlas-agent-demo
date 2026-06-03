@@ -66,6 +66,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
 
         self.assertIn("Judge Fast Path", readme)
         self.assertIn("docs/JUDGE_REVIEW_GUIDE.md", readme)
+        self.assertIn("AGENTS.md", readme)
+        self.assertEqual(manifest["agent_reviewer_instructions"], "AGENTS.md")
         self.assertEqual(manifest["reviewer_entrypoint"], "docs/JUDGE_REVIEW_GUIDE.md")
         self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
 
@@ -83,6 +85,23 @@ class CtoHandoffDocsTests(unittest.TestCase):
 
         for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
             self.assertNotIn(forbidden, guide)
+
+    def test_agents_file_guides_ai_review_without_secrets(self) -> None:
+        agents = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+
+        for expected in [
+            "Agent Reviewer Instructions",
+            "Do not request secrets",
+            "python3 -m agent.demo",
+            "python3 -m agent.review --list",
+            "python3 -m agent.contract --all",
+            "python3 -m unittest discover -s tests",
+            "Private engine, public proof.",
+        ]:
+            self.assertIn(expected, agents)
+
+        for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
+            self.assertNotIn(forbidden, agents)
 
 
 if __name__ == "__main__":

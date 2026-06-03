@@ -1,0 +1,236 @@
+{
+  "generated_by": "inferenceatlas-agent-demo",
+  "headline": "The same packet engine relaxes for low-risk read-only access, routes proof debt for medium/high risk, and blocks critical admin/prod-write access.",
+  "load_bearing_fields": [
+    {
+      "differs_across_scenarios": true,
+      "label": "Validation review posture",
+      "path": "approval_posture.validation_review",
+      "values": {
+        "admin_code_fix_bot": "blocked_until_security_review",
+        "read_only_analytics_agent": "allowed",
+        "support_triage_agent": "allowed"
+      },
+      "why_it_matters": "Shows whether the request can even enter scoped validation."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Write access posture",
+      "path": "approval_posture.write_access",
+      "values": {
+        "admin_code_fix_bot": "blocked_due_to_admin_and_production_mutation",
+        "read_only_analytics_agent": "not_requested",
+        "support_triage_agent": "blocked_until_rollback_and_off_switch_proof"
+      },
+      "why_it_matters": "Separates no-write, proof-blocked write, and admin/prod-write rejection."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Scoped validation go/no-go",
+      "path": "go_no_go.scoped_validation_review",
+      "values": {
+        "admin_code_fix_bot": false,
+        "read_only_analytics_agent": true,
+        "support_triage_agent": true
+      },
+      "why_it_matters": "Shows the human-review lane the packet enables."
+    },
+    {
+      "differs_across_scenarios": false,
+      "label": "Production access invariant",
+      "path": "go_no_go.production_access",
+      "values": {
+        "admin_code_fix_bot": false,
+        "read_only_analytics_agent": false,
+        "support_triage_agent": false
+      },
+      "why_it_matters": "Production remains blocked across the public harness."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Policy gate decision",
+      "path": "policy_gate.decision",
+      "values": {
+        "admin_code_fix_bot": "BLOCKED",
+        "read_only_analytics_agent": "VALIDATION_ALLOWED_WITH_GATES",
+        "support_triage_agent": "VALIDATION_ALLOWED_WITH_GATES"
+      },
+      "why_it_matters": "Shows the policy-as-code result over the same packet."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Highest requested risk",
+      "path": "requested_capability.highest_risk",
+      "values": {
+        "admin_code_fix_bot": "critical",
+        "read_only_analytics_agent": "low",
+        "support_triage_agent": "high"
+      },
+      "why_it_matters": "Proves risk shape changes across read-only, proof-routed, and critical requests."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Requested systems",
+      "path": "requested_capability.systems",
+      "values": {
+        "admin_code_fix_bot": [
+          "GitHub"
+        ],
+        "read_only_analytics_agent": [
+          "BigQuery",
+          "Looker"
+        ],
+        "support_triage_agent": [
+          "GitHub",
+          "Slack",
+          "Jira"
+        ]
+      },
+      "why_it_matters": "Shows the access envelope that drives reviewer routing."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Missing proof count",
+      "path": "missing_proof.count",
+      "values": {
+        "admin_code_fix_bot": 2,
+        "read_only_analytics_agent": 3,
+        "support_triage_agent": 5
+      },
+      "why_it_matters": "Shows proof debt changes with request risk and scope."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Blocked claims count",
+      "path": "blocked_claims.count",
+      "values": {
+        "admin_code_fix_bot": 4,
+        "read_only_analytics_agent": 2,
+        "support_triage_agent": 4
+      },
+      "why_it_matters": "Shows unsupported approval, safety, or readiness claims stay visible."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Reviewer owners",
+      "path": "reviewer_owners",
+      "values": {
+        "admin_code_fix_bot": [
+          "Security/Engineering",
+          "Engineering Leadership",
+          "Security/Legal"
+        ],
+        "read_only_analytics_agent": [
+          "Data/Analytics",
+          "Engineering"
+        ],
+        "support_triage_agent": [
+          "Security/Legal",
+          "Engineering",
+          "Support Ops",
+          "Procurement/Finance"
+        ]
+      },
+      "why_it_matters": "Shows the packet routes work to different owners by risk shape."
+    },
+    {
+      "differs_across_scenarios": true,
+      "label": "Next validation",
+      "path": "next_validation.action",
+      "values": {
+        "admin_code_fix_bot": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+        "read_only_analytics_agent": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
+        "support_triage_agent": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project."
+      },
+      "why_it_matters": "Shows the smallest safe next human step for each request."
+    }
+  ],
+  "mode": "offline_deterministic",
+  "packet_diff_id": "ia-agent-packet-diff-public-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "scenario_order": [
+    "support_triage_agent",
+    "read_only_analytics_agent",
+    "admin_code_fix_bot"
+  ],
+  "scenario_spread": [
+    {
+      "blocked_claim_count": 4,
+      "external_writes": false,
+      "highest_risk": "high",
+      "missing_proof_count": 5,
+      "next_validation": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+      "packet_movement": "routes_to_proof_owner_scoped_validation",
+      "policy_gate_decision": "VALIDATION_ALLOWED_WITH_GATES",
+      "production_access": false,
+      "reviewer_owners": [
+        "Security/Legal",
+        "Engineering",
+        "Support Ops",
+        "Procurement/Finance"
+      ],
+      "scenario": "support_triage_agent",
+      "scoped_validation_review": true,
+      "source_brief_artifact": "examples/generated/support_triage_agent.decision_brief.json",
+      "source_packet_artifact": "examples/generated/support_triage_agent.packet.json"
+    },
+    {
+      "blocked_claim_count": 2,
+      "external_writes": false,
+      "highest_risk": "low",
+      "missing_proof_count": 3,
+      "next_validation": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
+      "packet_movement": "relaxes_to_read_only_validation",
+      "policy_gate_decision": "VALIDATION_ALLOWED_WITH_GATES",
+      "production_access": false,
+      "reviewer_owners": [
+        "Data/Analytics",
+        "Engineering"
+      ],
+      "scenario": "read_only_analytics_agent",
+      "scoped_validation_review": true,
+      "source_brief_artifact": "examples/generated/read_only_analytics_agent.decision_brief.json",
+      "source_packet_artifact": "examples/generated/read_only_analytics_agent.packet.json"
+    },
+    {
+      "blocked_claim_count": 4,
+      "external_writes": false,
+      "highest_risk": "critical",
+      "missing_proof_count": 2,
+      "next_validation": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+      "packet_movement": "hardens_to_blocked_before_validation",
+      "policy_gate_decision": "BLOCKED",
+      "production_access": false,
+      "reviewer_owners": [
+        "Security/Engineering",
+        "Engineering Leadership",
+        "Security/Legal"
+      ],
+      "scenario": "admin_code_fix_bot",
+      "scoped_validation_review": false,
+      "source_brief_artifact": "examples/generated/admin_code_fix_bot.decision_brief.json",
+      "source_packet_artifact": "examples/generated/admin_code_fix_bot.packet.json"
+    }
+  ],
+  "schema_version": "agent_packet_diff.v0",
+  "summary": {
+    "all_external_writes_blocked": true,
+    "all_production_access_blocked": true,
+    "differing_field_count": 10,
+    "has_blocked_critical_lane": true,
+    "has_proof_routed_lane": true,
+    "has_relaxed_read_only_lane": true,
+    "load_bearing_field_count": 11,
+    "scenario_count": 3
+  }
+}

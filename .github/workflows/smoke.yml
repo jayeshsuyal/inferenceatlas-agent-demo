@@ -28,6 +28,10 @@ jobs:
         run: |
           ia-judge --no-write
           ia-judge --no-write --json >/tmp/installed_judge_harness.json
+          ia-packet-diff --no-write
+          ia-packet-diff --no-write --json >/tmp/installed_packet_diff.json
+          ia-outcome-memo --no-write
+          ia-outcome-memo --no-write --json >/tmp/installed_outcome_memo.json
           ia-contract --all
           ia-proof-health --no-write
           ia-proof-health --no-write --json >/tmp/installed_proof_health.json
@@ -57,6 +61,8 @@ jobs:
           python -m agent.review --list
           python -m agent.review --scenario admin_code_fix_bot
           python -m agent.review --scenario read_only_analytics_agent --artifact packet --format json >/tmp/read_only_analytics_agent.cli.packet.json
+          python -m agent.packet_diff --no-write --json >/tmp/packet_diff.cli.json
+          python -m agent.outcome_memo --no-write --json >/tmp/outcome_memo.cli.json
 
       - name: Validate public conformance contract
         run: |
@@ -80,6 +86,11 @@ jobs:
         run: |
           python -m agent.trust
           python -m agent.trust --print-json trust_receipt >/tmp/trust_receipt.cli.json
+
+      - name: Generate packet decision surfaces
+        run: |
+          python -m agent.packet_diff
+          python -m agent.outcome_memo
 
       - name: Generate static review room
         run: python -m agent.review_room
@@ -110,6 +121,8 @@ jobs:
           python -m json.tool examples/generated/admin_code_fix_bot.packet.json >/tmp/admin_code_fix_bot.packet.json
           python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
           python -m json.tool examples/generated/trust_receipt.json >/tmp/trust_receipt.json
+          python -m json.tool examples/generated/packet_diff.json >/tmp/packet_diff.json
+          python -m json.tool examples/generated/support_triage_agent.outcome_memo.json >/tmp/support_triage_agent.outcome_memo.json
           python -m json.tool examples/generated/sponsor_live_readiness.json >/tmp/sponsor_live_readiness.artifact.json
           python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
           python -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/support_triage_agent.proof_health.json
@@ -121,6 +134,10 @@ jobs:
           test -s docs/REVIEW_ROOM_WALKTHROUGH.md
           python -m json.tool /tmp/judge_harness.json >/tmp/judge_harness.checked.json
           python -m json.tool /tmp/installed_trial_report.json >/tmp/installed_trial_report.checked.json
+          python -m json.tool /tmp/installed_packet_diff.json >/tmp/installed_packet_diff.checked.json
+          python -m json.tool /tmp/installed_outcome_memo.json >/tmp/installed_outcome_memo.checked.json
+          python -m json.tool /tmp/packet_diff.cli.json >/tmp/packet_diff.cli.checked.json
+          python -m json.tool /tmp/outcome_memo.cli.json >/tmp/outcome_memo.cli.checked.json
           python -m json.tool /tmp/installed_proof_health.json >/tmp/installed_proof_health.checked.json
           python -m json.tool /tmp/proof_health.json >/tmp/proof_health.checked.json
           python -m json.tool /tmp/installed_sponsor_readiness.json >/tmp/installed_sponsor_readiness.checked.json

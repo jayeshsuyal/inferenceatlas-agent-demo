@@ -11,7 +11,9 @@ from typing import Any
 from .adapters import ADAPTER_NAMES, build_all_adapter_results
 from .contract import validate_all
 from .gate import evaluate_all
+from .outcome_memo import build_packet_outcome_memo, write_packet_outcome_memo_artifacts
 from .packet import build_support_triage_trace
+from .packet_diff import build_packet_diff_report, write_packet_diff_artifacts
 from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
@@ -27,6 +29,8 @@ JUDGE_COMMANDS = [
     "python3 -m agent.judge",
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
+    "python3 -m agent.packet_diff",
+    "python3 -m agent.outcome_memo",
     "python3 -m agent.contract --all",
     "python3 -m agent.gate --all",
     "python3 -m agent.adapters --all",
@@ -44,6 +48,10 @@ PRIMARY_ARTIFACTS = [
     "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "examples/generated/demo_transcript.md",
     "examples/generated/trust_receipt.md",
+    "examples/generated/packet_diff.md",
+    "examples/generated/packet_diff.json",
+    "examples/generated/support_triage_agent.outcome_memo.md",
+    "examples/generated/support_triage_agent.outcome_memo.json",
     "examples/generated/sponsor_live_readiness.md",
     "examples/generated/sponsor_live_readiness.json",
     "examples/generated/review_room.md",
@@ -92,6 +100,8 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(_write_support_trace(output_dir))
     written.extend(write_sponsor_live_readiness_artifacts(output_dir=output_dir))
     written.extend(write_trust_artifacts(output_dir))
+    written.extend(write_packet_diff_artifacts(output_dir))
+    written.extend(write_packet_outcome_memo_artifacts(output_dir=output_dir))
     written.append(write_review_room_html(output_dir))
     written.extend(write_proof_health_artifacts(output_dir=output_dir))
     written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
@@ -141,6 +151,8 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     adapter_summary = _adapter_summary()
     sponsor_readiness = build_sponsor_live_readiness()
     trust_receipt = build_trust_receipt()
+    packet_diff = build_packet_diff_report()
+    outcome_memo = build_packet_outcome_memo()
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
 
@@ -161,6 +173,31 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             }
             for scenario_name in SCENARIOS
         ],
+        "packet_diff": {
+            "scenario_count": packet_diff["summary"]["scenario_count"],
+            "load_bearing_field_count": packet_diff["summary"]["load_bearing_field_count"],
+            "differing_field_count": packet_diff["summary"]["differing_field_count"],
+            "has_relaxed_read_only_lane": packet_diff["summary"]["has_relaxed_read_only_lane"],
+            "has_proof_routed_lane": packet_diff["summary"]["has_proof_routed_lane"],
+            "has_blocked_critical_lane": packet_diff["summary"]["has_blocked_critical_lane"],
+            "all_production_access_blocked": packet_diff["summary"]["all_production_access_blocked"],
+            "all_external_writes_blocked": packet_diff["summary"]["all_external_writes_blocked"],
+        },
+        "packet_outcome_memo": {
+            "scenario": outcome_memo["scenario"],
+            "decision_code": outcome_memo["decision"]["code"],
+            "decision_summary": outcome_memo["decision"]["summary"],
+            "policy_gate": outcome_memo["decision"]["policy_gate"],
+            "production_access": outcome_memo["decision"]["production_access"],
+            "scoped_validation_review": outcome_memo["decision"]["scoped_validation_review"],
+            "external_writes": outcome_memo["decision"]["external_writes"],
+            "proof_debt_assignment_count": len(outcome_memo["proof_debt_assignments"]),
+            "reviewer_route_count": len(outcome_memo["reviewer_routes"]),
+            "next_human_health_check": outcome_memo["packet_refresh"]["next_human_health_check"],
+            "approves_access": outcome_memo["safety_boundary"]["approves_access"],
+            "grants_permissions": outcome_memo["safety_boundary"]["grants_permissions"],
+            "executes_external_writes": outcome_memo["safety_boundary"]["executes_external_writes"],
+        },
         "access_speed_layer": trust_receipt["access_speed_layer"],
         "design_partner_trial": {
             "request_path": trial_report["request_path"],
@@ -242,6 +279,16 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or not all(item["exists"] for item in report["artifact_checklist"])
         or not report["safety"]["all_adapters_non_executing"]
         or not report["safety"]["all_adapters_non_approving"]
+        or not report["packet_diff"]["has_relaxed_read_only_lane"]
+        or not report["packet_diff"]["has_proof_routed_lane"]
+        or not report["packet_diff"]["has_blocked_critical_lane"]
+        or not report["packet_diff"]["all_production_access_blocked"]
+        or not report["packet_diff"]["all_external_writes_blocked"]
+        or report["packet_outcome_memo"]["production_access"]
+        or report["packet_outcome_memo"]["external_writes"]
+        or report["packet_outcome_memo"]["approves_access"]
+        or report["packet_outcome_memo"]["grants_permissions"]
+        or report["packet_outcome_memo"]["executes_external_writes"]
         or not report["sponsor_live_readiness"]["all_contracts_ready"]
         or report["sponsor_live_readiness"]["default_path_requires_keys"]
         or not report["sponsor_live_readiness"]["all_non_executing"]
@@ -303,6 +350,47 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
                 production=item["production_access"],
             )
         )
+
+    diff = report["packet_diff"]
+    lines.extend(
+        [
+            "",
+            "## Packet Diff",
+            "",
+            "The same packet engine must bend across risk levels without changing safety defaults.",
+            "",
+            f"- scenarios compared: {diff['scenario_count']}",
+            f"- differing load-bearing fields: {diff['differing_field_count']} of {diff['load_bearing_field_count']}",
+            f"- relaxed read-only lane: {diff['has_relaxed_read_only_lane']}",
+            f"- proof-routed lane: {diff['has_proof_routed_lane']}",
+            f"- blocked critical lane: {diff['has_blocked_critical_lane']}",
+            f"- all production access blocked: {diff['all_production_access_blocked']}",
+            f"- all external writes blocked: {diff['all_external_writes_blocked']}",
+            f"- artifact: `examples/generated/packet_diff.md`",
+        ]
+    )
+
+    memo = report["packet_outcome_memo"]
+    lines.extend(
+        [
+            "",
+            "## Packet Outcome Memo",
+            "",
+            "The memo converts the packet into the human decision a CTO, Security lead, or AI platform owner can act on.",
+            "",
+            f"- scenario: `{memo['scenario']}`",
+            f"- decision: {memo['decision_code']}",
+            f"- summary: {memo['decision_summary']}",
+            f"- policy gate: {memo['policy_gate']}",
+            f"- production access: {memo['production_access']}",
+            f"- scoped validation review: {memo['scoped_validation_review']}",
+            f"- external writes: {memo['external_writes']}",
+            f"- proof debt assignments: {memo['proof_debt_assignment_count']}",
+            f"- reviewer routes: {memo['reviewer_route_count']}",
+            f"- next human health check: {memo['next_human_health_check']}",
+            f"- artifact: `examples/generated/support_triage_agent.outcome_memo.md`",
+        ]
+    )
 
     speed_layer = report["access_speed_layer"]
     lines.extend(
@@ -423,16 +511,18 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "1. Read `docs/PRODUCT_TOUR.md`.",
             "2. Read `docs/PRODUCT_QUALITY_AUDIT.md`.",
             "3. Read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`.",
-            "4. Skim `examples/generated/review_room.html`.",
-            "5. Read `examples/generated/trust_receipt.md`.",
-            "6. Read `examples/generated/support_triage_agent.proof_health.md`.",
-            "7. Read `examples/generated/sponsor_live_readiness.md`.",
-            "8. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "9. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "10. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "11. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "12. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "13. Confirm sponsor adapters stay dry-run and non-approving.",
+            "4. Read `examples/generated/packet_diff.md`.",
+            "5. Read `examples/generated/support_triage_agent.outcome_memo.md`.",
+            "6. Skim `examples/generated/review_room.html`.",
+            "7. Read `examples/generated/trust_receipt.md`.",
+            "8. Read `examples/generated/support_triage_agent.proof_health.md`.",
+            "9. Read `examples/generated/sponsor_live_readiness.md`.",
+            "10. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "11. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "12. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "13. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "14. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "15. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

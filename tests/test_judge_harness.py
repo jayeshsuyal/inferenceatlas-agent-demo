@@ -41,6 +41,14 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["access_speed_layer"]["has_fast_lane"])
         self.assertTrue(report["access_speed_layer"]["has_proof_routed_lane"])
         self.assertTrue(report["access_speed_layer"]["has_blocked_fast_lane"])
+        self.assertTrue(report["packet_diff"]["has_relaxed_read_only_lane"])
+        self.assertTrue(report["packet_diff"]["has_proof_routed_lane"])
+        self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
+        self.assertTrue(report["packet_diff"]["all_production_access_blocked"])
+        self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
+        self.assertFalse(report["packet_outcome_memo"]["production_access"])
+        self.assertFalse(report["packet_outcome_memo"]["external_writes"])
+        self.assertFalse(report["packet_outcome_memo"]["approves_access"])
         self.assertEqual(report["design_partner_trial"]["request_readiness"], "ready_for_scoped_trial")
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
         self.assertFalse(report["design_partner_trial"]["production_access"])
@@ -64,6 +72,10 @@ class JudgeHarnessTests(unittest.TestCase):
             "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "examples/generated/demo_transcript.md",
             "examples/generated/trust_receipt.md",
+            "examples/generated/packet_diff.md",
+            "examples/generated/packet_diff.json",
+            "examples/generated/support_triage_agent.outcome_memo.md",
+            "examples/generated/support_triage_agent.outcome_memo.json",
             "examples/generated/sponsor_live_readiness.md",
             "examples/generated/sponsor_live_readiness.json",
             "examples/generated/review_room.html",
@@ -94,6 +106,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("examples/requests/design_partner_trial.yml", markdown)
         self.assertIn("Private engine, public proof.", markdown)
         self.assertIn("Access Speed Layer", markdown)
+        self.assertIn("Packet Diff", markdown)
+        self.assertIn("examples/generated/packet_diff.md", markdown)
+        self.assertIn("Packet Outcome Memo", markdown)
+        self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", markdown)
         self.assertIn("Sponsor Live Readiness", markdown)
         self.assertIn("examples/generated/sponsor_live_readiness.md", markdown)
         self.assertIn("fast_lane_scoped_validation", markdown)
@@ -112,6 +128,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("VALIDATION_ALLOWED_WITH_GATES", result.stdout)
         self.assertIn("admin_code_fix_bot", result.stdout)
         self.assertIn("Access Speed Layer", result.stdout)
+        self.assertIn("Packet Diff", result.stdout)
+        self.assertIn("Packet Outcome Memo", result.stdout)
         self.assertIn("Sponsor Live Readiness", result.stdout)
         self.assertIn("all non-approving: True", result.stdout)
         self.assertIn("Design Partner Trial Runner", result.stdout)
@@ -134,6 +152,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertFalse(report["sponsor_live_readiness"]["default_path_requires_keys"])
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)
+        self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
+        self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
+        self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertFalse(report["proof_health"]["approves_access"])

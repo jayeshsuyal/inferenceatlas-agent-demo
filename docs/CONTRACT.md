@@ -100,6 +100,34 @@ Examples of owner roles include Security, Engineering, Support Ops, Legal, Procu
 
 The contract prefers owner roles over private people names. This keeps public artifacts reviewable without exposing private org charts or account context.
 
+## Proof Health Contract
+
+A conforming public lifecycle report must show when a pre-permission packet is current, drifting, or stale without changing the original access decision.
+
+The public lifecycle surface must include:
+
+| Public surface | What it proves |
+| --- | --- |
+| Overall health status | The packet can be reviewed as current, drifting, or stale without implying access approval. |
+| Packet Drift timeline | Tool scope, data boundaries, reviewer gates, and proof freshness are checked across visible checkpoints. |
+| Stale assumptions | Assumptions that need reviewer refresh remain explicit before validation expands. |
+| Expired reviewer gates | Review work that has aged out is named with the human refresh action required. |
+| Next human health check | The next reviewer action is explicit before access moves. |
+| Safety boundary | The lifecycle report cannot approve, grant, write, or mutate production state. |
+
+The Proof Health command is:
+
+```bash
+python3 -m agent.proof_health
+```
+
+Expected public artifacts:
+
+```text
+examples/generated/support_triage_agent.proof_health.md
+examples/generated/support_triage_agent.proof_health.json
+```
+
 ## Conformance
 
 The repo exposes a runnable conformance check.

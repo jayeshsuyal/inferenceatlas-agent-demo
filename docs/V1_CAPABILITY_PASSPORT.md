@@ -49,6 +49,7 @@ The public output is a DecisionPacket plus an Agent Access Decision Brief. The p
 | DecisionPacket | `schemas/decision_packet.schema.json` and generated packet JSON | The recommendation object has a stable shape that AI and human reviewers can inspect. | Full private packet builders, historical packet state, and production routing contracts. |
 | Agent Access Decision Brief | `schemas/agent_access_decision_brief.schema.json` and generated brief JSON/Markdown | A packet can become a skim-ready access eligibility decision without exposing private review logic. | Private review surfaces, account-specific approval maps, and production eligibility scoring. |
 | Agent Trust Gateway | `examples/generated/trust_receipt.md`, `examples/generated/review_room.md`, `examples/generated/review_room.html`, and `docs/REVIEW_ROOM_WALKTHROUGH.md` | Scenario spread, permission envelope, proof debt, reviewer routing, sponsor runtime plan, safety state, and private boundary are joined into one public control-plane artifact, serverless visual room, and demo talk track. | Private control-plane implementation, production routing, customer-specific policy, and account state. |
+| Packet lifecycle health | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` | Packet Drift, stale assumptions, expired reviewer gates, and the next human health check are visible before access expands. | Private lifecycle automation, customer-specific refresh cadence, and production review state. |
 | Public policy gate | `policy/agent_access.yml` and `python3 -m agent.gate --all` | A policy-as-code gate blocks critical/admin/prod-write access and allows lower-risk validation only with visible gates. | Private policy compiler, customer-specific policies, reviewer queue state, and production enforcement integrations. |
 | Sponsor adapter contracts | `agent/adapters/` and `python3 -m agent.adapters --all` | Nebius, Tavily, Composio, and OpenClaw enter as dry-run/evidence/narration/trace contracts that cannot approve access or execute writes. | Live keys, private account state, live sponsor traces, and production adapter implementations. |
 | Tool access planning | `tool_access_plan` in generated packet JSON and Markdown | Dry-run allowances are separated from blocked write actions for GitHub, Slack, and Jira. | Live Composio account state, private workspace configuration, and production tool grants. |
@@ -86,6 +87,7 @@ Public files to inspect:
 | Trust Receipt | `examples/generated/trust_receipt.md` |
 | Review Room | `examples/generated/review_room.md` |
 | Static Review Room HTML | `examples/generated/review_room.html` |
+| Proof Health | `examples/generated/support_triage_agent.proof_health.md` |
 | Review Room walkthrough | `docs/REVIEW_ROOM_WALKTHROUGH.md` |
 | Review Room screenshot | `examples/generated/review_room.desktop.jpg` |
 | Public policy gate | `policy/agent_access.yml` |

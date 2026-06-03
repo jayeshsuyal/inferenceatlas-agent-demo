@@ -12,6 +12,7 @@ from .adapters import ADAPTER_NAMES, build_all_adapter_results
 from .contract import validate_all
 from .gate import evaluate_all
 from .packet import build_support_triage_trace
+from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifacts
@@ -30,6 +31,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.adapters --all",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
+    "python3 -m agent.proof_health",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests",
 ]
@@ -40,6 +42,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",
+    "examples/generated/support_triage_agent.proof_health.md",
+    "examples/generated/support_triage_agent.proof_health.json",
     "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "docs/DESIGN_PARTNER_BRIEF.md",
     "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -82,6 +86,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(_write_support_trace(output_dir))
     written.extend(write_trust_artifacts(output_dir))
     written.append(write_review_room_html(output_dir))
+    written.extend(write_proof_health_artifacts(output_dir=output_dir))
     written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     return written
 
@@ -129,6 +134,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     adapter_summary = _adapter_summary()
     trust_receipt = build_trust_receipt()
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
+    proof_health = build_proof_health_report()
 
     return {
         "schema_version": JUDGE_HARNESS_VERSION,
@@ -158,6 +164,20 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "approves_access": trial_report["safety"]["public_runner_approves_access"],
             "grants_permissions": trial_report["safety"]["public_runner_grants_permissions"],
             "executes_external_writes": trial_report["safety"]["public_runner_executes_external_writes"],
+        },
+        "proof_health": {
+            "scenario": proof_health["scenario"],
+            "overall_status": proof_health["overall_status"],
+            "overall_score": proof_health["overall_score"],
+            "next_human_health_check": proof_health["next_human_health_check"],
+            "current_checkpoints": proof_health["proof_health_summary"]["current_checkpoints"],
+            "drifting_checkpoints": proof_health["proof_health_summary"]["drifting_checkpoints"],
+            "stale_checkpoints": proof_health["proof_health_summary"]["stale_checkpoints"],
+            "human_review_required": proof_health["proof_health_summary"]["human_review_required"],
+            "approves_access": proof_health["safety_boundary"]["approves_access"],
+            "grants_permissions": proof_health["safety_boundary"]["grants_permissions"],
+            "executes_external_writes": proof_health["safety_boundary"]["executes_external_writes"],
+            "mutates_production": proof_health["safety_boundary"]["mutates_production"],
         },
         "public_contract": {
             "status": "ok" if all(errors == [] for errors in contract_results.values()) else "fail",
@@ -206,6 +226,11 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["design_partner_trial"]["approves_access"]
         or report["design_partner_trial"]["grants_permissions"]
         or report["design_partner_trial"]["executes_external_writes"]
+        or not report["proof_health"]["human_review_required"]
+        or report["proof_health"]["approves_access"]
+        or report["proof_health"]["grants_permissions"]
+        or report["proof_health"]["executes_external_writes"]
+        or report["proof_health"]["mutates_production"]
     )
 
 
@@ -295,6 +320,18 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
     lines.extend(
         [
             "",
+            "## Proof Health",
+            "",
+            "Packet lifecycle status for the primary support-triage packet.",
+            "",
+            f"- scenario: `{report['proof_health']['scenario']}`",
+            f"- status: {report['proof_health']['overall_status']}",
+            f"- score: {report['proof_health']['overall_score']}",
+            f"- next human health check: {report['proof_health']['next_human_health_check']}",
+            f"- human review required: {report['proof_health']['human_review_required']}",
+            f"- approves access: {report['proof_health']['approves_access']}",
+            f"- grants permissions: {report['proof_health']['grants_permissions']}",
+            "",
             "## Public Contract",
             "",
             f"- status: {report['public_contract']['status']}",
@@ -328,12 +365,13 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "1. Read `docs/PRODUCT_TOUR.md`.",
             "2. Skim `examples/generated/review_room.html`.",
             "3. Read `examples/generated/trust_receipt.md`.",
-            "4. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "5. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "6. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "7. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "8. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "9. Confirm sponsor adapters stay dry-run and non-approving.",
+            "4. Read `examples/generated/support_triage_agent.proof_health.md`.",
+            "5. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "6. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "7. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "8. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "9. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "10. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

@@ -38,6 +38,7 @@ Every live integration should leave evidence in at least one checked artifact:
 | Tavily | `evidence_notes`, `source_status`, trace step |
 | Composio | `tool_access_plan`, access envelope, trace step |
 | OpenClaw | `examples/generated/support_triage_agent.trace.json` and Markdown trace |
+| Proof Health | `examples/generated/support_triage_agent.proof_health.json` and Markdown lifecycle report |
 
 Generated artifacts must still parse as JSON and pass tests after live fields are added.
 
@@ -104,9 +105,11 @@ Before recording a live demo, verify:
 - `python3 -m unittest discover -s tests` passes
 - generated packet JSON parses
 - generated decision brief JSON parses
+- generated Proof Health JSON parses
 - production access is still blocked
 - Composio write actions are dry-run or explicitly blocked
 - live evidence appears as evidence, not approval
+- Proof Health reports drift and reviewer refresh work without approving access
 - trace shows any live or blocked tool step honestly
 
 ## Implementation Order
@@ -122,6 +125,7 @@ Before recording a live demo, verify:
 
 - packet state remains the source of truth
 - decision brief is derived from the packet
+- Proof Health is derived from the packet and brief
 - runtime prompts do not replace access eligibility review
 - live integrations do not auto-approve access
 - no external writes in the default public path

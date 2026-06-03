@@ -29,6 +29,8 @@ jobs:
           ia-judge --no-write
           ia-judge --no-write --json >/tmp/installed_judge_harness.json
           ia-contract --all
+          ia-proof-health --no-write
+          ia-proof-health --no-write --json >/tmp/installed_proof_health.json
           ia-trial examples/requests/support_triage_trial.yml
           ia-trial examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_report.json
 
@@ -78,6 +80,11 @@ jobs:
       - name: Generate static review room
         run: python -m agent.review_room
 
+      - name: Generate proof health
+        run: |
+          python -m agent.proof_health
+          python -m agent.proof_health --no-write --json >/tmp/proof_health.json
+
       - name: Run design partner trial runner
         run: |
           python -m agent.trial examples/requests/support_triage_trial.yml
@@ -100,6 +107,7 @@ jobs:
           python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
           python -m json.tool examples/generated/trust_receipt.json >/tmp/trust_receipt.json
           python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
+          python -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/support_triage_agent.proof_health.json
           python -m json.tool examples/generated/support_triage_trial_report.json >/tmp/support_triage_trial_report.json
           python -m json.tool examples/generated/support_triage_trial.packet.json >/tmp/support_triage_trial_packet.json
           python -m json.tool examples/generated/support_triage_trial.decision_brief.json >/tmp/support_triage_trial_decision_brief.json
@@ -108,6 +116,8 @@ jobs:
           test -s docs/REVIEW_ROOM_WALKTHROUGH.md
           python -m json.tool /tmp/judge_harness.json >/tmp/judge_harness.checked.json
           python -m json.tool /tmp/installed_trial_report.json >/tmp/installed_trial_report.checked.json
+          python -m json.tool /tmp/installed_proof_health.json >/tmp/installed_proof_health.checked.json
+          python -m json.tool /tmp/proof_health.json >/tmp/proof_health.checked.json
           python -m json.tool /tmp/design_partner_trial_report.json >/tmp/design_partner_trial_report.checked.json
           python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
           python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json

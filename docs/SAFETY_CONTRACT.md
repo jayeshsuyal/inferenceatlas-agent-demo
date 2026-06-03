@@ -59,6 +59,8 @@ InferenceAtlas also derives an Agent Access Decision Brief from the packet. The 
 
 The brief does not grant access. It is a skim-ready reviewer surface derived from the packet.
 
+InferenceAtlas also derives a Proof Health report for the primary public packet. It shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check. The report does not refresh approval, grant access, execute writes, or mutate production state.
+
 ## What IA Does Not Do
 
 IA does not:

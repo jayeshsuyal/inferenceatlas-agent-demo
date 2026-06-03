@@ -3,35 +3,10 @@ import unittest
 from pathlib import Path
 
 from agent.judge import build_judge_report, render_judge_report_markdown
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-
-FORBIDDEN_PRIVATE_V1_TERMS = [
-    "ask_ia",
-    "living_document",
-    "advanced_workspace",
-    "mcp_agent_tool_access",
-    "coding_spend",
-    "production_ai",
-    "gpu_api",
-    "route_evidence",
-    "approval_watch_lane",
-    "WorkloadProfile",
-    "FactPack",
-    "ArtifactProjection",
-    "packet_id",
-    "user_problem",
-    "decision_title",
-    "facts_captured",
-    "proof_used",
-    "candidate_paths",
-    "missing_truths",
-    "approval_step",
-    "must_show",
-    "must_not_show",
-    "ia_chat_packet_native_controller",
-]
 
 
 def _read_yaml_list_after(lines: list[str], marker: str, item_prefix: str) -> list[str]:

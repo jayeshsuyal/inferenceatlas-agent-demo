@@ -12,12 +12,55 @@ from agent.public_contract import (
     validate_public_review_artifacts,
 )
 from agent.scenarios import GENERATED_DIR, SCENARIOS, build_scenario_brief, build_scenario_packet
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
+CONTRACT_LEAD = (
+    "Before an AI agent receives access to tools, data, spend, or production systems, "
+    "a pre-permission proof packet should exist. This document defines the public conformance "
+    "contract for that packet: what must be shown, what must stay blocked, what evidence must "
+    "remain visible, and how reviewer gates are represented. InferenceAtlas v1 implements a "
+    "private canonical engine. This public contract is the minimum proof surface every "
+    "agent-access review implementation can be measured against. Private engine, public proof."
+)
 
 
 class PublicContractTests(unittest.TestCase):
+    def test_contract_doc_exists_and_opens_with_authority_lead(self) -> None:
+        contract = (ROOT / "docs" / "CONTRACT.md").read_text(encoding="utf-8")
+
+        self.assertTrue((ROOT / "docs" / "CONTRACT.md").exists())
+        self.assertTrue(contract.startswith("# Public Conformance Contract\n\n" + CONTRACT_LEAD))
+        for expected in [
+            "## Public Packet Contract",
+            "## Public Brief Contract",
+            "## What Must Be Shown",
+            "## What Must Stay Blocked",
+            "## Reviewer Gates",
+            "## Conformance",
+            "## Sponsor Adapter Boundary",
+            "## Private Boundary",
+            "python3 -m agent.contract --all",
+            "python3 -m agent.contract --all --generated-dir examples/generated",
+            "Public contract: agent_access_public.v0",
+            "Private engine, public proof.",
+        ]:
+            self.assertIn(expected, contract)
+
+    def test_contract_doc_passes_private_boundary(self) -> None:
+        contract = (ROOT / "docs" / "CONTRACT.md").read_text(encoding="utf-8")
+
+        for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+            self.assertNotIn(forbidden, contract, msg=f"{forbidden} leaked in docs/CONTRACT.md")
+
+    def test_manifest_exposes_public_contract_doc(self) -> None:
+        manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["public_contract_doc"], "docs/CONTRACT.md")
+        self.assertEqual(manifest["primary_artifacts"]["public_contract"], "docs/CONTRACT.md")
+        self.assertIn("public contract", manifest["private_v1_boundary"]["public_proof_surface"])
+
     def test_all_in_memory_scenarios_pass_public_contract(self) -> None:
         results = validate_all()
 

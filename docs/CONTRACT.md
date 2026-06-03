@@ -1,70 +1,108 @@
 # Public Conformance Contract
 
-Before an AI agent receives access to tools, data, spend, or production systems, a pre-permission proof packet should exist.
+Before an AI agent receives access to tools, data, spend, or production systems, a pre-permission proof packet should exist. This document defines the public conformance contract for that packet: what must be shown, what must stay blocked, what evidence must remain visible, and how reviewer gates are represented. InferenceAtlas v1 implements a private canonical engine. This public contract is the minimum proof surface every agent-access review implementation can be measured against. Private engine, public proof.
 
-This document defines the public conformance contract for that packet: what must be shown, what must stay blocked, what evidence must remain visible, and how reviewer gates are represented.
+## Contract Role
 
-InferenceAtlas v1 implements a private canonical engine. This public contract is the minimum proof surface that any agent-access review implementation should expose.
+This contract is the public authority document for the repo.
 
-Private engine, public proof.
+It defines the minimum review surface a judge, CTO, Security lead, AI platform owner, or design partner should expect before an agent moves toward tool access, sensitive data access, vendor spend, or production systems.
 
-## Scope
+It does not define the private InferenceAtlas v1 implementation, private prompts, production routing, private reviewer queues, customer policies, or account-specific approval maps.
 
-This contract applies to public agent-access review artifacts in this repo. It is not the private InferenceAtlas v1 schema, production prompt contract, reviewer queue contract, or internal lane taxonomy.
+The contract is intentionally narrow:
 
-The public contract is intentionally narrow:
-
-- reviewers can inspect it
-- judges can run it
+- humans can inspect it
+- AI reviewers can follow it
 - CI can validate it
-- sponsor adapters can write into it
-- private v1 internals stay private
+- sponsor adapters can enrich it safely
+- private v1 internals remain private
 
-## Required Packet Surface
+## Public Packet Contract
 
-A conforming public packet must expose:
+A conforming public packet must show the decision context, requested access, proof debt, reviewer routing, and safety state without approving production access.
 
-| Field | Purpose |
+The public packet must include:
+
+| Public surface | What it proves |
 | --- | --- |
-| `decision` | The request question, verdict, review posture, and original user problem. |
-| `approval_posture` | Production, validation, read, write, and compliance posture. |
-| `requested_capability` | Requested systems/actions and their public risk levels. |
-| `tool_access_plan` | Tool-level allowance, blocked actions, and required proof. |
-| `tool_scope` | Read scope, write scope, and blocked-until-proven scope. |
-| `blocked_claims` | Claims the packet refuses to make without proof. |
-| `missing_proof` | Evidence or reviewer confirmation needed before access moves. |
-| `reviewer_owners` | Owners who must review scope, policy, workflow, or safety. |
-| `reviewer_action_items` | Concrete proof work assigned to owners. |
-| `next_validation` | The next safe validation step. |
-| `safety_state` | Non-negotiable safety defaults. |
+| Decision context | The request question, verdict, review posture, and original request are preserved before recommendation language appears. |
+| Approval posture | Production, validation, read, write, and compliance posture are separated instead of collapsed into a generic approve or deny. |
+| Requested capability | Each requested system/action is named with a public risk level and default demo state. |
+| Tool access plan | Allowances, blocked actions, and required proof are visible for each tool. |
+| Tool and data scope | Read surfaces, draft-only surfaces, blocked write/admin/production surfaces, and role-level data classes are explicit. |
+| Blocked claims | Claims that cannot be made without proof remain visible. |
+| Missing proof | Evidence or reviewer confirmation required before access can move is owner-routed. |
+| Reviewer owners and actions | Security, Engineering, Ops, Legal, Finance, or other reviewers have concrete work, not vague sign-off language. |
+| Next validation | The smallest safe validation step is named before production access. |
+| Safety state | Access approval, external writes, production mutation, packet mutation, dry-run state, and human approval requirements are explicit. |
 
-## Required Brief Surface
+## Public Brief Contract
 
-A conforming public brief must expose:
+A conforming public brief must turn the packet into a skim-ready access decision.
 
-| Field | Purpose |
+The public brief must include:
+
+| Public surface | What it proves |
 | --- | --- |
-| `decision` | Reviewer-facing verdict and next step. |
-| `go_no_go` | Production access, validation review, external writes, and dry-run state. |
-| `access_eligibility` | Tool-level eligibility, risk, validation allowance, and required proof. |
-| `access_envelope` | What can move in validation and what stays blocked. |
-| `reviewer_gates` | Required reviewer gates before access moves. |
-| `safety_state` | Same safety defaults as the packet. |
+| Reviewer-facing decision | The brief gives a concise verdict, next step, and reason. |
+| Go/no-go state | Production access, scoped validation, external writes, dry-run state, and next validation are visible. |
+| Access eligibility | Each requested system shows eligibility, risk, validation allowance, production status, and required proof. |
+| Access envelope | The brief separates what can move in validation from what stays blocked. |
+| Reviewer gates | Required gates name the reviewer owner, gate, blocked surface, and when the gate is required. |
+| Safety state | The brief repeats the same safety defaults as the packet. |
 
-## Safety Requirements
+## What Must Be Shown
 
-The public contract requires:
+Every conforming implementation must show:
 
-- production access is blocked
-- external writes are disabled
-- Composio remains dry-run by default
-- human approval is required
-- packet state mutation is disabled
-- blocked claims remain visible
+- what the agent is asking to access
+- which systems, tools, and actions are in scope
+- which data classes may be touched
+- which write, admin, production, spend, or sensitive-data surfaces stay blocked
+- what evidence is missing
+- which claims are unsupported
+- who owns each review gate
+- what next validation can happen safely
+- whether sponsor adapters would execute or approve anything
+- whether human approval is still required
+
+## What Must Stay Blocked
+
+The public contract requires these defaults:
+
+- production access stays blocked
+- external writes stay disabled
+- Composio stays dry-run by default
+- human approval remains required
+- packet state mutation stays disabled
+- unsupported approval, readiness, compliance, savings, quality, latency, or access claims remain blocked
 - missing proof remains visible
-- reviewer gates are explicit
+- reviewer gates remain explicit
+- sponsor adapters cannot approve access or grant permissions
 
-## Conformance Command
+A conforming implementation can recommend scoped validation only when the validation stays inside this blocked-production, no-write, human-reviewed envelope.
+
+## Reviewer Gates
+
+Reviewer gates must be represented as work that named owner roles can act on.
+
+A gate should show:
+
+- owner role
+- review area
+- current state
+- action required
+- surface blocked by the action
+- when the action is required
+
+Examples of owner roles include Security, Engineering, Support Ops, Legal, Procurement, Finance, Data/Analytics, and Engineering Leadership.
+
+The contract prefers owner roles over private people names. This keeps public artifacts reviewable without exposing private org charts or account context.
+
+## Conformance
+
+The repo exposes a runnable conformance check.
 
 Validate all registered scenarios:
 
@@ -87,39 +125,44 @@ Public contract: agent_access_public.v0
 - admin_code_fix_bot: OK
 ```
 
-## Adapter Rule
+The conformance check proves that the generated packet and access brief preserve the public surface, keep production access blocked, keep dry-run defaults intact, and keep reviewer gates visible.
 
-Sponsor adapters must write only to public-contract fields.
+## Sponsor Adapter Boundary
 
-| Adapter | Allowed public output |
-| --- | --- |
-| Tavily | Evidence notes or evidence candidates. It must not approve access. |
-| Composio | Tool scope, blocked actions, dry-run action plans. It must not execute writes by default. |
-| Nebius | Narration or summary projections. It must not own verdicts, safety state, or blocked claims. |
-| OpenClaw | Trace steps with blocked/allowed outcomes. It must not hide blocked attempts. |
+Sponsor adapters may enrich the public review surface, but they cannot own the access verdict.
+
+| Adapter | Allowed public output | Forbidden default behavior |
+| --- | --- | --- |
+| Tavily | Evidence notes or evidence candidates. | It must not approve access. |
+| Composio | Tool scope, blocked actions, and dry-run action plans. | It must not execute writes or grant permissions by default. |
+| Nebius | Narration or summary projections. | It must not own verdicts, safety state, or blocked claims. |
+| OpenClaw | Trace steps with blocked/allowed outcomes. | It must not hide blocked attempts or mutate production state. |
 
 ## Private Boundary
 
 The public contract must not expose:
 
-- exact private v1 schema names
-- private lane taxonomy
+- private v1 source code
 - private prompts
+- private reviewer queues
 - production routing logic
-- reviewer queue internals
-- customer/workspace-specific workflows
-- secrets, tokens, or private source code
+- customer or workspace context
+- live sponsor tokens
+- account-specific tool grants
+- internal product vocabulary that is not required for public review
 
 The bridge is:
 
 ```text
 private v1 engine
-  -> public conformance projection
-  -> public repo artifacts / CLI / demo
+-> public conformance projection
+-> public repo artifacts, CLI, and demo
 ```
 
 The bridge is not:
 
 ```text
-public repo = v1 source
+public repo = private v1 source
 ```
+
+Private engine, public proof.

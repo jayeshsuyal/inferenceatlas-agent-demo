@@ -2,6 +2,7 @@
   "project": "InferenceAtlas Public Agent-Access Review Harness",
   "repository_role": "Public agent-access review harness for the private InferenceAtlas v1 product",
   "one_line": "Private engine, public proof for AI agent access decisions",
+  "thesis_sentence": "Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.",
   "readme_headline": "InferenceAtlas — Public Agent-Access Review Harness",
   "readme_badges": ["tests passing", "CI green", "public contract v0", "safety: dry-run default"],
   "thesis": "Before an agent receives tools, data, spend, or production access, InferenceAtlas prepares a Trust Receipt, DecisionPacket, and Agent Access Decision Brief showing what can move, what stays blocked, whether the agent is eligible for this class of access, what proof is missing, who must review, and what validation comes next.",

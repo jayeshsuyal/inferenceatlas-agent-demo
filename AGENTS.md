@@ -2,6 +2,8 @@
 
 Purpose: guide AI reviewers and agentic skim reviewers through the public proof surface.
 
+Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
+
 ## Default Review Mode
 
 Use the no-key offline path by default.

@@ -9,6 +9,8 @@ Private engine, public proof.
 
 InferenceAtlas should be evaluated before an agent receives tools, data, spend, or production permissions.
 
+Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
+
 The design-partner question is:
 
 ```text

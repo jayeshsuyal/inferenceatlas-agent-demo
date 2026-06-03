@@ -13,12 +13,15 @@
   "scenario_review_json_command": "python3 -m agent.review --scenario admin_code_fix_bot --artifact packet --format json",
   "public_contract_command": "python3 -m agent.contract --all",
   "public_contract_artifact_command": "python3 -m agent.contract --all --generated-dir examples/generated",
+  "policy_gate_command": "python3 -m agent.gate --all",
+  "policy_gate_admin_command": "python3 -m agent.gate --scenario admin_code_fix_bot",
   "trust_receipt_command": "python3 -m agent.trust",
   "trust_receipt_json_command": "python3 -m agent.trust --print-json trust_receipt",
   "five_minute_review_commands": [
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
     "python3 -m agent.contract --all",
+    "python3 -m agent.gate --all",
     "python3 -m agent.trust",
     "python3 -m unittest discover -s tests"
   ],
@@ -55,6 +58,7 @@
     "trust_receipt_json": "examples/generated/trust_receipt.json",
     "review_room_markdown": "examples/generated/review_room.md",
     "review_room_json": "examples/generated/review_room.json",
+    "policy_gate": "policy/agent_access.yml",
     "agent_reviewer_instructions": "AGENTS.md",
     "judge_review_guide": "docs/JUDGE_REVIEW_GUIDE.md",
     "schema": "schemas/decision_packet.schema.json",
@@ -72,6 +76,7 @@
     "artifact_parse": "python3 -m json.tool examples/generated/support_triage_agent.packet.json && python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json",
     "cli_review": "python3 -m agent.review --list && python3 -m agent.review --scenario admin_code_fix_bot",
     "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated",
+    "policy_gate": "python3 -m agent.gate --all --json && python3 -m agent.gate --scenario admin_code_fix_bot",
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json"
   },
   "safety": {
@@ -91,7 +96,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "trust receipt", "review room", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "trust receipt", "review room", "policy gate", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -111,6 +116,7 @@
     "AI_JUDGE_MANIFEST.json",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
+    "policy/agent_access.yml",
     "examples/generated/demo_transcript.md",
     "examples/generated/support_triage_agent.decision_brief.md",
     "examples/generated/support_triage_agent.packet.md",

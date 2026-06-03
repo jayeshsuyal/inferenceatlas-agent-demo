@@ -2,7 +2,7 @@
 
 Before an AI agent gets access, issue the Trust Receipt.
 
-Trust Receipt hash: `ed67331633c85a94`
+Trust Receipt hash: `569026c1b19d1b7d`
 
 ## Copy-Paste Review Commands
 
@@ -10,6 +10,7 @@ Trust Receipt hash: `ed67331633c85a94`
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
+python3 -m agent.gate --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -22,6 +23,7 @@ python3 -m unittest discover -s tests
 - DecisionPacket
 - Agent Access Decision Brief
 - Trust Receipt
+- public policy gate
 - public contract validation
 - optional sponsor/runtime/evidence enrichment
 
@@ -52,9 +54,16 @@ python3 -m unittest discover -s tests
 
 - examples/generated/trust_receipt.md
 - examples/generated/review_room.md
+- policy/agent_access.yml
 - examples/generated/support_triage_agent.decision_brief.md
 - examples/generated/admin_code_fix_bot.packet.json
 - docs/CONTRACT.md
+
+## Policy Gate Status
+
+- support_triage_agent: VALIDATION_ALLOWED_WITH_GATES
+- read_only_analytics_agent: VALIDATION_ALLOWED_WITH_GATES
+- admin_code_fix_bot: BLOCKED
 
 ## Safety State
 

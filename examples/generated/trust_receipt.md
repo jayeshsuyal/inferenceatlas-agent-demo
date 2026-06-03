@@ -4,7 +4,7 @@ Pre-permission control plane for AI agent tool, data, spend, and production acce
 
 Receipt ID: `ia-agent-trust-receipt-public-v0`
 
-Receipt hash: `ed67331633c85a94`
+Receipt hash: `569026c1b19d1b7d`
 
 Private engine, public proof.
 
@@ -110,6 +110,15 @@ Never allowed in the public demo:
 
 - contract: agent_access_public.v0
 - status: ok
+
+## Policy Gate Status
+
+- policy: policy/agent_access.yml
+- policy version: agent_access_public_policy.v0
+
+- support_triage_agent: VALIDATION_ALLOWED_WITH_GATES (allow_scoped_validation_when_safe, require_open_proof_debt)
+- read_only_analytics_agent: VALIDATION_ALLOWED_WITH_GATES (allow_scoped_validation_when_safe, require_open_proof_debt)
+- admin_code_fix_bot: BLOCKED (deny_critical_risk_validation, require_open_proof_debt)
 
 ## Safety State
 

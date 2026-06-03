@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from .contract import validate_all
+from .gate import evaluate_all as evaluate_policy_gates
 from .scenarios import (
     GENERATED_DIR,
     ROOT_DIR,
@@ -201,6 +202,22 @@ def _contract_status() -> dict[str, Any]:
     }
 
 
+def _policy_gate_status() -> dict[str, Any]:
+    results = evaluate_policy_gates()
+    return {
+        "policy": "policy/agent_access.yml",
+        "policy_version": next(iter(results.values()))["policy_version"],
+        "results": {
+            scenario_name: {
+                "decision": result["decision"],
+                "reason": result["reason"],
+                "triggered_rule_ids": [rule["rule_id"] for rule in result["triggered_rules"]],
+            }
+            for scenario_name, result in results.items()
+        },
+    }
+
+
 def build_trust_receipt() -> dict[str, Any]:
     """Build the public Trust Receipt from all deterministic access-review scenarios."""
     packets = {scenario_name: build_scenario_packet(scenario_name) for scenario_name in SCENARIOS}
@@ -258,6 +275,7 @@ def build_trust_receipt() -> dict[str, Any]:
             "guardrail": "runtime trace must preserve blocked access and human approval boundary",
         },
         "public_contract_status": _contract_status(),
+        "policy_gate_status": _policy_gate_status(),
         "safety_state": {
             "approval_granted": False,
             "production_access_granted": False,
@@ -319,12 +337,14 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "python3 -m agent.demo",
             "python3 -m agent.review --list",
             "python3 -m agent.contract --all",
+            "python3 -m agent.gate --all",
             "python3 -m agent.trust",
             "python3 -m unittest discover -s tests",
         ],
         "first_artifacts_to_inspect": [
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.md",
+            "policy/agent_access.yml",
             "examples/generated/support_triage_agent.decision_brief.md",
             "examples/generated/admin_code_fix_bot.packet.json",
             "docs/CONTRACT.md",
@@ -336,6 +356,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "DecisionPacket",
             "Agent Access Decision Brief",
             "Trust Receipt",
+            "public policy gate",
             "public contract validation",
             "optional sponsor/runtime/evidence enrichment",
         ],
@@ -355,6 +376,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
         ],
         "sponsor_runtime_plan": receipt["sponsor_runtime_plan"],
         "public_contract_status": receipt["public_contract_status"],
+        "policy_gate_status": receipt["policy_gate_status"],
         "safety_state": receipt["safety_state"],
         "private_boundary": receipt["private_boundary"],
         "design_partner_signal": receipt["design_partner_signal"],
@@ -481,6 +503,18 @@ def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
         f"- contract: {receipt['public_contract_status']['contract']}",
         f"- status: {receipt['public_contract_status']['status']}",
         "",
+        "## Policy Gate Status",
+        "",
+        f"- policy: {receipt['policy_gate_status']['policy']}",
+        f"- policy version: {receipt['policy_gate_status']['policy_version']}",
+        "",
+        _bullet(
+            [
+                f"{scenario}: {result['decision']} ({', '.join(result['triggered_rule_ids'])})"
+                for scenario, result in receipt["policy_gate_status"]["results"].items()
+            ]
+        ),
+        "",
         "## Safety State",
         "",
         f"- approval granted: {safety['approval_granted']}",
@@ -554,6 +588,15 @@ def render_review_room_markdown(review_room: dict[str, Any]) -> str:
         "## First Artifacts To Inspect",
         "",
         _bullet(review_room["first_artifacts_to_inspect"]),
+        "",
+        "## Policy Gate Status",
+        "",
+        _bullet(
+            [
+                f"{scenario}: {result['decision']}"
+                for scenario, result in review_room["policy_gate_status"]["results"].items()
+            ]
+        ),
         "",
         "## Safety State",
         "",

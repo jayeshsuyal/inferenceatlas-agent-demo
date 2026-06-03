@@ -3,6 +3,7 @@
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
     "python3 -m agent.contract --all",
+    "python3 -m agent.gate --all",
     "python3 -m agent.trust",
     "python3 -m unittest discover -s tests"
   ],
@@ -19,6 +20,7 @@
   "first_artifacts_to_inspect": [
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
+    "policy/agent_access.yml",
     "examples/generated/support_triage_agent.decision_brief.md",
     "examples/generated/admin_code_fix_bot.packet.json",
     "docs/CONTRACT.md"
@@ -80,6 +82,36 @@
       "live sponsor action without explicit non-default enablement"
     ]
   },
+  "policy_gate_status": {
+    "policy": "policy/agent_access.yml",
+    "policy_version": "agent_access_public_policy.v0",
+    "results": {
+      "admin_code_fix_bot": {
+        "decision": "BLOCKED",
+        "reason": "Critical/admin/prod-write access is blocked until Security and Engineering review remove or explicitly approve the risky scopes.",
+        "triggered_rule_ids": [
+          "deny_critical_risk_validation",
+          "require_open_proof_debt"
+        ]
+      },
+      "read_only_analytics_agent": {
+        "decision": "VALIDATION_ALLOWED_WITH_GATES",
+        "reason": "Scoped validation may proceed, but open proof debt remains owner-routed.",
+        "triggered_rule_ids": [
+          "allow_scoped_validation_when_safe",
+          "require_open_proof_debt"
+        ]
+      },
+      "support_triage_agent": {
+        "decision": "VALIDATION_ALLOWED_WITH_GATES",
+        "reason": "Scoped validation may proceed, but open proof debt remains owner-routed.",
+        "triggered_rule_ids": [
+          "allow_scoped_validation_when_safe",
+          "require_open_proof_debt"
+        ]
+      }
+    }
+  },
   "private_boundary": {
     "not_exposed": [
       "private v1 source code",
@@ -101,6 +133,7 @@
     "DecisionPacket",
     "Agent Access Decision Brief",
     "Trust Receipt",
+    "public policy gate",
     "public contract validation",
     "optional sponsor/runtime/evidence enrichment"
   ],
@@ -270,5 +303,5 @@
     }
   },
   "title": "InferenceAtlas Agent Access Review Room",
-  "trust_receipt_hash": "ed67331633c85a94"
+  "trust_receipt_hash": "569026c1b19d1b7d"
 }

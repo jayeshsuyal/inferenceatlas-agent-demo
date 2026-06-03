@@ -29,6 +29,7 @@ class TrustReceiptTests(unittest.TestCase):
         self.assertTrue(receipt["safety_state"]["all_scenarios_production_blocked"])
         self.assertFalse(receipt["safety_state"]["production_access_granted"])
         self.assertTrue(receipt["safety_state"]["composio_dry_run"])
+        self.assertEqual(receipt["policy_gate_status"]["results"]["admin_code_fix_bot"]["decision"], "BLOCKED")
 
     def test_trust_receipt_proves_verdict_spread(self) -> None:
         receipt = build_trust_receipt()
@@ -56,7 +57,9 @@ class TrustReceiptTests(unittest.TestCase):
         self.assertEqual(review_room["derived_from_trust_receipt_id"], receipt["trust_receipt_id"])
         self.assertEqual(review_room["trust_receipt_hash"], receipt["trust_receipt_hash"])
         self.assertIn("python3 -m agent.trust", review_room["copy_paste_commands"])
+        self.assertIn("python3 -m agent.gate --all", review_room["copy_paste_commands"])
         self.assertEqual(review_room["public_contract_status"]["status"], "ok")
+        self.assertEqual(review_room["policy_gate_status"]["results"]["admin_code_fix_bot"]["decision"], "BLOCKED")
 
     def test_trust_cli_writes_machine_readable_artifacts(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

@@ -1,0 +1,50 @@
+{
+  "policy_version": "agent_access_public_policy.v0",
+  "name": "Public Agent Access Policy",
+  "default_decision": "blocked",
+  "rule_priority": ["blocked", "allow_validation", "requires_proof"],
+  "rules": [
+    {
+      "id": "deny_production_access",
+      "effect": "blocked",
+      "when": {"path": "brief.go_no_go.production_access", "equals": true},
+      "message": "Production access cannot be granted by the public demo gate."
+    },
+    {
+      "id": "deny_external_writes",
+      "effect": "blocked",
+      "when": {"path": "brief.go_no_go.external_writes", "equals": true},
+      "message": "External writes must stay disabled in the public demo gate."
+    },
+    {
+      "id": "deny_non_dry_run_composio",
+      "effect": "blocked",
+      "when": {"path": "brief.go_no_go.composio_dry_run", "equals": false},
+      "message": "Composio must remain dry-run by default."
+    },
+    {
+      "id": "deny_critical_risk_validation",
+      "effect": "blocked",
+      "when": {"path": "packet.requested_capability[*].risk_level", "contains": "critical"},
+      "message": "Critical/admin/prod-write access is blocked until Security and Engineering review remove or explicitly approve the risky scopes."
+    },
+    {
+      "id": "allow_scoped_validation_when_safe",
+      "effect": "allow_validation",
+      "when_all": [
+        {"path": "brief.go_no_go.scoped_validation_review", "equals": true},
+        {"path": "brief.go_no_go.production_access", "equals": false},
+        {"path": "brief.go_no_go.external_writes", "equals": false},
+        {"path": "brief.go_no_go.composio_dry_run", "equals": true},
+        {"path": "packet.safety_state.approval_granted", "equals": false}
+      ],
+      "message": "Scoped validation may proceed only inside the dry-run, no-production, no-external-write envelope."
+    },
+    {
+      "id": "require_open_proof_debt",
+      "effect": "requires_proof",
+      "when": {"path": "packet.missing_proof", "non_empty": true},
+      "message": "Open proof debt must remain visible and owner-routed before access can move."
+    }
+  ]
+}

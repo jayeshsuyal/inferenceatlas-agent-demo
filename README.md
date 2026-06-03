@@ -16,6 +16,7 @@ Then run:
 python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.contract --all
+python3 -m agent.gate --all
 python3 -m agent.trust
 python3 -m unittest discover -s tests
 ```
@@ -148,6 +149,14 @@ python3 -m agent.contract --all
 python3 -m agent.contract --all --generated-dir examples/generated
 ```
 
+Evaluate scenarios against the public policy gate:
+
+```bash
+python3 -m agent.gate --all
+python3 -m agent.gate --scenario admin_code_fix_bot
+python3 -m agent.gate --scenario admin_code_fix_bot --json
+```
+
 Generate the Agent Trust Receipt and Review Room:
 
 ```bash
@@ -201,6 +210,7 @@ examples/generated/trust_receipt.md
 examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
+policy/agent_access.yml
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json
 examples/generated/demo_transcript.md

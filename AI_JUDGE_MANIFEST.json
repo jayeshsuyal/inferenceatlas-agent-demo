@@ -15,6 +15,17 @@
   "support_triage_trial_sample": "examples/requests/support_triage_trial.yml",
   "judge_harness_command": "python3 -m agent.judge",
   "judge_harness_json_command": "python3 -m agent.judge --json",
+  "install_command": "pip install -e .",
+  "installed_judge_command": "ia-judge",
+  "installed_public_commands": [
+    "ia-judge",
+    "ia-review --list",
+    "ia-contract --all",
+    "ia-gate --all",
+    "ia-adapters --all",
+    "ia-trust",
+    "ia-review-room"
+  ],
   "default_run_command": "python3 -m agent.demo",
   "works_without_keys": true,
   "live_mode_command": "IA_LIVE_MODE=1 python3 -m agent.demo",
@@ -97,6 +108,7 @@
   },
   "verification": {
     "ci_workflow": ".github/workflows/smoke.yml",
+    "installable_cli": "pip install -e . && ia-judge --no-write",
     "local_tests": "python3 -m unittest discover -s tests",
     "schema_parse": "python3 -m json.tool schemas/decision_packet.schema.json && python3 -m json.tool schemas/agent_access_decision_brief.schema.json",
     "artifact_parse": "python3 -m json.tool examples/generated/support_triage_agent.packet.json && python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json",
@@ -128,7 +140,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [

@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "inferenceatlas-agent-demo"
+version = "0.1.0"
+description = "Public no-key agent-access review harness for InferenceAtlas."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "InferenceAtlas" }]
+keywords = ["ai-agents", "access-review", "governance", "decision-packet", "inferenceatlas"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = []
+
+[project.optional-dependencies]
+live = [
+  "python-dotenv>=1.0.0",
+  "openai>=1.0.0,<3.0.0",
+  "tavily-python>=0.3.0",
+  "composio-openai>=0.6.0",
+]
+web = [
+  "fastapi>=0.110.0",
+  "uvicorn[standard]>=0.27.0",
+]
+
+[project.scripts]
+ia-adapters = "agent.adapters.__main__:main"
+ia-contract = "agent.contract:main"
+ia-gate = "agent.gate:main"
+ia-judge = "agent.judge:main"
+ia-review = "agent.review:main"
+ia-review-room = "agent.review_room:main"
+ia-trust = "agent.trust:main"
+
+[tool.setuptools.packages.find]
+include = ["agent*", "web*"]
+
+[tool.setuptools.package-data]
+web = ["static/*"]

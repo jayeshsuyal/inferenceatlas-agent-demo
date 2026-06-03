@@ -19,6 +19,13 @@ python3 -m agent.judge
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
+Install the public harness commands:
+
+```bash
+pip install -e .
+ia-judge
+```
+
 ## Judge Fast Path
 
 If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
@@ -35,6 +42,19 @@ python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m unittest discover -s tests
+```
+
+Or use the installed command set:
+
+```bash
+pip install -e .
+ia-judge
+ia-review --list
+ia-contract --all
+ia-gate --all
+ia-adapters --all
+ia-trust
+ia-review-room
 ```
 
 The fastest artifact to skim is the generated Trust Receipt:
@@ -134,12 +154,18 @@ User asks whether an AI agent should receive tool access.
 cd inferenceatlas-agent-demo
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r agent/requirements.txt
+pip install -e .
 cp .env.example .env
 python3 -m agent.demo
 ```
 
 The default demo runs without keys using deterministic local packet generation. It prints a DecisionPacket and writes review artifacts under `examples/generated/`.
+
+For live sponsor mode or the local web UI, install the optional dependencies:
+
+```bash
+pip install -e ".[live,web]"
+```
 
 For the one-command judge harness, run:
 

@@ -42,6 +42,9 @@ class DemoTranscriptTests(unittest.TestCase):
             "External writes enabled: False",
             "Composio dry-run: True",
             "# InferenceAtlas Judge Harness",
+            "Access Speed Layer",
+            "fast_lane_scoped_validation",
+            "blocked_fast",
             "can_approve_access=False",
             "Private engine, public proof.",
         ]:

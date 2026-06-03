@@ -165,6 +165,68 @@ def _build_reviewer_routing(briefs: dict[str, dict[str, Any]]) -> list[dict[str,
     return list(by_owner.values())
 
 
+def _speed_lane(item: dict[str, Any]) -> tuple[str, str, str]:
+    if item["highest_risk"] == "low" and item["scoped_validation_review"]:
+        return (
+            "fast_lane_scoped_validation",
+            "Low-risk read-only access can move to scoped validation after owner scope confirmation.",
+            "accelerates_safe_validation",
+        )
+    if item["highest_risk"] == "critical" or not item["scoped_validation_review"]:
+        return (
+            "blocked_fast",
+            "Critical/admin/prod-write access is blocked before validation with exact reviewer gates.",
+            "prevents_slow_unsafe_escalation",
+        )
+    return (
+        "proof_routed_scoped_validation",
+        "Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.",
+        "replaces_back_and_forth_with_owner_routing",
+    )
+
+
+def _build_access_speed_layer(scenario_matrix: list[dict[str, Any]]) -> dict[str, Any]:
+    routes = []
+    for item in scenario_matrix:
+        lane, reason, user_impact = _speed_lane(item)
+        routes.append(
+            {
+                "scenario": item["scenario"],
+                "lane": lane,
+                "decision_time": "immediate",
+                "user_impact": user_impact,
+                "reason": reason,
+                "safe_next_step": item["review_posture"],
+                "production_access": item["production_access"],
+                "missing_proof_count": item["missing_proof_count"],
+                "reviewer_gate_count": item["reviewer_gate_count"],
+            }
+        )
+
+    lanes = {route["lane"] for route in routes}
+    return {
+        "headline": "The packet is the speed layer: safe requests move faster, risky requests are routed, critical requests are blocked immediately.",
+        "packet_generated_automatically": True,
+        "decision_time": "immediate",
+        "manual_back_and_forth_replaced": True,
+        "manual_back_and_forth_replaced_by": [
+            "scenario blast-radius diff",
+            "permission envelope",
+            "proof debt ledger",
+            "reviewer routing",
+            "safe next validation step",
+        ],
+        "routes": routes,
+        "fast_lane_count": sum(route["lane"] == "fast_lane_scoped_validation" for route in routes),
+        "proof_routed_count": sum(route["lane"] == "proof_routed_scoped_validation" for route in routes),
+        "blocked_fast_count": sum(route["lane"] == "blocked_fast" for route in routes),
+        "all_routes_immediate": all(route["decision_time"] == "immediate" for route in routes),
+        "has_fast_lane": "fast_lane_scoped_validation" in lanes,
+        "has_proof_routed_lane": "proof_routed_scoped_validation" in lanes,
+        "has_blocked_fast_lane": "blocked_fast" in lanes,
+    }
+
+
 def _build_sponsor_runtime_plan() -> dict[str, dict[str, Any]]:
     return {
         "composio": {
@@ -332,6 +394,7 @@ def build_trust_receipt() -> dict[str, Any]:
             }
             for item in scenario_matrix
         ],
+        "access_speed_layer": _build_access_speed_layer(scenario_matrix),
         "permission_envelope": _build_permission_envelope(packets, briefs),
         "proof_debt_ledger": _build_proof_debt_ledger(packets),
         "reviewer_routing": _build_reviewer_routing(briefs),
@@ -452,6 +515,7 @@ def build_review_room(receipt: dict[str, Any] | None = None) -> dict[str, Any]:
             "optional sponsor/runtime/evidence enrichment",
         ],
         "scenario_matrix": receipt["scenario_matrix"],
+        "access_speed_layer": receipt["access_speed_layer"],
         "permission_envelope": receipt["permission_envelope"],
         "proof_debt_summary": {
             "open_items": len(receipt["proof_debt_ledger"]),
@@ -557,10 +621,30 @@ def _sponsor_proof_pack_lines(items: dict[str, dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def _access_speed_layer_lines(routes: list[dict[str, Any]]) -> str:
+    lines = []
+    for route in routes:
+        safe_next_step = route["safe_next_step"].rstrip(".")
+        lines.append(
+            "- **{scenario}** ({lane}): {reason} Decision time: {decision_time}; "
+            "safe next step: {safe_next_step}; proof items: {proof_items}; reviewer gates: {reviewer_gates}.".format(
+                scenario=route["scenario"],
+                lane=route["lane"],
+                reason=route["reason"],
+                decision_time=route["decision_time"],
+                safe_next_step=safe_next_step,
+                proof_items=route["missing_proof_count"],
+                reviewer_gates=route["reviewer_gate_count"],
+            )
+        )
+    return "\n".join(lines)
+
+
 def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
     """Render a Trust Receipt as Markdown."""
     envelope = receipt["permission_envelope"]
     safety = receipt["safety_state"]
+    speed_layer = receipt["access_speed_layer"]
     sections = [
         "# Trust Receipt: Agent Access Review",
         "",
@@ -571,6 +655,19 @@ def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
         f"Receipt hash: `{receipt['trust_receipt_hash']}`",
         "",
         "Private engine, public proof.",
+        "",
+        "## Access Speed Layer",
+        "",
+        speed_layer["headline"],
+        "",
+        f"- Decision time: {speed_layer['decision_time']}",
+        f"- packet generated automatically: {speed_layer['packet_generated_automatically']}",
+        f"- manual back-and-forth replaced: {speed_layer['manual_back_and_forth_replaced']}",
+        f"- fast lane routes: {speed_layer['fast_lane_count']}",
+        f"- proof-routed routes: {speed_layer['proof_routed_count']}",
+        f"- blocked-fast routes: {speed_layer['blocked_fast_count']}",
+        "",
+        _access_speed_layer_lines(speed_layer["routes"]),
         "",
         "## Scenario Blast-Radius Diff",
         "",
@@ -676,6 +773,7 @@ def render_trust_receipt_markdown(receipt: dict[str, Any]) -> str:
 
 def render_review_room_markdown(review_room: dict[str, Any]) -> str:
     """Render the Review Room as Markdown."""
+    speed_layer = review_room["access_speed_layer"]
     sections = [
         "# InferenceAtlas Agent Access Review Room",
         "",
@@ -692,6 +790,19 @@ def render_review_room_markdown(review_room: dict[str, Any]) -> str:
         "## Product Loop",
         "",
         _bullet(review_room["product_loop"]),
+        "",
+        "## Access Speed Layer",
+        "",
+        speed_layer["headline"],
+        "",
+        f"- Decision time: {speed_layer['decision_time']}",
+        f"- packet generated automatically: {speed_layer['packet_generated_automatically']}",
+        f"- manual back-and-forth replaced: {speed_layer['manual_back_and_forth_replaced']}",
+        f"- fast lane routes: {speed_layer['fast_lane_count']}",
+        f"- proof-routed routes: {speed_layer['proof_routed_count']}",
+        f"- blocked-fast routes: {speed_layer['blocked_fast_count']}",
+        "",
+        _access_speed_layer_lines(speed_layer["routes"]),
         "",
         "## Scenario Matrix",
         "",

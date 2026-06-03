@@ -39,6 +39,7 @@
   "sponsor_adapter_command": "python3 -m agent.adapters --all",
   "sponsor_adapter_json_command": "python3 -m agent.adapters --all --json",
   "sponsor_proof_pack_surface": "examples/generated/review_room.html and examples/generated/trust_receipt.json",
+  "access_speed_layer_surface": "examples/generated/review_room.html and examples/generated/trust_receipt.json",
   "trust_receipt_command": "python3 -m agent.trust",
   "trust_receipt_json_command": "python3 -m agent.trust --print-json trust_receipt",
   "review_room_html_command": "python3 -m agent.review_room",
@@ -141,7 +142,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "access speed layer", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [

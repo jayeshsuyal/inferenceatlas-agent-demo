@@ -15,7 +15,7 @@ from .packet import build_support_triage_trace
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifacts
-from .trust import write_trust_artifacts
+from .trust import build_trust_receipt, write_trust_artifacts
 
 
 JUDGE_HARNESS_VERSION = "agent_judge_harness.v0"
@@ -119,6 +119,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     contract_results = validate_all(generated_dir=GENERATED_DIR)
     gate_results = evaluate_all()
     adapter_summary = _adapter_summary()
+    trust_receipt = build_trust_receipt()
 
     return {
         "schema_version": JUDGE_HARNESS_VERSION,
@@ -137,6 +138,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             }
             for scenario_name in SCENARIOS
         ],
+        "access_speed_layer": trust_receipt["access_speed_layer"],
         "public_contract": {
             "status": "ok" if all(errors == [] for errors in contract_results.values()) else "fail",
             "results": contract_results,
@@ -177,6 +179,8 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or not report["safety"]["all_adapters_non_approving"]
         or any(item["production_access"] for item in report["scenario_matrix"])
         or any(item["approval_granted"] for item in report["scenario_matrix"])
+        or not report["access_speed_layer"]["all_routes_immediate"]
+        or any(item["production_access"] for item in report["access_speed_layer"]["routes"])
     )
 
 
@@ -215,6 +219,34 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
                 gate=item["policy_gate_decision"],
                 validation=item["scoped_validation_review"],
                 production=item["production_access"],
+            )
+        )
+
+    speed_layer = report["access_speed_layer"]
+    lines.extend(
+        [
+            "",
+            "## Access Speed Layer",
+            "",
+            speed_layer["headline"],
+            "",
+            f"- Decision time: {speed_layer['decision_time']}",
+            f"- auto-generated packet: {speed_layer['packet_generated_automatically']}",
+            f"- fast lane routes: {speed_layer['fast_lane_count']}",
+            f"- proof-routed routes: {speed_layer['proof_routed_count']}",
+            f"- blocked-fast routes: {speed_layer['blocked_fast_count']}",
+            "",
+            "| Scenario | Lane | Decision Time | Production |",
+            "| --- | --- | --- | --- |",
+        ]
+    )
+    for route in speed_layer["routes"]:
+        lines.append(
+            "| {scenario} | {lane} | {decision_time} | {production} |".format(
+                scenario=route["scenario"],
+                lane=route["lane"],
+                decision_time=route["decision_time"],
+                production=route["production_access"],
             )
         )
 

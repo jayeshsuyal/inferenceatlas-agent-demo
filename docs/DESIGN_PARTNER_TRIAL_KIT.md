@@ -53,9 +53,17 @@ examples/requests/support_triage_trial.yml
 ```text
 examples/generated/trust_receipt.md
 examples/generated/review_room.html
+examples/generated/support_triage_trial_report.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
 agent/adapters/
+```
+
+7. Run the public trial sample through the offline runner:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial examples/requests/support_triage_trial.yml --write
 ```
 
 ## Request Shape
@@ -109,6 +117,6 @@ A strong request is specific enough to review but safe enough to keep public:
 
 ## Current Boundary
 
-This kit does not add a public parser or live integration path. That is intentional.
+This kit now includes a public offline trial runner. It parses the role-level request shape, derives a DecisionPacket and Agent Access Decision Brief, and writes a design-partner trial report.
 
-The current branch gives reviewers and the CTO a stable public input contract. Live Nebius, Tavily, Composio, and OpenClaw enrichment can consume this shape later without weakening the deterministic packet, policy gate, proof debt, blocked claims, or human approval boundary.
+The runner does not add a live integration path, approve access, grant permissions, execute writes, mutate production, or expose private v1 source. Live Nebius, Tavily, Composio, and OpenClaw enrichment can consume this shape later without weakening the deterministic packet, policy gate, proof debt, blocked claims, or human approval boundary.

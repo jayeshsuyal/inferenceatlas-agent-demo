@@ -35,6 +35,11 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["access_speed_layer"]["has_fast_lane"])
         self.assertTrue(report["access_speed_layer"]["has_proof_routed_lane"])
         self.assertTrue(report["access_speed_layer"]["has_blocked_fast_lane"])
+        self.assertEqual(report["design_partner_trial"]["request_readiness"], "ready_for_scoped_trial")
+        self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
+        self.assertFalse(report["design_partner_trial"]["production_access"])
+        self.assertFalse(report["design_partner_trial"]["approves_access"])
+        self.assertFalse(report["design_partner_trial"]["grants_permissions"])
 
     def test_judge_report_names_primary_artifacts(self) -> None:
         report = build_judge_report(write_artifacts=False)
@@ -49,6 +54,8 @@ class JudgeHarnessTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
             "examples/requests/design_partner_trial.yml",
             "examples/requests/support_triage_trial.yml",
+            "examples/generated/support_triage_trial_report.md",
+            "examples/generated/support_triage_trial_report.json",
             "examples/generated/review_room.desktop.jpg",
         ]:
             self.assertIn(expected, artifact_paths)
@@ -68,6 +75,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("fast_lane_scoped_validation", markdown)
         self.assertIn("proof_routed_scoped_validation", markdown)
         self.assertIn("blocked_fast", markdown)
+        self.assertIn("Design Partner Trial Runner", markdown)
+        self.assertIn("examples/requests/support_triage_trial.yml", markdown)
 
     def test_judge_cli_default_renders_markdown(self) -> None:
         result = self._run_judge("--no-write")
@@ -77,6 +86,7 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("VALIDATION_ALLOWED_WITH_GATES", result.stdout)
         self.assertIn("admin_code_fix_bot", result.stdout)
         self.assertIn("Access Speed Layer", result.stdout)
+        self.assertIn("Design Partner Trial Runner", result.stdout)
         self.assertIn("blocked_fast", result.stdout)
         self.assertIn("proof=permission_diff", result.stdout)
         self.assertIn("human_review_required=True", result.stdout)
@@ -92,6 +102,7 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertEqual(report["sponsor_adapters"]["composio"]["proof_pack_types"], ["permission_diff"])
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)
+        self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
 
 
 if __name__ == "__main__":

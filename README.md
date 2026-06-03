@@ -41,6 +41,7 @@ python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
 
@@ -55,6 +56,7 @@ ia-gate --all
 ia-adapters --all
 ia-trust
 ia-review-room
+ia-trial examples/requests/support_triage_trial.yml
 ```
 
 The fastest artifact to skim is the generated Trust Receipt:
@@ -207,6 +209,21 @@ examples/requests/support_triage_trial.yml
 
 It defines the one-afternoon CTO/platform-owner evaluation: bring one real agent-access workflow, use the public request template, produce the review packet, compare against the current approval path, and keep secrets, writes, approvals, and private v1 source out of the public repo.
 
+Run the public trial sample:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial examples/requests/support_triage_trial.yml --write
+```
+
+Or use the installed command:
+
+```bash
+ia-trial examples/requests/support_triage_trial.yml
+```
+
+The runner writes a design-partner trial report plus derived packet and brief artifacts under `examples/generated/`.
+
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 
 ```bash
@@ -291,6 +308,24 @@ examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
 examples/generated/review_room.html
+```
+
+Run the design-partner trial sample:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial examples/requests/support_triage_trial.yml --write
+```
+
+This writes:
+
+```text
+examples/generated/support_triage_trial_report.md
+examples/generated/support_triage_trial_report.json
+examples/generated/support_triage_trial.packet.md
+examples/generated/support_triage_trial.packet.json
+examples/generated/support_triage_trial.decision_brief.md
+examples/generated/support_triage_trial.decision_brief.json
 ```
 
 Review the 60-90 second walkthrough script and checked-in screenshot:

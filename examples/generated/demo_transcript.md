@@ -17,6 +17,7 @@ python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
+python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
 
@@ -230,7 +231,47 @@ Review signal:
 - Static Review Room HTML works without a web app, keys, scripts, or external assets.
 - Walkthrough and screenshot give a CTO or founder a safe recording path.
 
-## 8. Unit Tests
+## 8. Design Partner Trial Runner
+
+Command:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+```
+
+Expected output signal:
+
+```text
+# Design Partner Trial Report
+
+## Access Speed Lane
+
+- lane: proof_routed_scoped_validation
+- decision time: immediate
+- highest risk: high
+
+## Safety Boundary
+
+- approves access: False
+- grants permissions: False
+- executes external writes: False
+- mutates production: False
+```
+
+Generated trial artifacts:
+
+```text
+examples/generated/support_triage_trial_report.md
+examples/generated/support_triage_trial_report.json
+examples/generated/support_triage_trial.packet.md
+examples/generated/support_triage_trial.packet.json
+examples/generated/support_triage_trial.decision_brief.md
+examples/generated/support_triage_trial.decision_brief.json
+```
+
+Review signal: the repo can now run a role-level design-partner request through the same deterministic packet and brief machinery without secrets, approvals, grants, writes, or private v1 exposure.
+
+## 9. Unit Tests
 
 Command:
 
@@ -243,12 +284,12 @@ Expected output:
 ```text
 ....................................................................
 ----------------------------------------------------------------------
-Ran 76 tests in 1.xs
+Ran 112 tests in 1.xs
 
 OK
 ```
 
-Review signal: tests cover packet shape, decision brief shape, rules engine behavior, scenario spread, public contract, policy gate, dry-run sponsor adapters, Trust Receipt, Review Room HTML, walkthrough artifacts, manifest routing, and private-boundary guardrails.
+Review signal: tests cover packet shape, decision brief shape, rules engine behavior, scenario spread, public contract, policy gate, dry-run sponsor adapters, Trust Receipt, Review Room HTML, design-partner trial runner, walkthrough artifacts, manifest routing, and private-boundary guardrails.
 
 ## What Judges Should Notice
 
@@ -257,6 +298,7 @@ Review signal: tests cover packet shape, decision brief shape, rules engine beha
 - The engine produces materially different postures for low, medium/high, and critical access requests.
 - The policy gate blocks critical/admin/prod-write access.
 - Sponsor adapters are dry-run contracts and cannot approve access.
+- The design-partner trial runner accepts a role-level request and derives a report, packet, and brief.
 - Production access remains blocked.
 - External writes remain disabled.
 - Composio remains dry-run by default.
@@ -294,3 +336,9 @@ Private engine, public proof.
 | Review Room HTML | `examples/generated/review_room.html` |
 | Review Room walkthrough | `docs/REVIEW_ROOM_WALKTHROUGH.md` |
 | Review Room screenshot | `examples/generated/review_room.desktop.jpg` |
+| Trial report | `examples/generated/support_triage_trial_report.md` |
+| Trial report JSON | `examples/generated/support_triage_trial_report.json` |
+| Trial packet | `examples/generated/support_triage_trial.packet.md` |
+| Trial packet JSON | `examples/generated/support_triage_trial.packet.json` |
+| Trial decision brief | `examples/generated/support_triage_trial.decision_brief.md` |
+| Trial decision brief JSON | `examples/generated/support_triage_trial.decision_brief.json` |

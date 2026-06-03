@@ -48,6 +48,7 @@ python3 -m agent.judge
 ```text
 examples/generated/trust_receipt.md
 examples/generated/review_room.html
+examples/generated/support_triage_trial_report.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
 docs/REVIEW_ROOM_WALKTHROUGH.md
@@ -61,7 +62,13 @@ examples/requests/design_partner_trial.yml
 examples/requests/support_triage_trial.yml
 ```
 
-4. Pick one real internal agent-access workflow and map it into the same review questions:
+4. Run the public trial sample:
+
+```bash
+python3 -m agent.trial examples/requests/support_triage_trial.yml
+```
+
+5. Pick one real internal agent-access workflow and map it into the same review questions:
 
 - What tools does the agent want?
 - What data classes can it touch?
@@ -70,7 +77,7 @@ examples/requests/support_triage_trial.yml
 - Which reviewer owners must sign off?
 - What validation can happen before production access?
 
-5. Compare IA output against the current internal approval path:
+6. Compare IA output against the current internal approval path:
 
 - Does the Trust Receipt make blast radius visible faster?
 - Does the access brief give a clearer go/no-go?
@@ -86,6 +93,7 @@ A successful trial should produce:
 - one Trust Receipt for the selected workflow
 - one DecisionPacket with tool scope, data scope, missing proof, blocked claims, reviewers, and safety state
 - one Agent Access Decision Brief for fast review
+- one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked
 - one dry-run tool-access plan for the relevant integration layer
 - one next human validation step

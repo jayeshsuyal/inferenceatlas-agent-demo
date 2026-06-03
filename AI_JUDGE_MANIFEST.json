@@ -24,7 +24,8 @@
     "ia-gate --all",
     "ia-adapters --all",
     "ia-trust",
-    "ia-review-room"
+    "ia-review-room",
+    "ia-trial examples/requests/support_triage_trial.yml"
   ],
   "default_run_command": "python3 -m agent.demo",
   "works_without_keys": true,
@@ -40,6 +41,9 @@
   "sponsor_adapter_json_command": "python3 -m agent.adapters --all --json",
   "sponsor_proof_pack_surface": "examples/generated/review_room.html and examples/generated/trust_receipt.json",
   "access_speed_layer_surface": "examples/generated/review_room.html and examples/generated/trust_receipt.json",
+  "design_partner_trial_runner_command": "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+  "design_partner_trial_runner_json_command": "python3 -m agent.trial examples/requests/support_triage_trial.yml --json",
+  "design_partner_trial_runner_write_command": "python3 -m agent.trial examples/requests/support_triage_trial.yml --write",
   "trust_receipt_command": "python3 -m agent.trust",
   "trust_receipt_json_command": "python3 -m agent.trust --print-json trust_receipt",
   "review_room_html_command": "python3 -m agent.review_room",
@@ -54,6 +58,7 @@
     "python3 -m agent.adapters --all",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
+    "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests"
   ],
   "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
@@ -96,6 +101,10 @@
     "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "design_partner_trial_template": "examples/requests/design_partner_trial.yml",
     "support_triage_trial_sample": "examples/requests/support_triage_trial.yml",
+    "support_triage_trial_report_markdown": "examples/generated/support_triage_trial_report.md",
+    "support_triage_trial_report_json": "examples/generated/support_triage_trial_report.json",
+    "support_triage_trial_packet_json": "examples/generated/support_triage_trial.packet.json",
+    "support_triage_trial_decision_brief_json": "examples/generated/support_triage_trial.decision_brief.json",
     "policy_gate": "policy/agent_access.yml",
     "sponsor_adapters": "agent/adapters/",
     "agent_reviewer_instructions": "AGENTS.md",
@@ -119,6 +128,7 @@
     "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated",
     "policy_gate": "python3 -m agent.gate --all --json && python3 -m agent.gate --scenario admin_code_fix_bot",
     "sponsor_adapters": "python3 -m agent.adapters --all --json",
+    "design_partner_trial_runner": "python3 -m agent.trial examples/requests/support_triage_trial.yml --write && python3 -m json.tool examples/generated/support_triage_trial_report.json",
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
     "review_room_html": "python3 -m agent.review_room",
     "design_partner_brief": "test -s docs/DESIGN_PARTNER_BRIEF.md",
@@ -142,7 +152,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "access speed layer", "design partner brief", "design partner trial kit", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "judge harness", "trust receipt", "review room", "review room walkthrough", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -165,6 +175,9 @@
     "docs/DESIGN_PARTNER_TRIAL_KIT.md",
     "examples/requests/design_partner_trial.yml",
     "examples/requests/support_triage_trial.yml",
+    "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+    "examples/generated/support_triage_trial_report.md",
+    "examples/generated/support_triage_trial_report.json",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",

@@ -10,6 +10,7 @@
   "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
   "product_tour": "docs/PRODUCT_TOUR.md",
+  "product_quality_audit": "docs/PRODUCT_QUALITY_AUDIT.md",
   "public_contract_doc": "docs/CONTRACT.md",
   "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
   "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -61,6 +62,7 @@
   "proof_health_surface": "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
   "product_review_path": [
     "docs/PRODUCT_TOUR.md",
+    "docs/PRODUCT_QUALITY_AUDIT.md",
     "python3 -m agent.judge",
     "python3 -m agent.proof_health",
     "examples/generated/support_triage_agent.proof_health.md",
@@ -107,6 +109,7 @@
   },
   "primary_artifacts": {
     "product_tour": "docs/PRODUCT_TOUR.md",
+    "product_quality_audit": "docs/PRODUCT_QUALITY_AUDIT.md",
     "markdown_packet": "examples/generated/support_triage_agent.packet.md",
     "json_packet": "examples/generated/support_triage_agent.packet.json",
     "markdown_decision_brief": "examples/generated/support_triage_agent.decision_brief.md",
@@ -162,6 +165,7 @@
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
     "review_room_html": "python3 -m agent.review_room",
     "proof_health": "python3 -m agent.proof_health && python3 -m json.tool examples/generated/support_triage_agent.proof_health.json",
+    "product_quality_audit": "test -s docs/PRODUCT_QUALITY_AUDIT.md",
     "design_partner_brief": "test -s docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "test -s docs/DESIGN_PARTNER_TRIAL_KIT.md && test -s examples/requests/design_partner_trial.yml && test -s examples/requests/support_triage_trial.yml",
     "review_room_walkthrough": "test -s docs/REVIEW_ROOM_WALKTHROUGH.md && test -s examples/generated/review_room.desktop.jpg"
@@ -183,7 +187,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "judge harness", "agentic review expected output", "trust receipt", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -200,6 +204,7 @@
     "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "README.md",
     "docs/PRODUCT_TOUR.md",
+    "docs/PRODUCT_QUALITY_AUDIT.md",
     "docs/JUDGE_REVIEW_GUIDE.md",
     "BUILD_PLAN_TO_JUNE_12.md",
     "AI_JUDGE_MANIFEST.json",

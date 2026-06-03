@@ -45,6 +45,7 @@ Expected result:
 - the Trust Receipt, Review Room, and static Review Room HTML artifacts are generated
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the design-partner trial runner converts a role-level request into a report, packet, and access brief
+- the Product Quality Audit names the premium spine and safety guardrails
 - the Review Room walkthrough and screenshot are available for visual skim review
 - tests pass
 
@@ -53,27 +54,28 @@ Expected result:
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
 3. `docs/PRODUCT_TOUR.md`
-4. `docs/JUDGE_REVIEW_GUIDE.md`
-5. `docs/DESIGN_PARTNER_BRIEF.md`
-6. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-7. `examples/requests/design_partner_trial.yml`
-8. `examples/requests/support_triage_trial.yml`
-9. `examples/generated/support_triage_trial_report.md`
-10. `examples/generated/trust_receipt.md`
-11. `examples/generated/sponsor_live_readiness.md`
-12. `examples/generated/review_room.md`
-13. `examples/generated/review_room.html`
-14. `examples/generated/support_triage_agent.proof_health.md`
-15. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-16. `examples/generated/review_room.desktop.jpg`
-17. `policy/agent_access.yml`
-18. `agent/adapters/`
-19. `examples/generated/support_triage_agent.decision_brief.md`
-20. `examples/generated/support_triage_agent.packet.md`
-21. `examples/generated/admin_code_fix_bot.packet.json`
-22. `docs/CONTRACT.md`
-23. `docs/SAFETY_CONTRACT.md`
-24. `docs/V1_CAPABILITY_PASSPORT.md`
+4. `docs/PRODUCT_QUALITY_AUDIT.md`
+5. `docs/JUDGE_REVIEW_GUIDE.md`
+6. `docs/DESIGN_PARTNER_BRIEF.md`
+7. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+8. `examples/requests/design_partner_trial.yml`
+9. `examples/requests/support_triage_trial.yml`
+10. `examples/generated/support_triage_trial_report.md`
+11. `examples/generated/trust_receipt.md`
+12. `examples/generated/sponsor_live_readiness.md`
+13. `examples/generated/review_room.md`
+14. `examples/generated/review_room.html`
+15. `examples/generated/support_triage_agent.proof_health.md`
+16. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+17. `examples/generated/review_room.desktop.jpg`
+18. `policy/agent_access.yml`
+19. `agent/adapters/`
+20. `examples/generated/support_triage_agent.decision_brief.md`
+21. `examples/generated/support_triage_agent.packet.md`
+22. `examples/generated/admin_code_fix_bot.packet.json`
+23. `docs/CONTRACT.md`
+24. `docs/SAFETY_CONTRACT.md`
+25. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -82,6 +84,7 @@ Evaluate the public product contract:
 - Does `python3 -m agent.judge` summarize the full safe review path in one command?
 - Does `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` give exact pass/fail signals for automated review?
 - Does `docs/PRODUCT_TOUR.md` explain the product trial path and what is fixed versus derived?
+- Does `docs/PRODUCT_QUALITY_AUDIT.md` keep the public product spine coherent under fast iteration?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does the decision brief give a fast go/no-go surface?
 - Does the Trust Receipt summarize the permission envelope, proof debt, reviewer routing, and safety state?

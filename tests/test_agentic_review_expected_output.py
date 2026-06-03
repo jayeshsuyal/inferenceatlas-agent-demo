@@ -26,7 +26,7 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`proof_health.human_review_required` is `true`",
             "`proof_health.approves_access` is `false`",
             "`private_boundary.private_source_exposed` is `false`",
-            "current public suite contains 120 tests",
+            "unit tests pass in the current public suite",
             "Failure Signals",
             "Private engine, public proof.",
         ]:

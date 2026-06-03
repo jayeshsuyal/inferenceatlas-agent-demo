@@ -62,6 +62,7 @@ In five minutes, a reviewer should see:
 | Surface | What it proves |
 | --- | --- |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
+| `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |

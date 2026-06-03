@@ -10,13 +10,14 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 If you are reviewing quickly, use this order:
 
 1. Read the Product Tour.
-2. Run the one-command judge harness.
-3. Run the no-key demo if you want the full packet output.
-4. Inspect the generated Proof Health report.
-5. Inspect the generated decision brief.
-6. Inspect the scenario matrix.
-7. Validate the public conformance contract.
-8. Check the safety defaults and tests.
+2. Read the Product Quality Audit.
+3. Run the one-command judge harness.
+4. Run the no-key demo if you want the full packet output.
+5. Inspect the generated Proof Health report.
+6. Inspect the generated decision brief.
+7. Inspect the scenario matrix.
+8. Validate the public conformance contract.
+9. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -44,6 +45,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | Question | Public artifact |
 | --- | --- |
 | What does the product do? | `docs/PRODUCT_TOUR.md` and `README.md` |
+| What keeps the product surface premium? | `docs/PRODUCT_QUALITY_AUDIT.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
 | What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
@@ -83,6 +85,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
 - the Design Partner Trial Kit and trial runner give that trial a concrete public input and output path without adding live writes or private source exposure
+- the Product Quality Audit keeps the public proof surface aligned around the same premium spine during fast iteration
 
 ## What This Does Not Expose
 
@@ -107,6 +110,7 @@ The strongest review signal is not a single artifact. It is the chain:
 ```text
 README thesis
 -> Product Tour
+-> Product Quality Audit
 -> Agentic Review Expected Output
 -> one-command judge harness
 -> Design Partner Brief

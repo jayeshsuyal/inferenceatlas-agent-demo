@@ -3,6 +3,8 @@
 Status: public reviewer entrypoint
 Purpose: make the repo reviewable in five minutes without exposing private v1 source
 
+Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
+
 ## Five-Minute Path
 
 If you are reviewing quickly, use this order:

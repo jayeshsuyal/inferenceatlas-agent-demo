@@ -2,6 +2,8 @@
 
 Private engine, public proof.
 
+Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
+
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![CI](https://img.shields.io/badge/CI-smoke%20green-brightgreen)
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)

@@ -50,6 +50,26 @@ class CtoHandoffDocsTests(unittest.TestCase):
         ]:
             self.assertIn(expected, readme)
 
+    def test_readme_top_fold_frames_public_harness(self) -> None:
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        first_screen = "\n".join(readme.splitlines()[:24])
+        manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
+
+        self.assertEqual(readme.splitlines()[0], "# InferenceAtlas — Public Agent-Access Review Harness")
+        self.assertIn("Private engine, public proof.", first_screen)
+        self.assertIn("python3 -m agent.judge", first_screen)
+        self.assertIn("public, no-key review harness", first_screen)
+        self.assertIn("not a private v1 code dump", first_screen)
+        self.assertIn("tests-passing", first_screen)
+        self.assertIn("CI-smoke%20green", first_screen)
+        self.assertIn("public%20contract-v0", first_screen)
+        self.assertIn("safety-dry--run%20default", first_screen)
+        self.assertEqual(manifest["readme_headline"], "InferenceAtlas — Public Agent-Access Review Harness")
+        self.assertEqual(
+            manifest["readme_badges"],
+            ["tests passing", "CI green", "public contract v0", "safety: dry-run default"],
+        )
+
     def test_readme_links_public_contract_without_v1_schema_names(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         contract = (ROOT / "docs" / "CONTRACT.md").read_text(encoding="utf-8")

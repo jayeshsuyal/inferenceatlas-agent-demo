@@ -70,6 +70,7 @@ Current top risk after the offline demo landed:
 | One-command judge harness | `python3 -m agent.judge` regenerates artifacts, validates contract/gate/adapters, and prints the artifact checklist | Shipped |
 | Design partner brief | One-workflow CTO/platform-owner trial path with outputs, success criteria, and safety boundaries | Shipped |
 | Design partner trial kit | Public fillable request template and support-triage sample for one-workflow trials | Shipped |
+| README top-of-fold reframe | First screen says public agent-access review harness, private engine/public proof, judge command, contract status, and dry-run safety | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -86,6 +87,7 @@ By June 12, the repo is judge-ready when all of the following are true:
 
 - `python3 -m agent.demo` works without keys.
 - README behavior matches actual behavior.
+- README first screen frames the repo as a public agent-access review harness, not just a hackathon demo.
 - A judge can understand the product in under five minutes.
 - The main demo produces a DecisionPacket for GitHub/Slack/Jira agent access.
 - The main demo produces an Agent Access Decision Brief that a judge can skim quickly.

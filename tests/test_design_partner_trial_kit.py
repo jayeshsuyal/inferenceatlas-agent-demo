@@ -7,6 +7,63 @@ from agent.judge import build_judge_report, render_judge_report_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
 
+FORBIDDEN_PRIVATE_V1_TERMS = [
+    "ask_ia",
+    "living_document",
+    "advanced_workspace",
+    "mcp_agent_tool_access",
+    "coding_spend",
+    "production_ai",
+    "gpu_api",
+    "route_evidence",
+    "approval_watch_lane",
+    "WorkloadProfile",
+    "FactPack",
+    "ArtifactProjection",
+    "packet_id",
+    "user_problem",
+    "decision_title",
+    "facts_captured",
+    "proof_used",
+    "candidate_paths",
+    "missing_truths",
+    "approval_step",
+    "must_show",
+    "must_not_show",
+    "ia_chat_packet_native_controller",
+]
+
+
+def _read_yaml_list_after(lines: list[str], marker: str, item_prefix: str) -> list[str]:
+    for index, line in enumerate(lines):
+        if line == marker:
+            values = []
+            for item in lines[index + 1:]:
+                if item.startswith(item_prefix):
+                    values.append(item[len(item_prefix):])
+                    continue
+                if item.strip() == "":
+                    continue
+                break
+            return values
+    raise AssertionError(f"missing marker {marker}")
+
+
+def _read_tool_data_class_union(text: str) -> set[str]:
+    lines = text.splitlines()
+    values: set[str] = set()
+    for index, line in enumerate(lines):
+        if line != "      data_classes:":
+            continue
+        for item in lines[index + 1:]:
+            if item.startswith("        - "):
+                values.add(item[len("        - "):])
+                continue
+            if item.strip() == "":
+                continue
+            break
+    return values
+
 
 class DesignPartnerTrialKitTests(unittest.TestCase):
     def test_trial_kit_doc_names_template_and_sample(self) -> None:
@@ -48,6 +105,22 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "trial_outputs:",
         ]:
             self.assertIn(expected, template)
+
+    def test_trial_request_data_classes_match_tool_union(self) -> None:
+        for relative_path in [
+            "examples/requests/design_partner_trial.yml",
+            "examples/requests/support_triage_trial.yml",
+        ]:
+            text = (ROOT / relative_path).read_text(encoding="utf-8")
+            lines = text.splitlines()
+            top_level = set(_read_yaml_list_after(lines, "  data_classes:", "    - "))
+            per_tool = _read_tool_data_class_union(text)
+
+            self.assertEqual(
+                top_level,
+                per_tool,
+                msg=f"top-level requested_access.data_classes must equal per-tool union in {relative_path}",
+            )
 
     def test_support_triage_trial_sample_is_concrete_and_safe(self) -> None:
         sample = (ROOT / "examples" / "requests" / "support_triage_trial.yml").read_text(encoding="utf-8")
@@ -99,7 +172,7 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
 
         for surface in surfaces:
             text = surface.read_text(encoding="utf-8")
-            for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
+            for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
                 self.assertNotIn(forbidden, text, msg=f"{forbidden} leaked in {surface}")
 
 

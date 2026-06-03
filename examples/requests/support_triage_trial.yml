@@ -50,6 +50,7 @@ requested_access:
         - read direct messages
         - read workspace-wide history
       data_classes:
+        - customer incident context
         - internal incident channel summaries
         - support escalation notes
       proposed_demo_allowance: dry_run_named_channel_summary_plan_only
@@ -67,6 +68,7 @@ requested_access:
   data_classes:
     - customer incident context
     - engineering bug reports
+    - linked incident references
     - support escalation notes
     - internal incident channel summaries
 

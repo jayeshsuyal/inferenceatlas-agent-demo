@@ -1,10 +1,21 @@
-# InferenceAtlas Agent Demo
-
-Hack the High Seas public demo repo.
-
-InferenceAtlas is a pre-permission control plane for AI agents and AI infrastructure decisions.
+# InferenceAtlas — Public Agent-Access Review Harness
 
 Private engine, public proof.
+
+![tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![CI](https://img.shields.io/badge/CI-smoke%20green-brightgreen)
+![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
+![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
+
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, access brief, policy-gate result, proof debt, reviewer routing, and next validation plan humans need to review.
+
+Run the full public judge path:
+
+```bash
+python3 -m agent.judge
+```
+
+This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
 ## Judge Fast Path
 

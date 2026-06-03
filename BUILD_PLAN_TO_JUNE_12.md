@@ -68,6 +68,7 @@ Current top risk after the offline demo landed:
 | Static Review Room HTML | Serverless visual artifact generated from the Review Room JSON | Shipped |
 | Review Room walkthrough | 60-90 second talk track plus checked-in screenshot for skim review and demo recording | Shipped |
 | One-command judge harness | `python3 -m agent.judge` regenerates artifacts, validates contract/gate/adapters, and prints the artifact checklist | Shipped |
+| Design partner brief | One-workflow CTO/platform-owner trial path with outputs, success criteria, and safety boundaries | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -99,6 +100,7 @@ By June 12, the repo is judge-ready when all of the following are true:
 - Public policy gate evaluates all scenarios and blocks `admin_code_fix_bot`.
 - Sponsor adapters run without keys and report `would_execute=false`.
 - One-command judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist.
+- Design Partner Brief explains the one-afternoon CTO/platform-owner trial without asking for secrets, writes, approvals, or private v1 source.
 - Composio is dry-run by default.
 - No external write, approval, dispatch, or mutation happens in the default path.
 - Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
@@ -113,24 +115,25 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 1. `README.md`
 2. `docs/JUDGE_REVIEW_GUIDE.md`
 3. `python3 -m agent.judge`
-4. `examples/generated/trust_receipt.md`
-5. `examples/generated/review_room.md`
-6. `examples/generated/review_room.html`
-7. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-8. `examples/generated/review_room.desktop.jpg`
-9. `policy/agent_access.yml`
-10. `agent/adapters/`
-11. `BUILD_PLAN_TO_JUNE_12.md`
-12. `examples/generated/demo_transcript.md`
-13. `examples/generated/support_triage_agent.decision_brief.md`
-14. `examples/generated/support_triage_agent.packet.md`
-15. `examples/generated/support_triage_agent.packet.json`
-16. `examples/generated/support_triage_agent.trace.md`
-17. `examples/sample_decision_packet.md`
-18. `docs/CONTRACT.md`
-19. `docs/V1_CAPABILITY_PASSPORT.md`
-20. `docs/SAFETY_CONTRACT.md`
-21. `python3 -m agent.demo`
+4. `docs/DESIGN_PARTNER_BRIEF.md`
+5. `examples/generated/trust_receipt.md`
+6. `examples/generated/review_room.md`
+7. `examples/generated/review_room.html`
+8. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+9. `examples/generated/review_room.desktop.jpg`
+10. `policy/agent_access.yml`
+11. `agent/adapters/`
+12. `BUILD_PLAN_TO_JUNE_12.md`
+13. `examples/generated/demo_transcript.md`
+14. `examples/generated/support_triage_agent.decision_brief.md`
+15. `examples/generated/support_triage_agent.packet.md`
+16. `examples/generated/support_triage_agent.packet.json`
+17. `examples/generated/support_triage_agent.trace.md`
+18. `examples/sample_decision_packet.md`
+19. `docs/CONTRACT.md`
+20. `docs/V1_CAPABILITY_PASSPORT.md`
+21. `docs/SAFETY_CONTRACT.md`
+22. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

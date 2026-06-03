@@ -36,6 +36,7 @@ If you are using an AI reviewer or coding agent, also read `AGENTS.md`.
 | --- | --- |
 | What does the product do? | `README.md` |
 | What is the one-command judge path? | `python3 -m agent.judge` |
+| How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
@@ -64,6 +65,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - the public policy gate blocks critical/admin/prod-write access
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
+- the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
 
 ## What This Does Not Expose
 
@@ -88,6 +90,7 @@ The strongest review signal is not a single artifact. It is the chain:
 ```text
 README thesis
 -> one-command judge harness
+-> Design Partner Brief
 -> no-key demo
 -> Trust Receipt
 -> Review Room

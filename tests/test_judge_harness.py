@@ -41,6 +41,7 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/trust_receipt.md",
             "examples/generated/review_room.html",
             "docs/REVIEW_ROOM_WALKTHROUGH.md",
+            "docs/DESIGN_PARTNER_BRIEF.md",
             "examples/generated/review_room.desktop.jpg",
         ]:
             self.assertIn(expected, artifact_paths)
@@ -52,6 +53,7 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("admin_code_fix_bot", markdown)
         self.assertIn("BLOCKED", markdown)
         self.assertIn("examples/generated/review_room.html", markdown)
+        self.assertIn("docs/DESIGN_PARTNER_BRIEF.md", markdown)
         self.assertIn("Private engine, public proof.", markdown)
 
     def test_judge_cli_default_renders_markdown(self) -> None:

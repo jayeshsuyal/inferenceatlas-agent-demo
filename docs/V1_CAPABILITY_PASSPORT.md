@@ -76,6 +76,7 @@ Public files to inspect:
 | --- | --- |
 | AI-readable manifest | `AI_JUDGE_MANIFEST.json` |
 | Judge review guide | `docs/JUDGE_REVIEW_GUIDE.md` |
+| Design partner brief | `docs/DESIGN_PARTNER_BRIEF.md` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
 | Public conformance contract | `docs/CONTRACT.md` |
 | One-command judge harness | `python3 -m agent.judge` |

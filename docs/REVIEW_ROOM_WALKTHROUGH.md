@@ -69,3 +69,5 @@ python3 -m unittest discover -s tests
 The pilot ask is simple: pick one agent-access workflow, run it through the Trust Receipt, and validate whether Security, Engineering, Legal, Ops, and Finance can review access faster with less ambiguity.
 
 The public demo proves the contract. A design partner validates the workflow on real internal access requests.
+
+For the trial shape, use `docs/DESIGN_PARTNER_BRIEF.md`.

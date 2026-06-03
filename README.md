@@ -8,7 +8,7 @@ Private engine, public proof.
 
 ## Judge Fast Path
 
-If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
+If you are reviewing quickly, start with the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md).
 
 Then run:
 
@@ -51,7 +51,7 @@ examples/generated/support_triage_agent.decision_brief.md
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
@@ -134,6 +134,14 @@ python3 -m agent.judge
 ```
 
 This regenerates the offline public proof artifacts, validates the public contract, evaluates the policy gate, summarizes dry-run sponsor adapters, and prints the artifact checklist.
+
+For the design-partner trial path, read:
+
+```text
+docs/DESIGN_PARTNER_BRIEF.md
+```
+
+It defines the one-afternoon CTO/platform-owner evaluation: bring one real agent-access workflow, produce the review packet, compare against the current approval path, and keep secrets, writes, approvals, and private v1 source out of the public repo.
 
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 

@@ -38,19 +38,20 @@ Expected result:
 
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/JUDGE_REVIEW_GUIDE.md`
-3. `examples/generated/trust_receipt.md`
-4. `examples/generated/review_room.md`
-5. `examples/generated/review_room.html`
-6. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-7. `examples/generated/review_room.desktop.jpg`
-8. `policy/agent_access.yml`
-9. `agent/adapters/`
-10. `examples/generated/support_triage_agent.decision_brief.md`
-11. `examples/generated/support_triage_agent.packet.md`
-12. `examples/generated/admin_code_fix_bot.packet.json`
-13. `docs/CONTRACT.md`
-14. `docs/SAFETY_CONTRACT.md`
-15. `docs/V1_CAPABILITY_PASSPORT.md`
+3. `docs/DESIGN_PARTNER_BRIEF.md`
+4. `examples/generated/trust_receipt.md`
+5. `examples/generated/review_room.md`
+6. `examples/generated/review_room.html`
+7. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+8. `examples/generated/review_room.desktop.jpg`
+9. `policy/agent_access.yml`
+10. `agent/adapters/`
+11. `examples/generated/support_triage_agent.decision_brief.md`
+12. `examples/generated/support_triage_agent.packet.md`
+13. `examples/generated/admin_code_fix_bot.packet.json`
+14. `docs/CONTRACT.md`
+15. `docs/SAFETY_CONTRACT.md`
+16. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -63,6 +64,7 @@ Evaluate the public product contract:
 - Does the public policy gate block critical/admin/prod-write access?
 - Do sponsor adapters stay dry-run and blocked from approving access?
 - Do low, medium/high, and critical scenarios produce materially different review postures?
+- Does `docs/DESIGN_PARTNER_BRIEF.md` make the one-workflow trial path concrete without asking for secrets?
 - Does production access remain blocked?
 - Do external writes remain disabled?
 - Does Composio remain dry-run by default?

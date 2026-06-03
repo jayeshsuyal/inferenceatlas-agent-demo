@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InferenceAtlas Agent Access Review Room</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8f5;
+      --surface: #ffffff;
+      --ink: #17211d;
+      --muted: #5f6e67;
+      --line: #d9ded8;
+      --teal: #08766f;
+      --green: #20724f;
+      --amber: #a66412;
+      --red: #b63535;
+      --blue: #315e9f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main { width: min(1180px, calc(100vw - 32px)); margin: 0 auto; padding: 28px 0 44px; }
+    header {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+    }
+    h1 { margin: 0; font-size: clamp(28px, 4vw, 48px); line-height: 1.05; letter-spacing: 0; }
+    h2 { margin: 0 0 14px; font-size: 20px; letter-spacing: 0; }
+    h3 { margin: 0 0 12px; font-size: 16px; letter-spacing: 0; }
+    p { margin: 0; color: var(--muted); max-width: 76ch; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    pre { margin: 0; white-space: pre-wrap; border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: #101a17; color: #e9f2ed; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-size: 12px; color: var(--muted); text-transform: uppercase; }
+    td span { display: block; color: var(--muted); }
+    ul { margin: 0; padding-left: 18px; }
+    li, code { overflow-wrap: anywhere; }
+    small { display: block; color: var(--muted); margin-top: 10px; }
+    .hash { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .grid { display: grid; gap: 16px; }
+    .two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .section { margin-top: 18px; }
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      border-radius: 8px;
+      padding: 18px;
+      min-width: 0;
+    }
+    .compact { display: grid; gap: 10px; align-content: start; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: #f9fbf7;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .pill strong { color: var(--ink); overflow-wrap: anywhere; }
+    .pill span { display: inline; color: inherit; }
+    .pill.ok { border-color: #b7d7c2; background: #edf7ef; }
+    .pill.warn { border-color: #e1c28e; background: #fff7e7; }
+    .pill.danger { border-color: #e6b0aa; background: #fff0ee; }
+    .metric { position: relative; border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--surface); min-height: 86px; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+    .metric strong { font-size: 18px; overflow-wrap: anywhere; }
+    .metric i { position: absolute; right: 12px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--green); }
+    .metric i.danger { background: var(--red); }
+    .callout { border-left: 4px solid var(--teal); background: #eff8f4; }
+    .dangerText { color: var(--red); font-weight: 700; }
+    .ownerLine { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--line); padding: 10px 0; }
+    .ownerLine:last-child { border-bottom: 0; }
+    @media (max-width: 840px) {
+      main { width: min(100vw - 20px, 1180px); padding-top: 10px; }
+      header { padding: 18px; }
+      .two, .three, .four { grid-template-columns: 1fr; }
+      table, thead, tbody, tr, th, td { display: block; width: 100%; }
+      thead { display: none; }
+      tr { border-bottom: 1px solid var(--line); padding: 10px 0; }
+      tr:last-child { border-bottom: 0; }
+      td {
+        border-bottom: 0;
+        padding: 8px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      td::before {
+        content: attr(data-label);
+        flex: 0 0 88px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      td:first-child { display: block; }
+      td:first-child::before { display: block; margin-bottom: 4px; }
+      th:nth-child(5), td:nth-child(5) { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>InferenceAtlas Agent Access Review Room</h1>
+      <p>Before an AI agent gets access, issue the Trust Receipt.</p>
+    </div>
+    <div class="hash">
+      <span class="pill neutral"><span>Trust Receipt</span><strong>ia-agent-trust-receipt-public-v0</strong></span>
+      <span class="pill ok"><span>Hash</span><strong>6b5caa082cc32f27</strong></span>
+      <span class="pill neutral"><span>Mode</span><strong>offline deterministic</strong></span>
+      <span class="pill ok"><span>External writes</span><strong>False</strong></span>
+    </div>
+  </header>
+
+  <section class="section panel">
+    <h2>Scenario Matrix</h2>
+    <table>
+      <thead><tr><th>Scenario</th><th>Risk</th><th>Validation</th><th>Production</th><th>Systems</th></tr></thead>
+      <tbody><tr><td data-label="Scenario"><strong>support_triage_agent</strong><span>support triage agent</span></td><td data-label="Risk"><span class="pill warn"><span>risk</span><strong>high</strong></span></td><td data-label="Validation"><span class="pill ok"><span>validation</span><strong>True</strong></span></td><td data-label="Production"><span class="pill ok"><span>production</span><strong>False</strong></span></td><td data-label="Systems">GitHub, Slack, Jira</td></tr>
+<tr><td data-label="Scenario"><strong>read_only_analytics_agent</strong><span>read-only analytics agent</span></td><td data-label="Risk"><span class="pill ok"><span>risk</span><strong>low</strong></span></td><td data-label="Validation"><span class="pill ok"><span>validation</span><strong>True</strong></span></td><td data-label="Production"><span class="pill ok"><span>production</span><strong>False</strong></span></td><td data-label="Systems">BigQuery, Looker</td></tr>
+<tr><td data-label="Scenario"><strong>admin_code_fix_bot</strong><span>admin code fix bot</span></td><td data-label="Risk"><span class="pill danger"><span>risk</span><strong>critical</strong></span></td><td data-label="Validation"><span class="pill danger"><span>validation</span><strong>False</strong></span></td><td data-label="Production"><span class="pill ok"><span>production</span><strong>False</strong></span></td><td data-label="Systems">GitHub</td></tr></tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>Policy Gate Status</h2>
+    <div class="grid three">
+      <article class="panel compact"><h3>support_triage_agent</h3><span class="pill ok"><span>decision</span><strong>VALIDATION_ALLOWED_WITH_GATES</strong></span><p>Scoped validation may proceed, but open proof debt remains owner-routed.</p><small>Rules: allow_scoped_validation_when_safe, require_open_proof_debt</small></article>
+<article class="panel compact"><h3>read_only_analytics_agent</h3><span class="pill ok"><span>decision</span><strong>VALIDATION_ALLOWED_WITH_GATES</strong></span><p>Scoped validation may proceed, but open proof debt remains owner-routed.</p><small>Rules: allow_scoped_validation_when_safe, require_open_proof_debt</small></article>
+<article class="panel compact"><h3>admin_code_fix_bot</h3><span class="pill danger"><span>decision</span><strong>BLOCKED</strong></span><p>Critical/admin/prod-write access is blocked until Security and Engineering review remove or explicitly approve the risky scopes.</p><small>Rules: deny_critical_risk_validation, require_open_proof_debt</small></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Sponsor Adapter Status</h2>
+    <div class="grid four">
+      <article class="panel compact"><h3>composio</h3><span class="pill ok"><span>status</span><strong>dry_run_planned</strong></span><span class="pill ok"><span>would execute</span><strong>False</strong></span><span class="pill ok"><span>can approve</span><strong>False</strong></span></article>
+<article class="panel compact"><h3>tavily</h3><span class="pill ok"><span>status</span><strong>evidence_candidates_planned</strong></span><span class="pill ok"><span>would execute</span><strong>False</strong></span><span class="pill ok"><span>can approve</span><strong>False</strong></span></article>
+<article class="panel compact"><h3>nebius</h3><span class="pill ok"><span>status</span><strong>deterministic_narration_fallback</strong></span><span class="pill ok"><span>would execute</span><strong>False</strong></span><span class="pill ok"><span>can approve</span><strong>False</strong></span></article>
+<article class="panel compact"><h3>openclaw</h3><span class="pill ok"><span>status</span><strong>trace_contract_planned</strong></span><span class="pill ok"><span>would execute</span><strong>False</strong></span><span class="pill ok"><span>can approve</span><strong>False</strong></span></article>
+    </div>
+  </section>
+
+  <section class="section grid two">
+    <article class="panel">
+      <h2>Permission Envelope</h2>
+      <h3>Allowed For Validation</h3>
+      <ul><li>support_triage_agent: GitHub read-scope review against an approved repository allowlist</li><li>support_triage_agent: Slack named-channel summarization review after retention and customer-data scope are approved</li><li>support_triage_agent: Jira draft ticket proposal review with no production ticket creation</li><li>read_only_analytics_agent: bigquery: read-only validation plan only</li><li>read_only_analytics_agent: looker: read-only validation plan only</li><li>1 more in JSON</li></ul>
+      <h3>Dry-Run Only</h3>
+      <ul><li>support_triage_agent: github -&gt; dry-run read-scope plan only</li><li>support_triage_agent: slack -&gt; dry-run named-channel summary plan only</li><li>support_triage_agent: jira -&gt; draft ticket proposal only; no production creation</li><li>read_only_analytics_agent: bigquery -&gt; read-only validation plan only</li><li>read_only_analytics_agent: looker -&gt; read-only validation plan only</li><li>1 more in JSON</li></ul>
+    </article>
+    <article class="panel">
+      <h2>Blocked Surface</h2>
+      <h3>Blocked In Validation</h3>
+      <ul><li>support_triage_agent: github: issue edits</li><li>support_triage_agent: github: repo configuration changes</li><li>support_triage_agent: github: workflow dispatch</li><li>support_triage_agent: jira: ticket creation</li><li>support_triage_agent: jira: status changes</li><li>support_triage_agent: jira: assignment changes</li><li>support_triage_agent: slack: posting messages</li><li>support_triage_agent: slack: DM access</li><li>11 more in JSON</li></ul>
+      <h3>Never Allowed In Public Demo</h3>
+      <ul><li>production access grant</li><li>external writes</li><li>tool permission expansion without a new packet</li><li>compliance, safety, readiness, or savings claims without named proof</li><li>live sponsor action without explicit non-default enablement</li></ul>
+    </article>
+  </section>
+
+  <section class="section grid two">
+    <article class="panel">
+      <h2>Proof Debt</h2>
+      <p>Open proof items: <strong>10</strong></p>
+      <ul><li>Data/Analytics</li><li>Data/Engineering</li><li>Engineering</li><li>Security/Engineering</li><li>Security/Legal</li><li>Support Ops</li></ul>
+    </article>
+    <article class="panel">
+      <h2>Reviewer Routing</h2>
+      <div class="ownerLine"><strong>Security/Legal</strong><span>2 gates across 2 scenarios</span></div><div class="ownerLine"><strong>Engineering</strong><span>2 gates across 2 scenarios</span></div><div class="ownerLine"><strong>Support Ops</strong><span>1 gate across 1 scenario</span></div><div class="ownerLine"><strong>Procurement/Finance</strong><span>1 gate across 1 scenario</span></div><div class="ownerLine"><strong>Data/Analytics</strong><span>1 gate across 1 scenario</span></div><div class="ownerLine"><strong>Security/Engineering</strong><span>1 gate across 1 scenario</span></div><div class="ownerLine"><strong>Engineering Leadership</strong><span>1 gate across 1 scenario</span></div>
+    </article>
+  </section>
+
+  <section class="section grid four">
+    <div class="metric"><span>approval granted</span><strong>False</strong><i class="ok"></i></div>
+<div class="metric"><span>production access granted</span><strong>False</strong><i class="ok"></i></div>
+<div class="metric"><span>external writes enabled</span><strong>False</strong><i class="ok"></i></div>
+<div class="metric"><span>composio dry run</span><strong>True</strong><i class="ok"></i></div>
+<div class="metric"><span>packet state mutation</span><strong>False</strong><i class="ok"></i></div>
+<div class="metric"><span>requires human approval</span><strong>True</strong><i class="ok"></i></div>
+<div class="metric"><span>all scenarios production blocked</span><strong>True</strong><i class="ok"></i></div>
+  </section>
+
+  <section class="section grid two">
+    <article class="panel callout">
+      <h2>Private Boundary</h2>
+      <p>Private engine, public proof.</p>
+      <p>Private source exposed: <strong>False</strong></p>
+    </article>
+    <article class="panel">
+      <h2>Review Commands</h2>
+      <pre><code>python3 -m agent.demo
+python3 -m agent.review --list
+python3 -m agent.contract --all
+python3 -m agent.gate --all
+python3 -m agent.adapters --all
+python3 -m agent.trust
+python3 -m agent.review_room
+python3 -m unittest discover -s tests</code></pre>
+    </article>
+  </section>
+
+  <section class="section panel">
+    <h2>First Artifacts To Inspect</h2>
+    <ul><li><code>examples/generated/trust_receipt.md</code></li><li><code>examples/generated/review_room.md</code></li><li><code>examples/generated/review_room.html</code></li><li><code>policy/agent_access.yml</code></li><li><code>agent/adapters/</code></li><li><code>examples/generated/support_triage_agent.decision_brief.md</code></li><li><code>examples/generated/admin_code_fix_bot.packet.json</code></li><li><code>docs/CONTRACT.md</code></li></ul>
+  </section>
+</main>
+</body>
+</html>

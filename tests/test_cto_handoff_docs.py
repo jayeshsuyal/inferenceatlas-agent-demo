@@ -73,10 +73,13 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.gate --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.adapters --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
         self.assertEqual(manifest["trust_receipt_command"], "python3 -m agent.trust")
+        self.assertEqual(manifest["review_room_html_command"], "python3 -m agent.review_room")
         self.assertEqual(manifest["primary_artifacts"]["trust_receipt_markdown"], "examples/generated/trust_receipt.md")
+        self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
         self.assertEqual(manifest["primary_artifacts"]["policy_gate"], "policy/agent_access.yml")
         self.assertEqual(manifest["primary_artifacts"]["sponsor_adapters"], "agent/adapters/")
 
@@ -90,7 +93,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
             "python3 -m agent.trust",
+            "python3 -m agent.review_room",
             "examples/generated/trust_receipt.md",
+            "examples/generated/review_room.html",
             "policy/agent_access.yml",
             "What This Does Not Expose",
             "Private engine, public proof.",
@@ -112,7 +117,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
             "python3 -m agent.trust",
+            "python3 -m agent.review_room",
             "examples/generated/trust_receipt.md",
+            "examples/generated/review_room.html",
             "policy/agent_access.yml",
             "python3 -m unittest discover -s tests",
             "Private engine, public proof.",

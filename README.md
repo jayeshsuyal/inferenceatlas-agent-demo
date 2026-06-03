@@ -19,6 +19,7 @@ python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
+python3 -m agent.review_room
 python3 -m unittest discover -s tests
 ```
 
@@ -26,6 +27,12 @@ The fastest artifact to skim is the generated Trust Receipt:
 
 ```text
 examples/generated/trust_receipt.md
+```
+
+The fastest visual artifact to skim is the static Review Room:
+
+```text
+examples/generated/review_room.html
 ```
 
 The fastest scenario-specific artifact is the generated access brief:
@@ -169,6 +176,7 @@ Generate the Agent Trust Receipt and Review Room:
 
 ```bash
 python3 -m agent.trust
+python3 -m agent.review_room
 ```
 
 This writes:
@@ -178,6 +186,7 @@ examples/generated/trust_receipt.md
 examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
+examples/generated/review_room.html
 ```
 
 ## Builder / CTO Path
@@ -219,6 +228,7 @@ examples/generated/trust_receipt.md
 examples/generated/trust_receipt.json
 examples/generated/review_room.md
 examples/generated/review_room.json
+examples/generated/review_room.html
 policy/agent_access.yml
 examples/generated/support_triage_agent.trace.md
 examples/generated/support_triage_agent.trace.json

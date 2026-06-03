@@ -17,6 +17,7 @@ python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.trust
+python3 -m agent.review_room
 python3 -m unittest discover -s tests
 ```
 
@@ -27,7 +28,7 @@ Expected result:
 - the public contract reports all scenarios as `OK`
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
 - sponsor adapters report dry-run contracts and `would_execute=False`
-- the Trust Receipt and Review Room artifacts are generated
+- the Trust Receipt, Review Room, and static Review Room HTML artifacts are generated
 - tests pass
 
 ## Inspect These First
@@ -36,14 +37,15 @@ Expected result:
 2. `docs/JUDGE_REVIEW_GUIDE.md`
 3. `examples/generated/trust_receipt.md`
 4. `examples/generated/review_room.md`
-5. `policy/agent_access.yml`
-6. `agent/adapters/`
-7. `examples/generated/support_triage_agent.decision_brief.md`
-8. `examples/generated/support_triage_agent.packet.md`
-9. `examples/generated/admin_code_fix_bot.packet.json`
-10. `docs/CONTRACT.md`
-11. `docs/SAFETY_CONTRACT.md`
-12. `docs/V1_CAPABILITY_PASSPORT.md`
+5. `examples/generated/review_room.html`
+6. `policy/agent_access.yml`
+7. `agent/adapters/`
+8. `examples/generated/support_triage_agent.decision_brief.md`
+9. `examples/generated/support_triage_agent.packet.md`
+10. `examples/generated/admin_code_fix_bot.packet.json`
+11. `docs/CONTRACT.md`
+12. `docs/SAFETY_CONTRACT.md`
+13. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 

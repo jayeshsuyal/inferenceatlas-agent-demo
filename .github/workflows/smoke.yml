@@ -64,6 +64,9 @@ jobs:
           python -m agent.trust
           python -m agent.trust --print-json trust_receipt >/tmp/trust_receipt.cli.json
 
+      - name: Generate static review room
+        run: python -m agent.review_room
+
       - name: Parse generated packet artifacts
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json
@@ -75,6 +78,7 @@ jobs:
           python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
           python -m json.tool examples/generated/trust_receipt.json >/tmp/trust_receipt.json
           python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
+          test -s examples/generated/review_room.html
           python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
           python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json
           python -m json.tool /tmp/sponsor_adapters.all.json >/tmp/sponsor_adapters.all.checked.json

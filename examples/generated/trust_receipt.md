@@ -4,7 +4,7 @@ Pre-permission control plane for AI agent tool, data, spend, and production acce
 
 Receipt ID: `ia-agent-trust-receipt-public-v0`
 
-Receipt hash: `3d8c25106f197c70`
+Receipt hash: `6b5caa082cc32f27`
 
 Private engine, public proof.
 

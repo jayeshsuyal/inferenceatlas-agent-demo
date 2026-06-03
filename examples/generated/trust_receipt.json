@@ -32,6 +32,7 @@
     }
   ],
   "derived_artifacts": {
+    "review_room_html": "examples/generated/review_room.html",
     "review_room_json": "examples/generated/review_room.json",
     "review_room_markdown": "examples/generated/review_room.md",
     "trust_receipt_json": "examples/generated/trust_receipt.json",
@@ -554,6 +555,6 @@
       "role": "evidence candidate source for current security, vendor, and policy context"
     }
   },
-  "trust_receipt_hash": "3d8c25106f197c70",
+  "trust_receipt_hash": "6b5caa082cc32f27",
   "trust_receipt_id": "ia-agent-trust-receipt-public-v0"
 }

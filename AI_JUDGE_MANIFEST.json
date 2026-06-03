@@ -19,6 +19,7 @@
   "sponsor_adapter_json_command": "python3 -m agent.adapters --all --json",
   "trust_receipt_command": "python3 -m agent.trust",
   "trust_receipt_json_command": "python3 -m agent.trust --print-json trust_receipt",
+  "review_room_html_command": "python3 -m agent.review_room",
   "five_minute_review_commands": [
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
@@ -26,6 +27,7 @@
     "python3 -m agent.gate --all",
     "python3 -m agent.adapters --all",
     "python3 -m agent.trust",
+    "python3 -m agent.review_room",
     "python3 -m unittest discover -s tests"
   ],
   "primary_demo_scenario": "Support triage agent requesting GitHub, Slack, and Jira access",
@@ -61,6 +63,7 @@
     "trust_receipt_json": "examples/generated/trust_receipt.json",
     "review_room_markdown": "examples/generated/review_room.md",
     "review_room_json": "examples/generated/review_room.json",
+    "review_room_html": "examples/generated/review_room.html",
     "policy_gate": "policy/agent_access.yml",
     "sponsor_adapters": "agent/adapters/",
     "agent_reviewer_instructions": "AGENTS.md",
@@ -82,7 +85,8 @@
     "public_contract": "python3 -m agent.contract --all --generated-dir examples/generated",
     "policy_gate": "python3 -m agent.gate --all --json && python3 -m agent.gate --scenario admin_code_fix_bot",
     "sponsor_adapters": "python3 -m agent.adapters --all --json",
-    "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json"
+    "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
+    "review_room_html": "python3 -m agent.review_room"
   },
   "safety": {
     "approves_access": false,
@@ -121,6 +125,7 @@
     "AI_JUDGE_MANIFEST.json",
     "examples/generated/trust_receipt.md",
     "examples/generated/review_room.md",
+    "examples/generated/review_room.html",
     "policy/agent_access.yml",
     "agent/adapters/",
     "examples/generated/demo_transcript.md",

@@ -68,6 +68,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("# InferenceAtlas Judge Harness", result.stdout)
         self.assertIn("VALIDATION_ALLOWED_WITH_GATES", result.stdout)
         self.assertIn("admin_code_fix_bot", result.stdout)
+        self.assertIn("proof=permission_diff", result.stdout)
+        self.assertIn("human_review_required=True", result.stdout)
         self.assertIn("can_approve_access=False", result.stdout)
 
     def test_judge_cli_json_is_machine_readable(self) -> None:
@@ -77,6 +79,8 @@ class JudgeHarnessTests(unittest.TestCase):
         report = json.loads(result.stdout)
         self.assertEqual(report["public_contract"]["status"], "ok")
         self.assertEqual(report["policy_gate"]["admin_code_fix_bot"]["decision"], "BLOCKED")
+        self.assertEqual(report["sponsor_adapters"]["composio"]["proof_pack_types"], ["permission_diff"])
+        self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
 
 
 if __name__ == "__main__":

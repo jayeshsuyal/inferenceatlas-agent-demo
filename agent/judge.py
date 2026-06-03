@@ -88,6 +88,8 @@ def _adapter_summary() -> dict[str, dict[str, Any]]:
         provider_results = [scenario_results[scenario_name][provider] for scenario_name in SCENARIOS]
         summary[provider] = {
             "statuses": sorted({result["status"] for result in provider_results}),
+            "proof_pack_types": sorted({result["proof_pack"]["proof_type"] for result in provider_results}),
+            "human_review_required": all(result["human_review_required"] for result in provider_results),
             "would_execute": any(result["would_execute"] for result in provider_results),
             "can_approve_access": any(result["can_approve_access"] for result in provider_results),
             "can_grant_permissions": any(result["can_grant_permissions"] for result in provider_results),
@@ -230,9 +232,11 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
     lines.extend(["", "## Sponsor Adapter Safety", ""])
     for provider, summary in report["sponsor_adapters"].items():
         lines.append(
-            "- {provider}: statuses={statuses}; would_execute={would_execute}; can_approve_access={can_approve}".format(
+            "- {provider}: statuses={statuses}; proof={proof}; human_review_required={review}; would_execute={would_execute}; can_approve_access={can_approve}".format(
                 provider=provider,
                 statuses=", ".join(summary["statuses"]),
+                proof=", ".join(summary["proof_pack_types"]),
+                review=summary["human_review_required"],
                 would_execute=summary["would_execute"],
                 can_approve=summary["can_approve_access"],
             )

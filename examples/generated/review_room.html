@@ -126,7 +126,7 @@
     </div>
     <div class="hash">
       <span class="pill neutral"><span>Trust Receipt</span><strong>ia-agent-trust-receipt-public-v0</strong></span>
-      <span class="pill ok"><span>Hash</span><strong>0dea66161b1ad9f8</strong></span>
+      <span class="pill ok"><span>Hash</span><strong>43367e239140041e</strong></span>
       <span class="pill neutral"><span>Mode</span><strong>offline deterministic</strong></span>
       <span class="pill ok"><span>External writes</span><strong>False</strong></span>
     </div>
@@ -148,6 +148,17 @@
       <article class="panel compact"><h3>support_triage_agent</h3><span class="pill ok"><span>decision</span><strong>VALIDATION_ALLOWED_WITH_GATES</strong></span><p>Scoped validation may proceed, but open proof debt remains owner-routed.</p><small>Rules: allow_scoped_validation_when_safe, require_open_proof_debt</small></article>
 <article class="panel compact"><h3>read_only_analytics_agent</h3><span class="pill ok"><span>decision</span><strong>VALIDATION_ALLOWED_WITH_GATES</strong></span><p>Scoped validation may proceed, but open proof debt remains owner-routed.</p><small>Rules: allow_scoped_validation_when_safe, require_open_proof_debt</small></article>
 <article class="panel compact"><h3>admin_code_fix_bot</h3><span class="pill danger"><span>decision</span><strong>BLOCKED</strong></span><p>Critical/admin/prod-write access is blocked until Security and Engineering review remove or explicitly approve the risky scopes.</p><small>Rules: deny_critical_risk_validation, require_open_proof_debt</small></article>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Sponsor Proof Pack</h2>
+    <p>Sponsor tools enrich proof packets; they do not approve agents.</p>
+    <div class="grid four">
+      <article class="panel compact"><h3>composio</h3><span class="pill neutral"><span>proof</span><strong>permission_diff</strong></span><span class="pill ok"><span>contributions</span><strong>6</strong></span><span class="pill ok"><span>human review</span><strong>True</strong></span><p>Shows the exact requested tool actions, validation-only allowances, blocked actions, and proof required before any tool grant.</p><small>Cannot: approve access, grant permissions, execute writes, reduce proof debt automatically</small></article>
+<article class="panel compact"><h3>tavily</h3><span class="pill neutral"><span>proof</span><strong>evidence_candidate_plan</strong></span><span class="pill ok"><span>contributions</span><strong>10</strong></span><span class="pill ok"><span>human review</span><strong>True</strong></span><p>Turns missing proof into reviewer-safe evidence queries with freshness and source placeholders.</p><small>Cannot: approve access, grant permissions, declare compliance, reduce proof debt automatically</small></article>
+<article class="panel compact"><h3>nebius</h3><span class="pill neutral"><span>proof</span><strong>locked_field_narration</strong></span><span class="pill ok"><span>contributions</span><strong>9</strong></span><span class="pill ok"><span>human review</span><strong>True</strong></span><p>Projects deterministic packet truth into reviewer-ready language while keeping safety-critical fields locked.</p><small>Cannot: approve access, grant permissions, change verdict, change safety state</small></article>
+<article class="panel compact"><h3>openclaw</h3><span class="pill neutral"><span>proof</span><strong>runtime_trace_plan</strong></span><span class="pill ok"><span>contributions</span><strong>9</strong></span><span class="pill ok"><span>human review</span><strong>True</strong></span><p>Shows how attempted agent steps would be traced with policy decisions before any live action.</p><small>Cannot: approve access, grant permissions, execute runtime steps, hide blocked attempts</small></article>
     </div>
   </section>
 

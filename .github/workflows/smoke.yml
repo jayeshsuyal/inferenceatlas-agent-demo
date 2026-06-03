@@ -19,7 +19,7 @@ jobs:
           python-version: "3.11"
 
       - name: Compile Python modules
-        run: python -m py_compile agent/*.py
+        run: python -m py_compile agent/*.py agent/adapters/*.py
 
       - name: Parse DecisionPacket schema
         run: |
@@ -34,11 +34,63 @@ jobs:
           IA_LIVE_MODE: ""
         run: python -m agent.demo
 
+      - name: Regenerate scenario artifacts
+        run: python -m agent.scenarios
+
+      - name: Run scenario review CLI
+        run: |
+          python -m agent.review --list
+          python -m agent.review --scenario admin_code_fix_bot
+          python -m agent.review --scenario read_only_analytics_agent --artifact packet --format json >/tmp/read_only_analytics_agent.cli.packet.json
+
+      - name: Validate public conformance contract
+        run: |
+          python -m agent.contract --all
+          python -m agent.contract --all --generated-dir examples/generated --json >/tmp/public_contract.generated.json
+
+      - name: Evaluate policy gate
+        run: |
+          python -m agent.gate --all
+          python -m agent.gate --all --json >/tmp/policy_gate.all.json
+          python -m agent.gate --scenario admin_code_fix_bot >/tmp/policy_gate.admin.md
+
+      - name: Render sponsor adapter contracts
+        run: |
+          python -m agent.adapters --all
+          python -m agent.adapters --all --json >/tmp/sponsor_adapters.all.json
+
+      - name: Generate trust receipt
+        run: |
+          python -m agent.trust
+          python -m agent.trust --print-json trust_receipt >/tmp/trust_receipt.cli.json
+
+      - name: Generate static review room
+        run: python -m agent.review_room
+
+      - name: Run judge harness
+        run: |
+          python -m agent.judge
+          python -m agent.judge --json >/tmp/judge_harness.json
+
       - name: Parse generated packet artifacts
         run: |
           python -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/support_triage_agent.packet.json
           python -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/support_triage_agent.trace.json
           python -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/support_triage_agent.decision_brief.json
+          python -m json.tool examples/generated/read_only_analytics_agent.packet.json >/tmp/read_only_analytics_agent.packet.json
+          python -m json.tool examples/generated/read_only_analytics_agent.decision_brief.json >/tmp/read_only_analytics_agent.decision_brief.json
+          python -m json.tool examples/generated/admin_code_fix_bot.packet.json >/tmp/admin_code_fix_bot.packet.json
+          python -m json.tool examples/generated/admin_code_fix_bot.decision_brief.json >/tmp/admin_code_fix_bot.decision_brief.json
+          python -m json.tool examples/generated/trust_receipt.json >/tmp/trust_receipt.json
+          python -m json.tool examples/generated/review_room.json >/tmp/review_room.json
+          test -s examples/generated/review_room.html
+          test -s examples/generated/review_room.desktop.jpg
+          test -s docs/REVIEW_ROOM_WALKTHROUGH.md
+          python -m json.tool /tmp/judge_harness.json >/tmp/judge_harness.checked.json
+          python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
+          python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json
+          python -m json.tool /tmp/sponsor_adapters.all.json >/tmp/sponsor_adapters.all.checked.json
+          python -m json.tool policy/agent_access.yml >/tmp/policy_agent_access.json
 
       - name: Run unit tests
         env:

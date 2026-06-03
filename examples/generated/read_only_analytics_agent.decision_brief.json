@@ -1,0 +1,128 @@
+{
+  "access_eligibility": [
+    {
+      "eligibility": "candidate_for_scoped_validation_review",
+      "production_status": "blocked",
+      "requested_access": "read aggregate product usage tables",
+      "required_proof": [
+        "dataset/resource allowlist",
+        "data owner approval",
+        "read-only credential proof"
+      ],
+      "risk_level": "low",
+      "system": "BigQuery",
+      "validation_allowance": "read-only validation plan only"
+    },
+    {
+      "eligibility": "candidate_for_scoped_validation_review",
+      "production_status": "blocked",
+      "requested_access": "read dashboards and saved explores",
+      "required_proof": [
+        "dataset/resource allowlist",
+        "data owner approval",
+        "read-only credential proof"
+      ],
+      "risk_level": "low",
+      "system": "Looker",
+      "validation_allowance": "read-only validation plan only"
+    }
+  ],
+  "access_envelope": {
+    "allowed_for_validation": [
+      "bigquery: read-only validation plan only",
+      "looker: read-only validation plan only"
+    ],
+    "blocked_before_production": [
+      "production access grant",
+      "external write actions",
+      "scope expansion without a new packet",
+      "compliance or safety claims without named reviewer evidence"
+    ],
+    "blocked_in_validation": [
+      "bigquery: writes",
+      "bigquery: exports",
+      "bigquery: permission changes",
+      "looker: writes",
+      "looker: exports",
+      "looker: permission changes"
+    ]
+  },
+  "brief_id": "ia-agent-access-brief-read-only-analytics-v0",
+  "decision": {
+    "question": "Should the read-only analytics agent get BigQuery and Looker access?",
+    "reason": "The request is constrained enough for validation, but production access still requires reviewer proof.",
+    "recommended_next_step": "Approve a scoped validation review only.",
+    "verdict": "Do not grant production access."
+  },
+  "derived_from_packet_id": "ia-agent-access-read-only-analytics-v0",
+  "generated_by": "inferenceatlas-agent-demo",
+  "go_no_go": {
+    "composio_dry_run": true,
+    "external_writes": false,
+    "next_validation": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
+    "production_access": false,
+    "scoped_validation_review": true
+  },
+  "mode": "offline_deterministic",
+  "reviewer_gates": [
+    {
+      "blocks": "read-only analytics validation",
+      "gate": "Confirm metrics are aggregate, allowlisted, and non-customer-specific",
+      "owner": "Data/Analytics",
+      "required_before": "production_access"
+    },
+    {
+      "blocks": "warehouse/dashboard connection",
+      "gate": "Provide read-only credential proof and audit log owner",
+      "owner": "Engineering",
+      "required_before": "production_access"
+    }
+  ],
+  "risk_register": [
+    {
+      "mitigation": "Split read and write paths, keep validation scoped, and require a new packet before expansion.",
+      "risk": "excessive agency",
+      "why_it_matters": "The agent is asking for multiple operational systems at once."
+    },
+    {
+      "mitigation": "Require retention, logging, deletion, and channel/repository boundaries before access.",
+      "risk": "sensitive information exposure",
+      "why_it_matters": "Slack incidents, support escalations, and bug reports may contain customer context."
+    },
+    {
+      "mitigation": "Treat tool content as evidence, not authority; preserve source status and reviewer gates.",
+      "risk": "prompt injection via tool content",
+      "why_it_matters": "Issues, tickets, and incident messages can contain instructions that should not become policy."
+    },
+    {
+      "mitigation": "Keep Composio dry-run by default and block write actions until rollback and off-switch proof exists.",
+      "risk": "unauthorized write actions",
+      "why_it_matters": "Jira, GitHub, or Slack mutations can affect customers, incidents, and engineering operations."
+    },
+    {
+      "mitigation": "Require audit log shape for tool calls, evidence intake, reviewer decisions, and future packet updates.",
+      "risk": "missing audit trail",
+      "why_it_matters": "Reviewers need to know what evidence was used, what was blocked, and who approved scope changes."
+    }
+  ],
+  "runtime_permission_boundary": {
+    "inferenceatlas_decision_brief_answers": "Should this agent be eligible for this class of access at all, and what proof is required first?",
+    "runtime_permission_prompt_answers": "Can the agent perform this specific action now?",
+    "why_this_is_different": "Runtime prompts are last-mile execution checks. The Decision Brief is the pre-permission governance review that decides eligibility, missing proof, and reviewer gates before runtime tools are granted."
+  },
+  "safety_state": {
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "default_public_demo_posture": "review_packet_only",
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "agent_access_decision_brief.v0",
+  "sponsor_readiness": {
+    "composio": "Scoped GitHub/Slack/Jira tool planning remains dry-run by default.",
+    "nebius": "Optional live narration layer for reviewer-ready packet language; offline truth remains deterministic.",
+    "openclaw": "Optional live runtime trace should preserve the same blocked-access contract.",
+    "tavily": "Optional live evidence notes with source URLs and freshness status; search results do not auto-approve access."
+  }
+}

@@ -1,0 +1,131 @@
+schema_version: design_partner_trial_request.v0
+status: public_sample_no_secrets
+purpose: >
+  Example design-partner request for a support triage agent that wants GitHub,
+  Slack, and Jira access. This mirrors the public demo while keeping all data
+  role-level and non-sensitive.
+
+redaction_boundary:
+  do_not_include:
+    - production credentials
+    - live sponsor tokens
+    - customer data
+    - private prompts
+    - private v1 source code
+    - account-specific permission grants
+    - write-enabled Composio actions
+  public_repo_posture: role_level_descriptions_only
+
+candidate_agent:
+  name: support_triage_agent
+  business_owner: Support Ops
+  purpose: >
+    Read issue and incident context, summarize support escalation signals, and
+    prepare draft follow-up work for a human support lead.
+  requested_environment: validation_only
+  current_approval_path: manual_security_engineering_support_ops_review
+
+requested_access:
+  production_access_requested: false
+  admin_scopes_requested: false
+  external_writes_requested: false
+  tools:
+    - system: GitHub
+      requested_actions:
+        - read issues from named repositories
+        - read labels and linked incident references
+      blocked_actions:
+        - edit issues
+        - change repository configuration
+        - dispatch workflows
+      data_classes:
+        - engineering bug reports
+        - linked incident references
+      proposed_demo_allowance: dry_run_read_scope_plan_only
+    - system: Slack
+      requested_actions:
+        - summarize named incident channels
+      blocked_actions:
+        - post messages
+        - read direct messages
+        - read workspace-wide history
+      data_classes:
+        - customer incident context
+        - internal incident channel summaries
+        - support escalation notes
+      proposed_demo_allowance: dry_run_named_channel_summary_plan_only
+    - system: Jira
+      requested_actions:
+        - propose draft tickets
+      blocked_actions:
+        - create production tickets
+        - change ticket status
+        - change ticket assignments
+      data_classes:
+        - support escalation notes
+        - engineering bug reports
+      proposed_demo_allowance: draft_ticket_proposal_only
+  data_classes:
+    - customer incident context
+    - engineering bug reports
+    - linked incident references
+    - support escalation notes
+    - internal incident channel summaries
+
+proof_debt:
+  missing_proof:
+    - item: GitHub repository allowlist and permission level
+      owner: Engineering
+      unblocks: read-only repository evidence review
+    - item: Slack channel allowlist, retention policy, and customer-data boundary
+      owner: Security/Legal
+      unblocks: named-channel summarization review
+    - item: Jira project scope, draft-only mode, and rollback/off-switch plan
+      owner: Engineering
+      unblocks: draft ticket validation
+    - item: Support escalation workflow and human handoff owner
+      owner: Support Ops
+      unblocks: scoped triage workflow validation
+  unsupported_claims:
+    - claim: Production tool access is approved.
+      reason: No named reviewer approval and no complete tool scope proof.
+    - claim: Customer-data handling is safe.
+      reason: Retention, logging, deletion, and channel/repository boundaries are not proven.
+    - claim: The agent may create or mutate Jira, GitHub, or Slack state.
+      reason: Write actions require rollback/off-switch proof and explicit human approval.
+
+reviewer_routing:
+  required_reviewers:
+    - role: Security/Legal
+      review_area: customer_data_exposure_retention_logging_policy_boundary
+    - role: Engineering
+      review_area: permission_boundaries_rollback_off_switch_audit_logs
+    - role: Support Ops
+      review_area: workflow_fit_escalation_rules_human_handoff
+  conditional_reviewers:
+    - role: Procurement/Finance
+      condition: paid_tool_seats_vendor_spend_or_live_integration_costs
+
+safety_defaults:
+  access_approval_granted: false
+  permission_grant_allowed: false
+  external_writes_enabled: false
+  production_mutation_allowed: false
+  packet_state_mutation_allowed: false
+  composio_dry_run_default: true
+  human_approval_required: true
+
+trial_outputs:
+  expected_artifacts:
+    - Trust Receipt
+    - DecisionPacket
+    - Agent Access Decision Brief
+    - policy-gate result
+    - dry-run tool-access plan
+    - next human validation step
+  success_criteria:
+    - blast_radius_is_visible
+    - proof_debt_has_named_owners
+    - risky_access_stays_blocked
+    - scoped_validation_can_move_with_gates
+    - sponsor_adapters_remain_dry_run_and_non_approving

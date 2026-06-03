@@ -81,7 +81,7 @@
       ],
       "properties": {
         "production_access": { "type": "string", "const": "blocked" },
-        "validation_review": { "type": "string", "const": "allowed" },
+        "validation_review": { "type": "string", "enum": ["allowed", "blocked_until_security_review"] },
         "read_access": { "type": "string", "minLength": 1 },
         "write_access": { "type": "string", "minLength": 1 },
         "compliance_claims": { "type": "string", "minLength": 1 }

@@ -1,0 +1,176 @@
+{
+  "approval_posture": {
+    "compliance_claims": "blocked_until_security_legal_and_change_review",
+    "production_access": "blocked",
+    "read_access": "blocked_until_admin_scope_removed",
+    "validation_review": "blocked_until_security_review",
+    "write_access": "blocked_due_to_admin_and_production_mutation"
+  },
+  "blocked_claims": [
+    {
+      "claim": "Admin or production write access is approved.",
+      "reason": "Admin scopes and production mutations require explicit Security and Engineering approval."
+    },
+    {
+      "claim": "The agent may change organization security settings.",
+      "reason": "Organization-level permissions are blocked until admin scope removal or break-glass approval exists."
+    },
+    {
+      "claim": "The agent may trigger production workflows.",
+      "reason": "Workflow dispatch can mutate production state and requires rollback/off-switch proof."
+    },
+    {
+      "claim": "The workflow is compliance-ready.",
+      "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
+    }
+  ],
+  "data_scope": {
+    "may_include": [
+      "production infrastructure context",
+      "source code"
+    ],
+    "must_define_before_access": [
+      "retention period",
+      "logging policy",
+      "allowed channel and repository list",
+      "customer data handling boundary",
+      "reviewer-owned deletion and rollback process"
+    ]
+  },
+  "decision": {
+    "question": "Should the admin code fix bot get GitHub access?",
+    "raw_prompt": "Should this admin code fix bot get GitHub organization admin access? It will push code fixes to production repositories, change organization security settings, and trigger workflows. It may touch production infrastructure context and source code.",
+    "review_posture": "Block validation until admin scopes, production writes, rollback proof, and Security/Engineering approval are resolved.",
+    "verdict": "Do not approve this access request."
+  },
+  "evidence_notes": [
+    {
+      "note": "No live vendor, policy, or workspace evidence was fetched in offline mode.",
+      "source": "offline harness",
+      "status": "deterministic"
+    },
+    {
+      "note": "The public demo path prepares review packets and does not grant access.",
+      "source": "safety contract",
+      "status": "enforced_by_default"
+    }
+  ],
+  "generated_by": "inferenceatlas-agent-demo",
+  "missing_proof": [
+    {
+      "item": "GitHub admin scope removal or explicit break-glass approval",
+      "owner": "Security/Engineering",
+      "unblocks": "admin access rejection review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "mode": "offline_deterministic",
+  "next_validation": {
+    "action": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+    "owner": "Security/Engineering + Engineering Leadership",
+    "success_criteria": [
+      "admin scopes removed or explicitly approved",
+      "production write path remains blocked",
+      "repository allowlist reviewed",
+      "rollback/off-switch owner named"
+    ]
+  },
+  "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+  "requested_capability": [
+    {
+      "default_demo_state": "dry_run_only",
+      "requested_access": "push code fixes to production repositories; change organization security settings; trigger production workflows",
+      "risk_level": "critical",
+      "system": "GitHub"
+    }
+  ],
+  "reviewer_action_items": [
+    {
+      "action": "Reject or remove admin scopes, define repository allowlist, and require rollback/off-switch proof",
+      "blocks": "admin validation and all production write actions",
+      "owner": "Security/Engineering"
+    },
+    {
+      "action": "Confirm production change authority and named incident rollback owner",
+      "blocks": "production workflow dispatch or repository mutation",
+      "owner": "Engineering Leadership"
+    },
+    {
+      "action": "Review production infrastructure and source-code exposure boundaries",
+      "blocks": "source-code and production context access",
+      "owner": "Security/Legal"
+    }
+  ],
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_validation",
+      "owner": "Security/Engineering",
+      "review_area": "admin scopes, production mutation, workflow dispatch, rollback/off-switch"
+    },
+    {
+      "current_state": "required_before_any_write_path",
+      "owner": "Engineering Leadership",
+      "review_area": "production change authority, repository allowlist, incident rollback owner"
+    },
+    {
+      "current_state": "required_before_access",
+      "owner": "Security/Legal",
+      "review_area": "source-code and production infrastructure exposure"
+    }
+  ],
+  "safety_state": {
+    "approval_granted": false,
+    "composio_dry_run": true,
+    "default_public_demo_posture": "review_packet_only",
+    "external_writes_enabled": false,
+    "packet_state_mutation": false,
+    "requires_human_approval": true
+  },
+  "schema_version": "decision_packet.v0",
+  "source_status": {
+    "deterministic_packet": "generated",
+    "live_vendor_evidence": "not_fetched_in_offline_mode",
+    "reviewer_confirmation": "missing",
+    "tool_auth_state": "not_connected_in_offline_mode",
+    "user_prompt": "provided",
+    "workspace_policy": "missing"
+  },
+  "tool_access_plan": {
+    "github": {
+      "blocked_actions": [
+        "admin scope",
+        "production repository mutation",
+        "workflow dispatch",
+        "permission changes"
+      ],
+      "demo_allowance": "blocked; admin/write actions require Security and Engineering approval",
+      "requested": "push code fixes to production repositories; change organization security settings; trigger production workflows",
+      "required_proof": [
+        "admin scope removal or explicit approval",
+        "repository allowlist",
+        "rollback/off-switch plan",
+        "change-management owner"
+      ]
+    }
+  },
+  "tool_scope": {
+    "github": {
+      "blocked_until_proven": [
+        "admin scope",
+        "production mutation",
+        "permission changes",
+        "workflow dispatch"
+      ],
+      "read": [
+        "named allowlisted resources only"
+      ],
+      "write": [
+        "dry-run proposal only"
+      ]
+    }
+  }
+}

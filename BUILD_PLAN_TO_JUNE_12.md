@@ -60,6 +60,17 @@ Current top risk after the offline demo landed:
 | Markdown + JSON examples | Inspectable packet artifacts for judge and AI review | Shipped |
 | V1 capability passport | Redacted map from private v1 capability families to public proof artifacts | Shipped |
 | Safety contract | Enforced no-approval, no-dispatch, no-mutation defaults | Shipped |
+| Judge review guide | Five-minute public review path with commands, artifacts, and private boundary | Shipped |
+| Public conformance contract | Runnable public proof contract for packet and decision brief artifacts | Shipped |
+| Agent Trust Receipt | One public control-plane artifact joining scenarios, proof debt, permission envelope, reviewer routing, sponsor runtime plan, and safety state | Shipped |
+| Public policy gate | Policy-as-code gate that blocks critical/admin/prod-write access and allows lower-risk validation only with gates | Shipped |
+| Dry-run sponsor adapters | Composio/Tavily/Nebius/OpenClaw adapter contracts with no keys, no writes, and no approval authority | Shipped |
+| Static Review Room HTML | Serverless visual artifact generated from the Review Room JSON | Shipped |
+| Review Room walkthrough | 60-90 second talk track plus checked-in screenshot for skim review and demo recording | Shipped |
+| One-command judge harness | `python3 -m agent.judge` regenerates artifacts, validates contract/gate/adapters, and prints the artifact checklist | Shipped |
+| Design partner brief | One-workflow CTO/platform-owner trial path with outputs, success criteria, and safety boundaries | Shipped |
+| Design partner trial kit | Public fillable request template and support-triage sample for one-workflow trials | Shipped |
+| README top-of-fold reframe | First screen says public agent-access review harness, private engine/public proof, judge command, contract status, and dry-run safety | Shipped |
 | Tavily evidence mode | Optional live evidence notes with source URLs and freshness status | Planned |
 | Agent Access Decision Brief | Concise go/no-go review artifact derived from the packet | Shipped |
 | Composio dry-run access plan | Scoped GitHub/Slack/Jira tool-access plan with dry-run default | Shipped |
@@ -67,7 +78,7 @@ Current top risk after the offline demo landed:
 | Nebius live narration | Optional live model path for reviewer-ready packet narration | Planned |
 | OpenClaw runtime path | Optional runtime harness for agent loop and step recording | Planned |
 | CI and tests | GitHub Actions verifies demo, packet shape, and safety defaults | Shipped |
-| Demo transcript | Checked-in transcript showing the expected judge experience | Shipped |
+| Demo transcript | Checked-in full judge path covering demo, scenarios, contract, gate, adapters, Trust Receipt, Review Room, walkthrough, and tests | Shipped |
 | Short video/GIF | 60-90 second walkthrough for human reviewers | Planned |
 
 ## Definition Of Done
@@ -76,6 +87,7 @@ By June 12, the repo is judge-ready when all of the following are true:
 
 - `python3 -m agent.demo` works without keys.
 - README behavior matches actual behavior.
+- README first screen frames the repo as a public agent-access review harness, not just a hackathon demo.
 - A judge can understand the product in under five minutes.
 - The main demo produces a DecisionPacket for GitHub/Slack/Jira agent access.
 - The main demo produces an Agent Access Decision Brief that a judge can skim quickly.
@@ -84,6 +96,15 @@ By June 12, the repo is judge-ready when all of the following are true:
 - Decision Brief examples exist in Markdown and JSON and distinguish pre-permission review from runtime permission prompts.
 - Packet JSON validates against a checked-in schema.
 - Decision Brief JSON validates against a checked-in schema.
+- Trust Receipt and Review Room artifacts exist in Markdown and JSON.
+- Static Review Room HTML exists and is generated from the same public review data.
+- Review Room walkthrough and screenshot exist for skim review and demo recording.
+- Trust Receipt covers blast-radius diff, permission envelope, proof debt ledger, reviewer routing, sponsor runtime plan, safety state, and private boundary.
+- Public policy gate evaluates all scenarios and blocks `admin_code_fix_bot`.
+- Sponsor adapters run without keys and report `would_execute=false`.
+- One-command judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist.
+- Design Partner Brief explains the one-afternoon CTO/platform-owner trial without asking for secrets, writes, approvals, or private v1 source.
+- Design Partner Trial Kit includes a public request template and sample with tool scope, data scope, proof debt, reviewer routing, safety defaults, and expected outputs.
 - Composio is dry-run by default.
 - No external write, approval, dispatch, or mutation happens in the default path.
 - Unsupported compliance, readiness, savings, quality, latency, or access claims remain blocked.
@@ -96,16 +117,30 @@ By June 12, the repo is judge-ready when all of the following are true:
 If a judge or AI reviewer opens this repo early, this is the intended review order:
 
 1. `README.md`
-2. `BUILD_PLAN_TO_JUNE_12.md`
-3. `examples/generated/demo_transcript.md`
-4. `examples/generated/support_triage_agent.decision_brief.md`
-5. `examples/generated/support_triage_agent.packet.md`
-6. `examples/generated/support_triage_agent.packet.json`
-7. `examples/generated/support_triage_agent.trace.md`
-8. `examples/sample_decision_packet.md`
-9. `docs/V1_CAPABILITY_PASSPORT.md`
-10. `docs/SAFETY_CONTRACT.md`
-11. `python3 -m agent.demo`
+2. `docs/JUDGE_REVIEW_GUIDE.md`
+3. `python3 -m agent.judge`
+4. `docs/DESIGN_PARTNER_BRIEF.md`
+5. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+6. `examples/requests/design_partner_trial.yml`
+7. `examples/requests/support_triage_trial.yml`
+8. `examples/generated/trust_receipt.md`
+9. `examples/generated/review_room.md`
+10. `examples/generated/review_room.html`
+11. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+12. `examples/generated/review_room.desktop.jpg`
+13. `policy/agent_access.yml`
+14. `agent/adapters/`
+15. `BUILD_PLAN_TO_JUNE_12.md`
+16. `examples/generated/demo_transcript.md`
+17. `examples/generated/support_triage_agent.decision_brief.md`
+18. `examples/generated/support_triage_agent.packet.md`
+19. `examples/generated/support_triage_agent.packet.json`
+20. `examples/generated/support_triage_agent.trace.md`
+21. `examples/sample_decision_packet.md`
+22. `docs/CONTRACT.md`
+23. `docs/V1_CAPABILITY_PASSPORT.md`
+24. `docs/SAFETY_CONTRACT.md`
+25. `python3 -m agent.demo`
 
 The final repo should make this path obvious from the first screen.
 

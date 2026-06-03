@@ -23,6 +23,20 @@ DEFAULT_AGENT_ACCESS_PROMPT = (
     "bug reports, and support escalations."
 )
 
+READ_ONLY_ANALYTICS_PROMPT = (
+    "Should this read-only analytics agent get BigQuery and Looker access? "
+    "It will read aggregate product usage tables, inspect saved dashboards, "
+    "and summarize internal business metrics. It must not export rows, change "
+    "dashboards, or touch customer incident context."
+)
+
+ADMIN_CODE_FIX_PROMPT = (
+    "Should this admin code fix bot get GitHub organization admin access? "
+    "It will push code fixes to production repositories, change organization "
+    "security settings, and trigger workflows. It may touch production "
+    "infrastructure context and source code."
+)
+
 SUPPORT_TRIAGE_REQUEST = AccessRequest(
     agent_name="support triage agent",
     purpose="Read GitHub issues, summarize Slack incident channels, and create Jira draft tickets.",
@@ -51,6 +65,51 @@ SUPPORT_TRIAGE_REQUEST = AccessRequest(
         "internal_incident_channel_summaries",
     ),
     raw_prompt=DEFAULT_AGENT_ACCESS_PROMPT,
+)
+
+READ_ONLY_ANALYTICS_REQUEST = AccessRequest(
+    agent_name="read-only analytics agent",
+    purpose="Read aggregate product usage tables, inspect saved dashboards, and summarize internal business metrics.",
+    environment="prod",
+    requested_tools=(
+        ToolRequest(
+            system="BigQuery",
+            requested_actions=("read aggregate product usage tables",),
+            scopes=("datasets.read", "jobs.create_read_only_query"),
+        ),
+        ToolRequest(
+            system="Looker",
+            requested_actions=("read dashboards and saved explores",),
+            scopes=("dashboards.read", "explores.read"),
+        ),
+    ),
+    data_classes=(
+        "aggregate_product_usage_metrics",
+        "internal_business_metrics",
+    ),
+    raw_prompt=READ_ONLY_ANALYTICS_PROMPT,
+)
+
+ADMIN_CODE_FIX_REQUEST = AccessRequest(
+    agent_name="admin code fix bot",
+    purpose="Push code fixes to production repositories, change organization security settings, and trigger workflows.",
+    environment="prod",
+    requested_tools=(
+        ToolRequest(
+            system="GitHub",
+            requested_actions=(
+                "push code fixes to production repositories",
+                "change organization security settings",
+                "trigger production workflows",
+            ),
+            scopes=("repo:write", "admin:org", "workflow:write"),
+        ),
+    ),
+    data_classes=(
+        "production_infrastructure_context",
+        "source_code",
+    ),
+    raw_prompt=ADMIN_CODE_FIX_PROMPT,
 )
 
 

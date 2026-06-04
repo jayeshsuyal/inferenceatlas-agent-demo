@@ -105,6 +105,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertEqual(manifest["judge_harness_command"], "python3 -m agent.judge")
         self.assertEqual(manifest["judge_harness_json_command"], "python3 -m agent.judge --json")
+        self.assertEqual(manifest["artifact_integrity_command"], "python3 -m agent.verify_artifacts")
+        self.assertEqual(manifest["artifact_integrity_json_command"], "python3 -m agent.verify_artifacts --json")
+        self.assertIn("33 generated artifacts byte-compared", manifest["artifact_integrity_gate"])
         self.assertIn("python3 -m agent.judge", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.packet_diff", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.outcome_memo", manifest["five_minute_review_commands"])
@@ -116,9 +119,11 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.proof_health", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
         self.assertIn("examples/generated/packet_diff.md", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
         self.assertIn("examples/generated/sponsor_live_readiness.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
@@ -143,6 +148,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["packet_outcome_memo_json_command"],
             "python3 -m agent.outcome_memo --no-write --json",
         )
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["verification"]["artifact_integrity"])
+        self.assertIn("python3 -m agent.verify_artifacts --json", manifest["verification"]["artifact_integrity"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
+        self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertEqual(
             manifest["proof_health_surface"],
             "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
@@ -209,6 +218,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.demo",
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
+            "python3 -m agent.verify_artifacts",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",
@@ -250,6 +260,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.review --list",
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
+            "python3 -m agent.verify_artifacts",
             "python3 -m agent.contract --all",
             "python3 -m agent.gate --all",
             "python3 -m agent.adapters --all",

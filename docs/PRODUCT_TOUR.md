@@ -35,6 +35,7 @@ python3 -m agent.proof_health
 python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.review_room
+python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
@@ -49,6 +50,7 @@ ia-proof-health
 ia-sponsor-readiness
 ia-trial examples/requests/support_triage_trial.yml
 ia-review-room
+ia-verify-artifacts
 ```
 
 In five minutes, a reviewer should see:
@@ -60,6 +62,7 @@ In five minutes, a reviewer should see:
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
 - a Proof Health report that shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
+- an Artifact Integrity Gate proving deterministic proof artifacts match generator output, static review assets are valid, and no unexpected generated file is checked in
 - three risk postures: low-risk read-only, medium/high-risk proof-routed, and critical/admin blocked fast
 - safety defaults that keep approvals, grants, writes, and production mutation off
 
@@ -71,6 +74,7 @@ In five minutes, a reviewer should see:
 | `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |
 | `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
+| `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
@@ -88,6 +92,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
 | Packet Diff | The three scenarios produce different load-bearing fields while production access and writes stay blocked. |
 | Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
+| Artifact Integrity Gate | Deterministic proof artifacts must remain byte-equal to the current generator output; static review assets must be present; generated inventory must not contain extras. |
 | Public trial request files | The trial runner derives a report, packet, and access brief from the request file. |
 | Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
 | Sponsor readiness contracts | The readiness report derives provider value, visible outputs, CTO next steps, and safety boundaries from the adapter contracts. |

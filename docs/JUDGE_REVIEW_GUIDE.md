@@ -35,6 +35,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
@@ -54,6 +55,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | Does the packet bend across risk? | `python3 -m agent.packet_diff` and `examples/generated/packet_diff.md` |
 | What decision should a human leave with? | `python3 -m agent.outcome_memo` and `examples/generated/support_triage_agent.outcome_memo.md` |
+| Are the checked-in artifacts fresh? | `python3 -m agent.verify_artifacts` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
 | What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
@@ -86,6 +88,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - low-risk, medium-risk, and critical-risk scenarios produce materially different review postures
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
 - Packet Outcome Memo turns the packet into can-move, stays-blocked, proof-owner, and refresh decisions
+- the Artifact Integrity Gate proves deterministic proof artifacts match generator output, static review assets are valid, and no unexpected generated file is checked in
 - the public policy gate blocks critical/admin/prod-write access
 - sponsor integrations enter as dry-run contracts, not live writes or approvals
 - Sponsor Live Readiness shows where Nebius, Tavily, Composio, and OpenClaw add proof without becoming approval authorities
@@ -123,6 +126,7 @@ README thesis
 -> one-command judge harness
 -> Packet Diff
 -> Packet Outcome Memo
+-> Artifact Integrity Gate
 -> Design Partner Brief
 -> Design Partner Trial Kit
 -> Design Partner Trial Runner

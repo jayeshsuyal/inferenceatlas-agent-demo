@@ -21,8 +21,13 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
+            "python3 -m agent.verify_artifacts",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
+            "Artifact Integrity Gate",
+            "`summary.stale_artifacts` is `0`",
+            "`summary.unexpected_checked_in_artifacts` is `0`",
+            "`0 unexpected checked-in`",
             "Proof Health status is `drifting`",
             "`policy_gate.admin_code_fix_bot.decision` is `BLOCKED`",
             "`proof_health.human_review_required` is `true`",
@@ -57,12 +62,16 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [agents, readme, guide]:
             self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", surface)
+            self.assertIn("python3 -m agent.verify_artifacts", surface)
 
 
 if __name__ == "__main__":

@@ -29,10 +29,13 @@ class ProductTourTests(unittest.TestCase):
             "python3 -m agent.proof_health",
             "python3 -m agent.sponsor_readiness",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+            "python3 -m agent.verify_artifacts",
+            "ia-verify-artifacts",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/packet_diff.md",
             "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/support_triage_agent.proof_health.md",
+            "Artifact Integrity Gate",
             "Packet Diff",
             "Packet Outcome Memo",
             "Packet Drift",
@@ -59,10 +62,13 @@ class ProductTourTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["judge_review_path"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("product tour", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [readme, agents, guide]:
             self.assertIn("docs/PRODUCT_TOUR.md", surface)
+            self.assertIn("python3 -m agent.verify_artifacts", surface)
 
 
 if __name__ == "__main__":

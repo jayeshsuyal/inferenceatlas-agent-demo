@@ -18,6 +18,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "Status: public AI reviewer checklist",
             "python3 -m agent.judge --no-write",
             "python3 -m agent.judge --no-write --json",
+            "python3 -m agent.skills",
+            "python3 -m agent.skills --json",
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
@@ -25,6 +27,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
             "Artifact Integrity Gate",
+            "Agent Skills",
+            "`summary.available_stable_skills` is `12`",
             "`summary.stale_artifacts` is `0`",
             "`summary.unexpected_checked_in_artifacts` is `0`",
             "`0 unexpected checked-in`",
@@ -60,17 +64,22 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
         )
         self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", manifest["judge_review_path"])
+        self.assertIn("docs/AGENT_SKILLS.md", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.skills", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.skills", manifest["five_minute_review_commands"])
         self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [agents, readme, guide]:
             self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", surface)
+            self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
 
 

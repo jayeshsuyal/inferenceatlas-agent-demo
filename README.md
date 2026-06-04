@@ -13,7 +13,7 @@ InferenceAtlas is a public, no-key review harness for the private InferenceAtlas
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
-Start with the product tour: [Product Tour](docs/PRODUCT_TOUR.md).
+Start with the product tour: [Product Tour](docs/PRODUCT_TOUR.md). For the capability map, read [Agent Skills](docs/AGENT_SKILLS.md).
 
 Then run the full public judge path:
 
@@ -44,6 +44,7 @@ Then run:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
@@ -64,6 +65,7 @@ Or use the installed command set:
 pip install -e .
 ia-judge
 ia-review --list
+ia-skills
 ia-packet-diff
 ia-outcome-memo
 ia-contract --all
@@ -81,6 +83,12 @@ The fastest artifact to skim is the generated Trust Receipt:
 
 ```text
 examples/generated/trust_receipt.md
+```
+
+The fastest capability map is:
+
+```text
+docs/AGENT_SKILLS.md
 ```
 
 The fastest proof that the packet bends across risk levels is:
@@ -146,7 +154,7 @@ python3 -m agent.verify_artifacts
 
 Start here for the public execution plan: [Build Plan To June 12](BUILD_PLAN_TO_JUNE_12.md).
 
-For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Product Tour](docs/PRODUCT_TOUR.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
+For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.json), [Agent Reviewer Instructions](AGENTS.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Product Tour](docs/PRODUCT_TOUR.md), [Agent Skills](docs/AGENT_SKILLS.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md), [Public Conformance Contract](docs/CONTRACT.md), [Safety Contract](docs/SAFETY_CONTRACT.md), and [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md).
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
@@ -156,6 +164,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - scenario blast-radius diff
 - approval posture
 - access eligibility go/no-go
+- agent skills registry
 - risk-level packet diff
 - packet outcome memo
 - artifact integrity status

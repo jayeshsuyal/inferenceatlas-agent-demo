@@ -19,6 +19,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "Status: public product-quality guardrail",
             "Private engine, public proof.",
             "Premium Spine",
+            "Agent Skills registry",
             "DecisionPacket",
             "Packet Diff",
             "Agent Access Decision Brief",
@@ -42,6 +43,7 @@ class ProductQualityAuditTests(unittest.TestCase):
         expected_order = [
             "README.md",
             "docs/PRODUCT_TOUR.md",
+            "docs/AGENT_SKILLS.md",
             "docs/PRODUCT_QUALITY_AUDIT.md",
             "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
             "python3 -m agent.judge",
@@ -81,12 +83,16 @@ class ProductQualityAuditTests(unittest.TestCase):
         )
         self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", manifest["product_review_path"])
         self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", manifest["judge_review_path"])
+        self.assertIn("docs/AGENT_SKILLS.md", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.skills", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("product quality audit", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [readme, agents, guide, tour, expected_output]:
             self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", surface)
+            self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
 
     def test_judge_harness_names_product_quality_audit(self) -> None:

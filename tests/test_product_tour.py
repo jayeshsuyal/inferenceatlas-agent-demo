@@ -24,6 +24,8 @@ class ProductTourTests(unittest.TestCase):
             "Private engine, public proof.",
             "Five-Minute Product Trial",
             "python3 -m agent.judge",
+            "python3 -m agent.skills",
+            "ia-skills",
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
@@ -36,6 +38,8 @@ class ProductTourTests(unittest.TestCase):
             "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/support_triage_agent.proof_health.md",
             "Artifact Integrity Gate",
+            "Agent Skills registry",
+            "docs/AGENT_SKILLS.md",
             "Packet Diff",
             "Packet Outcome Memo",
             "Packet Drift",
@@ -62,12 +66,16 @@ class ProductTourTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["judge_review_path"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
+        self.assertIn("docs/AGENT_SKILLS.md", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.skills", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("product tour", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [readme, agents, guide]:
             self.assertIn("docs/PRODUCT_TOUR.md", surface)
+            self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
 
 

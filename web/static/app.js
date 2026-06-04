@@ -32,6 +32,18 @@ const slashMenu = document.getElementById("slash-menu");
 const skillsAnchor = document.getElementById("skills-anchor");
 const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
+const connectorToastEl = document.getElementById("connector-toast");
+const btnGithub = document.getElementById("btn-github");
+const githubChipsEl = document.getElementById("github-chips");
+const githubPicker = document.getElementById("github-picker");
+const githubRepoSearch = document.getElementById("github-repo-search");
+const githubRepoList = document.getElementById("github-repo-list");
+const btnDrive = document.getElementById("btn-drive");
+const driveChipsEl = document.getElementById("drive-chips");
+const drivePicker = document.getElementById("drive-picker");
+const driveFileSearch = document.getElementById("drive-file-search");
+const driveFileList = document.getElementById("drive-file-list");
+const drivePickerTabs = document.getElementById("drive-picker-tabs");
 
 const SKILL_HINT_BY_ID = {
   decision_packet_generation: "What blocks production access for support triage?",
@@ -59,12 +71,24 @@ let judgeStep = 1;
 let mindsInitialized = false;
 let uiSkills = [];
 let uiSkillCategories = [];
+let uiConnectors = [];
+let skillsIntro = null;
+let connectorsIntro = null;
+let connectorsLoadError = null;
+let plusMenuState = { skills: false, connectors: false };
 let slashActiveIndex = 0;
 let slashFilter = "";
 let skillsLoadError = null;
 let skillsLoaded = false;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
 let selectedSkills = [];
+/** @type {Array<{full_name:string, preview?:string, indexing?:boolean}>} */
+let selectedGithubRepos = [];
+let githubSearchTimer = null;
+/** @type {Array<{file_id:string, name:string, mimeType?:string, media_kind?:string, indexing?:boolean, digest_chars?:number, index_label?:string}>} */
+let selectedDriveFiles = [];
+let driveSearchTimer = null;
+let drivePickerKind = "all";
 
 function setBusy(loading) {
   busy = loading;
@@ -135,17 +159,7 @@ function appendMessage(role, text, extraClass = "", outputFiles = []) {
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   if (role === "assistant") {
-    text.split("\n\n").forEach((para) => {
-      if (!para.trim()) return;
-      const p = document.createElement("p");
-      p.textContent = para.trim();
-      bubble.appendChild(p);
-    });
-    if (!bubble.childNodes.length) {
-      const p = document.createElement("p");
-      p.textContent = text;
-      bubble.appendChild(p);
-    }
+    renderAssistantMarkdown(bubble, text);
     addDownloadButtons(bubble, outputFiles.filter((f) => f.file_id));
   } else {
     bubble.textContent = text;
@@ -155,6 +169,87 @@ function appendMessage(role, text, extraClass = "", outputFiles = []) {
   messagesEl.appendChild(wrap);
   messagesEl.scrollTop = messagesEl.scrollHeight;
   return wrap;
+}
+
+function renderAssistantMarkdown(bubble, text) {
+  const parts = String(text).split("\n\n");
+  parts.forEach((para) => {
+    if (!para.trim()) return;
+    if (para.startsWith("**") && para.includes("**")) {
+      const h = document.createElement("p");
+      h.className = "reply-manifest";
+      const m = para.match(/^\*\*([^*]+)\*\*\s*(.*)$/s);
+      h.innerHTML = m
+        ? `<strong>${escapeHtml(m[1])}</strong> ${escapeHtml(m[2] || "")}`
+        : escapeHtml(para);
+      bubble.appendChild(h);
+      return;
+    }
+    const p = document.createElement("p");
+    p.textContent = para.trim();
+    bubble.appendChild(p);
+  });
+  if (!bubble.childNodes.length) {
+    const p = document.createElement("p");
+    p.textContent = text;
+    bubble.appendChild(p);
+  }
+}
+
+function appendThinkingMessage() {
+  const wrap = document.createElement("div");
+  wrap.className = "message assistant thinking";
+  const bubble = document.createElement("div");
+  bubble.className = "bubble thinking-bubble";
+  const title = document.createElement("p");
+  title.className = "thinking-title";
+  title.textContent = "Thinking…";
+  const list = document.createElement("ul");
+  list.className = "thinking-log";
+  bubble.appendChild(title);
+  bubble.appendChild(list);
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return { wrap, list };
+}
+
+function appendThinkingLine(listEl, line) {
+  const li = document.createElement("li");
+  li.textContent = line;
+  listEl.appendChild(li);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function consumeChatStream(response, thinkingUi) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() || "";
+    for (const chunk of chunks) {
+      const line = chunk.trim();
+      if (!line.startsWith("data:")) continue;
+      let payload;
+      try {
+        payload = JSON.parse(line.slice(5).trim());
+      } catch {
+        continue;
+      }
+      if (payload.type === "thinking" && payload.line && thinkingUi) {
+        appendThinkingLine(thinkingUi.list, payload.line);
+      } else if (payload.type === "done") {
+        return payload;
+      } else if (payload.type === "error") {
+        throw new Error(payload.detail || "Chat stream failed");
+      }
+    }
+  }
+  throw new Error("Stream ended without a reply");
 }
 
 function removeMessage(el) {
@@ -221,12 +316,435 @@ reviewFile.addEventListener("change", async () => {
   }
 });
 
-function appendUserMessage(message, skills = []) {
+function isGithubSignedIn() {
+  const gh = uiConnectors.find((c) => c.id === "github");
+  return Boolean(gh && gh.signed_in);
+}
+
+function updateGithubToolbar() {
+  if (!btnGithub) return;
+  btnGithub.hidden = !isGithubSignedIn();
+}
+
+function isDriveSignedIn() {
+  const dr = uiConnectors.find((c) => c.id === "google_drive");
+  return Boolean(dr && dr.signed_in);
+}
+
+function updateDriveToolbar() {
+  if (!btnDrive) return;
+  btnDrive.hidden = !isDriveSignedIn();
+}
+
+function closeGithubPicker() {
+  if (githubPicker) githubPicker.hidden = true;
+}
+
+function openGithubPicker() {
+  if (!isGithubSignedIn()) {
+    showConnectorToast("GitHub", "Sign in to GitHub first (+ → Connectors).");
+    return;
+  }
+  closeSkillsFlyout();
+  closeSlashMenu();
+  if (githubPicker) {
+    githubPicker.hidden = false;
+    if (githubRepoSearch) {
+      githubRepoSearch.value = "";
+      githubRepoSearch.focus();
+    }
+    loadGithubRepoList("");
+  }
+}
+
+async function loadGithubRepoList(query = "") {
+  if (!githubRepoList) return;
+  githubRepoList.innerHTML = '<p class="github-repo-empty">Loading repositories…</p>';
+  try {
+    const res = await fetch(
+      `/api/connectors/github/repos?session_id=${encodeURIComponent(sessionId)}&q=${encodeURIComponent(query)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Failed to load repos");
+    renderGithubRepoList(data.repos || [], Boolean(data.demo));
+  } catch (err) {
+    githubRepoList.innerHTML = `<p class="github-repo-empty">${escapeHtml(String(err.message || err))}</p>`;
+  }
+}
+
+function renderGithubRepoList(repos, demo = false) {
+  if (!githubRepoList) return;
+  githubRepoList.innerHTML = "";
+  if (!repos.length) {
+    githubRepoList.innerHTML = '<p class="github-repo-empty">No repositories match your search.</p>';
+    return;
+  }
+  if (demo) {
+    const note = document.createElement("p");
+    note.className = "github-repo-demo-note";
+    note.textContent = "Demo list — live repos load after GitHub OAuth sign-in.";
+    githubRepoList.appendChild(note);
+  }
+  repos.forEach((repo) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `github-repo-item${repo.indexed ? " indexed" : ""}`;
+    btn.role = "option";
+    const attached = selectedGithubRepos.some((r) => r.full_name === repo.full_name);
+    btn.innerHTML = `
+      <span class="github-repo-item-name">${escapeHtml(repo.full_name)}</span>
+      <span class="github-repo-item-meta">${escapeHtml(repo.description || "")}${attached ? " · attached" : ""}${repo.indexed && !attached ? " · indexed" : ""}</span>
+    `;
+    btn.addEventListener("click", () => attachGithubRepo(repo.full_name));
+    githubRepoList.appendChild(btn);
+  });
+}
+
+async function attachGithubRepo(fullName) {
+  if (selectedGithubRepos.some((r) => r.full_name === fullName)) {
+    showConnectorToast("GitHub", `${fullName} is already attached.`);
+    return;
+  }
+  selectedGithubRepos.push({ full_name: fullName, indexing: true });
+  renderGithubChips();
+  closeGithubPicker();
+  try {
+    const res = await fetch("/api/connectors/github/attach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, full_name: fullName }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.message || data.detail || "Attach failed");
+    const idx = selectedGithubRepos.findIndex((r) => r.full_name === fullName);
+    if (idx >= 0) {
+      selectedGithubRepos[idx] = {
+        full_name: fullName,
+        preview: data.preview,
+        indexing: false,
+        digest_chars: data.digest_chars,
+        readme_found: data.readme_found,
+        files_included: data.files_included,
+        paths_in_tree: data.paths_in_tree,
+        sample_paths: data.sample_paths || [],
+        index_label: data.message || `Indexed ${fullName}`,
+      };
+    }
+    if (data.file_id) chatAttachmentIds.push(data.file_id);
+    renderGithubChips();
+    const idxMsg = data.message || `Indexed ${fullName}`;
+    showConnectorToast("GitHub", idxMsg, 9000);
+    input.focus();
+  } catch (err) {
+    selectedGithubRepos = selectedGithubRepos.filter((r) => r.full_name !== fullName);
+    renderGithubChips();
+    showConnectorToast("GitHub", String(err.message || err));
+  }
+}
+
+function renderGithubChips() {
+  if (!githubChipsEl) return;
+  githubChipsEl.innerHTML = "";
+  if (!selectedGithubRepos.length) {
+    githubChipsEl.hidden = true;
+    return;
+  }
+  githubChipsEl.hidden = false;
+  selectedGithubRepos.forEach((repo) => {
+    const chip = document.createElement("span");
+    chip.className = `skill-chip github-repo-chip${repo.indexing ? " indexing" : ""}${repo.digest_chars ? " indexed-ok" : ""}`;
+    const link = document.createElement("a");
+    link.href = "#";
+    link.className = "skill-chip-link";
+    if (repo.indexing) {
+      link.textContent = `${repo.full_name} …`;
+    } else if (repo.digest_chars) {
+      const readme = repo.readme_found ? "README ✓" : "no README";
+      link.textContent = `${repo.full_name} ✓`;
+      link.title =
+        repo.index_label ||
+        `Indexed ${repo.digest_chars.toLocaleString()} chars · ${readme} · ${repo.files_included || 0} files`;
+    } else {
+      link.textContent = repo.full_name;
+    }
+    if (!link.title) link.title = repo.preview || repo.full_name;
+    link.addEventListener("click", (e) => e.preventDefault());
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "skill-chip-remove";
+    rm.setAttribute("aria-label", `Remove ${repo.full_name}`);
+    rm.textContent = "×";
+    rm.addEventListener("click", () => detachGithubRepo(repo.full_name));
+    chip.appendChild(link);
+    chip.appendChild(rm);
+    githubChipsEl.appendChild(chip);
+  });
+}
+
+function detachGithubRepo(fullName) {
+  selectedGithubRepos = selectedGithubRepos.filter((r) => r.full_name !== fullName);
+  renderGithubChips();
+}
+
+function clearSelectedGithubRepos() {
+  selectedGithubRepos = [];
+  renderGithubChips();
+}
+
+function closeDrivePicker() {
+  if (drivePicker) drivePicker.hidden = true;
+}
+
+function openDrivePicker(kind = "all") {
+  if (!isDriveSignedIn()) {
+    showConnectorToast("Google Drive", "Sign in to Drive first (+ → Connectors).");
+    return;
+  }
+  closeSkillsFlyout();
+  closeSlashMenu();
+  closeGithubPicker();
+  drivePickerKind = kind;
+  if (drivePickerTabs) {
+    drivePickerTabs.querySelectorAll(".drive-tab").forEach((tab) => {
+      tab.classList.toggle("active", tab.dataset.kind === kind);
+    });
+  }
+  if (drivePicker) {
+    drivePicker.hidden = false;
+    if (driveFileSearch) {
+      driveFileSearch.value = "";
+      driveFileSearch.focus();
+    }
+    loadDriveFileList("", kind);
+  }
+}
+
+async function loadDriveFileList(query = "", kind = drivePickerKind) {
+  if (!driveFileList) return;
+  driveFileList.innerHTML = '<p class="github-repo-empty">Loading Drive files…</p>';
+  try {
+    const res = await fetch(
+      `/api/connectors/drive/files?session_id=${encodeURIComponent(sessionId)}&q=${encodeURIComponent(query)}&kind=${encodeURIComponent(kind)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Failed to load Drive files");
+    renderDriveFileList(data.files || [], Boolean(data.demo));
+  } catch (err) {
+    driveFileList.innerHTML = `<p class="github-repo-empty">${escapeHtml(String(err.message || err))}</p>`;
+  }
+}
+
+function renderDriveFileList(files, demo = false) {
+  if (!driveFileList) return;
+  driveFileList.innerHTML = "";
+  if (!files.length) {
+    driveFileList.innerHTML = '<p class="github-repo-empty">No files match your search.</p>';
+    return;
+  }
+  if (demo) {
+    const note = document.createElement("p");
+    note.className = "github-repo-demo-note";
+    note.textContent = "Demo list — live files load after Google Drive OAuth sign-in.";
+    driveFileList.appendChild(note);
+  }
+  files.forEach((file) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "drive-file-item";
+    btn.role = "option";
+    const attached = selectedDriveFiles.some((f) => f.file_id === file.id);
+    const kindLabel = file.media_kind || "file";
+    const size = file.size ? `${Math.round(Number(file.size) / 1024)} KB` : "";
+    btn.innerHTML = `
+      <span class="drive-file-item-name">${escapeHtml(file.name)}</span>
+      <span class="drive-file-item-meta">${escapeHtml(kindLabel)}${size ? ` · ${size}` : ""}${attached ? " · attached" : ""}${file.indexed && !attached ? " · indexed" : ""}</span>
+    `;
+    btn.addEventListener("click", () => attachDriveFile(file.id, file.name, file.mimeType, file.media_kind));
+    driveFileList.appendChild(btn);
+  });
+}
+
+async function attachDriveFile(fileId, name, mimeType, mediaKind) {
+  if (selectedDriveFiles.some((f) => f.file_id === fileId)) {
+    showConnectorToast("Google Drive", `«${name}» is already attached.`);
+    return;
+  }
+  selectedDriveFiles.push({ file_id: fileId, name: name || fileId, indexing: true, mimeType, media_kind: mediaKind });
+  renderDriveChips();
+  closeDrivePicker();
+  try {
+    const res = await fetch("/api/connectors/drive/attach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, file_id: fileId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.message || data.detail || "Attach failed");
+    const idx = selectedDriveFiles.findIndex((f) => f.file_id === fileId);
+    if (idx >= 0) {
+      selectedDriveFiles[idx] = {
+        file_id: fileId,
+        name: data.name || name,
+        mimeType: data.mimeType || mimeType,
+        media_kind: data.media_kind || mediaKind,
+        indexing: false,
+        digest_chars: data.digest_chars,
+        content_type: data.content_type,
+        index_label: data.message,
+      };
+    }
+    if (data.upload_file_id) chatAttachmentIds.push(data.upload_file_id);
+    renderDriveChips();
+    showConnectorToast("Google Drive", data.message || `Attached ${name}`, 9000);
+    input.focus();
+  } catch (err) {
+    selectedDriveFiles = selectedDriveFiles.filter((f) => f.file_id !== fileId);
+    renderDriveChips();
+    showConnectorToast("Google Drive", String(err.message || err));
+  }
+}
+
+function renderDriveChips() {
+  if (!driveChipsEl) return;
+  driveChipsEl.innerHTML = "";
+  if (!selectedDriveFiles.length) {
+    driveChipsEl.hidden = true;
+    return;
+  }
+  driveChipsEl.hidden = false;
+  selectedDriveFiles.forEach((file) => {
+    const chip = document.createElement("span");
+    chip.className = `skill-chip drive-repo-chip${file.indexing ? " indexing" : ""}${file.digest_chars ? " indexed-ok" : ""}`;
+    const link = document.createElement("a");
+    link.href = "#";
+    link.className = "skill-chip-link";
+    if (file.indexing) {
+      link.textContent = `${file.name} …`;
+    } else if (file.digest_chars) {
+      link.textContent = `${file.name} ✓`;
+      link.title = file.index_label || `Indexed ${file.digest_chars.toLocaleString()} chars`;
+    } else {
+      link.textContent = file.name;
+    }
+    if (!link.title) link.title = file.name;
+    link.addEventListener("click", (e) => e.preventDefault());
+    const rm = document.createElement("button");
+    rm.type = "button";
+    rm.className = "skill-chip-remove";
+    rm.setAttribute("aria-label", `Remove ${file.name}`);
+    rm.textContent = "×";
+    rm.addEventListener("click", () => detachDriveFile(file.file_id));
+    chip.appendChild(link);
+    chip.appendChild(rm);
+    driveChipsEl.appendChild(chip);
+  });
+}
+
+function detachDriveFile(fileId) {
+  selectedDriveFiles = selectedDriveFiles.filter((f) => f.file_id !== fileId);
+  renderDriveChips();
+}
+
+function clearSelectedDriveFiles() {
+  selectedDriveFiles = [];
+  renderDriveChips();
+}
+
+if (drivePickerTabs) {
+  drivePickerTabs.querySelectorAll(".drive-tab").forEach((tab) => {
+    tab.addEventListener("click", (e) => {
+      e.stopPropagation();
+      drivePickerKind = tab.dataset.kind || "all";
+      drivePickerTabs.querySelectorAll(".drive-tab").forEach((t) => {
+        t.classList.toggle("active", t === tab);
+      });
+      loadDriveFileList(driveFileSearch?.value.trim() || "", drivePickerKind);
+    });
+  });
+}
+
+if (btnDrive) {
+  btnDrive.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (drivePicker && !drivePicker.hidden) closeDrivePicker();
+    else openDrivePicker(drivePickerKind);
+  });
+}
+
+if (driveFileSearch) {
+  driveFileSearch.addEventListener("input", () => {
+    clearTimeout(driveSearchTimer);
+    driveSearchTimer = setTimeout(
+      () => loadDriveFileList(driveFileSearch.value.trim(), drivePickerKind),
+      280
+    );
+  });
+}
+
+if (btnGithub) {
+  btnGithub.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (githubPicker && !githubPicker.hidden) closeGithubPicker();
+    else openGithubPicker();
+  });
+}
+
+if (githubRepoSearch) {
+  githubRepoSearch.addEventListener("input", () => {
+    clearTimeout(githubSearchTimer);
+    githubSearchTimer = setTimeout(() => loadGithubRepoList(githubRepoSearch.value.trim()), 280);
+  });
+}
+
+document.addEventListener("click", (e) => {
+  if (githubPicker && !githubPicker.hidden) {
+    if (!githubPicker.contains(e.target) && e.target !== btnGithub) {
+      closeGithubPicker();
+    }
+  }
+  if (drivePicker && !drivePicker.hidden) {
+    if (!drivePicker.contains(e.target) && e.target !== btnDrive) {
+      closeDrivePicker();
+    }
+  }
+});
+
+function appendUserMessage(message, skills = [], githubRepos = [], driveFiles = []) {
   const wrap = document.createElement("div");
   wrap.className = "message user";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
+
+  if (driveFiles.length) {
+    const row = document.createElement("div");
+    row.className = "user-skill-chips user-drive-chips";
+    driveFiles.forEach((file) => {
+      const a = document.createElement("a");
+      a.href = "#";
+      a.className = "skill-chip-link";
+      a.textContent = file.name;
+      a.title = file.index_label || file.name;
+      a.addEventListener("click", (e) => e.preventDefault());
+      row.appendChild(a);
+    });
+    bubble.appendChild(row);
+  }
+
+  if (githubRepos.length) {
+    const row = document.createElement("div");
+    row.className = "user-skill-chips user-github-chips";
+    githubRepos.forEach((repo) => {
+      const a = document.createElement("a");
+      a.href = "#";
+      a.className = "skill-chip-link";
+      a.textContent = repo.full_name;
+      a.title = repo.preview || "";
+      a.addEventListener("click", (e) => e.preventDefault());
+      row.appendChild(a);
+    });
+    bubble.appendChild(row);
+  }
 
   if (skills.length) {
     const row = document.createElement("div");
@@ -276,14 +794,370 @@ function renderSkillHints() {
     return;
   }
   const hints = selectedSkills
-    .map((s) => SKILL_HINT_BY_ID[s.id])
+    .map((s) => s.example_question || SKILL_HINT_BY_ID[s.id])
     .filter(Boolean)
     .slice(0, 2);
   if (!hints.length) {
     hints.push("Summarize what these skills prove and what humans must approve.");
   }
   skillHintsEl.hidden = false;
-  skillHintsEl.textContent = `Try: ${hints.join(" · ")}`;
+  skillHintsEl.textContent = `Try asking: ${hints.join(" · ")}`;
+}
+
+function showConnectorToast(title, body, ms = 9000) {
+  if (!connectorToastEl) return;
+  connectorToastEl.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(body)}</span>`;
+  connectorToastEl.hidden = false;
+  clearTimeout(showConnectorToast._t);
+  showConnectorToast._t = setTimeout(() => {
+    connectorToastEl.hidden = true;
+  }, ms);
+}
+
+function connectorIconClass(icon) {
+  const map = {
+    gdrive: "G",
+    github: "GH",
+    nebius: "N",
+    tavily: "T",
+    composio: "C",
+    openclaw: "O",
+  };
+  return map[icon] || "•";
+}
+
+async function refreshConnectors() {
+  await loadUiConnectors();
+  if (!skillsFlyout.hidden) renderPlusMenu();
+}
+
+async function connectConnector(connectorId) {
+  try {
+    const res = await fetch("/api/connectors/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, connector_id: connectorId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Connect failed (${res.status})`);
+
+    if (data.mode === "oauth_redirect" && data.redirect_url) {
+      window.open(data.redirect_url, "ia_oauth", "width=520,height=720,noopener");
+      showConnectorToast("Sign in", "Complete authorization in the popup window…");
+      pollConnectorUntilConnected(connectorId);
+      return;
+    }
+    showConnectorToast(connectorId, data.message || "Ready.");
+    await refreshConnectors();
+  } catch (err) {
+    showConnectorToast("Connector", String(err.message || err));
+  }
+}
+
+async function pollConnectorUntilConnected(connectorId, maxAttempts = 40) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, 1500));
+    try {
+      const res = await fetch(
+        `/api/connectors/status?session_id=${encodeURIComponent(sessionId)}&connector_id=${encodeURIComponent(connectorId)}`
+      );
+      const data = await res.json().catch(() => ({}));
+      if (data.connection?.status === "connected") {
+        showConnectorToast(connectorId, "Signed in — you can import files now.");
+        await refreshConnectors();
+        return;
+      }
+    } catch (_) {
+      /* retry */
+    }
+  }
+  showConnectorToast(connectorId, "Sign-in still pending — try Import or sign in again.");
+}
+
+async function importFromConnector(connectorId, action) {
+  try {
+    const res = await fetch("/api/connectors/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        session_id: sessionId,
+        connector_id: connectorId,
+        action,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.needs_sign_in && data.redirect_url) {
+      window.open(data.redirect_url, "ia_oauth", "width=520,height=720,noopener");
+      showConnectorToast(connectorId, "Sign in first, then import again.");
+      pollConnectorUntilConnected(connectorId);
+      return;
+    }
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || data.detail || `Import failed (${res.status})`);
+    }
+    const attachments = data.attachments || [];
+    for (const a of attachments) {
+      if (a.file_id) chatAttachmentIds.push(a.file_id);
+    }
+    if (attachments.length) {
+      chatFileChip.hidden = false;
+      chatFileChip.classList.remove("error");
+      chatFileChip.textContent = `Imported (${connectorId}): ${attachments.map((a) => a.name || a.file_id).join(", ")}`;
+      if (data.demo) {
+        chatFileChip.title = "Demo fixture — add COMPOSIO_API_KEY + sign in for live Drive/GitHub.";
+      }
+    }
+    showConnectorToast(
+      connectorId,
+      data.message || `Attached ${attachments.length} file(s) to your next message.`
+    );
+    closeSkillsFlyout();
+    input.focus();
+  } catch (err) {
+    showConnectorToast("Import", String(err.message || err));
+  }
+}
+
+window.addEventListener("message", (event) => {
+  if (event.data?.type === "connector-oauth") {
+    refreshConnectors();
+    updateGithubToolbar();
+    updateDriveToolbar();
+    const msg =
+      event.data.message ||
+      (event.data.ok ? "Signed in successfully." : "Sign-in failed — see popup for details.");
+    showConnectorToast(event.data.connector_id || "Connector", msg, event.data.ok ? 6000 : 14000);
+  }
+});
+
+function createMenuSection({ id, title, subtitle, blurb, expanded, onToggle, buildBody }) {
+  const section = document.createElement("div");
+  section.className = "menu-section";
+
+  const header = document.createElement("button");
+  header.type = "button";
+  header.className = "menu-section-header";
+  header.setAttribute("aria-expanded", expanded ? "true" : "false");
+  header.innerHTML = `
+    <span class="menu-section-chevron" aria-hidden="true">▶</span>
+    <span class="menu-section-titles">
+      <span class="menu-section-title">${escapeHtml(title)}</span>
+      <span class="menu-section-sub">${escapeHtml(subtitle)}</span>
+    </span>
+  `;
+
+  const body = document.createElement("div");
+  body.className = "menu-section-body";
+  body.hidden = !expanded;
+  if (blurb) {
+    const p = document.createElement("p");
+    p.className = "menu-section-blurb";
+    p.textContent = blurb.replace(/\*\*/g, "");
+    body.appendChild(p);
+  }
+  const inner = document.createElement("div");
+  body.appendChild(inner);
+  buildBody(inner);
+
+  header.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = body.hidden;
+    body.hidden = !open;
+    header.setAttribute("aria-expanded", open ? "true" : "false");
+    plusMenuState[id] = open;
+    onToggle?.(open);
+  });
+
+  section.appendChild(header);
+  section.appendChild(body);
+  return section;
+}
+
+function buildSkillMenuRow(skill, onPick) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "plus-menu-item skill-menu-item";
+  btn.role = "menuitem";
+  const attached = selectedSkills.some((s) => s.id === skill.id);
+  const desc = skill.layman_summary || skill.what_it_proves || "";
+  btn.innerHTML = `
+    <span class="plus-menu-item-icon">${escapeHtml(skill.slash?.[0]?.toUpperCase() || "S")}</span>
+    <span class="plus-menu-item-body">
+      <span class="plus-menu-item-title">
+        <span class="skill-slash">/${escapeHtml(skill.slash)}</span>
+        ${escapeHtml(skill.name)}
+        ${attached ? '<span class="status-pill connected">On</span>' : ""}
+      </span>
+      <span class="plus-menu-item-desc">${escapeHtml(desc)}</span>
+    </span>
+  `;
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    onPick(skill);
+  });
+  return btn;
+}
+
+function buildConnectorRow(connector) {
+  const wrap = document.createElement("div");
+  wrap.className = "connector-row-wrap";
+
+  const row = document.createElement("button");
+  row.type = "button";
+  row.className = "connector-item plus-menu-item";
+  const signLabel = connector.signed_in ? "Signed in" : "Sign in";
+  row.innerHTML = `
+    <span class="plus-menu-item-icon">${escapeHtml(connectorIconClass(connector.icon))}</span>
+    <span class="plus-menu-item-body">
+      <span class="plus-menu-item-title">
+        ${escapeHtml(connector.name)}
+        <span class="status-pill ${escapeHtml(connector.signed_in ? "connected" : connector.status)}">${escapeHtml(connector.signed_in ? "Signed in" : connector.status_label)}</span>
+      </span>
+      <span class="plus-menu-item-desc">${escapeHtml(connector.layman_summary)}</span>
+      <span class="plus-menu-item-desc connector-cta">${escapeHtml(signLabel)} →</span>
+    </span>
+  `;
+  row.addEventListener("click", (e) => {
+    e.stopPropagation();
+    connectConnector(connector.id);
+  });
+  wrap.appendChild(row);
+
+  const actions = connector.actions || [];
+  if (actions.length) {
+    const sub = document.createElement("div");
+    sub.className = "connector-submenu-inline";
+    for (const action of actions) {
+      const ab = document.createElement("button");
+      ab.type = "button";
+      ab.className = "plus-menu-item connector-import-btn";
+      ab.innerHTML = `
+        <span class="plus-menu-item-body">
+          <span class="plus-menu-item-title">Import: ${escapeHtml(action.label)}</span>
+          <span class="plus-menu-item-desc">${escapeHtml(action.layman)}</span>
+        </span>
+      `;
+      ab.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (connector.id === "github" && action.id === "repos") {
+          if (!connector.signed_in) {
+            connectConnector("github").then(() => openGithubPicker());
+          } else {
+            openGithubPicker();
+          }
+          closeSkillsFlyout();
+          return;
+        }
+        if (connector.id === "google_drive") {
+          const kindMap = { files: "docs", photos: "images", videos: "video" };
+          const kind = kindMap[action.id] || "all";
+          if (!connector.signed_in) {
+            connectConnector("google_drive").then(() => openDrivePicker(kind));
+          } else {
+            openDrivePicker(kind);
+          }
+          closeSkillsFlyout();
+          return;
+        }
+        if (!connector.signed_in) {
+          connectConnector(connector.id).then(() => importFromConnector(connector.id, action.id));
+          return;
+        }
+        importFromConnector(connector.id, action.id);
+      });
+      sub.appendChild(ab);
+    }
+    wrap.appendChild(sub);
+  }
+  return wrap;
+}
+
+function closeConnectorSubmenus() {
+  skillsFlyout.querySelectorAll(".connector-submenu").forEach((el) => {
+    el.hidden = true;
+  });
+}
+
+function renderPlusMenu() {
+  skillsFlyout.innerHTML = "";
+  skillsFlyout.classList.add("plus-menu");
+
+  if (skillsLoadError && !uiSkills.length && !uiConnectors.length) {
+    const err = document.createElement("p");
+    err.className = "slash-menu-empty";
+    err.style.padding = "0.75rem";
+    err.textContent = skillsLoadError;
+    skillsFlyout.appendChild(err);
+    return;
+  }
+
+  const intro = document.createElement("div");
+  intro.className = "plus-menu-intro";
+  intro.innerHTML =
+    "<strong>+ Menu</strong> — Skills attach proof for access review. Connectors link external tools (set keys in .env).";
+  skillsFlyout.appendChild(intro);
+
+  const skillsBlurb = (skillsIntro?.blurb || "").replace(/\*\*/g, "");
+  skillsFlyout.appendChild(
+    createMenuSection({
+      id: "skills",
+      title: skillsIntro?.title || "Skills",
+      subtitle: "Access-review proof packs",
+      blurb: skillsBlurb,
+      expanded: plusMenuState.skills,
+      buildBody: (container) => {
+        if (!uiSkills.length) {
+          const wait = document.createElement("p");
+          wait.className = "slash-menu-empty";
+          wait.style.padding = "0 0.75rem";
+          wait.textContent = "Loading skills…";
+          container.appendChild(wait);
+          return;
+        }
+        const sorted = uiSkills
+          .slice()
+          .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+        for (const skill of sorted) {
+          container.appendChild(buildSkillMenuRow(skill, attachSkill));
+        }
+      },
+    })
+  );
+
+  const connBlurb = (connectorsIntro?.connectors_blurb || connectorsIntro?.blurb || "").replace(
+    /\*\*/g,
+    ""
+  );
+  skillsFlyout.appendChild(
+    createMenuSection({
+      id: "connectors",
+      title: connectorsIntro?.connectors_title || "Connectors",
+      subtitle: "Drive, search, integrations",
+      blurb: connBlurb,
+      expanded: plusMenuState.connectors,
+      buildBody: (container) => {
+        if (connectorsLoadError && !uiConnectors.length) {
+          const err = document.createElement("p");
+          err.className = "slash-menu-empty";
+          err.style.padding = "0 0.75rem";
+          err.textContent = connectorsLoadError;
+          container.appendChild(err);
+          return;
+        }
+        if (!uiConnectors.length) {
+          const wait = document.createElement("p");
+          wait.className = "slash-menu-empty";
+          wait.style.padding = "0 0.75rem";
+          wait.textContent = "Loading connectors…";
+          container.appendChild(wait);
+          return;
+        }
+        for (const c of uiConnectors) {
+          container.appendChild(buildConnectorRow(c));
+        }
+      },
+    })
+  );
 }
 
 function renderSkillChips() {
@@ -334,6 +1208,7 @@ function attachSkill(skill) {
   }
   selectedSkills.push(skill);
   renderSkillChips();
+  if (!skillsFlyout.hidden) renderPlusMenu();
   stripTrailingSlashToken();
   closeSlashMenu();
   closeSkillsFlyout();
@@ -353,18 +1228,23 @@ function clearSelectedSkills() {
 async function sendMessage(text) {
   const message = text.trim();
   const skill_ids = selectedSkills.map((s) => s.id);
-  if ((!message && !skill_ids.length) || busy) return;
+  const github_repos = selectedGithubRepos.filter((r) => !r.indexing).map((r) => r.full_name);
+  const drive_file_ids = selectedDriveFiles.filter((f) => !f.indexing).map((f) => f.file_id);
+  if ((!message && !skill_ids.length && !github_repos.length && !drive_file_ids.length) || busy) return;
 
   const skillsSnapshot = selectedSkills.slice();
-  appendUserMessage(message, skillsSnapshot);
+  const githubSnapshot = selectedGithubRepos.filter((r) => !r.indexing).slice();
+  const driveSnapshot = selectedDriveFiles.filter((f) => !f.indexing).slice();
+  appendUserMessage(message, skillsSnapshot, githubSnapshot, driveSnapshot);
   input.value = "";
   clearSelectedSkills();
   setBusy(true);
 
-  const loadingEl = appendMessage("assistant", "Thinking…", "loading");
+  let thinkingUi = null;
+  thinkingUi = appendThinkingMessage();
 
   try {
-    const res = await fetch("/api/chat", {
+    const res = await fetch("/api/chat/stream", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -373,25 +1253,28 @@ async function sendMessage(text) {
         attachment_ids: chatAttachmentIds,
         skill_ids,
         skill_context_position: "prepend",
+        github_repos,
+        drive_file_ids,
       }),
     });
 
-    const data = await res.json().catch(() => ({}));
-
     if (!res.ok) {
-      throw new Error(data.detail || `Request failed (${res.status})`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Request failed (${res.status})`);
     }
+
+    const data = await consumeChatStream(res, thinkingUi);
 
     sessionId = data.session_id;
     localStorage.setItem(STORAGE_KEY, sessionId);
     chatStorageScope = `chat_${sessionId}`;
-    removeMessage(loadingEl);
+    removeMessage(thinkingUi.wrap);
     appendMessage("assistant", data.reply, "", data.output_files || []);
     chatAttachmentIds = [];
     chatFileChip.hidden = true;
     chatFileChip.classList.remove("error");
   } catch (err) {
-    removeMessage(loadingEl);
+    if (thinkingUi?.wrap) removeMessage(thinkingUi.wrap);
     const errWrap = appendMessage("assistant", String(err.message || err), "error");
     errWrap.querySelector(".bubble").classList.add("error");
   } finally {
@@ -418,6 +1301,10 @@ async function resetChat() {
   chatAttachmentIds = [];
   chatFileChip.hidden = true;
   clearSelectedSkills();
+  clearSelectedGithubRepos();
+  clearSelectedDriveFiles();
+  closeGithubPicker();
+  closeDrivePicker();
   closeSlashMenu();
   messagesEl.innerHTML = "";
   appendMessage(
@@ -601,8 +1488,15 @@ async function loadMeta() {
     ]);
 
     stackPills.innerHTML = "";
+    const v1 = health.inferenceatlas_v1 || {};
+    const v1Label = v1.configured
+      ? v1.ok
+        ? "connected"
+        : "unreachable"
+      : "not set";
     const pills = [
       ["LLM", `${health.llm_provider} · ${health.llm_model}`, health.ok],
+      ["v1 engine", v1Label, v1.configured && v1.ok],
       ["Tavily", health.tavily ? "on" : "off", health.tavily],
       ["Composio", health.composio ? (health.composio_dry_run ? "dry-run" : "on") : "off", health.composio],
     ];
@@ -613,7 +1507,15 @@ async function loadMeta() {
       stackPills.appendChild(span);
     }
 
-    if (health.catalog) catalogInfo.textContent = health.catalog;
+    if (health.catalog) {
+      let info = health.catalog;
+      if (!v1.configured) {
+        info += " · Cost engine: set INFERENCEATLAS_V1_URL and run v1 API for rank_configs.";
+      } else if (!v1.ok) {
+        info += ` · v1 at ${v1.url || "?"} unreachable — using catalog fallback for cost questions.`;
+      }
+      catalogInfo.textContent = info;
+    }
 
     examplesList.innerHTML = "";
     for (const ex of examples) {
@@ -819,7 +1721,9 @@ function renderSkillMenuItems(container, skills, { onPick, activeIndex = 0 }) {
     btn.type = "button";
     btn.className = `skill-menu-item${index === activeIndex ? " active" : ""}`;
     btn.role = "option";
-    btn.innerHTML = `<span class="skill-name">${escapeHtml(skill.name)}</span><span class="skill-meta"><span class="skill-slash">/${escapeHtml(skill.slash)}</span> — ${escapeHtml(skill.what_it_proves.slice(0, 90))}${skill.what_it_proves.length > 90 ? "…" : ""}</span>`;
+    const desc = skill.layman_summary || skill.what_it_proves || "";
+    const short = desc.length > 100 ? `${desc.slice(0, 100)}…` : desc;
+    btn.innerHTML = `<span class="skill-name">/${escapeHtml(skill.slash)} — ${escapeHtml(skill.name)}</span><span class="skill-meta">${escapeHtml(short)}</span>`;
     btn.addEventListener("mousedown", (e) => {
       e.preventDefault();
       onPick(skill);
@@ -829,35 +1733,7 @@ function renderSkillMenuItems(container, skills, { onPick, activeIndex = 0 }) {
 }
 
 function renderSkillsFlyout() {
-  skillsFlyout.innerHTML = "";
-  if (skillsLoadError && !uiSkills.length) {
-    const err = document.createElement("p");
-    err.className = "slash-menu-empty";
-    err.textContent = skillsLoadError;
-    skillsFlyout.appendChild(err);
-    return;
-  }
-  if (!uiSkills.length) {
-    const wait = document.createElement("p");
-    wait.className = "slash-menu-empty";
-    wait.textContent = "Loading skills…";
-    skillsFlyout.appendChild(wait);
-    return;
-  }
-  const sorted = uiSkills
-    .slice()
-    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
-  for (const skill of sorted) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "skill-menu-item";
-    btn.role = "menuitem";
-    btn.innerHTML = `<span class="skill-name">${escapeHtml(skill.name)}</span><span class="skill-meta"><span class="skill-slash">/${escapeHtml(skill.slash)}</span></span>`;
-    btn.addEventListener("click", () => {
-      attachSkill(skill);
-    });
-    skillsFlyout.appendChild(btn);
-  }
+  renderPlusMenu();
 }
 
 function updateSlashMenu() {
@@ -926,9 +1802,49 @@ function onInputSlashCheck() {
   updateSlashMenu();
 }
 
+async function applyConnectorsPayload(data, source) {
+  uiConnectors = data.connectors || [];
+  connectorsIntro = data.intro || null;
+  updateGithubToolbar();
+  updateDriveToolbar();
+  if (source === "static") {
+    connectorsLoadError =
+      "Using bundled connectors (restart server: python3 -m web).";
+  } else {
+    connectorsLoadError = null;
+  }
+  renderPlusMenu();
+}
+
+async function loadUiConnectors() {
+  connectorsLoadError = null;
+  const q = `?session_id=${encodeURIComponent(sessionId)}`;
+  try {
+    const res = await fetch(`/api/connectors${q}`);
+    if (res.ok) {
+      await applyConnectorsPayload(await res.json(), "api");
+      return;
+    }
+    const fb = await fetch("/static/connectors-registry.json");
+    if (fb.ok) {
+      await applyConnectorsPayload(await fb.json(), "static");
+      return;
+    }
+    throw new Error(
+      `Connectors API ${res.status} and bundled registry missing — restart: python3 -m web`
+    );
+  } catch (err) {
+    uiConnectors = [];
+    connectorsLoadError = err.message || String(err);
+    console.error("connectors load failed", err);
+    renderPlusMenu();
+  }
+}
+
 async function applySkillsPayload(data, source) {
   uiSkills = data.skills || [];
   uiSkillCategories = data.categories || [];
+  skillsIntro = data.intro || null;
   skillsLoaded = true;
   if (source === "static") {
     skillsLoadError =
@@ -1052,9 +1968,12 @@ btnQueueEvidence.addEventListener("click", queueEvidence);
 setupTabs();
 
 (async function initApp() {
-  await loadUiSkills();
+  await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await loadMeta();
   loadGuide();
+  if (connectorsLoadError && uiConnectors.length) {
+    appendMessage("assistant", connectorsLoadError, "welcome");
+  }
   if (skillsLoadError && uiSkills.length) {
     appendMessage("assistant", skillsLoadError, "welcome");
   } else if (skillsLoadError) {

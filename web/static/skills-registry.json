@@ -16,6 +16,8 @@
       "safety_boundary": "read-only; humans approve",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Runs policy rules: which scenarios are blocked before any pilot.",
+      "example_question": "Which agent scenarios pass or fail the policy gate?",
       "prompt": "Explain the output of the Policy Gate Evaluation harness skill for a hackathon judge. Context: Public policy rules block critical, admin, and prod-write scope before validation moves. Safety: read-only; humans approve",
       "artifacts": [
         "agent/gate.py",
@@ -34,6 +36,8 @@
       "safety_boundary": "no secrets accepted; role-level only",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Turns a messy access request into a clean checklist the system can review.",
+      "example_question": "What did the trial request ask for (GitHub, Slack, Jira)?",
       "prompt": "Explain the output of the Access Request Normalization harness skill for a hackathon judge. Context: Messy role-level YAML maps to a structured public access-review input. Safety: no secrets accepted; role-level only",
       "artifacts": [
         "agent/access_request.py",
@@ -53,6 +57,8 @@
       "safety_boundary": "no production-access claim; never approves",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Shows the official \u201cshould this agent get access?\u201d packet \u2014 blocked vs allowed.",
+      "example_question": "What blocks production access for the support triage bot?",
       "prompt": "Summarize the support_triage_agent DecisionPacket for a human reviewer: what is blocked, what proof is missing, and what scoped validation is allowed. Do not claim production access was granted.",
       "artifacts": [
         "agent/packet.py",
@@ -72,6 +78,8 @@
       "safety_boundary": "no complete claim without verified evidence",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Lists missing proof (owners and what each item unblocks).",
+      "example_question": "What proof is still missing and who owns it?",
       "prompt": "Explain the output of the Proof Debt Extraction harness skill for a hackathon judge. Context: Missing evidence and unsupported claims stay visible as reviewer work. Safety: no complete claim without verified evidence",
       "artifacts": [
         "agent/rules.py",
@@ -90,6 +98,8 @@
       "safety_boundary": "routing is recommendation; never dispatches",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Who must sign off next (security, platform, etc.) and what they need to do.",
+      "example_question": "Which reviewers must act before validation can start?",
       "prompt": "Explain the output of the Reviewer Routing harness skill for a hackathon judge. Context: Review owners and action items are derived from the packet instead of hidden in prose. Safety: routing is recommendation; never dispatches",
       "artifacts": [
         "agent/rules.py",
@@ -108,6 +118,8 @@
       "safety_boundary": "read-only; humans approve",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Compares low-, medium-, and high-risk agents side by side.",
+      "example_question": "How is the admin bot different from read-only analytics?",
       "prompt": "Explain the output of the Risk-Aware Scenario Differentiation harness skill for a hackathon judge. Context: Low, medium/high, and critical requests produce materially different review postures. Safety: read-only; humans approve",
       "artifacts": [
         "agent/scenarios.py",
@@ -128,6 +140,8 @@
       "safety_boundary": "no live integration path; humans review",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Walks through a design-partner trial request end to end.",
+      "example_question": "Summarize the support triage trial outcome for a judge.",
       "prompt": "Explain the output of the Design Partner Trial Runner harness skill for a hackathon judge. Context: A role-level trial request becomes a report, packet, and access brief without live credentials. Safety: no live integration path; humans review",
       "artifacts": [
         "agent/trial.py",
@@ -149,6 +163,8 @@
       "safety_boundary": "diff is read-only; never mutates packets",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Diffs packets across scenarios so drift and risk spread are visible.",
+      "example_question": "Where do scenarios disagree on production access?",
       "prompt": "Explain the output of the Packet Diff Generation harness skill for a hackathon judge. Context: Scenario packets expose load-bearing differences across risk levels. Safety: diff is read-only; never mutates packets",
       "artifacts": [
         "agent/packet_diff.py",
@@ -168,6 +184,8 @@
       "safety_boundary": "memo restates blocked claims; never grants access",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Executive memo after review \u2014 still says production is blocked if proof is missing.",
+      "example_question": "Write a short outcome memo for leadership.",
       "prompt": "Explain the output of the Outcome Memo Generation harness skill for a hackathon judge. Context: The packet becomes a concise human decision surface for what can move and what stays blocked. Safety: memo restates blocked claims; never grants access",
       "artifacts": [
         "agent/outcome_memo.py",
@@ -187,6 +205,8 @@
       "safety_boundary": "read-only; humans approve",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Full proof run \u2014 all scenarios, gates, and trust receipt in one path.",
+      "example_question": "Give a one-minute judge tour of the full harness.",
       "prompt": "Explain the output of the Full judge harness harness skill for a hackathon judge. Context: One command runs the full public proof path (all scenarios, contract, artifacts). Safety: read-only; humans approve",
       "artifacts": []
     },
@@ -202,6 +222,8 @@
       "safety_boundary": "health is observational; never auto-refreshes",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Scores how stale or incomplete the proof bundle is over time.",
+      "example_question": "Is proof health drifting for support triage?",
       "prompt": "Explain the output of the Proof Health / Drift Detection harness skill for a hackathon judge. Context: Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. Safety: health is observational; never auto-refreshes",
       "artifacts": [
         "agent/proof_health.py",
@@ -221,6 +243,8 @@
       "safety_boundary": "regeneration is deterministic; proof bytes locked",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Checks public demo artifacts match deterministic harness output.",
+      "example_question": "Are the generated proof files trustworthy for demo?",
       "prompt": "Explain the output of the Artifact Integrity Verification harness skill for a hackathon judge. Context: Checked-in proof inventory is compared against deterministic generator output. Safety: regeneration is deterministic; proof bytes locked",
       "artifacts": [
         "agent/verify_artifacts.py",
@@ -239,6 +263,8 @@
       "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Shows whether Nebius/Tavily/Composio keys are ready for sponsor demos.",
+      "example_question": "What sponsor integrations are configured vs still needed?",
       "prompt": "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: what adds evidence vs what cannot approve access.",
       "artifacts": [
         "agent/adapters",
@@ -265,6 +291,8 @@
           "safety_boundary": "read-only; humans approve",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Runs policy rules: which scenarios are blocked before any pilot.",
+          "example_question": "Which agent scenarios pass or fail the policy gate?",
           "prompt": "Explain the output of the Policy Gate Evaluation harness skill for a hackathon judge. Context: Public policy rules block critical, admin, and prod-write scope before validation moves. Safety: read-only; humans approve",
           "artifacts": [
             "agent/gate.py",
@@ -283,6 +311,8 @@
           "safety_boundary": "no secrets accepted; role-level only",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Turns a messy access request into a clean checklist the system can review.",
+          "example_question": "What did the trial request ask for (GitHub, Slack, Jira)?",
           "prompt": "Explain the output of the Access Request Normalization harness skill for a hackathon judge. Context: Messy role-level YAML maps to a structured public access-review input. Safety: no secrets accepted; role-level only",
           "artifacts": [
             "agent/access_request.py",
@@ -302,6 +332,8 @@
           "safety_boundary": "no production-access claim; never approves",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Shows the official \u201cshould this agent get access?\u201d packet \u2014 blocked vs allowed.",
+          "example_question": "What blocks production access for the support triage bot?",
           "prompt": "Summarize the support_triage_agent DecisionPacket for a human reviewer: what is blocked, what proof is missing, and what scoped validation is allowed. Do not claim production access was granted.",
           "artifacts": [
             "agent/packet.py",
@@ -321,6 +353,8 @@
           "safety_boundary": "no complete claim without verified evidence",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Lists missing proof (owners and what each item unblocks).",
+          "example_question": "What proof is still missing and who owns it?",
           "prompt": "Explain the output of the Proof Debt Extraction harness skill for a hackathon judge. Context: Missing evidence and unsupported claims stay visible as reviewer work. Safety: no complete claim without verified evidence",
           "artifacts": [
             "agent/rules.py",
@@ -339,6 +373,8 @@
           "safety_boundary": "routing is recommendation; never dispatches",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Who must sign off next (security, platform, etc.) and what they need to do.",
+          "example_question": "Which reviewers must act before validation can start?",
           "prompt": "Explain the output of the Reviewer Routing harness skill for a hackathon judge. Context: Review owners and action items are derived from the packet instead of hidden in prose. Safety: routing is recommendation; never dispatches",
           "artifacts": [
             "agent/rules.py",
@@ -357,6 +393,8 @@
           "safety_boundary": "read-only; humans approve",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Compares low-, medium-, and high-risk agents side by side.",
+          "example_question": "How is the admin bot different from read-only analytics?",
           "prompt": "Explain the output of the Risk-Aware Scenario Differentiation harness skill for a hackathon judge. Context: Low, medium/high, and critical requests produce materially different review postures. Safety: read-only; humans approve",
           "artifacts": [
             "agent/scenarios.py",
@@ -383,6 +421,8 @@
           "safety_boundary": "no live integration path; humans review",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Walks through a design-partner trial request end to end.",
+          "example_question": "Summarize the support triage trial outcome for a judge.",
           "prompt": "Explain the output of the Design Partner Trial Runner harness skill for a hackathon judge. Context: A role-level trial request becomes a report, packet, and access brief without live credentials. Safety: no live integration path; humans review",
           "artifacts": [
             "agent/trial.py",
@@ -410,6 +450,8 @@
           "safety_boundary": "diff is read-only; never mutates packets",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Diffs packets across scenarios so drift and risk spread are visible.",
+          "example_question": "Where do scenarios disagree on production access?",
           "prompt": "Explain the output of the Packet Diff Generation harness skill for a hackathon judge. Context: Scenario packets expose load-bearing differences across risk levels. Safety: diff is read-only; never mutates packets",
           "artifacts": [
             "agent/packet_diff.py",
@@ -429,6 +471,8 @@
           "safety_boundary": "memo restates blocked claims; never grants access",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Executive memo after review \u2014 still says production is blocked if proof is missing.",
+          "example_question": "Write a short outcome memo for leadership.",
           "prompt": "Explain the output of the Outcome Memo Generation harness skill for a hackathon judge. Context: The packet becomes a concise human decision surface for what can move and what stays blocked. Safety: memo restates blocked claims; never grants access",
           "artifacts": [
             "agent/outcome_memo.py",
@@ -454,6 +498,8 @@
           "safety_boundary": "health is observational; never auto-refreshes",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Scores how stale or incomplete the proof bundle is over time.",
+          "example_question": "Is proof health drifting for support triage?",
           "prompt": "Explain the output of the Proof Health / Drift Detection harness skill for a hackathon judge. Context: Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. Safety: health is observational; never auto-refreshes",
           "artifacts": [
             "agent/proof_health.py",
@@ -473,6 +519,8 @@
           "safety_boundary": "regeneration is deterministic; proof bytes locked",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Checks public demo artifacts match deterministic harness output.",
+          "example_question": "Are the generated proof files trustworthy for demo?",
           "prompt": "Explain the output of the Artifact Integrity Verification harness skill for a hackathon judge. Context: Checked-in proof inventory is compared against deterministic generator output. Safety: regeneration is deterministic; proof bytes locked",
           "artifacts": [
             "agent/verify_artifacts.py",
@@ -497,6 +545,8 @@
           "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Shows whether Nebius/Tavily/Composio keys are ready for sponsor demos.",
+          "example_question": "What sponsor integrations are configured vs still needed?",
           "prompt": "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: what adds evidence vs what cannot approve access.",
           "artifacts": [
             "agent/adapters",
@@ -523,11 +573,22 @@
           "safety_boundary": "read-only; humans approve",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Full proof run \u2014 all scenarios, gates, and trust receipt in one path.",
+          "example_question": "Give a one-minute judge tour of the full harness.",
           "prompt": "Explain the output of the Full judge harness harness skill for a hackathon judge. Context: One command runs the full public proof path (all scenarios, contract, artifacts). Safety: read-only; humans approve",
           "artifacts": []
         }
       ]
     }
   ],
-  "help": "Type / or + to attach skills as chips, then ask your question \u2014 the LLM answers using skill context."
+  "help": "Type / or + to attach skills as chips, then ask your question \u2014 the LLM answers using skill context.",
+  "intro": {
+    "title": "What are skills?",
+    "blurb": "Skills are **ready-made access-review briefs** (not magic buttons). Attach one or more chips, ask a normal question, then **Send**. The AI reads real harness output \u2014 who is blocked, what proof is missing \u2014 and does **not** grant production access.",
+    "steps": [
+      "Click **+** \u2192 **Skills** \u2192 pick e.g. /packet",
+      "Type your question (or use the suggested line under the chips)",
+      "Press **Send** \u2014 look for \u201cHarness review\u201d in the reply"
+    ]
+  }
 }

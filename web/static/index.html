@@ -36,9 +36,12 @@
           <div class="how-to">
             <h2>Chat</h2>
             <ol class="steps">
-              <li>Type a question, pick an <strong>example</strong>, or attach <strong>+ Skills</strong> / <strong>/slash</strong> chips (multi-select), then <strong>Send</strong>.</li>
-              <li>Optional: <strong>Attach a file</strong> (.txt, .md, .json, .csv…) — content is sent to the LLM.</li>
-              <li>After reply: download <strong>Markdown / JSON</strong> outputs from the message.</li>
+              <li><strong>Skills</strong> = access-review proof packs. Click <strong>+</strong> → Skills → pick <strong>/packet</strong>, ask a question, <strong>Send</strong>.</li>
+              <li><strong>GitHub</strong> — sign in, click <strong>GitHub</strong>, search & attach a repo (✓ when indexed).</li>
+              <li><strong>Google Drive</strong> — sign in under Connectors, click <strong>Drive</strong>, pick docs/images/video (indexed like repos).</li>
+              <li>Combine <strong>skills + repo + files</strong> in one message — thinking logs show what was loaded; replies cite <strong>Context used</strong>.</li>
+              <li><strong>Connectors</strong> = OAuth popup per user; credentials stay in <strong>this chat session</strong> only.</li>
+              <li>Cost questions work without skills; use examples or plain chat.</li>
             </ol>
           </div>
           <h3 class="section-label">Examples</h3>
@@ -86,16 +89,51 @@
           <div class="messages" id="messages" role="log" aria-live="polite">
             <div class="message assistant welcome">
               <div class="bubble">
-                <p><strong>Welcome.</strong> Compare AI inference costs, explore the catalog, or ask whether an agent should get tool access.</p>
-                <p>Attach <strong>/packet</strong>, <strong>/gate</strong>, etc., ask a review question, then <strong>Send</strong>. Skills inject real DecisionPacket facts (no catalog tool loop).</p>
+                <p><strong>Welcome.</strong> Compare AI inference costs, or review whether an agent should get tool access.</p>
+                <p><strong>Skills</strong> (click <strong>+</strong>) attach proof about blocked production access — e.g. <strong>/packet</strong> + “What blocks support triage?” then <strong>Send</strong>.</p>
+                <p><strong>Connectors</strong> link Drive, web search, and integrations; set API keys in <code>.env</code> and restart the server.</p>
               </div>
             </div>
           </div>
           <div class="composer-shell" id="composer-shell">
             <div class="slash-menu" id="slash-menu" role="listbox" hidden></div>
             <div class="skill-chips" id="skill-chips" hidden aria-label="Attached skills"></div>
+            <div class="github-chips" id="github-chips" hidden aria-label="Attached GitHub repos"></div>
+            <div class="drive-chips" id="drive-chips" hidden aria-label="Attached Google Drive files"></div>
             <p class="skill-hints" id="skill-hints" hidden></p>
+            <div class="github-picker" id="github-picker" hidden>
+              <input
+                type="search"
+                id="github-repo-search"
+                class="github-repo-search"
+                placeholder="Search repositories…"
+                autocomplete="off"
+              />
+              <div class="github-repo-list" id="github-repo-list" role="listbox"></div>
+            </div>
+            <div class="drive-picker" id="drive-picker" hidden>
+              <div class="drive-picker-tabs" id="drive-picker-tabs" role="tablist">
+                <button type="button" class="drive-tab active" data-kind="all">All</button>
+                <button type="button" class="drive-tab" data-kind="docs">Docs & sheets</button>
+                <button type="button" class="drive-tab" data-kind="images">Images</button>
+                <button type="button" class="drive-tab" data-kind="video">Video</button>
+              </div>
+              <input
+                type="search"
+                id="drive-file-search"
+                class="drive-file-search"
+                placeholder="Search Drive files…"
+                autocomplete="off"
+              />
+              <div class="drive-file-list" id="drive-file-list" role="listbox"></div>
+            </div>
             <div class="composer-toolbar">
+              <button type="button" class="btn-github-chip" id="btn-github" hidden title="Attach GitHub repo">
+                GitHub
+              </button>
+              <button type="button" class="btn-drive-chip" id="btn-drive" hidden title="Attach Google Drive file">
+                Drive
+              </button>
               <div class="skills-anchor" id="skills-anchor">
                 <button
                   type="button"
@@ -107,7 +145,7 @@
                 >
                   +
                 </button>
-                <div class="skills-flyout" id="skills-flyout" role="menu" hidden></div>
+                <div class="plus-menu" id="skills-flyout" role="menu" hidden></div>
               </div>
               <label class="file-label">
                 <input type="file" id="chat-file" accept=".txt,.md,.json,.csv,.yaml,.yml,.log,.html,.htm" hidden />
@@ -119,7 +157,7 @@
               <textarea
                 id="message-input"
                 rows="2"
-                placeholder="Ask anything — type / or + to attach skills, then Send"
+                placeholder="Ask anything — + for Skills & Connectors, / to filter skills"
                 autocomplete="off"
               ></textarea>
               <button type="submit" class="btn-primary" id="btn-send">
@@ -145,6 +183,7 @@
       </main>
     </div>
 
-    <script src="/static/app.js?v=7"></script>
+    <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
+    <script src="/static/app.js?v=17"></script>
   </body>
 </html>

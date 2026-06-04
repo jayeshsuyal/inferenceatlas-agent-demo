@@ -32,6 +32,13 @@ class UISkillsTests(unittest.TestCase):
         assert found is not None
         self.assertEqual(found.id, "decision_packet_generation")
 
+    def test_layman_copy_on_skills(self) -> None:
+        packet = next(s for s in build_ui_skills() if s.id == "decision_packet_generation")
+        self.assertIn("blocked", packet.layman_summary.lower())
+        self.assertTrue(packet.example_question)
+        d = packet.to_dict()
+        self.assertEqual(d["layman_summary"], packet.layman_summary)
+
     def test_payload_matches_doc_source(self) -> None:
         payload = build_ui_skills_payload()
         self.assertEqual(payload["source"], "docs/AGENT_SKILLS.md")

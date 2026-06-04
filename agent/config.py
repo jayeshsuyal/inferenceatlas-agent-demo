@@ -29,6 +29,10 @@ COMPOSIO_DRY_RUN = os.environ.get("COMPOSIO_DRY_RUN", "1").strip() not in ("0", 
 
 AGENT_MAX_STEPS = max(8, int(os.getenv("AGENT_MAX_STEPS", "10")))
 
+# InferenceAtlas-v1 product API (Option A gateway — rank_configs / plan_llm)
+INFERENCEATLAS_V1_URL = os.getenv("INFERENCEATLAS_V1_URL", "").strip().rstrip("/")
+INFERENCEATLAS_V1_TIMEOUT = float(os.getenv("INFERENCEATLAS_V1_TIMEOUT", "25"))
+
 _LLM_PREFER = os.getenv("LLM_PROVIDER", "").strip().lower()
 
 
@@ -103,4 +107,18 @@ Rules:
 3. Always state clearly: production access (yes/no), scoped validation allowed (yes/no), top missing proof items.
 4. Humans approve access; InferenceAtlas prepares proof — never say access was granted in production.
 5. If the user asks about cost/catalog but skills are access-review artifacts, explain that and answer the access question from skills.
+"""
+
+V1_SLOT_FILLER_PROMPT = """You are the InferenceAtlas assistant (demo) using InferenceAtlas-v1 deterministic cost engine output.
+
+The user message contains an **INFERENCEATLAS ENGINE** section with ranked plans and monthly USD figures.
+Those numbers are authoritative — the v1 `rank_configs` / plan_llm pipeline produced them.
+
+Rules:
+1. Answer the user's question using ONLY the ENGINE table for prices and rankings.
+2. Never invent, change, or web-search alternative unit prices.
+3. Start with 4–6 bullets: recommendation, #1 plan monthly USD, baseline comparison, savings, which attachments you used vs ignored.
+4. Explicitly label: **From ENGINE**, **From GitHub** (if used), **From Drive** (if used), **From Skills** (access only), **Uploads ignored** (if non-billing).
+5. For 500M tokens/month style questions, discuss **monthly USD**, not a single input-token price.
+6. Do not call tools; all pricing is already in the ENGINE block.
 """

@@ -17,6 +17,7 @@ const mindToast = document.getElementById("mind-toast");
 const btnMindInit = document.getElementById("btn-mind-init");
 const btnMindStep = document.getElementById("btn-mind-step");
 const btnRunRehearsal = document.getElementById("btn-run-rehearsal");
+const btnRunUploadedRehearsal = document.getElementById("btn-run-uploaded-rehearsal");
 const judgeStepsEl = document.getElementById("judge-steps");
 const guideTitle = document.getElementById("guide-title");
 const guideSubtitle = document.getElementById("guide-subtitle");
@@ -24,6 +25,8 @@ const blockedNote = document.getElementById("blocked-note");
 const reviewNote = document.getElementById("review-note");
 const reviewFile = document.getElementById("review-file");
 const reviewFileChip = document.getElementById("review-file-chip");
+const customEvidenceFile = document.getElementById("custom-evidence-file");
+const customEvidenceChip = document.getElementById("custom-evidence-chip");
 const btnQueueEvidence = document.getElementById("btn-queue-evidence");
 const chatFile = document.getElementById("chat-file");
 const chatFileChip = document.getElementById("chat-file-chip");
@@ -56,6 +59,7 @@ localStorage.setItem(REVIEW_SCOPE_KEY, reviewStorageScope);
 let busy = false;
 let chatAttachmentIds = [];
 let reviewAttachmentIds = [];
+let customEvidenceAttachmentIds = [];
 let judgeStep = 1;
 let mindsInitialized = false;
 let uiSkills = [];
@@ -203,6 +207,31 @@ async function uploadFile(channel, fileInput, chipEl, idStore) {
   return data;
 }
 
+async function uploadCustomEvidenceFiles() {
+  const files = Array.from(customEvidenceFile.files || []).slice(0, 8);
+  if (!files.length) return;
+  const names = [];
+  customEvidenceAttachmentIds = [];
+  for (const file of files) {
+    const formData = new FormData();
+    formData.append("channel", "review");
+    formData.append("session_id", sessionId);
+    formData.append("file", file);
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Upload failed");
+    reviewStorageScope = data.storage_scope;
+    localStorage.setItem(REVIEW_SCOPE_KEY, reviewStorageScope);
+    customEvidenceAttachmentIds.push(data.file_id);
+    names.push(data.name);
+  }
+  customEvidenceChip.hidden = false;
+  customEvidenceChip.classList.remove("error");
+  customEvidenceChip.textContent = `Uploaded: ${names.join(", ")}`;
+  customEvidenceChip.title = names.join("\n");
+  customEvidenceFile.value = "";
+}
+
 chatFile.addEventListener("change", async () => {
   try {
     await uploadFile("chat", chatFile, chatFileChip, chatAttachmentIds);
@@ -219,6 +248,17 @@ reviewFile.addEventListener("change", async () => {
     setJudgeStep(2);
   } catch (err) {
     showMindToast(err.message || "Upload failed", true);
+  }
+});
+
+customEvidenceFile.addEventListener("change", async () => {
+  try {
+    await uploadCustomEvidenceFiles();
+    setJudgeStep(2);
+  } catch (err) {
+    customEvidenceChip.hidden = false;
+    customEvidenceChip.classList.add("error");
+    customEvidenceChip.textContent = err.message || "Upload failed";
   }
 });
 
@@ -540,7 +580,7 @@ function renderRehearsalCard(data) {
   card.className = "cycle-card sponsor-rehearsal highlight";
 
   const h = document.createElement("h3");
-  h.textContent = "Sponsor evidence rehearsal";
+  h.textContent = data.title || "Sponsor evidence rehearsal";
   card.appendChild(h);
 
   const lock = document.createElement("div");
@@ -569,6 +609,15 @@ function renderRehearsalCard(data) {
     `<br/><strong>Human review required:</strong> ${boolLabel(data.safety_boundary?.requires_human_review)}`,
   ].join("");
   card.appendChild(summary);
+
+  if (data.accepted_files?.length) {
+    const accepted = document.createElement("p");
+    accepted.className = "accepted-files";
+    accepted.textContent = `Accepted: ${data.accepted_files
+      .map((item) => `${item.provider}:${item.filename}`)
+      .join(" · ")}`;
+    card.appendChild(accepted);
+  }
 
   const tableWrap = document.createElement("div");
   tableWrap.className = "provider-table-wrap";
@@ -865,6 +914,36 @@ async function runSponsorRehearsal() {
   }
 }
 
+async function runUploadedRehearsal() {
+  if (!customEvidenceAttachmentIds.length) {
+    showMindToast("Upload provider JSON first.", true);
+    return;
+  }
+  btnRunUploadedRehearsal.disabled = true;
+  showMindToast("Validating uploaded sponsor evidence...");
+  try {
+    const res = await fetch("/api/rehearsal/custom-evidence", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        attachment_ids: customEvidenceAttachmentIds,
+        storage_scope: reviewStorageScope,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Uploaded rehearsal failed");
+    showMindToast(data.message || "Uploaded rehearsal complete.");
+    setJudgeStep(3);
+    showReviewPanel();
+    renderRehearsalCard(data);
+  } catch (err) {
+    showMindToast(String(err.message || err), true);
+    renderCycleFeed(null, `Uploaded rehearsal rejected: ${err.message || err}`);
+  } finally {
+    btnRunUploadedRehearsal.disabled = false;
+  }
+}
+
 function closeSkillsFlyout() {
   skillsFlyout.hidden = true;
   btnSkillsPlus.setAttribute("aria-expanded", "false");
@@ -1144,6 +1223,7 @@ btnMindInit.addEventListener("click", () => mindInit(false));
 btnMindStep.addEventListener("click", mindStep);
 btnQueueEvidence.addEventListener("click", queueEvidence);
 btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
+btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
 
 setupTabs();
 

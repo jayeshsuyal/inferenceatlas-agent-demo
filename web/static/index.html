@@ -74,6 +74,17 @@
           <button type="button" class="btn-ghost btn-block" id="btn-run-rehearsal">
             2. Run sponsor rehearsal
           </button>
+          <h3 class="section-label">Sponsor evidence JSON</h3>
+          <div class="io-row">
+            <label class="file-label">
+              <input type="file" id="custom-evidence-file" accept=".json" multiple hidden />
+              Upload provider JSONs
+            </label>
+            <span class="file-chip" id="custom-evidence-chip" hidden></span>
+          </div>
+          <button type="button" class="btn-ghost btn-block" id="btn-run-uploaded-rehearsal">
+            Run uploaded rehearsal
+          </button>
 
           <div class="action-row">
             <button type="button" class="btn-ghost" id="btn-mind-init">1. Reset scenarios</button>
@@ -148,6 +159,6 @@
       </main>
     </div>
 
-    <script src="/static/app.js?v=8"></script>
+    <script src="/static/app.js?v=9"></script>
   </body>
 </html>

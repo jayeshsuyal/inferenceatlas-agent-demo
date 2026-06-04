@@ -28,6 +28,7 @@ from agent.scenarios import SCENARIOS
 from agent.tools import get_catalog_summary
 from agent.trial import DEFAULT_TRIAL_REQUEST
 from agent.trial_evidence_replay import (
+    ADAPTER_PROVIDERS,
     DEFAULT_REHEARSAL_EVIDENCE_DIR,
     build_trial_evidence_replay,
     render_trial_evidence_replay_markdown,
@@ -45,6 +46,7 @@ from web.files_io import (
     load_upload,
     register_download,
     resolve_download,
+    save_output,
     save_output_registered,
     save_upload,
 )
@@ -129,6 +131,11 @@ class SkillRunRequest(BaseModel):
     skill_id: str = Field(..., min_length=1, max_length=80)
 
 
+class CustomEvidenceRehearsalRequest(BaseModel):
+    attachment_ids: List[str] = Field(default_factory=list, max_length=8)
+    storage_scope: str = Field(default="review_anonymous", max_length=160)
+
+
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
     rows: List[dict] = []
     for provider, item in replay["sponsor_replay"].items():
@@ -148,6 +155,82 @@ def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
             }
         )
     return rows
+
+
+def _payload_provider(payload: dict[str, Any], filename: str) -> str:
+    explicit = str(payload.get("provider", "")).strip().lower()
+    if explicit in ADAPTER_PROVIDERS:
+        return explicit
+    inferred = Path(filename).stem.lower()
+    if inferred in ADAPTER_PROVIDERS:
+        payload["provider"] = inferred
+        return inferred
+    raise ValueError(
+        f"{filename} must include provider={', '.join(ADAPTER_PROVIDERS)} "
+        "or use a provider filename like tavily.json"
+    )
+
+
+def _extract_provider_payloads(filename: str, text: str) -> list[tuple[str, dict[str, Any]]]:
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"{filename} is not valid JSON") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"{filename} must contain a JSON object")
+
+    bundled: list[tuple[str, dict[str, Any]]] = []
+    for provider in ADAPTER_PROVIDERS:
+        nested = payload.get(provider)
+        if nested is None:
+            continue
+        if not isinstance(nested, dict):
+            raise ValueError(f"{filename}.{provider} must be a JSON object")
+        nested = dict(nested)
+        nested.setdefault("provider", provider)
+        bundled.append((provider, nested))
+    if bundled:
+        return bundled
+
+    return [(_payload_provider(payload, filename), payload)]
+
+
+def _uploaded_evidence_dir(storage_scope: str, attachment_ids: list[str]) -> tuple[Path, list[dict]]:
+    if not attachment_ids:
+        raise ValueError("Upload at least one sanitized provider JSON file.")
+
+    run_id = str(uuid.uuid4())
+    subfolder = f"custom_evidence_rehearsal/{run_id}"
+    providers_seen: set[str] = set()
+    accepted_files: list[dict] = []
+    output_dir: Path | None = None
+    for file_id in attachment_ids:
+        loaded = load_upload(storage_scope, file_id)
+        if not loaded:
+            raise ValueError(f"Uploaded evidence file {file_id[:8]} was not found.")
+        filename, text = loaded
+        for provider, payload in _extract_provider_payloads(filename, text):
+            if provider in providers_seen:
+                raise ValueError(f"Duplicate uploaded evidence for provider {provider}.")
+            providers_seen.add(provider)
+            path = save_output(
+                scope="review",
+                subfolder=subfolder,
+                filename=f"{provider}.json",
+                content=json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                use_timestamp=False,
+            )
+            output_dir = path.parent
+            accepted_files.append(
+                {
+                    "file_id": file_id,
+                    "filename": filename,
+                    "provider": provider,
+                }
+            )
+    if output_dir is None:
+        raise ValueError("Uploaded evidence did not include a known provider payload.")
+    return output_dir, accepted_files
 
 
 def _get_or_create_session(session_id: Optional[str]) -> Tuple[str, object]:
@@ -240,8 +323,59 @@ def run_live_evidence_rehearsal() -> dict:
     )
     return {
         "ok": True,
+        "title": "Sponsor evidence rehearsal",
         "message": "Live evidence rehearsal complete - sponsor outputs attached, decision stayed locked.",
         "request_path": replay["request_path"],
+        "summary": replay["summary"],
+        "decision_lock": replay["decision_lock"],
+        "live_evidence_rehearsal": replay["live_evidence_rehearsal"],
+        "safety_boundary": replay["safety_boundary"],
+        "providers": _rehearsal_provider_rows(replay),
+        "output_files": [
+            _file_ref(md["file_id"], md["label"]),
+            _file_ref(js["file_id"], js["label"]),
+        ],
+    }
+
+
+@app.post("/api/rehearsal/custom-evidence")
+def run_custom_evidence_rehearsal(body: CustomEvidenceRehearsalRequest) -> dict:
+    """Run uploaded sanitized provider JSON through the same locked rehearsal engine."""
+    try:
+        evidence_dir, accepted_files = _uploaded_evidence_dir(
+            body.storage_scope,
+            body.attachment_ids,
+        )
+        replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST, evidence_dir)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    markdown = render_trial_evidence_replay_markdown(replay)
+    json_content = json.dumps(replay, indent=2, sort_keys=True) + "\n"
+    scope = "review"
+    subfolder = "custom_evidence_rehearsal"
+    md = save_output_registered(
+        scope=scope,
+        subfolder=subfolder,
+        filename="support_triage_trial.uploaded_evidence_rehearsal.md",
+        content=markdown,
+        label="Uploaded evidence rehearsal Markdown",
+    )
+    js = save_output_registered(
+        scope=scope,
+        subfolder=subfolder,
+        filename="support_triage_trial.uploaded_evidence_rehearsal.json",
+        content=json_content,
+        label="Uploaded evidence rehearsal JSON",
+    )
+    return {
+        "ok": True,
+        "title": "Uploaded sponsor evidence rehearsal",
+        "message": "Uploaded evidence rehearsal complete - sanitized provider outputs attached, decision stayed locked.",
+        "request_path": replay["request_path"],
+        "accepted_files": accepted_files,
         "summary": replay["summary"],
         "decision_lock": replay["decision_lock"],
         "live_evidence_rehearsal": replay["live_evidence_rehearsal"],

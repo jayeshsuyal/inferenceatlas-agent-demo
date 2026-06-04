@@ -20,6 +20,7 @@ class DemoTranscriptTests(unittest.TestCase):
             "python3 -m agent.review_room",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "python3 -m unittest discover -s tests",
         ]:
             self.assertIn(expected, transcript)
@@ -38,6 +39,8 @@ class DemoTranscriptTests(unittest.TestCase):
             "examples/generated/support_triage_trial.decision_brief.json",
             "examples/generated/support_triage_trial.outcome_memo.md",
             "examples/generated/support_triage_trial.outcome_memo.json",
+            "examples/generated/support_triage_trial.evidence_replay.md",
+            "examples/generated/support_triage_trial.evidence_replay.json",
         ]:
             self.assertIn(expected, transcript)
 
@@ -54,6 +57,8 @@ class DemoTranscriptTests(unittest.TestCase):
             "blocked_fast",
             "Design Partner Trial Report",
             "Design Partner Outcome Memo",
+            "Sponsor Evidence Replay",
+            "sponsors can change decision: False",
             "executes external writes: False",
             "can_approve_access=False",
             "Private engine, public proof.",

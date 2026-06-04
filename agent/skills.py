@@ -160,6 +160,25 @@ SKILLS: tuple[SkillSpec, ...] = (
         depends_on=("decision_packet_generation",),
     ),
     SkillSpec(
+        id="design_partner_evidence_replay",
+        name="Sponsor Evidence Replay",
+        what_it_proves="Sponsor proof slots attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+        command="python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+        artifacts=(
+            "agent/trial_evidence_replay.py",
+            "examples/generated/support_triage_trial.evidence_replay.md",
+            "examples/generated/support_triage_trial.evidence_replay.json",
+        ),
+        safety_boundary="dry-run by default; no live writes; sponsor cannot grant access",
+        tier="stable",
+        category="design_partner_pilot",
+        depends_on=(
+            "design_partner_outcome_memo",
+            "design_partner_trial_runner",
+            "sponsor_proof_readiness",
+        ),
+    ),
+    SkillSpec(
         id="design_partner_outcome_memo",
         name="Design Partner Outcome Memo",
         what_it_proves="A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
@@ -245,6 +264,7 @@ SKILLS: tuple[SkillSpec, ...] = (
         category="proof_integrity",
         depends_on=(
             "decision_packet_generation",
+            "design_partner_evidence_replay",
             "design_partner_outcome_memo",
             "design_partner_trial_runner",
             "outcome_memo_generation",

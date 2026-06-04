@@ -13,8 +13,8 @@ python3 -m scripts.generate_agent_skills_doc
 
 ## Summary
 
-- Registered skills: `13`
-- Stable skills: `13`
+- Registered skills: `14`
+- Stable skills: `14`
 - Public harness approves access: `false`
 - Public harness grants permissions: `false`
 - Public harness executes external writes: `false`
@@ -36,6 +36,7 @@ python3 -m scripts.generate_agent_skills_doc
 
 | Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
 | --- | --- | --- | --- | --- | --- |
+| Sponsor Evidence Replay | `stable` | Sponsor proof slots attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked. | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` | `agent/trial_evidence_replay.py`<br>`examples/generated/support_triage_trial.evidence_replay.md`<br>`examples/generated/support_triage_trial.evidence_replay.json` | dry-run by default; no live writes; sponsor cannot grant access |
 | Design Partner Outcome Memo | `stable` | A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes. | `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` | `agent/trial_outcome_memo.py`<br>`examples/generated/support_triage_trial.outcome_memo.md`<br>`examples/generated/support_triage_trial.outcome_memo.json` | memo restates blocked claims; never grants access |
 | Design Partner Trial Runner | `stable` | A role-level trial request becomes a report, packet, and access brief without live credentials. | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | `agent/trial.py`<br>`examples/requests/support_triage_trial.yml`<br>`examples/generated/support_triage_trial_report.md`<br>`examples/generated/support_triage_trial.packet.json`<br>`examples/generated/support_triage_trial.decision_brief.json` | no live integration path; humans review |
 
@@ -69,6 +70,7 @@ graph TD
     proof_debt_extraction["Proof Debt Extraction"]
     reviewer_routing["Reviewer Routing"]
     risk_aware_scenario_differentiation["Risk-Aware Scenario Differentiation"]
+    design_partner_evidence_replay["Sponsor Evidence Replay"]
     design_partner_outcome_memo["Design Partner Outcome Memo"]
     design_partner_trial_runner["Design Partner Trial Runner"]
     outcome_memo_generation["Outcome Memo Generation"]
@@ -81,6 +83,9 @@ graph TD
     decision_packet_generation --> proof_debt_extraction
     decision_packet_generation --> reviewer_routing
     decision_packet_generation --> risk_aware_scenario_differentiation
+    design_partner_outcome_memo --> design_partner_evidence_replay
+    design_partner_trial_runner --> design_partner_evidence_replay
+    sponsor_proof_readiness --> design_partner_evidence_replay
     access_request_normalization --> design_partner_outcome_memo
     decision_packet_generation --> design_partner_outcome_memo
     design_partner_trial_runner --> design_partner_outcome_memo
@@ -94,6 +99,7 @@ graph TD
     decision_packet_generation --> packet_diff_generation
     risk_aware_scenario_differentiation --> packet_diff_generation
     decision_packet_generation --> artifact_integrity_verification
+    design_partner_evidence_replay --> artifact_integrity_verification
     design_partner_outcome_memo --> artifact_integrity_verification
     design_partner_trial_runner --> artifact_integrity_verification
     outcome_memo_generation --> artifact_integrity_verification

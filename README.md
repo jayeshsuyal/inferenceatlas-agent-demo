@@ -9,7 +9,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
 ![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
 
-InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
@@ -26,6 +26,7 @@ Run the design-partner trial sample:
 ```bash
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 ```
 
 Install the public harness commands:
@@ -57,6 +58,7 @@ python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -79,6 +81,7 @@ ia-review-room
 ia-proof-health
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
+ia-trial-evidence-replay examples/requests/support_triage_trial.yml
 ia-verify-artifacts
 ```
 
@@ -155,6 +158,12 @@ The fastest design-partner meeting-decision artifact is:
 examples/generated/support_triage_trial.outcome_memo.md
 ```
 
+The fastest proof that sponsor tools attach evidence without taking over the decision is:
+
+```text
+examples/generated/support_triage_trial.evidence_replay.md
+```
+
 The fastest proof that deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in is:
 
 ```bash
@@ -167,7 +176,7 @@ For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.js
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, and Proof Health report showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, and Proof Health report showing:
 
 - source status
 - scenario blast-radius diff
@@ -177,6 +186,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - risk-level packet diff
 - packet outcome memo
 - design-partner outcome memo
+- sponsor evidence replay
 - artifact integrity status
 - permission envelope
 - requested capability
@@ -305,6 +315,7 @@ Run the public trial sample:
 ```bash
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.trial examples/requests/support_triage_trial.yml --write
 ```
 
@@ -313,9 +324,10 @@ Or use the installed command:
 ```bash
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
+ia-trial-evidence-replay examples/requests/support_triage_trial.yml
 ```
 
-The runner writes a design-partner trial report plus derived packet, brief, and outcome memo artifacts under `examples/generated/`.
+The runner writes a design-partner trial report plus derived packet, brief, outcome memo, and sponsor evidence replay artifacts under `examples/generated/`.
 
 To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 
@@ -414,6 +426,7 @@ Run the design-partner trial sample:
 ```bash
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.trial examples/requests/support_triage_trial.yml --write
 ```
 
@@ -428,6 +441,8 @@ examples/generated/support_triage_trial.decision_brief.md
 examples/generated/support_triage_trial.decision_brief.json
 examples/generated/support_triage_trial.outcome_memo.md
 examples/generated/support_triage_trial.outcome_memo.json
+examples/generated/support_triage_trial.evidence_replay.md
+examples/generated/support_triage_trial.evidence_replay.json
 ```
 
 Review the 60-90 second walkthrough script and checked-in screenshot:

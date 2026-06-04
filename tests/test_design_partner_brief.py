@@ -19,6 +19,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
             "examples/requests/support_triage_trial.yml",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/trust_receipt.md",
             "examples/generated/packet_diff.md",
@@ -35,6 +36,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
             "one Packet Diff",
             "one Packet Outcome Memo",
             "one Design Partner Outcome Memo",
+            "one Sponsor Evidence Replay",
             "one Proof Health report",
             "one policy-gate result",
             "one dry-run tool-access plan",
@@ -76,6 +78,10 @@ class DesignPartnerBriefTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_sample"], "examples/requests/support_triage_trial.yml")
         self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_report_markdown"], "examples/generated/support_triage_trial_report.md")
         self.assertEqual(manifest["primary_artifacts"]["support_triage_trial_outcome_memo_markdown"], "examples/generated/support_triage_trial.outcome_memo.md")
+        self.assertEqual(
+            manifest["primary_artifacts"]["support_triage_trial_evidence_replay_markdown"],
+            "examples/generated/support_triage_trial.evidence_replay.md",
+        )
         self.assertIn("docs/DESIGN_PARTNER_BRIEF.md", manifest["judge_review_path"])
         self.assertIn("sponsor live readiness", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("docs/DESIGN_PARTNER_TRIAL_KIT.md", manifest["judge_review_path"])
@@ -84,6 +90,7 @@ class DesignPartnerBriefTests(unittest.TestCase):
         self.assertIn("design partner brief", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("proof health", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
 
     def test_design_partner_brief_does_not_expose_private_schema_names(self) -> None:
         brief = (ROOT / "docs" / "DESIGN_PARTNER_BRIEF.md").read_text(encoding="utf-8")

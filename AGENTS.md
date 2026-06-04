@@ -34,6 +34,7 @@ python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -43,7 +44,7 @@ Expected result:
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
-- the Agent Skills registry reports `13 / 13 stable skills available`
+- the Agent Skills registry reports `14 / 14 stable skills available`
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
 - Packet Outcome Memo converts the support-triage packet into a scoped-validation human decision
 - the public contract reports all scenarios as `OK`
@@ -54,6 +55,7 @@ Expected result:
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the design-partner trial runner converts a role-level request into a report, packet, and access brief
 - the Design Partner Outcome Memo converts the trial request into a meeting-ready can-move/stays-blocked decision
+- the Sponsor Evidence Replay attaches Tavily, Composio, Nebius, and OpenClaw proof slots without changing the decision
 - the Product Quality Audit names the premium spine and safety guardrails
 - Artifact Integrity Gate reports deterministic proof artifacts as fresh, static review assets as valid, and no unexpected generated file as checked in
 - the Review Room walkthrough and screenshot are available for visual skim review
@@ -73,23 +75,24 @@ Expected result:
 10. `examples/requests/support_triage_trial.yml`
 11. `examples/generated/support_triage_trial_report.md`
 12. `examples/generated/support_triage_trial.outcome_memo.md`
-13. `examples/generated/trust_receipt.md`
-14. `examples/generated/packet_diff.md`
-15. `examples/generated/support_triage_agent.outcome_memo.md`
-16. `examples/generated/sponsor_live_readiness.md`
-17. `examples/generated/review_room.md`
-18. `examples/generated/review_room.html`
-19. `examples/generated/support_triage_agent.proof_health.md`
-20. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-21. `examples/generated/review_room.desktop.jpg`
-22. `policy/agent_access.yml`
-23. `agent/adapters/`
-24. `examples/generated/support_triage_agent.decision_brief.md`
-25. `examples/generated/support_triage_agent.packet.md`
-26. `examples/generated/admin_code_fix_bot.packet.json`
-27. `docs/CONTRACT.md`
-28. `docs/SAFETY_CONTRACT.md`
-29. `docs/V1_CAPABILITY_PASSPORT.md`
+13. `examples/generated/support_triage_trial.evidence_replay.md`
+14. `examples/generated/trust_receipt.md`
+15. `examples/generated/packet_diff.md`
+16. `examples/generated/support_triage_agent.outcome_memo.md`
+17. `examples/generated/sponsor_live_readiness.md`
+18. `examples/generated/review_room.md`
+19. `examples/generated/review_room.html`
+20. `examples/generated/support_triage_agent.proof_health.md`
+21. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+22. `examples/generated/review_room.desktop.jpg`
+23. `policy/agent_access.yml`
+24. `agent/adapters/`
+25. `examples/generated/support_triage_agent.decision_brief.md`
+26. `examples/generated/support_triage_agent.packet.md`
+27. `examples/generated/admin_code_fix_bot.packet.json`
+28. `docs/CONTRACT.md`
+29. `docs/SAFETY_CONTRACT.md`
+30. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -115,6 +118,7 @@ Evaluate the public product contract:
 - Do `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/*.yml` give a concrete trial input surface without exposing secrets?
 - Does `python3 -m agent.trial examples/requests/support_triage_trial.yml` produce a trial report without approving, granting, or writing?
 - Does `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` turn the trial into a meeting decision without approving, granting, or writing?
+- Does `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` attach sponsor proof without approving, granting, writing, or changing the decision?
 - Does production access remain blocked?
 - Do external writes remain disabled?
 - Does Composio remain dry-run by default?

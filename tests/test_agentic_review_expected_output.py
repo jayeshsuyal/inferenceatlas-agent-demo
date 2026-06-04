@@ -24,13 +24,14 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "python3 -m agent.verify_artifacts",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
             "Artifact Integrity Gate",
             "Agent Skills",
-            "`summary.available_stable_skills` is `13`",
-            "`summary.generated_artifacts_verified` is `35`",
+            "`summary.available_stable_skills` is `14`",
+            "`summary.generated_artifacts_verified` is `37`",
             "`summary.stale_artifacts` is `0`",
             "`summary.unexpected_checked_in_artifacts` is `0`",
             "`0 unexpected checked-in`",
@@ -43,6 +44,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`packet_outcome_memo.production_access` is `false`",
             "`design_partner_outcome_memo.decision_code` is `scoped_validation_only`",
             "`design_partner_outcome_memo.production_access` is `false`",
+            "`design_partner_evidence_replay.can_sponsor_change_decision` is `false`",
+            "`design_partner_evidence_replay.all_non_executing` is `true`",
+            "`design_partner_evidence_replay.all_non_granting` is `true`",
             "`private_boundary.private_source_exposed` is `false`",
             "unit tests pass in the current public suite",
             "Failure Signals",
@@ -74,12 +78,15 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [agents, readme, guide]:

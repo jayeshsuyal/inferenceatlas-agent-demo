@@ -55,6 +55,7 @@ examples/generated/trust_receipt.md
 examples/generated/review_room.html
 examples/generated/support_triage_agent.proof_health.md
 examples/generated/support_triage_trial_report.md
+examples/generated/support_triage_trial.outcome_memo.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
 agent/adapters/
@@ -65,6 +66,7 @@ agent/adapters/
 ```bash
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial examples/requests/support_triage_trial.yml --write
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 ```
 
 ## Request Shape

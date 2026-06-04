@@ -14,6 +14,7 @@ Run the no-key judge path first, then verify the checked-in proof artifacts:
 ```bash
 python3 -m agent.judge --no-write
 python3 -m agent.skills
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write
 python3 -m agent.verify_artifacts
 ```
 
@@ -27,8 +28,9 @@ Expected human-readable signals across that two-command path:
 - scenario matrix includes `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - Packet Diff reports relaxed read-only, proof-routed, and blocked critical lanes
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
-- Agent Skills reports `12 / 12 stable skills available`
-- Artifact Integrity Gate reports `33 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
+- Design Partner Outcome Memo reports `scoped_validation_only` for `support_triage_trial`
+- Agent Skills reports `13 / 13 stable skills available`
+- Artifact Integrity Gate reports `35 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -42,6 +44,7 @@ For a strict parser, run both JSON surfaces:
 ```bash
 python3 -m agent.judge --no-write --json
 python3 -m agent.skills --json
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.verify_artifacts --json
 ```
 
@@ -57,6 +60,11 @@ Expected judge JSON pass signals:
 - `design_partner_trial.approves_access` is `false`
 - `design_partner_trial.grants_permissions` is `false`
 - `design_partner_trial.executes_external_writes` is `false`
+- `design_partner_outcome_memo.decision_code` is `scoped_validation_only`
+- `design_partner_outcome_memo.production_access` is `false`
+- `design_partner_outcome_memo.permission_grants` is `false`
+- `design_partner_outcome_memo.external_writes` is `false`
+- `design_partner_outcome_memo.approves_access` is `false`
 - `proof_health.overall_status` is `drifting`
 - `proof_health.human_review_required` is `true`
 - `proof_health.approves_access` is `false`
@@ -74,7 +82,7 @@ Expected judge JSON pass signals:
 Expected artifact verifier JSON pass signals:
 
 - `status` is `ok`
-- `summary.generated_artifacts_verified` is `33`
+- `summary.generated_artifacts_verified` is `35`
 - `summary.stale_artifacts` is `0`
 - `summary.unexpected_checked_in_artifacts` is `0`
 - `summary.missing_static_assets` is `0`
@@ -82,9 +90,9 @@ Expected artifact verifier JSON pass signals:
 Expected skills JSON pass signals:
 
 - `schema_version` is `agent_skills_registry.v0`
-- `summary.registered_skills` is `12`
-- `summary.stable_skills` is `12`
-- `summary.available_stable_skills` is `12`
+- `summary.registered_skills` is `13`
+- `summary.stable_skills` is `13`
+- `summary.available_stable_skills` is `13`
 - `private_boundary.private_source_exposed` is `false`
 
 ## Full Command Set
@@ -105,6 +113,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -116,6 +125,7 @@ Expected pass signals:
 - public contract reports all scenarios as `OK`
 - Packet Diff proves the three public scenarios differ in load-bearing fields
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
+- Design Partner Outcome Memo turns the trial request into a meeting-ready can-move, stays-blocked, proof-owner decision
 - Artifact Integrity Gate proves deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in
 - policy gate blocks critical/admin/prod-write scope
 - sponsor adapters remain dry-run, non-executing, and non-approving
@@ -136,8 +146,9 @@ Inspect these in order:
 8. `examples/generated/trust_receipt.md`
 9. `examples/generated/support_triage_agent.proof_health.md`
 10. `examples/generated/support_triage_trial_report.md`
-11. `docs/CONTRACT.md`
-12. `docs/SAFETY_CONTRACT.md`
+11. `examples/generated/support_triage_trial.outcome_memo.md`
+12. `docs/CONTRACT.md`
+13. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 
@@ -149,8 +160,9 @@ Treat these as review failures:
 - sponsor adapters can execute writes by default
 - sponsor adapters can approve access
 - Packet Diff no longer shows all three risk lanes
-- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 12 stable available skills
+- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 13 stable available skills
 - Packet Outcome Memo approves access, grants permissions, or enables writes
+- Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts
 - Proof Health approves, grants, writes, or mutates production
 - `admin_code_fix_bot` is not blocked
@@ -170,6 +182,7 @@ agent request
 -> trust receipt
 -> packet diff
 -> outcome memo
+-> design-partner outcome memo
 -> proof health
 -> artifact integrity gate
 -> human review

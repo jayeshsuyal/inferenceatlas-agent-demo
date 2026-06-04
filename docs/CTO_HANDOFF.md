@@ -11,6 +11,7 @@ Run the current proof surface:
 ```bash
 python3 -m agent.demo
 python3 -m agent.skills
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.sponsor_readiness
 python3 -m unittest discover -s tests
 ```
@@ -19,6 +20,7 @@ Expected result:
 
 - the demo runs without API keys
 - Agent Skills reports the public capability map without exposing private source
+- Design Partner Outcome Memo turns the trial request into a meeting-ready decision without approving access
 - sponsor live readiness shows where Nebius, Tavily, Composio, and OpenClaw can add proof without approval power
 - packet, trace, decision brief, and Proof Health artifacts regenerate under `examples/generated/`
 - production access remains blocked
@@ -36,6 +38,7 @@ These pieces are safe to build on:
 | DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
 | Packet Diff projection | `agent/packet_diff.py` | Scenario comparison surface proving low, medium/high, and critical requests produce different load-bearing fields. |
 | Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
+| Design Partner Outcome Memo projection | `agent/trial_outcome_memo.py` | Trial-request meeting decision derived from the public trial bundle. Keep it no-key, non-approving, and tied to the same packet/brief spine. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
@@ -69,6 +72,7 @@ messy agent-access request
 -> Packet Diff
 -> Agent Access Decision Brief
 -> Packet Outcome Memo
+-> Design Partner Outcome Memo
 -> Proof Health
 -> trace
 -> Markdown/JSON artifacts
@@ -127,6 +131,7 @@ python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/tr
 python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/brief_check.json
 python3 -m agent.proof_health --no-write
 python3 -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/proof_health_check.json
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_outcome_memo_check.json
 python3 -m unittest discover -s tests
 ```
 

@@ -107,6 +107,13 @@ GENERATED_ARTIFACT_FAMILIES = (
             "support_triage_trial.decision_brief.json",
         ),
     ),
+    ArtifactFamily(
+        "Design Partner Outcome Memo",
+        (
+            "support_triage_trial.outcome_memo.md",
+            "support_triage_trial.outcome_memo.json",
+        ),
+    ),
 )
 
 STATIC_REVIEW_ASSETS = (

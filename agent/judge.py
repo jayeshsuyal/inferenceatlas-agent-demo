@@ -21,6 +21,7 @@ from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifa
 from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
 from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
+from .trial_outcome_memo import build_trial_outcome_memo, write_trial_outcome_memo_artifacts
 
 
 JUDGE_HARNESS_VERSION = "agent_judge_harness.v0"
@@ -40,6 +41,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.review_room",
     "python3 -m agent.proof_health",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+    "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests",
 ]
 
@@ -69,6 +71,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/support_triage_trial_report.json",
     "examples/generated/support_triage_trial.packet.json",
     "examples/generated/support_triage_trial.decision_brief.json",
+    "examples/generated/support_triage_trial.outcome_memo.md",
+    "examples/generated/support_triage_trial.outcome_memo.json",
     "examples/generated/review_room.desktop.jpg",
     "policy/agent_access.yml",
     "agent/adapters/",
@@ -107,6 +111,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.append(write_review_room_html(output_dir))
     written.extend(write_proof_health_artifacts(output_dir=output_dir))
     written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
+    written.extend(write_trial_outcome_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     return written
 
 
@@ -156,6 +161,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     packet_diff = build_packet_diff_report()
     outcome_memo = build_packet_outcome_memo()
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
+    trial_outcome_memo = build_trial_outcome_memo(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
 
     return {
@@ -211,6 +217,21 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "approves_access": trial_report["safety"]["public_runner_approves_access"],
             "grants_permissions": trial_report["safety"]["public_runner_grants_permissions"],
             "executes_external_writes": trial_report["safety"]["public_runner_executes_external_writes"],
+        },
+        "design_partner_outcome_memo": {
+            "request_path": trial_outcome_memo["request_path"],
+            "decision_code": trial_outcome_memo["decision"]["code"],
+            "decision_summary": trial_outcome_memo["decision"]["summary"],
+            "access_speed_lane": trial_outcome_memo["decision"]["access_speed_lane"],
+            "production_access": trial_outcome_memo["decision"]["production_access"],
+            "scoped_validation_review": trial_outcome_memo["decision"]["scoped_validation_review"],
+            "permission_grants": trial_outcome_memo["decision"]["permission_grants"],
+            "external_writes": trial_outcome_memo["decision"]["external_writes"],
+            "proof_debt_assignment_count": len(trial_outcome_memo["proof_debt_assignments"]),
+            "reviewer_route_count": len(trial_outcome_memo["reviewer_routes"]),
+            "approves_access": trial_outcome_memo["safety_boundary"]["approves_access"],
+            "grants_permissions": trial_outcome_memo["safety_boundary"]["grants_permissions"],
+            "executes_external_writes": trial_outcome_memo["safety_boundary"]["executes_external_writes"],
         },
         "proof_health": {
             "scenario": proof_health["scenario"],
@@ -307,6 +328,12 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["design_partner_trial"]["approves_access"]
         or report["design_partner_trial"]["grants_permissions"]
         or report["design_partner_trial"]["executes_external_writes"]
+        or report["design_partner_outcome_memo"]["production_access"]
+        or report["design_partner_outcome_memo"]["permission_grants"]
+        or report["design_partner_outcome_memo"]["external_writes"]
+        or report["design_partner_outcome_memo"]["approves_access"]
+        or report["design_partner_outcome_memo"]["grants_permissions"]
+        or report["design_partner_outcome_memo"]["executes_external_writes"]
         or not report["proof_health"]["human_review_required"]
         or report["proof_health"]["approves_access"]
         or report["proof_health"]["grants_permissions"]
@@ -439,6 +466,28 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
         ]
     )
 
+    trial_memo = report["design_partner_outcome_memo"]
+    lines.extend(
+        [
+            "",
+            "## Design Partner Outcome Memo",
+            "",
+            "The memo turns the trial request into the meeting decision: what can move, what stays blocked, and who owns proof.",
+            "",
+            f"- request: `{trial_memo['request_path']}`",
+            f"- decision: {trial_memo['decision_code']}",
+            f"- summary: {trial_memo['decision_summary']}",
+            f"- access speed lane: {trial_memo['access_speed_lane']}",
+            f"- production access: {trial_memo['production_access']}",
+            f"- scoped validation review: {trial_memo['scoped_validation_review']}",
+            f"- permission grants: {trial_memo['permission_grants']}",
+            f"- external writes: {trial_memo['external_writes']}",
+            f"- proof debt assignments: {trial_memo['proof_debt_assignment_count']}",
+            f"- reviewer routes: {trial_memo['reviewer_route_count']}",
+            f"- artifact: `examples/generated/support_triage_trial.outcome_memo.md`",
+        ]
+    )
+
     lines.extend(
         [
             "",
@@ -522,9 +571,10 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "10. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
             "11. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
             "12. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "13. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "14. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "15. Confirm sponsor adapters stay dry-run and non-approving.",
+            "13. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
+            "14. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "15. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "16. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

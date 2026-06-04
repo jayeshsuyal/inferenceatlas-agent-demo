@@ -1,0 +1,148 @@
+{
+  "can_move": [
+    "Approve a scoped validation review only.",
+    "Approve a scoped validation review before any production permission grant.",
+    "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "Run the validation in dry-run mode with named reviewers and scoped evidence owners."
+  ],
+  "decision": {
+    "access_speed_lane": "proof_routed_scoped_validation",
+    "access_speed_reason": "Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.",
+    "code": "scoped_validation_only",
+    "external_writes": false,
+    "highest_risk": "high",
+    "next_validation": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "permission_grants": false,
+    "production_access": false,
+    "recommended_next_step": "Approve a scoped validation review only.",
+    "request_readiness": "ready_for_scoped_trial",
+    "scoped_validation_review": true,
+    "summary": "Move this agent into scoped validation only; keep production access, permission grants, and external writes blocked."
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "meeting_close": {
+    "blocked_sentence": "Keep blocked scope blocked until named proof owners close the proof debt.",
+    "decision_sentence": "Move this agent into scoped validation only; keep production access, permission grants, and external writes blocked.",
+    "owner_sentence": "Business owner and required reviewers decide whether scoped validation can proceed."
+  },
+  "mode": "offline_deterministic",
+  "next_validation": {
+    "human_owner": "business_owner_and_required_reviewers",
+    "recommended_step": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+    "refresh_rule": "Refresh this memo before broader validation, production access, permission expansion, or live external writes."
+  },
+  "outcome_memo_id": "ia-design-partner-outcome-memo-support_triage_trial-public-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "proof_debt_assignments": [
+    {
+      "owner": "Engineering",
+      "proof_needed": "GitHub repository allowlist and permission level",
+      "status": "missing",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "owner": "Security/Legal",
+      "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "status": "missing",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "owner": "Engineering",
+      "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "status": "missing",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "owner": "Support Ops",
+      "proof_needed": "Support escalation workflow and human handoff owner",
+      "status": "missing",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "owner": "Security/Engineering",
+      "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "status": "missing",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "request_path": "examples/requests/support_triage_trial.yml",
+  "reviewer_routes": [
+    {
+      "blocks": "Slack channel summarization and customer incident context access",
+      "decision_needed": "Confirm allowed data scope, retention, and logging terms",
+      "owner": "Security/Legal",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "decision_needed": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "owner": "Engineering",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "support operations pilot",
+      "decision_needed": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "owner": "Support Ops",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "paid production rollout",
+      "decision_needed": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "owner": "Procurement/Finance",
+      "required_before": "scoped_validation_or_permission_expansion"
+    }
+  ],
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "schema_version": "design_partner_outcome_memo.v0",
+  "source_artifacts": {
+    "decision_brief": "examples/generated/support_triage_trial.decision_brief.json",
+    "packet": "examples/generated/support_triage_trial.packet.json",
+    "trial_report": "examples/generated/support_triage_trial_report.json"
+  },
+  "stays_blocked": [
+    "production access grant",
+    "permission grants",
+    "external writes",
+    "admin or broad organization scope",
+    "broader validation without a refreshed packet",
+    "Production tool access is approved.",
+    "Customer-data handling is safe.",
+    "The agent may create or mutate Jira/GitHub/Slack state.",
+    "The workflow is compliance-ready."
+  ],
+  "trial_context": {
+    "access_speed_lane": {
+      "decision_time": "immediate",
+      "highest_risk": "high",
+      "lane": "proof_routed_scoped_validation",
+      "production_access": false,
+      "reason": "Medium/high-risk access gets a scoped validation path while proof debt is routed to named owners.",
+      "safe_next_step": "Approve a scoped validation review before any production permission grant.",
+      "scoped_validation_review": true,
+      "user_impact": "replaces_back_and_forth_with_owner_routing"
+    },
+    "candidate_agent": {
+      "business_owner": "Support Ops",
+      "current_approval_path": "manual_security_engineering_support_ops_review",
+      "name": "support_triage_agent",
+      "purpose": "Read issue and incident context, summarize support escalation signals, and prepare draft follow-up work for a human support lead.",
+      "requested_environment": "validation_only"
+    },
+    "request_readiness": "ready_for_scoped_trial",
+    "requested_risk_flags": {
+      "admin_scopes_requested": false,
+      "external_writes_requested": false,
+      "production_access_requested": false,
+      "risk_flags_present": []
+    }
+  }
+}

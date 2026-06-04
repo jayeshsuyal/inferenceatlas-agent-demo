@@ -39,6 +39,7 @@
     "ia-trial examples/requests/support_triage_trial.yml",
     "ia-trial-outcome-memo examples/requests/support_triage_trial.yml",
     "ia-trial-evidence-replay examples/requests/support_triage_trial.yml",
+    "ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
     "ia-verify-artifacts"
   ],
   "default_run_command": "python3 -m agent.demo",
@@ -76,6 +77,9 @@
   "design_partner_evidence_replay_command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
   "design_partner_evidence_replay_json_command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json",
   "design_partner_evidence_replay_surface": "examples/generated/support_triage_trial.evidence_replay.md and examples/generated/support_triage_trial.evidence_replay.json",
+  "live_evidence_rehearsal_command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+  "live_evidence_rehearsal_json_command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json",
+  "live_evidence_rehearsal_fixture": "examples/evidence/support_triage_trial",
   "trust_receipt_command": "python3 -m agent.trust",
   "trust_receipt_json_command": "python3 -m agent.trust --print-json trust_receipt",
   "review_room_html_command": "python3 -m agent.review_room",
@@ -104,6 +108,8 @@
     "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "examples/generated/support_triage_trial.outcome_memo.md",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+    "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+    "examples/evidence/support_triage_trial",
     "examples/generated/support_triage_trial.evidence_replay.md",
     "examples/generated/review_room.html"
   ],
@@ -124,6 +130,7 @@
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+    "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
     "python3 -m agent.verify_artifacts",
     "python3 -m unittest discover -s tests"
   ],
@@ -186,6 +193,7 @@
     "support_triage_trial_decision_brief_json": "examples/generated/support_triage_trial.decision_brief.json",
     "support_triage_trial_outcome_memo_markdown": "examples/generated/support_triage_trial.outcome_memo.md",
     "support_triage_trial_outcome_memo_json": "examples/generated/support_triage_trial.outcome_memo.json",
+    "support_triage_trial_evidence_fixture": "examples/evidence/support_triage_trial",
     "support_triage_trial_evidence_replay_markdown": "examples/generated/support_triage_trial.evidence_replay.md",
     "support_triage_trial_evidence_replay_json": "examples/generated/support_triage_trial.evidence_replay.json",
     "policy_gate": "policy/agent_access.yml",
@@ -219,6 +227,7 @@
     "design_partner_trial_runner": "python3 -m agent.trial examples/requests/support_triage_trial.yml --write && python3 -m json.tool examples/generated/support_triage_trial_report.json",
     "design_partner_outcome_memo": "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml && python3 -m json.tool examples/generated/support_triage_trial.outcome_memo.json",
     "design_partner_evidence_replay": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml && python3 -m json.tool examples/generated/support_triage_trial.evidence_replay.json",
+    "live_evidence_rehearsal": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --no-write --json",
     "trust_receipt": "python3 -m agent.trust && python3 -m json.tool examples/generated/trust_receipt.json && python3 -m json.tool examples/generated/review_room.json",
     "review_room_html": "python3 -m agent.review_room",
     "proof_health": "python3 -m agent.proof_health && python3 -m json.tool examples/generated/support_triage_agent.proof_health.json",
@@ -244,7 +253,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "agent skills registry", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "agent skills registry", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -289,6 +298,8 @@
     "examples/generated/support_triage_trial.outcome_memo.md",
     "examples/generated/support_triage_trial.outcome_memo.json",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+    "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+    "examples/evidence/support_triage_trial",
     "examples/generated/support_triage_trial.evidence_replay.md",
     "examples/generated/support_triage_trial.evidence_replay.json",
     "examples/generated/trust_receipt.md",

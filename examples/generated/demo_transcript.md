@@ -20,6 +20,7 @@ python3 -m agent.review_room
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m unittest discover -s tests
 ```
 
@@ -316,6 +317,7 @@ Command:
 
 ```bash
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ```
 
 Expected output signal:
@@ -341,14 +343,27 @@ Expected output signal:
 | OpenClaw | runtime_trace_plan | False | False | False | False |
 ```
 
+Live Evidence Rehearsal signal:
+
+```text
+## Live Evidence Rehearsal
+
+- evidence dir: `examples/evidence/support_triage_trial`
+- sanitized providers: 4
+- unsafe inputs rejected: True
+- decision locked: True
+- proof debt reduction requires human review: True
+```
+
 Generated evidence replay artifacts:
 
 ```text
+examples/evidence/support_triage_trial/
 examples/generated/support_triage_trial.evidence_replay.md
 examples/generated/support_triage_trial.evidence_replay.json
 ```
 
-Review signal: sponsor tools can add proof context, permission diffs, narration, and runtime traces, but they cannot approve, grant, write, mutate, or change the trial decision.
+Review signal: sponsor tools can add proof context, permission diffs, narration, and runtime traces, and sanitized provider outputs can be rehearsed, but they cannot approve, grant, write, mutate, reduce proof debt automatically, or change the trial decision.
 
 ## 11. Unit Tests
 
@@ -379,6 +394,7 @@ Review signal: tests cover packet shape, decision brief shape, rules engine beha
 - Sponsor adapters are dry-run contracts and cannot approve access.
 - The design-partner trial runner accepts a role-level request and derives a report, packet, and brief.
 - Sponsor Evidence Replay shows where Tavily, Composio, Nebius, and OpenClaw proof slots attach without changing the decision.
+- Live Evidence Rehearsal shows sanitized provider outputs can attach without changing the decision.
 - Production access remains blocked.
 - External writes remain disabled.
 - Composio remains dry-run by default.
@@ -424,5 +440,6 @@ Private engine, public proof.
 | Trial decision brief JSON | `examples/generated/support_triage_trial.decision_brief.json` |
 | Trial outcome memo | `examples/generated/support_triage_trial.outcome_memo.md` |
 | Trial outcome memo JSON | `examples/generated/support_triage_trial.outcome_memo.json` |
+| Trial evidence fixture | `examples/evidence/support_triage_trial/` |
 | Trial evidence replay | `examples/generated/support_triage_trial.evidence_replay.md` |
 | Trial evidence replay JSON | `examples/generated/support_triage_trial.evidence_replay.json` |

@@ -13,6 +13,7 @@ python3 -m agent.demo
 python3 -m agent.skills
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.sponsor_readiness
 python3 -m unittest discover -s tests
 ```
@@ -23,6 +24,7 @@ Expected result:
 - Agent Skills reports the public capability map without exposing private source
 - Design Partner Outcome Memo turns the trial request into a meeting-ready decision without approving access
 - Sponsor Evidence Replay attaches sponsor proof slots without changing the decision, granting permissions, or writing
+- Live Evidence Rehearsal accepts sanitized Tavily, Composio, Nebius, and OpenClaw outputs while preserving the same locked decision
 - sponsor live readiness shows where Nebius, Tavily, Composio, and OpenClaw can add proof without approval power
 - packet, trace, decision brief, and Proof Health artifacts regenerate under `examples/generated/`
 - production access remains blocked
@@ -41,7 +43,8 @@ These pieces are safe to build on:
 | Packet Diff projection | `agent/packet_diff.py` | Scenario comparison surface proving low, medium/high, and critical requests produce different load-bearing fields. |
 | Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
 | Design Partner Outcome Memo projection | `agent/trial_outcome_memo.py` | Trial-request meeting decision derived from the public trial bundle. Keep it no-key, non-approving, and tied to the same packet/brief spine. |
-| Sponsor Evidence Replay projection | `agent/trial_evidence_replay.py` | Dry-run sponsor proof replay derived from the public trial bundle and outcome memo. Keep sponsors as proof contributors, not decision owners. |
+| Sponsor Evidence Replay projection | `agent/trial_evidence_replay.py` | Dry-run sponsor proof replay derived from the public trial bundle and outcome memo. It can ingest sanitized evidence from `examples/evidence/support_triage_trial` while keeping sponsors as proof contributors, not decision owners. |
+| Sanitized evidence fixtures | `examples/evidence/support_triage_trial/` | Redacted provider-output shape for CTO-held Tavily, Composio, Nebius, and OpenClaw results. Replace with redacted local files only; never commit secrets. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
@@ -77,6 +80,7 @@ messy agent-access request
 -> Packet Outcome Memo
 -> Design Partner Outcome Memo
 -> Sponsor Evidence Replay
+-> Live Evidence Rehearsal
 -> Proof Health
 -> trace
 -> Markdown/JSON artifacts
@@ -137,6 +141,7 @@ python3 -m agent.proof_health --no-write
 python3 -m json.tool examples/generated/support_triage_agent.proof_health.json >/tmp/proof_health_check.json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_outcome_memo_check.json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_evidence_replay_check.json
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json >/tmp/live_evidence_rehearsal_check.json
 python3 -m unittest discover -s tests
 ```
 

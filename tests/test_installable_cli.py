@@ -88,6 +88,10 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-contract --all", readme)
         self.assertIn("ia-trial examples/requests/support_triage_trial.yml", readme)
         self.assertIn("ia-trial-evidence-replay examples/requests/support_triage_trial.yml", readme)
+        self.assertIn(
+            "ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+            readme,
+        )
         self.assertIn("ia-trial-outcome-memo examples/requests/support_triage_trial.yml", readme)
         self.assertIn("ia-verify-artifacts", readme)
         self.assertIn("python -m pip install -e .", workflow)
@@ -99,6 +103,10 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-sponsor-readiness --no-write", workflow)
         self.assertIn("ia-trial examples/requests/support_triage_trial.yml", workflow)
         self.assertIn("ia-trial-evidence-replay examples/requests/support_triage_trial.yml", workflow)
+        self.assertIn(
+            "ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+            workflow,
+        )
         self.assertIn("ia-trial-outcome-memo examples/requests/support_triage_trial.yml", workflow)
         self.assertIn("ia-verify-artifacts", workflow)
 

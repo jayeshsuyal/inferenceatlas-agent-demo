@@ -121,7 +121,7 @@
       "slash": "evidence",
       "slash_trigger": "/evidence",
       "name": "Sponsor Evidence Replay",
-      "what_it_proves": "Sponsor proof slots attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+      "what_it_proves": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
       "command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
       "category": "design_partner_pilot",
       "category_label": "Design Partner Pilot",
@@ -131,6 +131,7 @@
       "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
       "artifacts": [
         "agent/trial_evidence_replay.py",
+        "examples/evidence/support_triage_trial",
         "examples/generated/support_triage_trial.evidence_replay.md",
         "examples/generated/support_triage_trial.evidence_replay.json"
       ]
@@ -414,7 +415,7 @@
           "slash": "evidence",
           "slash_trigger": "/evidence",
           "name": "Sponsor Evidence Replay",
-          "what_it_proves": "Sponsor proof slots attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+          "what_it_proves": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
           "command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
           "category": "design_partner_pilot",
           "category_label": "Design Partner Pilot",
@@ -424,6 +425,7 @@
           "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
           "artifacts": [
             "agent/trial_evidence_replay.py",
+            "examples/evidence/support_triage_trial",
             "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/support_triage_trial.evidence_replay.json"
           ]

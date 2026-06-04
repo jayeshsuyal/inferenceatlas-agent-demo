@@ -27,6 +27,7 @@ Run the design-partner trial sample:
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ```
 
 Install the public harness commands:
@@ -59,6 +60,7 @@ python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -82,6 +84,7 @@ ia-proof-health
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml
+ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ia-verify-artifacts
 ```
 
@@ -162,6 +165,12 @@ The fastest proof that sponsor tools attach evidence without taking over the dec
 
 ```text
 examples/generated/support_triage_trial.evidence_replay.md
+```
+
+The fastest proof that redacted sponsor outputs can be rehearsed safely is:
+
+```bash
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ```
 
 The fastest proof that deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in is:
@@ -316,6 +325,7 @@ Run the public trial sample:
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.trial examples/requests/support_triage_trial.yml --write
 ```
 
@@ -455,6 +465,7 @@ examples/generated/support_triage_trial.decision_brief.md
 examples/generated/support_triage_trial.decision_brief.json
 examples/generated/support_triage_trial.outcome_memo.md
 examples/generated/support_triage_trial.outcome_memo.json
+examples/evidence/support_triage_trial/
 examples/generated/support_triage_trial.evidence_replay.md
 examples/generated/support_triage_trial.evidence_replay.json
 ```

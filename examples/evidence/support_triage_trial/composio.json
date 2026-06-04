@@ -1,0 +1,32 @@
+{
+  "schema_version": "ia_sponsor_evidence.composio.v0",
+  "provider": "composio",
+  "sanitized_from_live_output": true,
+  "source": "cto_redacted_composio_dry_run_sample",
+  "permission_diffs": [
+    {
+      "tool": "github",
+      "dry_run_operation_id": "dryrun-github-issue-read-plan",
+      "requested_scopes": ["issues:read", "metadata:read"],
+      "blocked_actions": ["issue edits", "repo configuration changes", "workflow dispatch"],
+      "would_execute": false,
+      "can_grant_permissions": false
+    },
+    {
+      "tool": "slack",
+      "dry_run_operation_id": "dryrun-slack-channel-summary-plan",
+      "requested_scopes": ["channels:history:allowlisted", "channels:read:allowlisted"],
+      "blocked_actions": ["posting messages", "DM access", "workspace-wide history"],
+      "would_execute": false,
+      "can_grant_permissions": false
+    },
+    {
+      "tool": "jira",
+      "dry_run_operation_id": "dryrun-jira-draft-ticket-plan",
+      "requested_scopes": ["project:read", "issue:draft"],
+      "blocked_actions": ["ticket creation", "status changes", "assignment changes"],
+      "would_execute": false,
+      "can_grant_permissions": false
+    }
+  ]
+}

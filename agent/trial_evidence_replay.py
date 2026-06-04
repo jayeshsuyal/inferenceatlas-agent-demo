@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import sys
 from pathlib import Path
@@ -15,6 +16,35 @@ from .trial_outcome_memo import build_trial_outcome_memo
 
 TRIAL_EVIDENCE_REPLAY_SCHEMA_VERSION = "design_partner_evidence_replay.v0"
 ADAPTER_PROVIDERS = ("tavily", "composio", "nebius", "openclaw")
+DEFAULT_REHEARSAL_EVIDENCE_DIR = ROOT_DIR / "examples" / "evidence" / "support_triage_trial"
+SENSITIVE_EVIDENCE_KEY_TERMS = (
+    "api_key",
+    "authorization",
+    "bearer",
+    "cookie",
+    "credential",
+    "password",
+    "secret",
+    "token",
+)
+UNSAFE_TRUE_FIELDS = {
+    "approves_access",
+    "approval_granted",
+    "can_approve_access",
+    "can_grant_permissions",
+    "can_mutate_external_state",
+    "can_reduce_proof_debt",
+    "can_reduce_proof_debt_automatically",
+    "can_sponsor_change_decision",
+    "executes_external_writes",
+    "external_writes_enabled",
+    "external_writes",
+    "grants_permissions",
+    "mutates_production",
+    "permission_grants",
+    "production_access",
+    "would_execute",
+}
 
 
 def _relative(path: Path) -> str:
@@ -23,6 +53,62 @@ def _relative(path: Path) -> str:
 
 def _pretty_json(item: dict[str, Any]) -> str:
     return json.dumps(item, indent=2, sort_keys=True)
+
+
+def _truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "enabled", "allowed"}
+    if isinstance(value, (int, float)):
+        return value != 0
+    return bool(value) if value is not None else False
+
+
+def _assert_rehearsal_safe(value: Any, *, source: str, path: str = "$") -> None:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            lowered = key.lower()
+            if any(term in lowered for term in SENSITIVE_EVIDENCE_KEY_TERMS):
+                raise ValueError(f"rehearsal evidence contains sensitive key {path}.{key} in {source}")
+            if lowered in UNSAFE_TRUE_FIELDS and _truthy(nested):
+                raise ValueError(f"rehearsal evidence attempts unsafe field {path}.{key}=true in {source}")
+            _assert_rehearsal_safe(nested, source=source, path=f"{path}.{key}")
+        return
+    if isinstance(value, list):
+        for index, nested in enumerate(value):
+            _assert_rehearsal_safe(nested, source=source, path=f"{path}[{index}]")
+
+
+def _load_rehearsal_evidence(evidence_dir: Path | None) -> dict[str, dict[str, Any]]:
+    if evidence_dir is None:
+        return {}
+    if not evidence_dir.is_absolute():
+        evidence_dir = ROOT_DIR / evidence_dir
+    if not evidence_dir.is_dir():
+        raise FileNotFoundError(f"evidence directory not found: {evidence_dir}")
+
+    evidence: dict[str, dict[str, Any]] = {}
+    for provider in ADAPTER_PROVIDERS:
+        path = evidence_dir / f"{provider}.json"
+        if not path.exists():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if payload.get("provider", provider) != provider:
+            raise ValueError(f"{path} provider must be {provider}")
+        _assert_rehearsal_safe(payload, source=_relative(path))
+        evidence[provider] = payload
+    if not evidence:
+        raise ValueError(f"evidence directory has no known provider JSON files: {evidence_dir}")
+    return evidence
+
+
+def _count_rehearsal_items(payload: dict[str, Any]) -> int:
+    for key in ("evidence_candidates", "permission_diffs", "narrations", "trace_checkpoints"):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return len(value)
+    return 1
 
 
 def _provider_boundary(provider: str) -> dict[str, Any]:
@@ -179,6 +265,7 @@ def _owner_proof_map(memo: dict[str, Any], sponsor_replay: dict[str, dict[str, A
                 "support": candidate["planned_query"],
                 "human_review_required": candidate["human_review_required"],
                 "can_reduce_proof_debt": candidate["can_reduce_proof_debt"],
+                "attached_sanitized_sources": len(candidate.get("source_urls", [])),
             }
             for candidate in tavily["attachments"]
             if candidate["proof_needed"] == proof_needed
@@ -211,13 +298,90 @@ def _owner_proof_map(memo: dict[str, Any], sponsor_replay: dict[str, dict[str, A
     return mapped
 
 
-def build_trial_evidence_replay(request_path: Path = DEFAULT_TRIAL_REQUEST) -> dict[str, Any]:
+def _attach_tavily_evidence(replay: dict[str, Any], payload: dict[str, Any]) -> None:
+    by_proof = {
+        item.get("proof_needed"): item
+        for item in payload.get("evidence_candidates", [])
+        if item.get("proof_needed")
+    }
+    for attachment in replay["attachments"]:
+        evidence = by_proof.get(attachment["proof_needed"])
+        if not evidence:
+            continue
+        sources = evidence.get("sources", [])
+        attachment["source_urls"] = [source["url"] for source in sources if source.get("url")]
+        attachment["freshness"] = evidence.get("freshness", "sanitized_evidence_attached")
+        attachment["sanitized_sources"] = sources
+        attachment["evidence_attached"] = True
+
+
+def _attach_composio_evidence(replay: dict[str, Any], payload: dict[str, Any]) -> None:
+    by_tool = {
+        item.get("tool"): item
+        for item in payload.get("permission_diffs", [])
+        if item.get("tool")
+    }
+    for attachment in replay["attachments"]:
+        evidence = by_tool.get(attachment["tool"])
+        if not evidence:
+            continue
+        attachment["dry_run_operation_id"] = evidence.get("dry_run_operation_id")
+        attachment["requested_scopes"] = evidence.get("requested_scopes", [])
+        attachment["sanitized_permission_diff"] = evidence
+        attachment["evidence_attached"] = True
+
+
+def _attach_nebius_evidence(replay: dict[str, Any], payload: dict[str, Any]) -> None:
+    narrations = payload.get("narrations", [])
+    for attachment in replay["attachments"]:
+        attachment["sanitized_reviewer_narration"] = narrations
+        attachment["evidence_attached"] = bool(narrations)
+
+
+def _attach_openclaw_evidence(replay: dict[str, Any], payload: dict[str, Any]) -> None:
+    checkpoints = payload.get("trace_checkpoints", [])
+    for attachment in replay["attachments"]:
+        attachment["sanitized_trace_checkpoints"] = checkpoints
+        attachment["evidence_attached"] = bool(checkpoints)
+
+
+def _attach_rehearsal_evidence(
+    sponsor_replay: dict[str, dict[str, Any]],
+    rehearsal_evidence: dict[str, dict[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    replay = copy.deepcopy(sponsor_replay)
+    attachers = {
+        "tavily": _attach_tavily_evidence,
+        "composio": _attach_composio_evidence,
+        "nebius": _attach_nebius_evidence,
+        "openclaw": _attach_openclaw_evidence,
+    }
+    for provider, item in replay.items():
+        payload = rehearsal_evidence.get(provider)
+        item["rehearsal_evidence_attached"] = bool(payload)
+        if not payload:
+            continue
+        item["rehearsal_evidence_summary"] = {
+            "schema_version": payload.get("schema_version"),
+            "sanitized_from_live_output": payload.get("sanitized_from_live_output", True),
+            "item_count": _count_rehearsal_items(payload),
+            "source": payload.get("source", "sanitized_provider_fixture"),
+        }
+        attachers[provider](item, payload)
+    return replay
+
+
+def build_trial_evidence_replay(
+    request_path: Path = DEFAULT_TRIAL_REQUEST,
+    evidence_dir: Path | None = None,
+) -> dict[str, Any]:
     """Build an offline sponsor evidence replay for one public trial request."""
     bundle = build_trial_bundle(request_path)
     report = bundle["report"]
     packet = bundle["packet"]
     memo = build_trial_outcome_memo(request_path)
     stem = request_path.stem
+    rehearsal_evidence = _load_rehearsal_evidence(evidence_dir)
 
     sponsor_replay = {
         "tavily": _tavily_replay(report),
@@ -225,6 +389,7 @@ def build_trial_evidence_replay(request_path: Path = DEFAULT_TRIAL_REQUEST) -> d
         "nebius": _nebius_replay(memo),
         "openclaw": _openclaw_replay(report, memo),
     }
+    sponsor_replay = _attach_rehearsal_evidence(sponsor_replay, rehearsal_evidence)
     owner_map = _owner_proof_map(memo, sponsor_replay)
 
     return {
@@ -248,6 +413,9 @@ def build_trial_evidence_replay(request_path: Path = DEFAULT_TRIAL_REQUEST) -> d
         },
         "summary": {
             "provider_count": len(sponsor_replay),
+            "rehearsal_evidence_provider_count": len(rehearsal_evidence),
+            "sanitized_evidence_attached": bool(rehearsal_evidence),
+            "decision_locked_after_rehearsal": True,
             "proof_owner_count": len(owner_map),
             "proof_attachment_count": sum(len(item["sponsor_support"]) for item in owner_map),
             "all_non_executing": all(not item["would_execute"] for item in sponsor_replay.values()),
@@ -255,6 +423,14 @@ def build_trial_evidence_replay(request_path: Path = DEFAULT_TRIAL_REQUEST) -> d
             "all_non_granting": all(not item["can_grant_permissions"] for item in sponsor_replay.values()),
             "all_non_mutating": all(not item["can_mutate_external_state"] for item in sponsor_replay.values()),
             "all_human_review_required": all(item["human_review_required"] for item in sponsor_replay.values()),
+        },
+        "live_evidence_rehearsal": {
+            "evidence_dir": _relative(evidence_dir) if evidence_dir else None,
+            "sanitized_provider_count": len(rehearsal_evidence),
+            "providers": sorted(rehearsal_evidence),
+            "unsafe_inputs_rejected": True,
+            "decision_locked": True,
+            "proof_debt_reduction_requires_human_review": True,
         },
         "sponsor_replay": sponsor_replay,
         "owner_proof_map": owner_map,
@@ -284,6 +460,7 @@ def render_trial_evidence_replay_markdown(replay: dict[str, Any]) -> str:
     """Render the sponsor evidence replay as Markdown."""
     summary = replay["summary"]
     decision = replay["decision_lock"]
+    rehearsal = replay["live_evidence_rehearsal"]
     safety = replay["safety_boundary"]
     lines = [
         f"# Sponsor Evidence Replay: {Path(replay['request_path']).stem}",
@@ -313,18 +490,34 @@ def render_trial_evidence_replay_markdown(replay: dict[str, Any]) -> str:
         "",
         "## Provider Replay",
         "",
-        "| Provider | Proof Pack | Attachments | Can Approve | Would Execute |",
-        "| --- | --- | --- | --- | --- |",
+        "| Provider | Proof Pack | Attachments | Evidence Attached | Can Approve | Would Execute |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for provider, item in replay["sponsor_replay"].items():
         lines.append(
-            "| {provider} | {proof} | {count} | {approve} | {execute} |".format(
+            "| {provider} | {proof} | {count} | {attached} | {approve} | {execute} |".format(
                 provider=provider,
                 proof=item["proof_pack_type"],
                 count=len(item["attachments"]),
+                attached=item["rehearsal_evidence_attached"],
                 approve=item["can_approve_access"],
                 execute=item["would_execute"],
             )
+        )
+
+    if rehearsal["sanitized_provider_count"]:
+        lines.extend(
+            [
+                "",
+                "## Live Evidence Rehearsal",
+                "",
+                f"- evidence dir: `{rehearsal['evidence_dir']}`",
+                f"- sanitized providers: {rehearsal['sanitized_provider_count']}",
+                f"- providers: {', '.join(rehearsal['providers'])}",
+                f"- unsafe inputs rejected: {rehearsal['unsafe_inputs_rejected']}",
+                f"- decision locked: {rehearsal['decision_locked']}",
+                f"- proof debt reduction requires human review: {rehearsal['proof_debt_reduction_requires_human_review']}",
+            ]
         )
 
     lines.extend(
@@ -380,10 +573,11 @@ def render_trial_evidence_replay_markdown(replay: dict[str, Any]) -> str:
 def write_trial_evidence_replay_artifacts(
     request_path: Path = DEFAULT_TRIAL_REQUEST,
     output_dir: Path = GENERATED_DIR,
+    evidence_dir: Path | None = None,
 ) -> list[Path]:
     """Write the sponsor evidence replay for one public trial request."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    replay = build_trial_evidence_replay(request_path)
+    replay = build_trial_evidence_replay(request_path, evidence_dir)
     stem = request_path.stem
     replay_md = output_dir / f"{stem}.evidence_replay.md"
     replay_json = output_dir / f"{stem}.evidence_replay.json"
@@ -421,6 +615,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=GENERATED_DIR,
         help="Directory for generated evidence replay artifacts.",
     )
+    parser.add_argument(
+        "--evidence-dir",
+        type=Path,
+        default=None,
+        help="Directory of sanitized provider JSON outputs to rehearse against the locked decision.",
+    )
     return parser
 
 
@@ -430,10 +630,13 @@ def main(argv: list[str] | None = None) -> int:
     request_path = args.request_path
     if not request_path.is_absolute():
         request_path = ROOT_DIR / request_path
+    evidence_dir = args.evidence_dir
+    if evidence_dir is not None and not evidence_dir.is_absolute():
+        evidence_dir = ROOT_DIR / evidence_dir
 
-    replay = build_trial_evidence_replay(request_path)
+    replay = build_trial_evidence_replay(request_path, evidence_dir)
     if not args.no_write:
-        paths = write_trial_evidence_replay_artifacts(request_path, args.output_dir)
+        paths = write_trial_evidence_replay_artifacts(request_path, args.output_dir, evidence_dir)
         if not args.json:
             for path in paths:
                 print(_relative(path))

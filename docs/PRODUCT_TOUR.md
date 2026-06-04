@@ -29,6 +29,7 @@ Run this path from a clean checkout:
 
 ```bash
 python3 -m agent.judge
+python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.proof_health
@@ -44,6 +45,7 @@ Or use the installed commands:
 ```bash
 pip install -e .
 ia-judge
+ia-skills
 ia-packet-diff
 ia-outcome-memo
 ia-proof-health
@@ -56,6 +58,7 @@ ia-verify-artifacts
 In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
+- an Agent Skills registry showing 12 stable public review skills with commands, artifacts, dependencies, and safety boundaries
 - a role-level trial request converted into a report, packet, and access brief
 - a Packet Diff proving low, medium/high, and critical requests move differently
 - a Packet Outcome Memo converting the support-triage packet into a human decision
@@ -71,6 +74,7 @@ In five minutes, a reviewer should see:
 | Surface | What it proves |
 | --- | --- |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
+| `docs/AGENT_SKILLS.md` | The public capability registry maps each agent review skill to proof, command, artifact, dependency, tier, and safety boundary. |
 | `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |
 | `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
@@ -90,6 +94,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Fixed public fixture | Derived product behavior |
 | --- | --- |
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
+| Agent Skills registry | Public capability claims are structured as registry entries with commands, artifacts, dependencies, and allowlisted safety boundaries. |
 | Packet Diff | The three scenarios produce different load-bearing fields while production access and writes stay blocked. |
 | Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
 | Artifact Integrity Gate | Deterministic proof artifacts must remain byte-equal to the current generator output; static review assets must be present; generated inventory must not contain extras. |

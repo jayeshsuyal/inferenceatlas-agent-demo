@@ -16,6 +16,7 @@ EXPECTED_SCRIPTS = {
     "ia-proof-health": "agent.proof_health:main",
     "ia-review": "agent.review:main",
     "ia-review-room": "agent.review_room:main",
+    "ia-skills": "agent.skills:main",
     "ia-sponsor-readiness": "agent.sponsor_readiness:main",
     "ia-trial": "agent.trial:main",
     "ia-trust": "agent.trust:main",
@@ -75,6 +76,7 @@ class InstallableCliTests(unittest.TestCase):
 
         self.assertIn("pip install -e .", readme)
         self.assertIn("ia-judge", readme)
+        self.assertIn("ia-skills", readme)
         self.assertIn("ia-packet-diff", readme)
         self.assertIn("ia-outcome-memo", readme)
         self.assertIn("ia-proof-health", readme)
@@ -85,6 +87,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-verify-artifacts", readme)
         self.assertIn("python -m pip install -e .", workflow)
         self.assertIn("ia-judge --no-write", workflow)
+        self.assertIn("ia-skills", workflow)
         self.assertIn("ia-packet-diff --no-write", workflow)
         self.assertIn("ia-outcome-memo --no-write", workflow)
         self.assertIn("ia-proof-health --no-write", workflow)

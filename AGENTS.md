@@ -22,6 +22,7 @@ Run:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
@@ -41,6 +42,7 @@ Expected result:
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
+- the Agent Skills registry reports `12 / 12 stable skills available`
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
 - Packet Outcome Memo converts the support-triage packet into a scoped-validation human decision
 - the public contract reports all scenarios as `OK`
@@ -60,30 +62,31 @@ Expected result:
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
 3. `docs/PRODUCT_TOUR.md`
-4. `docs/PRODUCT_QUALITY_AUDIT.md`
-5. `docs/JUDGE_REVIEW_GUIDE.md`
-6. `docs/DESIGN_PARTNER_BRIEF.md`
-7. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-8. `examples/requests/design_partner_trial.yml`
-9. `examples/requests/support_triage_trial.yml`
-10. `examples/generated/support_triage_trial_report.md`
-11. `examples/generated/trust_receipt.md`
-12. `examples/generated/packet_diff.md`
-13. `examples/generated/support_triage_agent.outcome_memo.md`
-14. `examples/generated/sponsor_live_readiness.md`
-15. `examples/generated/review_room.md`
-16. `examples/generated/review_room.html`
-17. `examples/generated/support_triage_agent.proof_health.md`
-18. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-19. `examples/generated/review_room.desktop.jpg`
-20. `policy/agent_access.yml`
-21. `agent/adapters/`
-22. `examples/generated/support_triage_agent.decision_brief.md`
-23. `examples/generated/support_triage_agent.packet.md`
-24. `examples/generated/admin_code_fix_bot.packet.json`
-25. `docs/CONTRACT.md`
-26. `docs/SAFETY_CONTRACT.md`
-27. `docs/V1_CAPABILITY_PASSPORT.md`
+4. `docs/AGENT_SKILLS.md`
+5. `docs/PRODUCT_QUALITY_AUDIT.md`
+6. `docs/JUDGE_REVIEW_GUIDE.md`
+7. `docs/DESIGN_PARTNER_BRIEF.md`
+8. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+9. `examples/requests/design_partner_trial.yml`
+10. `examples/requests/support_triage_trial.yml`
+11. `examples/generated/support_triage_trial_report.md`
+12. `examples/generated/trust_receipt.md`
+13. `examples/generated/packet_diff.md`
+14. `examples/generated/support_triage_agent.outcome_memo.md`
+15. `examples/generated/sponsor_live_readiness.md`
+16. `examples/generated/review_room.md`
+17. `examples/generated/review_room.html`
+18. `examples/generated/support_triage_agent.proof_health.md`
+19. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+20. `examples/generated/review_room.desktop.jpg`
+21. `policy/agent_access.yml`
+22. `agent/adapters/`
+23. `examples/generated/support_triage_agent.decision_brief.md`
+24. `examples/generated/support_triage_agent.packet.md`
+25. `examples/generated/admin_code_fix_bot.packet.json`
+26. `docs/CONTRACT.md`
+27. `docs/SAFETY_CONTRACT.md`
+28. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -92,6 +95,7 @@ Evaluate the public product contract:
 - Does `python3 -m agent.judge` summarize the full safe review path in one command?
 - Does `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` give exact pass/fail signals for automated review?
 - Does `docs/PRODUCT_TOUR.md` explain the product trial path and what is fixed versus derived?
+- Does `docs/AGENT_SKILLS.md` map public agent skills to commands, artifacts, dependencies, and safety boundaries?
 - Does `docs/PRODUCT_QUALITY_AUDIT.md` keep the public product spine coherent under fast iteration?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does `examples/generated/packet_diff.md` prove the packet bends across low, medium/high, and critical access?

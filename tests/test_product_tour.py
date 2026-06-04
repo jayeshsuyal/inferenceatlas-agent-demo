@@ -32,10 +32,12 @@ class ProductTourTests(unittest.TestCase):
             "python3 -m agent.sponsor_readiness",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "python3 -m agent.verify_artifacts",
             "ia-verify-artifacts",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/packet_diff.md",
             "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/support_triage_agent.proof_health.md",
@@ -71,6 +73,8 @@ class ProductTourTests(unittest.TestCase):
         self.assertIn("docs/AGENT_SKILLS.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.skills", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["product_review_path"])
+        self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["product_review_path"])
         self.assertIn("product tour", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])

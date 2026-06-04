@@ -30,6 +30,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "Proof Health",
             "Sponsor Live Readiness",
             "Design Partner Trial Runner",
+            "Sponsor Evidence Replay",
             "Agentic Review Expected Output",
             "No landing-page drift in this repo lane.",
             "Sponsor tools contribute proof, not approval authority.",
@@ -58,6 +59,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.evidence_replay.md",
         ]
 
         positions = [doc.index(item) for item in expected_order]
@@ -87,6 +89,7 @@ class ProductQualityAuditTests(unittest.TestCase):
         self.assertIn("docs/AGENT_SKILLS.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.skills", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
+        self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["product_review_path"])
         self.assertIn("product quality audit", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])

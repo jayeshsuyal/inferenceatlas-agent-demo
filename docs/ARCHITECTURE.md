@@ -14,16 +14,19 @@ flowchart TD
     D --> F["Decision trace"]
     D --> G["Proof Health"]
     D --> H["Outcome memos"]
-    D --> I["Markdown and JSON artifacts"]
+    D --> I["Sponsor evidence replay"]
+    D --> J["Markdown and JSON artifacts"]
     E --> G
     E --> H
     E --> I
-    F --> I
-    G --> I
-    H --> I
+    E --> J
+    F --> J
+    G --> J
+    H --> J
+    I --> J
 ```
 
-The packet is the canonical object. The brief, Proof Health report, outcome memos, trace, and Markdown outputs are projections.
+The packet is the canonical object. The brief, Proof Health report, outcome memos, sponsor evidence replay, trace, and Markdown outputs are projections.
 
 ## Module Map
 
@@ -35,6 +38,7 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 | `agent/decision_brief.py` | Derives the Agent Access Decision Brief from the packet. | Never add separate approval logic here; derive from packet state. |
 | `agent/outcome_memo.py` | Derives the packet-level meeting decision from the public packet, brief, policy gate, Proof Health, and sponsor readiness. | Keep it a projection; it must not approve access or grant permissions. |
 | `agent/trial_outcome_memo.py` | Derives the design-partner meeting decision from the public trial bundle. | Keep it tied to the trial request, packet, and brief; it must not approve, grant, write, or mutate. |
+| `agent/trial_evidence_replay.py` | Derives dry-run sponsor proof attachment from the public trial bundle and outcome memo. | Sponsors can contribute proof slots, but cannot change verdict, approve, grant, write, or mutate. |
 | `agent/proof_health.py` | Derives Packet Drift, stale assumptions, expired reviewer gates, and next human health check from the public packet and brief. | Keep it lifecycle-only; it must not approve, grant, write, or mutate production state. |
 | `agent/renderers.py` | Renders packet, trace, and brief to Markdown. | Keep rendering deterministic and side-effect free. |
 | `agent/runtime.py` | Optional Nebius/OpenClaw live runtime. | Live output should enrich packet artifacts and preserve safety invariants. |
@@ -50,9 +54,10 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 4. The DecisionPacket sets approval posture and safety state.
 5. The Agent Access Decision Brief derives a skim-ready go/no-go.
 6. Outcome memos derive meeting decisions without changing the access decision.
-7. The Proof Health report derives lifecycle drift status without changing the access decision.
-8. Renderers write Markdown and JSON artifacts.
-9. Tests and CI verify no-key execution and safety defaults.
+7. Sponsor Evidence Replay attaches sponsor proof slots without changing the access decision.
+8. The Proof Health report derives lifecycle drift status without changing the access decision.
+9. Renderers write Markdown and JSON artifacts.
+10. Tests and CI verify no-key execution and safety defaults.
 
 ## Stable Contracts
 
@@ -65,6 +70,7 @@ The current public contracts are:
 - `examples/generated/support_triage_agent.trace.json`
 - `examples/generated/support_triage_agent.proof_health.json`
 - `examples/generated/support_triage_trial.outcome_memo.json`
+- `examples/generated/support_triage_trial.evidence_replay.json`
 
 Generated JSON should stay machine-readable and stable enough for AI judges to parse.
 

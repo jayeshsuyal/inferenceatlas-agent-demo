@@ -114,6 +114,13 @@ GENERATED_ARTIFACT_FAMILIES = (
             "support_triage_trial.outcome_memo.json",
         ),
     ),
+    ArtifactFamily(
+        "Sponsor Evidence Replay",
+        (
+            "support_triage_trial.evidence_replay.md",
+            "support_triage_trial.evidence_replay.json",
+        ),
+    ),
 )
 
 STATIC_REVIEW_ASSETS = (

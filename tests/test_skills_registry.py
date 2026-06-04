@@ -126,9 +126,9 @@ class SkillsRegistryTests(unittest.TestCase):
         report = build_skills_report()
 
         self.assertEqual(report["schema_version"], "agent_skills_registry.v0")
-        self.assertEqual(report["summary"]["registered_skills"], 13)
-        self.assertEqual(report["summary"]["stable_skills"], 13)
-        self.assertEqual(report["summary"]["available_stable_skills"], 13)
+        self.assertEqual(report["summary"]["registered_skills"], 14)
+        self.assertEqual(report["summary"]["stable_skills"], 14)
+        self.assertEqual(report["summary"]["available_stable_skills"], 14)
         self.assertFalse(report["private_boundary"]["private_source_exposed"])
         self.assertFalse(report["safety"]["approves_access"])
         self.assertFalse(report["safety"]["grants_permissions"])
@@ -154,11 +154,11 @@ class SkillsRegistryTests(unittest.TestCase):
 
         self.assertEqual(text_result.returncode, 0, msg=text_result.stderr)
         self.assertIn("# InferenceAtlas Agent Skills", text_result.stdout)
-        self.assertIn("13 / 13 stable skills available", text_result.stdout)
+        self.assertIn("14 / 14 stable skills available", text_result.stdout)
         self.assertIn("Artifact Integrity Verification", text_result.stdout)
         self.assertEqual(json_result.returncode, 0, msg=json_result.stderr)
         payload = json.loads(json_result.stdout)
-        self.assertEqual(payload["summary"]["available_stable_skills"], 13)
+        self.assertEqual(payload["summary"]["available_stable_skills"], 14)
 
 if __name__ == "__main__":
     unittest.main()

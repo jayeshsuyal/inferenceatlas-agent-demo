@@ -55,9 +55,11 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.evidence_replay.md",
             "policy/agent_access.yml",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "public offline trial runner",
             "Private engine, public proof.",
         ]:
@@ -135,6 +137,7 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
         self.assertIn("design partner trial kit", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner trial runner", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("trial request templates", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("proof health", manifest["private_v1_boundary"]["public_proof_surface"])
 
@@ -146,6 +149,8 @@ class DesignPartnerTrialKitTests(unittest.TestCase):
             "examples/generated/support_triage_trial_report.json",
             "examples/generated/support_triage_trial.outcome_memo.md",
             "examples/generated/support_triage_trial.outcome_memo.json",
+            "examples/generated/support_triage_trial.evidence_replay.md",
+            "examples/generated/support_triage_trial.evidence_replay.json",
             "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/support_triage_agent.proof_health.json",
         ]:

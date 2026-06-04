@@ -29,6 +29,7 @@ agent-access question
 -> Sponsor Live Readiness
 -> Design Partner Trial Runner
 -> Design Partner Outcome Memo
+-> Sponsor Evidence Replay
 -> human review
 ```
 
@@ -55,6 +56,7 @@ A reviewer should be able to follow this order without needing private source co
 15. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
 16. `examples/generated/support_triage_trial_report.md`
 17. `examples/generated/support_triage_trial.outcome_memo.md`
+18. `examples/generated/support_triage_trial.evidence_replay.md`
 
 This order is the product-quality baseline. It gives a skim reviewer a clear story, gives an agentic reviewer a command path, gives a CTO a build path, and gives a design partner a trial path.
 
@@ -74,6 +76,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 | Sponsor Live Readiness | Show where Nebius, Tavily, Composio, and OpenClaw can add live proof. | Must keep every provider non-executing, non-approving, non-granting, and non-mutating by default. |
 | Design Partner Trial Runner | Turn one role-level request into a report, packet, and access brief. | Must stay no-key, no-write, and scoped to one workflow. |
 | Design Partner Outcome Memo | Turn one trial request into a meeting-ready decision. | Must name can-move scope, blocked scope, proof owners, and reviewer routes while approvals, grants, writes, and production mutation stay off. |
+| Sponsor Evidence Replay | Attach sponsor proof slots to the trial decision. | Must show Tavily evidence slots, Composio permission diffs, Nebius locked-field narration, and OpenClaw trace checkpoints without changing the verdict or executing actions. |
 | Agentic Review Expected Output | Tell an automated reviewer exactly what should pass or fail. | Must give machine-readable checks and failure signals. |
 
 ## What Stays Premium
@@ -111,7 +114,7 @@ Before a PR claims the product surface is stronger, it should preserve these sig
 - `python3 -m agent.verify_artifacts` passes.
 - The artifact checklist includes the review surfaces a judge should skim.
 - The public boundary tests stay clean.
-- The Review Room, Trust Receipt, Packet Diff, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, trial report, and Design Partner Outcome Memo remain generated public artifacts.
+- The Review Room, Trust Receipt, Packet Diff, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, trial report, Design Partner Outcome Memo, and Sponsor Evidence Replay remain generated public artifacts.
 
 ## Product Spine Check
 
@@ -120,20 +123,20 @@ Use this as the quick premium-quality review:
 | Question | Pass signal |
 | --- | --- |
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
-| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 13 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
+| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 14 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |
 | Can a reviewer trust the public proof inventory is fresh? | `python3 -m agent.verify_artifacts` byte-compares regenerated outputs against `examples/generated/`, validates static review assets, and fails on unexpected generated files. |
 | Can a CTO build on it safely? | `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md` preserve dry-run and human-review defaults. |
-| Can a design partner trial it? | `docs/DESIGN_PARTNER_TRIAL_KIT.md`, request samples, the trial runner, and the Design Partner Outcome Memo convert one workflow into public outputs and a meeting decision. |
-| Can sponsor tools help without taking over? | Sponsor Live Readiness shows proof contribution while keeping execution, approval, grants, and mutation off. |
+| Can a design partner trial it? | `docs/DESIGN_PARTNER_TRIAL_KIT.md`, request samples, the trial runner, the Design Partner Outcome Memo, and Sponsor Evidence Replay convert one workflow into public outputs, a meeting decision, and sponsor proof slots. |
+| Can sponsor tools help without taking over? | Sponsor Live Readiness and Sponsor Evidence Replay show proof contribution while keeping execution, approval, grants, and mutation off. |
 
 ## Next Product Move
 
-The next premium product move should be a design-partner evidence replay that feeds sponsor proof into the same outcome memo without changing the safety defaults.
+The next premium product move should be a live evidence rehearsal that feeds real CTO-held sponsor outputs into the same replay shape without changing the safety defaults.
 
-The Design Partner Outcome Memo now proves the meeting decision shape. The next version should show where Tavily evidence, Composio permission diffs, Nebius narration, and OpenClaw traces attach to the same trial decision:
+Sponsor Evidence Replay now proves where Tavily evidence, Composio permission diffs, Nebius narration, and OpenClaw traces attach to the same trial decision:
 
 ```text
 Move this agent into scoped validation.
@@ -143,4 +146,4 @@ Show which sponsor proof supports each owner action.
 Keep approvals, grants, writes, and production mutation off.
 ```
 
-That is the product moment: a faster, clearer, safer human decision before an agent receives access.
+That is the product moment: a faster, clearer, safer human decision before an agent receives access, with live proof ready to attach when the CTO chooses.

@@ -19,6 +19,7 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
 
@@ -309,7 +310,47 @@ examples/generated/support_triage_trial.outcome_memo.json
 
 Review signal: the design-partner trial now ends in a meeting-ready can-move/stays-blocked memo without granting access.
 
-## 10. Unit Tests
+## 10. Sponsor Evidence Replay
+
+Command:
+
+```bash
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+```
+
+Expected output signal:
+
+```text
+# Sponsor Evidence Replay: support_triage_trial
+
+## Decision Lock
+
+- decision: scoped_validation_only
+- production access: False
+- permission grants: False
+- external writes: False
+- sponsors can change decision: False
+
+## Provider Replays
+
+| Provider | Role | Would execute | Can approve | Can grant | Mutates production |
+| --- | --- | --- | --- | --- | --- |
+| Tavily | evidence_candidate_plan | False | False | False | False |
+| Composio | permission_diff | False | False | False | False |
+| Nebius | locked_field_narration | False | False | False | False |
+| OpenClaw | runtime_trace_plan | False | False | False | False |
+```
+
+Generated evidence replay artifacts:
+
+```text
+examples/generated/support_triage_trial.evidence_replay.md
+examples/generated/support_triage_trial.evidence_replay.json
+```
+
+Review signal: sponsor tools can add proof context, permission diffs, narration, and runtime traces, but they cannot approve, grant, write, mutate, or change the trial decision.
+
+## 11. Unit Tests
 
 Command:
 
@@ -327,7 +368,7 @@ Ran 112 tests in 1.xs
 OK
 ```
 
-Review signal: tests cover packet shape, decision brief shape, rules engine behavior, scenario spread, public contract, policy gate, dry-run sponsor adapters, Trust Receipt, Review Room HTML, design-partner trial runner, walkthrough artifacts, manifest routing, and private-boundary guardrails.
+Review signal: tests cover packet shape, decision brief shape, rules engine behavior, scenario spread, public contract, policy gate, dry-run sponsor adapters, Trust Receipt, Review Room HTML, design-partner trial runner, sponsor evidence replay, walkthrough artifacts, manifest routing, and private-boundary guardrails.
 
 ## What Judges Should Notice
 
@@ -337,6 +378,7 @@ Review signal: tests cover packet shape, decision brief shape, rules engine beha
 - The policy gate blocks critical/admin/prod-write access.
 - Sponsor adapters are dry-run contracts and cannot approve access.
 - The design-partner trial runner accepts a role-level request and derives a report, packet, and brief.
+- Sponsor Evidence Replay shows where Tavily, Composio, Nebius, and OpenClaw proof slots attach without changing the decision.
 - Production access remains blocked.
 - External writes remain disabled.
 - Composio remains dry-run by default.
@@ -382,3 +424,5 @@ Private engine, public proof.
 | Trial decision brief JSON | `examples/generated/support_triage_trial.decision_brief.json` |
 | Trial outcome memo | `examples/generated/support_triage_trial.outcome_memo.md` |
 | Trial outcome memo JSON | `examples/generated/support_triage_trial.outcome_memo.json` |
+| Trial evidence replay | `examples/generated/support_triage_trial.evidence_replay.md` |
+| Trial evidence replay JSON | `examples/generated/support_triage_trial.evidence_replay.json` |

@@ -69,6 +69,9 @@ Generated JSON should stay machine-readable and stable enough for AI judges to p
 | Nebius narration adapter | Turning packet state into reviewer-ready language. | Mutate safety fields or invent missing proof. |
 | Composio dry-run planner | Producing scoped GitHub/Slack/Jira action plans. | Execute writes in the default public path. |
 | OpenClaw runtime trace | Recording live agent steps and tool-call decisions. | Hide failed/blocked steps from the trace. |
+| Mind runtime (`agent/mind/`) | Persistent `Mind(t)` transitions: rules, proof-health prediction errors, optional patch-only cortex. | Mutate locked packet fields, write into checked-in `examples/generated/`, or approve access from the loop. |
+
+Mind state lives in `state/mind/{scenario}.json`. Projections go to `examples/mind_runtime/` only.
 
 ## Safety Boundary
 

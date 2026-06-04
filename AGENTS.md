@@ -64,11 +64,11 @@ Expected result:
 3. `docs/PRODUCT_TOUR.md`
 4. `docs/AGENT_SKILLS.md`
 5. `docs/PRODUCT_QUALITY_AUDIT.md`
-6. `docs/JUDGE_REVIEW_GUIDE.md`
-7. `docs/DESIGN_PARTNER_BRIEF.md`
-8. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-9. `examples/requests/design_partner_trial.yml`
-10. `examples/requests/support_triage_trial.yml`
+7. `docs/JUDGE_REVIEW_GUIDE.md`
+8. `docs/DESIGN_PARTNER_BRIEF.md`
+9. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+10. `examples/requests/design_partner_trial.yml`
+11. `examples/requests/support_triage_trial.yml`
 11. `examples/generated/support_triage_trial_report.md`
 12. `examples/generated/trust_receipt.md`
 13. `examples/generated/packet_diff.md`

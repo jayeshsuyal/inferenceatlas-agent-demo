@@ -22,7 +22,7 @@ jobs:
         run: python -m pip install -e .
 
       - name: Compile Python modules
-        run: python -m py_compile agent/*.py agent/adapters/*.py web/*.py
+        run: python -m py_compile agent/*.py agent/adapters/*.py agent/mind/*.py web/*.py
 
       - name: Verify installable public commands
         run: |
@@ -161,3 +161,10 @@ jobs:
           COMPOSIO_API_KEY: ""
           IA_LIVE_MODE: ""
         run: python -m unittest discover -s tests
+
+      - name: Mind runtime E2E (offline)
+        env:
+          NEBIUS_API_KEY: ""
+          TAVILY_API_KEY: ""
+          COMPOSIO_API_KEY: ""
+        run: python -m agent.mind e2e

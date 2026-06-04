@@ -1,4 +1,6 @@
 .env
+state/
+examples/mind_runtime/
 .venv/
 __pycache__/
 *.pyc

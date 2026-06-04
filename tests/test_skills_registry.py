@@ -160,6 +160,5 @@ class SkillsRegistryTests(unittest.TestCase):
         payload = json.loads(json_result.stdout)
         self.assertEqual(payload["summary"]["available_stable_skills"], 12)
 
-
 if __name__ == "__main__":
     unittest.main()

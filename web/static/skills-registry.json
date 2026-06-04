@@ -1,0 +1,533 @@
+{
+  "schema_version": "inferenceatlas_ui_skills.v0",
+  "source": "docs/AGENT_SKILLS.md",
+  "registry_command": "python3 -m agent.skills",
+  "count": 13,
+  "skills": [
+    {
+      "id": "policy_gate_evaluation",
+      "slash": "gate",
+      "slash_trigger": "/gate",
+      "name": "Policy Gate Evaluation",
+      "what_it_proves": "Public policy rules block critical, admin, and prod-write scope before validation moves.",
+      "command": "python3 -m agent.gate --all",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "read-only; humans approve",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Policy Gate Evaluation harness skill for a hackathon judge. Context: Public policy rules block critical, admin, and prod-write scope before validation moves. Safety: read-only; humans approve",
+      "artifacts": [
+        "agent/gate.py",
+        "policy/agent_access.yml"
+      ]
+    },
+    {
+      "id": "access_request_normalization",
+      "slash": "normalize",
+      "slash_trigger": "/normalize",
+      "name": "Access Request Normalization",
+      "what_it_proves": "Messy role-level YAML maps to a structured public access-review input.",
+      "command": "python3 -m agent.trial examples/requests/support_triage_trial.yml --json",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "no secrets accepted; role-level only",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Access Request Normalization harness skill for a hackathon judge. Context: Messy role-level YAML maps to a structured public access-review input. Safety: no secrets accepted; role-level only",
+      "artifacts": [
+        "agent/access_request.py",
+        "agent/trial.py",
+        "examples/requests/support_triage_trial.yml"
+      ]
+    },
+    {
+      "id": "decision_packet_generation",
+      "slash": "packet",
+      "slash_trigger": "/packet",
+      "name": "DecisionPacket Generation",
+      "what_it_proves": "A structured access request becomes a schema-backed packet with scope, proof debt, reviewers, and safety state.",
+      "command": "python3 -m agent.review --scenario support_triage_agent --artifact packet --format json",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "no production-access claim; never approves",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Summarize the support_triage_agent DecisionPacket for a human reviewer: what is blocked, what proof is missing, and what scoped validation is allowed. Do not claim production access was granted.",
+      "artifacts": [
+        "agent/packet.py",
+        "schemas/decision_packet.schema.json",
+        "examples/generated/support_triage_agent.packet.json"
+      ]
+    },
+    {
+      "id": "proof_debt_extraction",
+      "slash": "proof-debt",
+      "slash_trigger": "/proof-debt",
+      "name": "Proof Debt Extraction",
+      "what_it_proves": "Missing evidence and unsupported claims stay visible as reviewer work.",
+      "command": "python3 -m agent.review --scenario support_triage_agent --artifact packet --format json",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "no complete claim without verified evidence",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Proof Debt Extraction harness skill for a hackathon judge. Context: Missing evidence and unsupported claims stay visible as reviewer work. Safety: no complete claim without verified evidence",
+      "artifacts": [
+        "agent/rules.py",
+        "examples/generated/support_triage_agent.packet.json"
+      ]
+    },
+    {
+      "id": "reviewer_routing",
+      "slash": "routing",
+      "slash_trigger": "/routing",
+      "name": "Reviewer Routing",
+      "what_it_proves": "Review owners and action items are derived from the packet instead of hidden in prose.",
+      "command": "python3 -m agent.review --scenario support_triage_agent --artifact brief --format json",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "routing is recommendation; never dispatches",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Reviewer Routing harness skill for a hackathon judge. Context: Review owners and action items are derived from the packet instead of hidden in prose. Safety: routing is recommendation; never dispatches",
+      "artifacts": [
+        "agent/rules.py",
+        "examples/generated/support_triage_agent.decision_brief.json"
+      ]
+    },
+    {
+      "id": "risk_aware_scenario_differentiation",
+      "slash": "scenarios",
+      "slash_trigger": "/scenarios",
+      "name": "Risk-Aware Scenario Differentiation",
+      "what_it_proves": "Low, medium/high, and critical requests produce materially different review postures.",
+      "command": "python3 -m agent.review --list",
+      "category": "agent_access_review",
+      "category_label": "Agent Access Review",
+      "safety_boundary": "read-only; humans approve",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Risk-Aware Scenario Differentiation harness skill for a hackathon judge. Context: Low, medium/high, and critical requests produce materially different review postures. Safety: read-only; humans approve",
+      "artifacts": [
+        "agent/scenarios.py",
+        "examples/generated/read_only_analytics_agent.packet.json",
+        "examples/generated/support_triage_agent.packet.json",
+        "examples/generated/admin_code_fix_bot.packet.json"
+      ]
+    },
+    {
+      "id": "design_partner_trial_runner",
+      "slash": "trial",
+      "slash_trigger": "/trial",
+      "name": "Design Partner Trial Runner",
+      "what_it_proves": "A role-level trial request becomes a report, packet, and access brief without live credentials.",
+      "command": "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+      "category": "design_partner_pilot",
+      "category_label": "Design Partner Pilot",
+      "safety_boundary": "no live integration path; humans review",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Design Partner Trial Runner harness skill for a hackathon judge. Context: A role-level trial request becomes a report, packet, and access brief without live credentials. Safety: no live integration path; humans review",
+      "artifacts": [
+        "agent/trial.py",
+        "examples/requests/support_triage_trial.yml",
+        "examples/generated/support_triage_trial_report.md",
+        "examples/generated/support_triage_trial.packet.json",
+        "examples/generated/support_triage_trial.decision_brief.json"
+      ]
+    },
+    {
+      "id": "packet_diff_generation",
+      "slash": "diff",
+      "slash_trigger": "/diff",
+      "name": "Packet Diff Generation",
+      "what_it_proves": "Scenario packets expose load-bearing differences across risk levels.",
+      "command": "python3 -m agent.packet_diff",
+      "category": "packet_lifecycle",
+      "category_label": "Packet Lifecycle",
+      "safety_boundary": "diff is read-only; never mutates packets",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Packet Diff Generation harness skill for a hackathon judge. Context: Scenario packets expose load-bearing differences across risk levels. Safety: diff is read-only; never mutates packets",
+      "artifacts": [
+        "agent/packet_diff.py",
+        "examples/generated/packet_diff.md",
+        "examples/generated/packet_diff.json"
+      ]
+    },
+    {
+      "id": "outcome_memo_generation",
+      "slash": "memo",
+      "slash_trigger": "/memo",
+      "name": "Outcome Memo Generation",
+      "what_it_proves": "The packet becomes a concise human decision surface for what can move and what stays blocked.",
+      "command": "python3 -m agent.outcome_memo",
+      "category": "packet_lifecycle",
+      "category_label": "Packet Lifecycle",
+      "safety_boundary": "memo restates blocked claims; never grants access",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Outcome Memo Generation harness skill for a hackathon judge. Context: The packet becomes a concise human decision surface for what can move and what stays blocked. Safety: memo restates blocked claims; never grants access",
+      "artifacts": [
+        "agent/outcome_memo.py",
+        "examples/generated/support_triage_agent.outcome_memo.md",
+        "examples/generated/support_triage_agent.outcome_memo.json"
+      ]
+    },
+    {
+      "id": "full_judge_harness",
+      "slash": "judge",
+      "slash_trigger": "/judge",
+      "name": "Full judge harness",
+      "what_it_proves": "One command runs the full public proof path (all scenarios, contract, artifacts).",
+      "command": "python3 -m agent.judge",
+      "category": "proof_integrity",
+      "category_label": "Proof Integrity",
+      "safety_boundary": "read-only; humans approve",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Full judge harness harness skill for a hackathon judge. Context: One command runs the full public proof path (all scenarios, contract, artifacts). Safety: read-only; humans approve",
+      "artifacts": []
+    },
+    {
+      "id": "proof_health_drift_detection",
+      "slash": "proof-health",
+      "slash_trigger": "/proof-health",
+      "name": "Proof Health / Drift Detection",
+      "what_it_proves": "Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands.",
+      "command": "python3 -m agent.proof_health",
+      "category": "proof_integrity",
+      "category_label": "Proof Integrity",
+      "safety_boundary": "health is observational; never auto-refreshes",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Proof Health / Drift Detection harness skill for a hackathon judge. Context: Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. Safety: health is observational; never auto-refreshes",
+      "artifacts": [
+        "agent/proof_health.py",
+        "examples/generated/support_triage_agent.proof_health.md",
+        "examples/generated/support_triage_agent.proof_health.json"
+      ]
+    },
+    {
+      "id": "artifact_integrity_verification",
+      "slash": "verify",
+      "slash_trigger": "/verify",
+      "name": "Artifact Integrity Verification",
+      "what_it_proves": "Checked-in proof inventory is compared against deterministic generator output.",
+      "command": "python3 -m agent.verify_artifacts",
+      "category": "proof_integrity",
+      "category_label": "Proof Integrity",
+      "safety_boundary": "regeneration is deterministic; proof bytes locked",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Artifact Integrity Verification harness skill for a hackathon judge. Context: Checked-in proof inventory is compared against deterministic generator output. Safety: regeneration is deterministic; proof bytes locked",
+      "artifacts": [
+        "agent/verify_artifacts.py",
+        "tests/test_verify_artifacts.py"
+      ]
+    },
+    {
+      "id": "sponsor_proof_readiness",
+      "slash": "sponsor",
+      "slash_trigger": "/sponsor",
+      "name": "Sponsor Proof Readiness",
+      "what_it_proves": "Sponsor adapters show where live proof can attach while remaining non-executing.",
+      "command": "python3 -m agent.sponsor_readiness",
+      "category": "sponsor_readiness",
+      "category_label": "Sponsor Readiness",
+      "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: what adds evidence vs what cannot approve access.",
+      "artifacts": [
+        "agent/adapters",
+        "agent/sponsor_readiness.py",
+        "examples/generated/sponsor_live_readiness.md",
+        "examples/generated/sponsor_live_readiness.json"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "agent_access_review",
+      "label": "Agent Access Review",
+      "skills": [
+        {
+          "id": "policy_gate_evaluation",
+          "slash": "gate",
+          "slash_trigger": "/gate",
+          "name": "Policy Gate Evaluation",
+          "what_it_proves": "Public policy rules block critical, admin, and prod-write scope before validation moves.",
+          "command": "python3 -m agent.gate --all",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "read-only; humans approve",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Policy Gate Evaluation harness skill for a hackathon judge. Context: Public policy rules block critical, admin, and prod-write scope before validation moves. Safety: read-only; humans approve",
+          "artifacts": [
+            "agent/gate.py",
+            "policy/agent_access.yml"
+          ]
+        },
+        {
+          "id": "access_request_normalization",
+          "slash": "normalize",
+          "slash_trigger": "/normalize",
+          "name": "Access Request Normalization",
+          "what_it_proves": "Messy role-level YAML maps to a structured public access-review input.",
+          "command": "python3 -m agent.trial examples/requests/support_triage_trial.yml --json",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "no secrets accepted; role-level only",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Access Request Normalization harness skill for a hackathon judge. Context: Messy role-level YAML maps to a structured public access-review input. Safety: no secrets accepted; role-level only",
+          "artifacts": [
+            "agent/access_request.py",
+            "agent/trial.py",
+            "examples/requests/support_triage_trial.yml"
+          ]
+        },
+        {
+          "id": "decision_packet_generation",
+          "slash": "packet",
+          "slash_trigger": "/packet",
+          "name": "DecisionPacket Generation",
+          "what_it_proves": "A structured access request becomes a schema-backed packet with scope, proof debt, reviewers, and safety state.",
+          "command": "python3 -m agent.review --scenario support_triage_agent --artifact packet --format json",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "no production-access claim; never approves",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Summarize the support_triage_agent DecisionPacket for a human reviewer: what is blocked, what proof is missing, and what scoped validation is allowed. Do not claim production access was granted.",
+          "artifacts": [
+            "agent/packet.py",
+            "schemas/decision_packet.schema.json",
+            "examples/generated/support_triage_agent.packet.json"
+          ]
+        },
+        {
+          "id": "proof_debt_extraction",
+          "slash": "proof-debt",
+          "slash_trigger": "/proof-debt",
+          "name": "Proof Debt Extraction",
+          "what_it_proves": "Missing evidence and unsupported claims stay visible as reviewer work.",
+          "command": "python3 -m agent.review --scenario support_triage_agent --artifact packet --format json",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "no complete claim without verified evidence",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Proof Debt Extraction harness skill for a hackathon judge. Context: Missing evidence and unsupported claims stay visible as reviewer work. Safety: no complete claim without verified evidence",
+          "artifacts": [
+            "agent/rules.py",
+            "examples/generated/support_triage_agent.packet.json"
+          ]
+        },
+        {
+          "id": "reviewer_routing",
+          "slash": "routing",
+          "slash_trigger": "/routing",
+          "name": "Reviewer Routing",
+          "what_it_proves": "Review owners and action items are derived from the packet instead of hidden in prose.",
+          "command": "python3 -m agent.review --scenario support_triage_agent --artifact brief --format json",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "routing is recommendation; never dispatches",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Reviewer Routing harness skill for a hackathon judge. Context: Review owners and action items are derived from the packet instead of hidden in prose. Safety: routing is recommendation; never dispatches",
+          "artifacts": [
+            "agent/rules.py",
+            "examples/generated/support_triage_agent.decision_brief.json"
+          ]
+        },
+        {
+          "id": "risk_aware_scenario_differentiation",
+          "slash": "scenarios",
+          "slash_trigger": "/scenarios",
+          "name": "Risk-Aware Scenario Differentiation",
+          "what_it_proves": "Low, medium/high, and critical requests produce materially different review postures.",
+          "command": "python3 -m agent.review --list",
+          "category": "agent_access_review",
+          "category_label": "Agent Access Review",
+          "safety_boundary": "read-only; humans approve",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Risk-Aware Scenario Differentiation harness skill for a hackathon judge. Context: Low, medium/high, and critical requests produce materially different review postures. Safety: read-only; humans approve",
+          "artifacts": [
+            "agent/scenarios.py",
+            "examples/generated/read_only_analytics_agent.packet.json",
+            "examples/generated/support_triage_agent.packet.json",
+            "examples/generated/admin_code_fix_bot.packet.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "design_partner_pilot",
+      "label": "Design Partner Pilot",
+      "skills": [
+        {
+          "id": "design_partner_trial_runner",
+          "slash": "trial",
+          "slash_trigger": "/trial",
+          "name": "Design Partner Trial Runner",
+          "what_it_proves": "A role-level trial request becomes a report, packet, and access brief without live credentials.",
+          "command": "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+          "category": "design_partner_pilot",
+          "category_label": "Design Partner Pilot",
+          "safety_boundary": "no live integration path; humans review",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Design Partner Trial Runner harness skill for a hackathon judge. Context: A role-level trial request becomes a report, packet, and access brief without live credentials. Safety: no live integration path; humans review",
+          "artifacts": [
+            "agent/trial.py",
+            "examples/requests/support_triage_trial.yml",
+            "examples/generated/support_triage_trial_report.md",
+            "examples/generated/support_triage_trial.packet.json",
+            "examples/generated/support_triage_trial.decision_brief.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "packet_lifecycle",
+      "label": "Packet Lifecycle",
+      "skills": [
+        {
+          "id": "packet_diff_generation",
+          "slash": "diff",
+          "slash_trigger": "/diff",
+          "name": "Packet Diff Generation",
+          "what_it_proves": "Scenario packets expose load-bearing differences across risk levels.",
+          "command": "python3 -m agent.packet_diff",
+          "category": "packet_lifecycle",
+          "category_label": "Packet Lifecycle",
+          "safety_boundary": "diff is read-only; never mutates packets",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Packet Diff Generation harness skill for a hackathon judge. Context: Scenario packets expose load-bearing differences across risk levels. Safety: diff is read-only; never mutates packets",
+          "artifacts": [
+            "agent/packet_diff.py",
+            "examples/generated/packet_diff.md",
+            "examples/generated/packet_diff.json"
+          ]
+        },
+        {
+          "id": "outcome_memo_generation",
+          "slash": "memo",
+          "slash_trigger": "/memo",
+          "name": "Outcome Memo Generation",
+          "what_it_proves": "The packet becomes a concise human decision surface for what can move and what stays blocked.",
+          "command": "python3 -m agent.outcome_memo",
+          "category": "packet_lifecycle",
+          "category_label": "Packet Lifecycle",
+          "safety_boundary": "memo restates blocked claims; never grants access",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Outcome Memo Generation harness skill for a hackathon judge. Context: The packet becomes a concise human decision surface for what can move and what stays blocked. Safety: memo restates blocked claims; never grants access",
+          "artifacts": [
+            "agent/outcome_memo.py",
+            "examples/generated/support_triage_agent.outcome_memo.md",
+            "examples/generated/support_triage_agent.outcome_memo.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "proof_integrity",
+      "label": "Proof Integrity",
+      "skills": [
+        {
+          "id": "proof_health_drift_detection",
+          "slash": "proof-health",
+          "slash_trigger": "/proof-health",
+          "name": "Proof Health / Drift Detection",
+          "what_it_proves": "Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands.",
+          "command": "python3 -m agent.proof_health",
+          "category": "proof_integrity",
+          "category_label": "Proof Integrity",
+          "safety_boundary": "health is observational; never auto-refreshes",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Proof Health / Drift Detection harness skill for a hackathon judge. Context: Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. Safety: health is observational; never auto-refreshes",
+          "artifacts": [
+            "agent/proof_health.py",
+            "examples/generated/support_triage_agent.proof_health.md",
+            "examples/generated/support_triage_agent.proof_health.json"
+          ]
+        },
+        {
+          "id": "artifact_integrity_verification",
+          "slash": "verify",
+          "slash_trigger": "/verify",
+          "name": "Artifact Integrity Verification",
+          "what_it_proves": "Checked-in proof inventory is compared against deterministic generator output.",
+          "command": "python3 -m agent.verify_artifacts",
+          "category": "proof_integrity",
+          "category_label": "Proof Integrity",
+          "safety_boundary": "regeneration is deterministic; proof bytes locked",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Artifact Integrity Verification harness skill for a hackathon judge. Context: Checked-in proof inventory is compared against deterministic generator output. Safety: regeneration is deterministic; proof bytes locked",
+          "artifacts": [
+            "agent/verify_artifacts.py",
+            "tests/test_verify_artifacts.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sponsor_readiness",
+      "label": "Sponsor Readiness",
+      "skills": [
+        {
+          "id": "sponsor_proof_readiness",
+          "slash": "sponsor",
+          "slash_trigger": "/sponsor",
+          "name": "Sponsor Proof Readiness",
+          "what_it_proves": "Sponsor adapters show where live proof can attach while remaining non-executing.",
+          "command": "python3 -m agent.sponsor_readiness",
+          "category": "sponsor_readiness",
+          "category_label": "Sponsor Readiness",
+          "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: what adds evidence vs what cannot approve access.",
+          "artifacts": [
+            "agent/adapters",
+            "agent/sponsor_readiness.py",
+            "examples/generated/sponsor_live_readiness.md",
+            "examples/generated/sponsor_live_readiness.json"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "judge_shortcuts",
+      "label": "Judge harness",
+      "skills": [
+        {
+          "id": "full_judge_harness",
+          "slash": "judge",
+          "slash_trigger": "/judge",
+          "name": "Full judge harness",
+          "what_it_proves": "One command runs the full public proof path (all scenarios, contract, artifacts).",
+          "command": "python3 -m agent.judge",
+          "category": "proof_integrity",
+          "category_label": "Proof Integrity",
+          "safety_boundary": "read-only; humans approve",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Full judge harness harness skill for a hackathon judge. Context: One command runs the full public proof path (all scenarios, contract, artifacts). Safety: read-only; humans approve",
+          "artifacts": []
+        }
+      ]
+    }
+  ],
+  "help": "Type / or + to attach skills as chips, then ask your question \u2014 the LLM answers using skill context."
+}

@@ -21,6 +21,7 @@ EXPECTED_SCRIPTS = {
     "ia-trial": "agent.trial:main",
     "ia-trust": "agent.trust:main",
     "ia-verify-artifacts": "agent.verify_artifacts:main",
+    "ia-mind": "agent.mind.__main__:main",
 }
 
 

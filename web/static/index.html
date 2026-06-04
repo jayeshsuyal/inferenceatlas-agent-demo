@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>InferenceAtlas Agent</title>
+    <title>InferenceAtlas — AI Cost & Access Review</title>
     <link rel="stylesheet" href="/static/style.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -19,50 +19,132 @@
           <span class="logo" aria-hidden="true">◈</span>
           <div>
             <h1>InferenceAtlas</h1>
-            <p class="tagline">Intelligence Agent</p>
+            <p class="tagline">AI cost intelligence & access review</p>
           </div>
         </div>
         <div class="stack" id="stack-pills"></div>
-        <button type="button" class="btn-ghost" id="btn-reset" title="New conversation">
-          New chat
-        </button>
+        <button type="button" class="btn-ghost" id="btn-reset">New chat</button>
       </header>
 
       <aside class="sidebar">
-        <h2>Example prompts</h2>
-        <p class="sidebar-hint">Click to send, or type your own question below.</p>
-        <ul class="examples" id="examples-list"></ul>
-        <div class="catalog" id="catalog-info"></div>
+        <nav class="sidebar-tabs" aria-label="Sidebar sections">
+          <button type="button" class="tab active" data-tab="start">Chat</button>
+          <button type="button" class="tab" data-tab="review">Access review</button>
+        </nav>
+
+        <section class="tab-panel active" id="panel-start">
+          <div class="how-to">
+            <h2>Chat</h2>
+            <ol class="steps">
+              <li>Type a question, pick an <strong>example</strong>, or attach <strong>+ Skills</strong> / <strong>/slash</strong> chips (multi-select), then <strong>Send</strong>.</li>
+              <li>Optional: <strong>Attach a file</strong> (.txt, .md, .json, .csv…) — content is sent to the LLM.</li>
+              <li>After reply: download <strong>Markdown / JSON</strong> outputs from the message.</li>
+            </ol>
+          </div>
+          <h3 class="section-label">Examples</h3>
+          <ul class="examples" id="examples-list"></ul>
+          <p class="catalog" id="catalog-info"></p>
+        </section>
+
+        <section class="tab-panel" id="panel-review" hidden>
+          <div class="how-to compact">
+            <h2 id="guide-title">Access review</h2>
+            <p class="sidebar-hint" id="guide-subtitle"></p>
+          </div>
+          <ol class="judge-steps" id="judge-steps"></ol>
+          <p class="blocked-note" id="blocked-note"></p>
+
+          <h3 class="section-label">Evidence for next cycle</h3>
+          <textarea
+            id="review-note"
+            class="review-note"
+            rows="3"
+            placeholder="e.g. Security approved read-only GitHub on repo X…"
+          ></textarea>
+          <div class="io-row">
+            <label class="file-label">
+              <input type="file" id="review-file" accept=".txt,.md,.json,.csv,.yaml,.yml,.log,.html,.htm" hidden />
+              Attach file
+            </label>
+            <span class="file-chip" id="review-file-chip" hidden></span>
+          </div>
+          <button type="button" class="btn-ghost btn-block" id="btn-queue-evidence">
+            Queue evidence (support triage)
+          </button>
+
+          <div class="action-row">
+            <button type="button" class="btn-ghost" id="btn-mind-init">1. Reset scenarios</button>
+            <button type="button" class="btn-primary" id="btn-mind-step">3. Run review cycle</button>
+          </div>
+          <p class="status-toast" id="mind-toast" role="status" aria-live="polite"></p>
+          <div class="mind-panel" id="mind-panel"></div>
+        </section>
       </aside>
 
-      <main class="chat-panel">
-        <div class="messages" id="messages" role="log" aria-live="polite">
-          <div class="message assistant welcome">
-            <div class="bubble">
-              <p>
-                Ask anything about AI inference costs, provider pricing, or catalog
-                comparisons. I can search the web (Tavily), query the InferenceAtlas
-                catalog, and compare providers.
-              </p>
+      <main class="main-panel">
+        <div id="chat-view" class="chat-panel">
+          <div class="messages" id="messages" role="log" aria-live="polite">
+            <div class="message assistant welcome">
+              <div class="bubble">
+                <p><strong>Welcome.</strong> Compare AI inference costs, explore the catalog, or ask whether an agent should get tool access.</p>
+                <p>Attach <strong>/packet</strong>, <strong>/gate</strong>, etc., ask a review question, then <strong>Send</strong>. Skills inject real DecisionPacket facts (no catalog tool loop).</p>
+              </div>
             </div>
+          </div>
+          <div class="composer-shell" id="composer-shell">
+            <div class="slash-menu" id="slash-menu" role="listbox" hidden></div>
+            <div class="skill-chips" id="skill-chips" hidden aria-label="Attached skills"></div>
+            <p class="skill-hints" id="skill-hints" hidden></p>
+            <div class="composer-toolbar">
+              <div class="skills-anchor" id="skills-anchor">
+                <button
+                  type="button"
+                  class="btn-skills-plus"
+                  id="btn-skills-plus"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                  title="InferenceAtlas skills"
+                >
+                  +
+                </button>
+                <div class="skills-flyout" id="skills-flyout" role="menu" hidden></div>
+              </div>
+              <label class="file-label">
+                <input type="file" id="chat-file" accept=".txt,.md,.json,.csv,.yaml,.yml,.log,.html,.htm" hidden />
+                Attach file
+              </label>
+              <span class="file-chip" id="chat-file-chip" hidden></span>
+            </div>
+            <form class="composer" id="chat-form">
+              <textarea
+                id="message-input"
+                rows="2"
+                placeholder="Ask anything — type / or + to attach skills, then Send"
+                autocomplete="off"
+              ></textarea>
+              <button type="submit" class="btn-primary" id="btn-send">
+                <span class="send-label">Send</span>
+                <span class="spinner" hidden aria-hidden="true"></span>
+              </button>
+            </form>
           </div>
         </div>
 
-        <form class="composer" id="chat-form">
-          <textarea
-            id="message-input"
-            rows="2"
-            placeholder="Ask a question… e.g. Compare llm providers for 70B inference"
-            required
-          ></textarea>
-          <button type="submit" class="btn-primary" id="btn-send">
-            <span class="send-label">Send</span>
-            <span class="spinner" hidden aria-hidden="true"></span>
-          </button>
-        </form>
+        <div id="review-view" class="review-workspace" hidden>
+          <header class="review-header">
+            <h2>Live results — last review cycle</h2>
+            <p class="review-header-hint">
+              Each cycle rebuilds real <strong>DecisionPacket</strong> and <strong>Decision brief</strong> data.
+              Production stays <strong>blocked</strong> until humans approve outside this harness.
+            </p>
+          </header>
+          <div id="cycle-feed" class="cycle-feed">
+            <p class="empty-feed">Complete step 1 (Reset), then step 3 (Run review cycle) to see what changed.</p>
+          </div>
+        </div>
       </main>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=7"></script>
   </body>
 </html>

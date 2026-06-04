@@ -14,15 +14,14 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Generator
-
-from openai import OpenAI
+from typing import Any, Generator
 
 from .config import (
     AGENT_MAX_STEPS,
     LLM_API_KEY,
     LLM_BASE_URL,
     LLM_MODEL,
+    SKILL_ASSIST_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
 )
 from .tools import TOOL_DISPATCH, TOOL_SCHEMAS
@@ -37,11 +36,17 @@ def _last_assistant_text(history: list[dict]) -> str:
     return ""
 
 
-def _llm_client() -> OpenAI:
+def _llm_client() -> Any:
     if not LLM_API_KEY:
         raise RuntimeError(
             "No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env"
         )
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError(
+            "openai package not installed. Run: pip install -r agent/requirements.txt"
+        ) from exc
     return OpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
 
 
@@ -180,6 +185,20 @@ def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
 # ---------------------------------------------------------------------------
 # Public interface — used by InferenceAtlasAgent
 # ---------------------------------------------------------------------------
+
+def run_skill_assist(messages: list[dict]) -> str:
+    """
+    Single-shot LLM answer grounded in attached skill context — no tools.
+    Avoids burning AGENT_MAX_STEPS on catalog/search when reviewing access proof.
+    """
+    client = _llm_client()
+    response = client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[{"role": "system", "content": SKILL_ASSIST_SYSTEM_PROMPT}] + messages,
+        temperature=0.2,
+    )
+    return response.choices[0].message.content or ""
+
 
 def run(messages: list[dict]) -> str:
     result = _run_with_openclaw(messages, stream=False)

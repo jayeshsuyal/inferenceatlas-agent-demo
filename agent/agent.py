@@ -59,6 +59,16 @@ class InferenceAtlasAgent:
         self._history.append({"role": "assistant", "content": response})
         return response
 
+    def chat_with_skills(self, user_display: str, llm_prompt: str) -> str:
+        """
+        Answer using attached harness skill context only (no tools).
+        Stores the short user_display in history, not the full skill payload.
+        """
+        response = runtime.run_skill_assist([{"role": "user", "content": llm_prompt}])
+        self._history.append({"role": "user", "content": user_display})
+        self._history.append({"role": "assistant", "content": response})
+        return response
+
     def stream(self, user_message: str) -> Generator[str, None, None]:
         """Single-turn streaming — yields response text chunks as they arrive."""
         messages = [{"role": "user", "content": user_message}]

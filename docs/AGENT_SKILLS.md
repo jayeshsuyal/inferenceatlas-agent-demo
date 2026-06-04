@@ -98,6 +98,14 @@ graph TD
     policy_gate_evaluation --> sponsor_proof_readiness
 ```
 
+## Web UI (InferenceAtlas demo)
+
+In `python3 -m web`, use **+ Skills** or type **`/`** to attach skill chips
+(multi-select, e.g. `/packet` + `/gate`). Ask your question and **Send** —
+the LLM answers using concise skill context (packets, briefs, gate results),
+not a raw harness dump. API: `GET /api/skills`, `POST /api/chat` with
+`skill_ids`. Optional harness: `POST /api/skills/run`.
+
 ## Review Contract
 
 - Every skill is backed by a public command and public artifact path.

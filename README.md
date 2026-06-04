@@ -311,6 +311,20 @@ To exercise the live sponsor path, add Nebius/Tavily/Composio keys and run:
 IA_LIVE_MODE=1 python3 -m agent.demo
 ```
 
+## Mind runtime (state-transition engine)
+
+The Mind runtime treats **DecisionPacket state** as the primary artifact: `Mind(t+1) = F(Mind(t))`. Chat is optional; the process can advance without user input.
+
+```bash
+python3 -m agent.mind init
+python3 -m agent.mind step
+python3 -m agent.mind run          # continuous loop (Ctrl-C to stop)
+python3 -m agent.mind e2e          # offline validation for all 3 scenarios
+python3 -m agent.mind project      # write examples/mind_runtime/
+```
+
+State persists under `state/mind/` (gitignored). The cortex (LLM) may append `evidence_notes` only; verdict and `safety_state` stay locked. Run `python -m agent.mind run` in one terminal and `python -m web` in another to see live mind ticks in the UI.
+
 ## Interactive Paths
 
 ### Web UI (custom questions)
@@ -319,7 +333,7 @@ IA_LIVE_MODE=1 python3 -m agent.demo
 python -m web
 ```
 
-Open [http://127.0.0.1:8080](http://127.0.0.1:8080) to chat with the agent, use example prompts, or type your own requests. Conversations are multi-turn per browser session.
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080) to chat with the agent, use example prompts, or type your own requests. The sidebar shows **Mind state** (tick, tensions) and can advance ticks; chat also queues observations on `support_triage_agent`.
 
 ### CLI
 

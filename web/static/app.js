@@ -16,6 +16,7 @@ const mindPanel = document.getElementById("mind-panel");
 const mindToast = document.getElementById("mind-toast");
 const btnMindInit = document.getElementById("btn-mind-init");
 const btnMindStep = document.getElementById("btn-mind-step");
+const btnRunRehearsal = document.getElementById("btn-run-rehearsal");
 const judgeStepsEl = document.getElementById("judge-steps");
 const guideTitle = document.getElementById("guide-title");
 const guideSubtitle = document.getElementById("guide-subtitle");
@@ -529,6 +530,81 @@ function renderCycleFeed(cycleResults, emptyMessage) {
   }
 }
 
+function boolLabel(value) {
+  return value ? "True" : "False";
+}
+
+function renderRehearsalCard(data) {
+  cycleFeed.innerHTML = "";
+  const card = document.createElement("article");
+  card.className = "cycle-card sponsor-rehearsal highlight";
+
+  const h = document.createElement("h3");
+  h.textContent = "Sponsor evidence rehearsal";
+  card.appendChild(h);
+
+  const lock = document.createElement("div");
+  lock.className = "rehearsal-locks";
+  const lockItems = [
+    ["Decision", data.decision_lock?.decision_code || ""],
+    ["Production", boolLabel(data.decision_lock?.production_access)],
+    ["Grants", boolLabel(data.decision_lock?.permission_grants)],
+    ["Writes", boolLabel(data.decision_lock?.external_writes)],
+    ["Sponsor changes decision", boolLabel(data.decision_lock?.can_sponsor_change_decision)],
+  ];
+  lockItems.forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "lock-item";
+    item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
+    lock.appendChild(item);
+  });
+  card.appendChild(lock);
+
+  const summary = document.createElement("div");
+  summary.className = "live-block";
+  summary.innerHTML = [
+    `<strong>Evidence dir:</strong> ${escapeHtml(data.live_evidence_rehearsal?.evidence_dir || "")}`,
+    `<br/><strong>Sanitized providers:</strong> ${escapeHtml(String(data.live_evidence_rehearsal?.sanitized_provider_count ?? 0))}`,
+    `<br/><strong>Decision locked:</strong> ${boolLabel(data.live_evidence_rehearsal?.decision_locked)}`,
+    `<br/><strong>Human review required:</strong> ${boolLabel(data.safety_boundary?.requires_human_review)}`,
+  ].join("");
+  card.appendChild(summary);
+
+  const tableWrap = document.createElement("div");
+  tableWrap.className = "provider-table-wrap";
+  const rows = (data.providers || [])
+    .map(
+      (p) => `
+        <tr>
+          <td>${escapeHtml(p.provider)}</td>
+          <td>${escapeHtml(p.proof_pack_type)}</td>
+          <td>${escapeHtml(String(p.rehearsal_item_count || 0))}</td>
+          <td>${boolLabel(p.evidence_attached)}</td>
+          <td>${boolLabel(p.can_approve_access)}</td>
+          <td>${boolLabel(p.would_execute)}</td>
+        </tr>`
+    )
+    .join("");
+  tableWrap.innerHTML = `
+    <table class="provider-table">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Proof pack</th>
+          <th>Items</th>
+          <th>Attached</th>
+          <th>Can approve</th>
+          <th>Executes</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  card.appendChild(tableWrap);
+
+  renderArtifactLinks(data.output_files || [], card);
+  cycleFeed.appendChild(card);
+}
+
 function setupTabs() {
   const tabs = document.querySelectorAll(".sidebar-tabs .tab");
   const panels = {
@@ -767,6 +843,25 @@ async function queueEvidence() {
     showMindToast(String(err.message || err), true);
   } finally {
     btnQueueEvidence.disabled = false;
+  }
+}
+
+async function runSponsorRehearsal() {
+  btnRunRehearsal.disabled = true;
+  showMindToast("Running sponsor evidence rehearsal...");
+  try {
+    const res = await fetch("/api/rehearsal/live-evidence", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Rehearsal failed");
+    showMindToast(data.message || "Sponsor rehearsal complete.");
+    setJudgeStep(3);
+    showReviewPanel();
+    renderRehearsalCard(data);
+  } catch (err) {
+    showMindToast(String(err.message || err), true);
+    renderCycleFeed(null, `Sponsor rehearsal failed: ${err.message || err}`);
+  } finally {
+    btnRunRehearsal.disabled = false;
   }
 }
 
@@ -1048,6 +1143,7 @@ btnReset.addEventListener("click", resetChat);
 btnMindInit.addEventListener("click", () => mindInit(false));
 btnMindStep.addEventListener("click", mindStep);
 btnQueueEvidence.addEventListener("click", queueEvidence);
+btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
 
 setupTabs();
 

@@ -13,6 +13,7 @@ Run the no-key judge path first, then verify the checked-in proof artifacts:
 
 ```bash
 python3 -m agent.judge --no-write
+python3 -m agent.skills
 python3 -m agent.verify_artifacts
 ```
 
@@ -26,6 +27,7 @@ Expected human-readable signals across that two-command path:
 - scenario matrix includes `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - Packet Diff reports relaxed read-only, proof-routed, and blocked critical lanes
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
+- Agent Skills reports `12 / 12 stable skills available`
 - Artifact Integrity Gate reports `33 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
@@ -39,6 +41,7 @@ For a strict parser, run both JSON surfaces:
 
 ```bash
 python3 -m agent.judge --no-write --json
+python3 -m agent.skills --json
 python3 -m agent.verify_artifacts --json
 ```
 
@@ -76,6 +79,14 @@ Expected artifact verifier JSON pass signals:
 - `summary.unexpected_checked_in_artifacts` is `0`
 - `summary.missing_static_assets` is `0`
 
+Expected skills JSON pass signals:
+
+- `schema_version` is `agent_skills_registry.v0`
+- `summary.registered_skills` is `12`
+- `summary.stable_skills` is `12`
+- `summary.available_stable_skills` is `12`
+- `private_boundary.private_source_exposed` is `false`
+
 ## Full Command Set
 
 An agentic reviewer can use this complete no-key path:
@@ -84,6 +95,7 @@ An agentic reviewer can use this complete no-key path:
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
+python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
@@ -100,6 +112,7 @@ python3 -m unittest discover -s tests
 Expected pass signals:
 
 - the demo runs without API keys
+- Agent Skills maps public capabilities to commands, artifacts, dependencies, and safety boundaries
 - public contract reports all scenarios as `OK`
 - Packet Diff proves the three public scenarios differ in load-bearing fields
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
@@ -115,15 +128,16 @@ Inspect these in order:
 
 1. `AI_JUDGE_MANIFEST.json`
 2. `docs/PRODUCT_TOUR.md`
-3. `docs/PRODUCT_QUALITY_AUDIT.md`
-4. `examples/generated/packet_diff.md`
-5. `examples/generated/support_triage_agent.outcome_memo.md`
-6. `examples/generated/review_room.html`
-7. `examples/generated/trust_receipt.md`
-8. `examples/generated/support_triage_agent.proof_health.md`
-9. `examples/generated/support_triage_trial_report.md`
-10. `docs/CONTRACT.md`
-11. `docs/SAFETY_CONTRACT.md`
+3. `docs/AGENT_SKILLS.md`
+4. `docs/PRODUCT_QUALITY_AUDIT.md`
+5. `examples/generated/packet_diff.md`
+6. `examples/generated/support_triage_agent.outcome_memo.md`
+7. `examples/generated/review_room.html`
+8. `examples/generated/trust_receipt.md`
+9. `examples/generated/support_triage_agent.proof_health.md`
+10. `examples/generated/support_triage_trial_report.md`
+11. `docs/CONTRACT.md`
+12. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 
@@ -135,6 +149,7 @@ Treat these as review failures:
 - sponsor adapters can execute writes by default
 - sponsor adapters can approve access
 - Packet Diff no longer shows all three risk lanes
+- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 12 stable available skills
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts
 - Proof Health approves, grants, writes, or mutates production
@@ -149,6 +164,7 @@ If the commands pass and the failure signals are absent, the public repo proves 
 
 ```text
 agent request
+-> agent skills registry
 -> proof packet
 -> access brief
 -> trust receipt

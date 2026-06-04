@@ -10,6 +10,7 @@ Run the current proof surface:
 
 ```bash
 python3 -m agent.demo
+python3 -m agent.skills
 python3 -m agent.sponsor_readiness
 python3 -m unittest discover -s tests
 ```
@@ -17,6 +18,7 @@ python3 -m unittest discover -s tests
 Expected result:
 
 - the demo runs without API keys
+- Agent Skills reports the public capability map without exposing private source
 - sponsor live readiness shows where Nebius, Tavily, Composio, and OpenClaw can add proof without approval power
 - packet, trace, decision brief, and Proof Health artifacts regenerate under `examples/generated/`
 - production access remains blocked
@@ -30,6 +32,7 @@ These pieces are safe to build on:
 | Area | Path | Build role |
 | --- | --- | --- |
 | Offline judge harness | `agent/demo.py` | Entry point for no-key and live-mode demo paths. Keep this command stable. |
+| Agent Skills registry | `agent/skills.py` | Canonical public capability map. Add new public skills here before adding docs or CLI projections. |
 | DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
 | Packet Diff projection | `agent/packet_diff.py` | Scenario comparison surface proving low, medium/high, and critical requests produce different load-bearing fields. |
 | Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
@@ -59,6 +62,7 @@ The public branch should keep one clear object spine:
 
 ```text
 messy agent-access request
+-> Agent Skills registry
 -> source status
 -> evidence notes and missing proof
 -> DecisionPacket

@@ -28,6 +28,8 @@ jobs:
         run: |
           ia-judge --no-write
           ia-judge --no-write --json >/tmp/installed_judge_harness.json
+          ia-skills
+          ia-skills --json >/tmp/installed_agent_skills.json
           ia-packet-diff --no-write
           ia-packet-diff --no-write --json >/tmp/installed_packet_diff.json
           ia-outcome-memo --no-write
@@ -135,6 +137,7 @@ jobs:
           test -s examples/generated/review_room.desktop.jpg
           test -s docs/REVIEW_ROOM_WALKTHROUGH.md
           python -m json.tool /tmp/judge_harness.json >/tmp/judge_harness.checked.json
+          python -m json.tool /tmp/installed_agent_skills.json >/tmp/installed_agent_skills.checked.json
           python -m json.tool /tmp/installed_trial_report.json >/tmp/installed_trial_report.checked.json
           python -m json.tool /tmp/installed_artifact_integrity.json >/tmp/installed_artifact_integrity.checked.json
           python -m json.tool /tmp/installed_packet_diff.json >/tmp/installed_packet_diff.checked.json

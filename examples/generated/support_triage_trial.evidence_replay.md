@@ -25,12 +25,12 @@ This replay shows where sponsor proof attaches to a design-partner trial decisio
 
 ## Provider Replay
 
-| Provider | Proof Pack | Attachments | Can Approve | Would Execute |
-| --- | --- | --- | --- | --- |
-| tavily | evidence_candidate_plan | 5 | False | False |
-| composio | permission_diff | 3 | False | False |
-| nebius | locked_field_narration | 1 | False | False |
-| openclaw | runtime_trace_plan | 3 | False | False |
+| Provider | Proof Pack | Attachments | Evidence Attached | Can Approve | Would Execute |
+| --- | --- | --- | --- | --- | --- |
+| tavily | evidence_candidate_plan | 5 | False | False | False |
+| composio | permission_diff | 3 | False | False | False |
+| nebius | locked_field_narration | 1 | False | False | False |
+| openclaw | runtime_trace_plan | 3 | False | False | False |
 
 ## Owner Proof Map
 

@@ -26,6 +26,12 @@ from agent.mind.store import load_all_minds
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS
 from agent.tools import get_catalog_summary
+from agent.trial import DEFAULT_TRIAL_REQUEST
+from agent.trial_evidence_replay import (
+    DEFAULT_REHEARSAL_EVIDENCE_DIR,
+    build_trial_evidence_replay,
+    render_trial_evidence_replay_markdown,
+)
 from agent.ui_skills import (
     build_ui_skills_payload,
     compose_message_with_skills,
@@ -123,6 +129,27 @@ class SkillRunRequest(BaseModel):
     skill_id: str = Field(..., min_length=1, max_length=80)
 
 
+def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
+    rows: List[dict] = []
+    for provider, item in replay["sponsor_replay"].items():
+        evidence_summary = item.get("rehearsal_evidence_summary") or {}
+        rows.append(
+            {
+                "provider": provider,
+                "proof_pack_type": item["proof_pack_type"],
+                "value_added": item["value_added"],
+                "attachment_count": len(item.get("attachments", [])),
+                "evidence_attached": bool(item.get("rehearsal_evidence_attached")),
+                "rehearsal_item_count": evidence_summary.get("item_count", 0),
+                "would_execute": bool(item["would_execute"]),
+                "can_approve_access": bool(item["can_approve_access"]),
+                "can_grant_permissions": bool(item["can_grant_permissions"]),
+                "human_review_required": bool(item["human_review_required"]),
+            }
+        )
+    return rows
+
+
 def _get_or_create_session(session_id: Optional[str]) -> Tuple[str, object]:
     with _lock:
         if session_id and session_id in _sessions:
@@ -180,6 +207,51 @@ def run_ui_skill_endpoint(body: SkillRunRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/rehearsal/live-evidence")
+def run_live_evidence_rehearsal() -> dict:
+    """Run sanitized sponsor evidence rehearsal without mutating generated artifacts."""
+    try:
+        replay = build_trial_evidence_replay(
+            DEFAULT_TRIAL_REQUEST,
+            DEFAULT_REHEARSAL_EVIDENCE_DIR,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    markdown = render_trial_evidence_replay_markdown(replay)
+    json_content = json.dumps(replay, indent=2, sort_keys=True) + "\n"
+    scope = "review"
+    subfolder = "live_evidence_rehearsal"
+    md = save_output_registered(
+        scope=scope,
+        subfolder=subfolder,
+        filename="support_triage_trial.live_evidence_rehearsal.md",
+        content=markdown,
+        label="Live evidence rehearsal Markdown",
+    )
+    js = save_output_registered(
+        scope=scope,
+        subfolder=subfolder,
+        filename="support_triage_trial.live_evidence_rehearsal.json",
+        content=json_content,
+        label="Live evidence rehearsal JSON",
+    )
+    return {
+        "ok": True,
+        "message": "Live evidence rehearsal complete - sponsor outputs attached, decision stayed locked.",
+        "request_path": replay["request_path"],
+        "summary": replay["summary"],
+        "decision_lock": replay["decision_lock"],
+        "live_evidence_rehearsal": replay["live_evidence_rehearsal"],
+        "safety_boundary": replay["safety_boundary"],
+        "providers": _rehearsal_provider_rows(replay),
+        "output_files": [
+            _file_ref(md["file_id"], md["label"]),
+            _file_ref(js["file_id"], js["label"]),
+        ],
+    }
 
 
 @app.get("/api/examples")

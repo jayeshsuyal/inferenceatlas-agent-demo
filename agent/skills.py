@@ -162,10 +162,11 @@ SKILLS: tuple[SkillSpec, ...] = (
     SkillSpec(
         id="design_partner_evidence_replay",
         name="Sponsor Evidence Replay",
-        what_it_proves="Sponsor proof slots attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+        what_it_proves="Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
         command="python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
         artifacts=(
             "agent/trial_evidence_replay.py",
+            "examples/evidence/support_triage_trial",
             "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/support_triage_trial.evidence_replay.json",
         ),

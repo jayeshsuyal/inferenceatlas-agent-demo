@@ -16,6 +16,7 @@ python3 -m agent.judge --no-write
 python3 -m agent.skills
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.verify_artifacts
 ```
 
@@ -31,6 +32,7 @@ Expected human-readable signals across that two-command path:
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
 - Design Partner Outcome Memo reports `scoped_validation_only` for `support_triage_trial`
 - Sponsor Evidence Replay reports sponsors cannot change the trial decision
+- Live Evidence Rehearsal reports sanitized evidence is attached and the decision remains locked
 - Agent Skills reports `14 / 14 stable skills available`
 - Artifact Integrity Gate reports `37 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
@@ -48,6 +50,7 @@ python3 -m agent.judge --no-write --json
 python3 -m agent.skills --json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
 python3 -m agent.verify_artifacts --json
 ```
 
@@ -73,6 +76,8 @@ Expected judge JSON pass signals:
 - `design_partner_evidence_replay.all_non_approving` is `true`
 - `design_partner_evidence_replay.all_non_granting` is `true`
 - `design_partner_evidence_replay.all_non_mutating` is `true`
+- `summary.sanitized_evidence_attached` is `true` when `--evidence-dir examples/evidence/support_triage_trial` is used
+- `live_evidence_rehearsal.decision_locked` is `true` when `--evidence-dir examples/evidence/support_triage_trial` is used
 - `proof_health.overall_status` is `drifting`
 - `proof_health.human_review_required` is `true`
 - `proof_health.approves_access` is `false`
@@ -123,6 +128,7 @@ python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -136,6 +142,7 @@ Expected pass signals:
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
 - Design Partner Outcome Memo turns the trial request into a meeting-ready can-move, stays-blocked, proof-owner decision
 - Sponsor Evidence Replay attaches sponsor proof slots to the same trial decision without changing safety state
+- Live Evidence Rehearsal attaches sanitized sponsor outputs while rejecting secret-shaped or write-shaped inputs
 - Artifact Integrity Gate proves deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in
 - policy gate blocks critical/admin/prod-write scope
 - sponsor adapters remain dry-run, non-executing, and non-approving
@@ -158,8 +165,9 @@ Inspect these in order:
 10. `examples/generated/support_triage_trial_report.md`
 11. `examples/generated/support_triage_trial.outcome_memo.md`
 12. `examples/generated/support_triage_trial.evidence_replay.md`
-13. `docs/CONTRACT.md`
-14. `docs/SAFETY_CONTRACT.md`
+13. `examples/evidence/support_triage_trial/`
+14. `docs/CONTRACT.md`
+15. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 
@@ -175,6 +183,7 @@ Treat these as review failures:
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Sponsor Evidence Replay lets a sponsor change the decision, approve access, grant permissions, execute writes, or mutate production
+- Live Evidence Rehearsal accepts evidence containing secrets, approval flags, grant flags, write flags, or production mutation flags
 - Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts
 - Proof Health approves, grants, writes, or mutates production
 - `admin_code_fix_bot` is not blocked
@@ -196,6 +205,7 @@ agent request
 -> outcome memo
 -> design-partner outcome memo
 -> sponsor evidence replay
+-> live evidence rehearsal
 -> proof health
 -> artifact integrity gate
 -> human review

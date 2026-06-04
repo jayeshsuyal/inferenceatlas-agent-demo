@@ -1,0 +1,68 @@
+{
+  "schema_version": "ia_sponsor_evidence.tavily.v0",
+  "provider": "tavily",
+  "sanitized_from_live_output": true,
+  "source": "cto_redacted_tavily_search_sample",
+  "evidence_candidates": [
+    {
+      "proof_needed": "GitHub repository allowlist and permission level",
+      "freshness": "sample_current",
+      "sources": [
+        {
+          "title": "Internal repository allowlist control",
+          "url": "https://example.com/security/github-repository-allowlist",
+          "source_type": "redacted_policy_reference",
+          "snippet": "Named repositories and read-only issue access must be reviewed before scoped validation."
+        }
+      ]
+    },
+    {
+      "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "freshness": "sample_current",
+      "sources": [
+        {
+          "title": "Incident channel retention boundary",
+          "url": "https://example.com/security/slack-incident-retention",
+          "source_type": "redacted_policy_reference",
+          "snippet": "Incident summaries require named channels and customer-data handling limits."
+        }
+      ]
+    },
+    {
+      "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "freshness": "sample_current",
+      "sources": [
+        {
+          "title": "Draft ticket workflow control",
+          "url": "https://example.com/engineering/jira-draft-only",
+          "source_type": "redacted_runbook_reference",
+          "snippet": "Validation agents may propose drafts but cannot create or transition production tickets."
+        }
+      ]
+    },
+    {
+      "proof_needed": "Support escalation workflow and human handoff owner",
+      "freshness": "sample_current",
+      "sources": [
+        {
+          "title": "Support escalation handoff map",
+          "url": "https://example.com/support/escalation-handoff",
+          "source_type": "redacted_runbook_reference",
+          "snippet": "Escalations stay owned by Support Ops during validation."
+        }
+      ]
+    },
+    {
+      "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "freshness": "sample_current",
+      "sources": [
+        {
+          "title": "Agent access audit event shape",
+          "url": "https://example.com/security/agent-access-audit-events",
+          "source_type": "redacted_control_reference",
+          "snippet": "Tool-call plans, evidence intake, reviewer decisions, and blocked actions must be logged."
+        }
+      ]
+    }
+  ]
+}

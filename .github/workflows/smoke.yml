@@ -45,6 +45,7 @@ jobs:
           ia-trial-outcome-memo examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_outcome_memo.json
           ia-trial-evidence-replay examples/requests/support_triage_trial.yml
           ia-trial-evidence-replay examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_evidence_replay.json
+          ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --no-write --json >/tmp/installed_live_evidence_rehearsal.json
           ia-verify-artifacts
           ia-verify-artifacts --json >/tmp/installed_artifact_integrity.json
 
@@ -73,6 +74,7 @@ jobs:
           python -m agent.outcome_memo --no-write --json >/tmp/outcome_memo.cli.json
           python -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_outcome_memo.cli.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_evidence_replay.cli.json
+          python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json >/tmp/live_evidence_rehearsal.cli.json
 
       - name: Validate public conformance contract
         run: |
@@ -119,6 +121,7 @@ jobs:
           python -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --json >/tmp/design_partner_outcome_memo.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --json >/tmp/design_partner_evidence_replay.json
+          python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --no-write --json >/tmp/design_partner_live_evidence_rehearsal.json
 
       - name: Run judge harness
         run: |
@@ -153,6 +156,7 @@ jobs:
           python -m json.tool /tmp/installed_trial_report.json >/tmp/installed_trial_report.checked.json
           python -m json.tool /tmp/installed_trial_outcome_memo.json >/tmp/installed_trial_outcome_memo.checked.json
           python -m json.tool /tmp/installed_trial_evidence_replay.json >/tmp/installed_trial_evidence_replay.checked.json
+          python -m json.tool /tmp/installed_live_evidence_rehearsal.json >/tmp/installed_live_evidence_rehearsal.checked.json
           python -m json.tool /tmp/installed_artifact_integrity.json >/tmp/installed_artifact_integrity.checked.json
           python -m json.tool /tmp/installed_packet_diff.json >/tmp/installed_packet_diff.checked.json
           python -m json.tool /tmp/installed_outcome_memo.json >/tmp/installed_outcome_memo.checked.json
@@ -160,12 +164,14 @@ jobs:
           python -m json.tool /tmp/outcome_memo.cli.json >/tmp/outcome_memo.cli.checked.json
           python -m json.tool /tmp/trial_outcome_memo.cli.json >/tmp/trial_outcome_memo.cli.checked.json
           python -m json.tool /tmp/trial_evidence_replay.cli.json >/tmp/trial_evidence_replay.cli.checked.json
+          python -m json.tool /tmp/live_evidence_rehearsal.cli.json >/tmp/live_evidence_rehearsal.cli.checked.json
           python -m json.tool /tmp/installed_proof_health.json >/tmp/installed_proof_health.checked.json
           python -m json.tool /tmp/proof_health.json >/tmp/proof_health.checked.json
           python -m json.tool /tmp/installed_sponsor_readiness.json >/tmp/installed_sponsor_readiness.checked.json
           python -m json.tool /tmp/design_partner_trial_report.json >/tmp/design_partner_trial_report.checked.json
           python -m json.tool /tmp/design_partner_outcome_memo.json >/tmp/design_partner_outcome_memo.checked.json
           python -m json.tool /tmp/design_partner_evidence_replay.json >/tmp/design_partner_evidence_replay.checked.json
+          python -m json.tool /tmp/design_partner_live_evidence_rehearsal.json >/tmp/design_partner_live_evidence_rehearsal.checked.json
           python -m json.tool /tmp/trust_receipt.cli.json >/tmp/trust_receipt.cli.checked.json
           python -m json.tool /tmp/policy_gate.all.json >/tmp/policy_gate.all.checked.json
           python -m json.tool /tmp/sponsor_adapters.all.json >/tmp/sponsor_adapters.all.checked.json

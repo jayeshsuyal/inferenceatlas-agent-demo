@@ -128,6 +128,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
+        self.assertIn(
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+            manifest["five_minute_review_commands"],
+        )
         self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("docs/PRODUCT_TOUR.md", manifest["product_review_path"])
         self.assertIn("docs/AGENT_SKILLS.md", manifest["product_review_path"])
@@ -139,6 +143,11 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("examples/generated/sponsor_live_readiness.md", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["product_review_path"])
+        self.assertIn(
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+            manifest["product_review_path"],
+        )
+        self.assertIn("examples/evidence/support_triage_trial", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["product_review_path"])
         self.assertEqual(manifest["policy_gate_command"], "python3 -m agent.gate --all")
         self.assertEqual(manifest["sponsor_adapter_command"], "python3 -m agent.adapters --all")
@@ -171,6 +180,14 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["design_partner_evidence_replay_surface"],
             "examples/generated/support_triage_trial.evidence_replay.md and examples/generated/support_triage_trial.evidence_replay.json",
         )
+        self.assertEqual(
+            manifest["live_evidence_rehearsal_command"],
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+        )
+        self.assertEqual(
+            manifest["live_evidence_rehearsal_json_command"],
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json",
+        )
         self.assertEqual(manifest["trust_receipt_command"], "python3 -m agent.trust")
         self.assertEqual(manifest["review_room_html_command"], "python3 -m agent.review_room")
         self.assertEqual(manifest["proof_health_command"], "python3 -m agent.proof_health")
@@ -197,6 +214,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("live evidence rehearsal", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("sanitized evidence fixtures", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertEqual(
             manifest["proof_health_surface"],
             "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
@@ -263,6 +282,10 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(
             manifest["primary_artifacts"]["support_triage_trial_evidence_replay_json"],
             "examples/generated/support_triage_trial.evidence_replay.json",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["support_triage_trial_evidence_fixture"],
+            "examples/evidence/support_triage_trial",
         )
         self.assertEqual(manifest["primary_artifacts"]["policy_gate"], "policy/agent_access.yml")
         self.assertEqual(manifest["primary_artifacts"]["sponsor_adapters"], "agent/adapters/")

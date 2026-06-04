@@ -54,6 +54,7 @@ examples/generated/review_room.html
 examples/generated/support_triage_agent.proof_health.md
 examples/generated/support_triage_trial_report.md
 examples/generated/support_triage_trial.outcome_memo.md
+examples/evidence/support_triage_trial/
 examples/generated/support_triage_trial.evidence_replay.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
@@ -74,6 +75,7 @@ examples/requests/support_triage_trial.yml
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ```
 
 5. Pick one real internal agent-access workflow and map it into the same review questions:
@@ -92,6 +94,7 @@ python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.ym
 - Does the Packet Outcome Memo make the meeting decision obvious?
 - Does the Design Partner Outcome Memo make the trial decision obvious?
 - Does Sponsor Evidence Replay show where Tavily, Composio, Nebius, and OpenClaw proof attaches without taking over?
+- Does Live Evidence Rehearsal accept sanitized sponsor outputs without changing the decision?
 - Does the access brief give a clearer go/no-go?
 - Does the policy gate block the right class of access?
 - Does reviewer routing remove ambiguity?
@@ -111,6 +114,7 @@ A successful trial should produce:
 - one Packet Outcome Memo naming what can move, what stays blocked, proof owners, and refresh timing
 - one Design Partner Outcome Memo turning the trial request into can-move scope, blocked scope, proof owners, and reviewer routes
 - one Sponsor Evidence Replay showing where sponsor proof attaches to proof owners while the decision stays locked
+- one Live Evidence Rehearsal showing redacted provider outputs can attach safely
 - one Proof Health report showing Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked
@@ -166,6 +170,7 @@ The current public branch gives a builder enough structure to extend a live tria
 | One-command review path | `python3 -m agent.judge` |
 | Trial meeting decision | `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` |
 | Trial sponsor proof replay | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` |
+| Trial live evidence rehearsal | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial` |
 | Product contract | `docs/CONTRACT.md` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
 | Live integration boundary | `docs/LIVE_INTEGRATION_CONTRACT.md` |

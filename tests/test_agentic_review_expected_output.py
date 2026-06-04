@@ -25,6 +25,7 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.proof_health",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial",
             "python3 -m agent.verify_artifacts",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
@@ -47,6 +48,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`design_partner_evidence_replay.can_sponsor_change_decision` is `false`",
             "`design_partner_evidence_replay.all_non_executing` is `true`",
             "`design_partner_evidence_replay.all_non_granting` is `true`",
+            "`summary.sanitized_evidence_attached` is `true`",
+            "`live_evidence_rehearsal.decision_locked` is `true`",
             "`private_boundary.private_source_exposed` is `false`",
             "unit tests pass in the current public suite",
             "Failure Signals",
@@ -80,6 +83,11 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["judge_review_path"])
+        self.assertIn("examples/evidence/support_triage_trial", manifest["judge_review_path"])
+        self.assertIn(
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
+            manifest["judge_review_path"],
+        )
         self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
@@ -87,6 +95,7 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("live evidence rehearsal", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
         for surface in [agents, readme, guide]:

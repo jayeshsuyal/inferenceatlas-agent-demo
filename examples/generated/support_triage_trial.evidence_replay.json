@@ -8,6 +8,14 @@
   },
   "evidence_replay_id": "ia-design-partner-evidence-replay-support_triage_trial-public-v0",
   "generated_by": "inferenceatlas-agent-demo",
+  "live_evidence_rehearsal": {
+    "decision_locked": true,
+    "evidence_dir": null,
+    "proof_debt_reduction_requires_human_review": true,
+    "providers": [],
+    "sanitized_provider_count": 0,
+    "unsafe_inputs_rejected": true
+  },
   "meeting_use": [
     "Start from the Design Partner Outcome Memo decision.",
     "Use Tavily slots to gather source-backed evidence for missing proof.",
@@ -23,6 +31,7 @@
       "proof_needed": "GitHub repository allowlist and permission level",
       "sponsor_support": [
         {
+          "attached_sanitized_sources": 0,
           "can_reduce_proof_debt": false,
           "human_review_required": true,
           "proof_type": "evidence_candidate_plan",
@@ -58,6 +67,7 @@
       "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
       "sponsor_support": [
         {
+          "attached_sanitized_sources": 0,
           "can_reduce_proof_debt": false,
           "human_review_required": true,
           "proof_type": "evidence_candidate_plan",
@@ -93,6 +103,7 @@
       "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
       "sponsor_support": [
         {
+          "attached_sanitized_sources": 0,
           "can_reduce_proof_debt": false,
           "human_review_required": true,
           "proof_type": "evidence_candidate_plan",
@@ -128,6 +139,7 @@
       "proof_needed": "Support escalation workflow and human handoff owner",
       "sponsor_support": [
         {
+          "attached_sanitized_sources": 0,
           "can_reduce_proof_debt": false,
           "human_review_required": true,
           "proof_type": "evidence_candidate_plan",
@@ -156,6 +168,7 @@
       "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
       "sponsor_support": [
         {
+          "attached_sanitized_sources": 0,
           "can_reduce_proof_debt": false,
           "human_review_required": true,
           "proof_type": "evidence_candidate_plan",
@@ -266,6 +279,7 @@
       "mode": "offline_dry_run_replay",
       "proof_pack_type": "permission_diff",
       "provider": "composio",
+      "rehearsal_evidence_attached": false,
       "requires_api_key": false,
       "value_added": "Shows requested tool actions, validation-only allowances, blocked actions, and required proof.",
       "would_execute": false
@@ -309,6 +323,7 @@
       "mode": "offline_dry_run_replay",
       "proof_pack_type": "locked_field_narration",
       "provider": "nebius",
+      "rehearsal_evidence_attached": false,
       "requires_api_key": false,
       "value_added": "Drafts reviewer-facing language while locked fields keep the decision deterministic.",
       "would_execute": false
@@ -343,6 +358,7 @@
       "mode": "offline_dry_run_replay",
       "proof_pack_type": "runtime_trace_plan",
       "provider": "openclaw",
+      "rehearsal_evidence_attached": false,
       "requires_api_key": false,
       "value_added": "Shows the runtime trace that would be recorded around the same blocked and dry-run decisions.",
       "would_execute": false
@@ -414,6 +430,7 @@
       "mode": "offline_dry_run_replay",
       "proof_pack_type": "evidence_candidate_plan",
       "provider": "tavily",
+      "rehearsal_evidence_attached": false,
       "requires_api_key": false,
       "value_added": "Turns missing proof into source-backed evidence slots for human reviewers.",
       "would_execute": false
@@ -425,8 +442,11 @@
     "all_non_executing": true,
     "all_non_granting": true,
     "all_non_mutating": true,
+    "decision_locked_after_rehearsal": true,
     "proof_attachment_count": 18,
     "proof_owner_count": 5,
-    "provider_count": 4
+    "provider_count": 4,
+    "rehearsal_evidence_provider_count": 0,
+    "sanitized_evidence_attached": false
   }
 }

@@ -45,7 +45,7 @@ jobs:
           ia-trial-outcome-memo examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_outcome_memo.json
           ia-trial-evidence-replay examples/requests/support_triage_trial.yml
           ia-trial-evidence-replay examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_evidence_replay.json
-          ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --json >/tmp/installed_live_evidence_rehearsal.json
+          ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --no-write --json >/tmp/installed_live_evidence_rehearsal.json
           ia-verify-artifacts
           ia-verify-artifacts --json >/tmp/installed_artifact_integrity.json
 
@@ -121,7 +121,7 @@ jobs:
           python -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --json >/tmp/design_partner_outcome_memo.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --json >/tmp/design_partner_evidence_replay.json
-          python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --json >/tmp/design_partner_live_evidence_rehearsal.json
+          python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial --no-write --json >/tmp/design_partner_live_evidence_rehearsal.json
 
       - name: Run judge harness
         run: |

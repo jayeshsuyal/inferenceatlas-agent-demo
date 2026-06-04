@@ -1,0 +1,26 @@
+{
+  "schema_version": "ia_sponsor_evidence.openclaw.v0",
+  "provider": "openclaw",
+  "sanitized_from_live_output": true,
+  "source": "cto_redacted_openclaw_trace_sample",
+  "trace_checkpoints": [
+    {
+      "step": "load_public_trial_request",
+      "status": "observed",
+      "policy_decision": "inspect_only",
+      "would_execute": false
+    },
+    {
+      "step": "derive_packet_and_brief",
+      "status": "observed",
+      "policy_decision": "pre_permission_review",
+      "would_execute": false
+    },
+    {
+      "step": "emit_outcome_memo",
+      "status": "observed",
+      "policy_decision": "human_review_required",
+      "would_execute": false
+    }
+  ]
+}

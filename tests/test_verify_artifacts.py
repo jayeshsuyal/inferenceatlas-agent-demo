@@ -19,7 +19,7 @@ class VerifyArtifactsTests(unittest.TestCase):
 
         self.assertEqual(report["schema_version"], "artifact_integrity_report.v0")
         self.assertEqual(report["status"], "ok")
-        self.assertEqual(report["summary"]["generated_artifacts_verified"], 33)
+        self.assertEqual(report["summary"]["generated_artifacts_verified"], 37)
         self.assertEqual(report["summary"]["stale_artifacts"], 0)
         self.assertEqual(report["summary"]["static_assets_checked"], 2)
         self.assertEqual(report["summary"]["missing_static_assets"], 0)
@@ -109,7 +109,7 @@ class VerifyArtifactsTests(unittest.TestCase):
             report = verify_artifacts(actual_dir)
 
         self.assertEqual(report["status"], "fail")
-        self.assertEqual(report["summary"]["stale_artifacts"], 33)
+        self.assertEqual(report["summary"]["stale_artifacts"], 37)
         self.assertEqual(report["summary"]["missing_static_assets"], 2)
 
     def test_verify_artifacts_cli_json_is_machine_readable(self) -> None:
@@ -141,7 +141,9 @@ class VerifyArtifactsTests(unittest.TestCase):
         self.assertIn("# Artifact Integrity Gate", result.stdout)
         self.assertIn("Packet artifacts (6 files): OK", result.stdout)
         self.assertIn("Design Partner Trial (6 files): OK", result.stdout)
-        self.assertIn("Total: 33 generated artifacts verified", result.stdout)
+        self.assertIn("Design Partner Outcome Memo (2 files): OK", result.stdout)
+        self.assertIn("Sponsor Evidence Replay (2 files): OK", result.stdout)
+        self.assertIn("Total: 37 generated artifacts verified", result.stdout)
         self.assertIn("0 unexpected checked-in", result.stdout)
 
 

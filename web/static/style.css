@@ -520,6 +520,85 @@ body {
   line-height: 1.45;
 }
 
+.sponsor-rehearsal {
+  border-color: rgba(52, 211, 153, 0.55);
+}
+
+.rehearsal-locks {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.lock-item {
+  min-height: 4.25rem;
+  padding: 0.65rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.lock-item span,
+.provider-table th {
+  display: block;
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lock-item strong {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.provider-table-wrap {
+  margin-top: 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.accepted-files {
+  margin: 0.65rem 0 0;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.08);
+  color: var(--success);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.provider-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  background: var(--bg);
+}
+
+.provider-table th,
+.provider-table td {
+  padding: 0.65rem 0.7rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.provider-table td {
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.provider-table tr:last-child td {
+  border-bottom: none;
+}
+
 .cycle-card .proof-list {
   margin: 0.35rem 0 0;
   padding-left: 1rem;
@@ -1630,5 +1709,9 @@ body {
 
   .message {
     max-width: 95%;
+  }
+
+  .rehearsal-locks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -17,10 +17,12 @@ If you are reviewing quickly, use this order:
 6. Inspect the generated Packet Outcome Memo.
 7. Run the no-key demo if you want the full packet output.
 8. Inspect the generated Proof Health report.
-9. Inspect the generated decision brief.
-10. Inspect the scenario matrix.
-11. Validate the public conformance contract.
-12. Check the safety defaults and tests.
+9. Inspect the generated Design Partner Outcome Memo.
+10. Inspect the generated Sponsor Evidence Replay.
+11. Inspect the generated decision brief.
+12. Inspect the scenario matrix.
+13. Validate the public conformance contract.
+14. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -37,6 +39,9 @@ python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
@@ -62,6 +67,9 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
 | What request shape would a design partner fill? | `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml` |
 | What happens when a role-level trial request is run? | `python3 -m agent.trial examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial_report.md` |
+| What meeting decision comes out of that trial? | `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial.outcome_memo.md` |
+| Where do sponsor proof slots attach to that decision? | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` and `examples/generated/support_triage_trial.evidence_replay.md` |
+| Can redacted sponsor outputs attach safely? | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial` and `examples/evidence/support_triage_trial/` |
 | What is the highest-signal product artifact? | `examples/generated/trust_receipt.md` |
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
@@ -100,6 +108,9 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
 - the Design Partner Trial Kit and trial runner give that trial a concrete public input and output path without adding live writes or private source exposure
+- the Design Partner Outcome Memo turns that trial output into a can-move, stays-blocked, proof-owner meeting decision
+- Sponsor Evidence Replay shows where sponsor proof attaches without letting sponsors approve, grant, write, mutate, or change the verdict
+- Live Evidence Rehearsal shows sanitized sponsor output can attach without reducing proof debt or changing the locked decision
 - the Product Quality Audit keeps the public proof surface aligned around the same premium spine during fast iteration
 
 ## What This Does Not Expose
@@ -135,6 +146,9 @@ README thesis
 -> Design Partner Brief
 -> Design Partner Trial Kit
 -> Design Partner Trial Runner
+-> Design Partner Outcome Memo
+-> Sponsor Evidence Replay
+-> Live Evidence Rehearsal
 -> no-key demo
 -> Trust Receipt
 -> Review Room

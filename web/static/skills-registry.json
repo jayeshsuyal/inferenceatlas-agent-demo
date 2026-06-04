@@ -2,7 +2,7 @@
   "schema_version": "inferenceatlas_ui_skills.v0",
   "source": "docs/AGENT_SKILLS.md",
   "registry_command": "python3 -m agent.skills",
-  "count": 13,
+  "count": 15,
   "skills": [
     {
       "id": "policy_gate_evaluation",
@@ -129,6 +129,26 @@
       ]
     },
     {
+      "id": "design_partner_evidence_replay",
+      "slash": "evidence",
+      "slash_trigger": "/evidence",
+      "name": "Sponsor Evidence Replay",
+      "what_it_proves": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+      "command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+      "category": "design_partner_pilot",
+      "category_label": "Design Partner Pilot",
+      "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
+      "artifacts": [
+        "agent/trial_evidence_replay.py",
+        "examples/evidence/support_triage_trial",
+        "examples/generated/support_triage_trial.evidence_replay.md",
+        "examples/generated/support_triage_trial.evidence_replay.json"
+      ]
+    },
+    {
       "id": "design_partner_trial_runner",
       "slash": "trial",
       "slash_trigger": "/trial",
@@ -149,6 +169,25 @@
         "examples/generated/support_triage_trial_report.md",
         "examples/generated/support_triage_trial.packet.json",
         "examples/generated/support_triage_trial.decision_brief.json"
+      ]
+    },
+    {
+      "id": "design_partner_outcome_memo",
+      "slash": "trial-memo",
+      "slash_trigger": "/trial-memo",
+      "name": "Design Partner Outcome Memo",
+      "what_it_proves": "A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
+      "command": "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+      "category": "design_partner_pilot",
+      "category_label": "Design Partner Pilot",
+      "safety_boundary": "memo restates blocked claims; never grants access",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Summarize the design-partner outcome memo: what can move, what stays blocked, which proof owners are named, and why no access is granted.",
+      "artifacts": [
+        "agent/trial_outcome_memo.py",
+        "examples/generated/support_triage_trial.outcome_memo.md",
+        "examples/generated/support_triage_trial.outcome_memo.json"
       ]
     },
     {
@@ -410,6 +449,26 @@
       "label": "Design Partner Pilot",
       "skills": [
         {
+          "id": "design_partner_evidence_replay",
+          "slash": "evidence",
+          "slash_trigger": "/evidence",
+          "name": "Sponsor Evidence Replay",
+          "what_it_proves": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+          "command": "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+          "category": "design_partner_pilot",
+          "category_label": "Design Partner Pilot",
+          "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
+          "artifacts": [
+            "agent/trial_evidence_replay.py",
+            "examples/evidence/support_triage_trial",
+            "examples/generated/support_triage_trial.evidence_replay.md",
+            "examples/generated/support_triage_trial.evidence_replay.json"
+          ]
+        },
+        {
           "id": "design_partner_trial_runner",
           "slash": "trial",
           "slash_trigger": "/trial",
@@ -430,6 +489,25 @@
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.packet.json",
             "examples/generated/support_triage_trial.decision_brief.json"
+          ]
+        },
+        {
+          "id": "design_partner_outcome_memo",
+          "slash": "trial-memo",
+          "slash_trigger": "/trial-memo",
+          "name": "Design Partner Outcome Memo",
+          "what_it_proves": "A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
+          "command": "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+          "category": "design_partner_pilot",
+          "category_label": "Design Partner Pilot",
+          "safety_boundary": "memo restates blocked claims; never grants access",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Summarize the design-partner outcome memo: what can move, what stays blocked, which proof owners are named, and why no access is granted.",
+          "artifacts": [
+            "agent/trial_outcome_memo.py",
+            "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.outcome_memo.json"
           ]
         }
       ]

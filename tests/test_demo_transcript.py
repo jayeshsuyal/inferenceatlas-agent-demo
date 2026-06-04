@@ -19,6 +19,9 @@ class DemoTranscriptTests(unittest.TestCase):
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
             "python3 -m agent.trial examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+            "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial",
             "python3 -m unittest discover -s tests",
         ]:
             self.assertIn(expected, transcript)
@@ -35,6 +38,11 @@ class DemoTranscriptTests(unittest.TestCase):
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial.packet.json",
             "examples/generated/support_triage_trial.decision_brief.json",
+            "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.outcome_memo.json",
+            "examples/evidence/support_triage_trial/",
+            "examples/generated/support_triage_trial.evidence_replay.md",
+            "examples/generated/support_triage_trial.evidence_replay.json",
         ]:
             self.assertIn(expected, transcript)
 
@@ -50,6 +58,11 @@ class DemoTranscriptTests(unittest.TestCase):
             "fast_lane_scoped_validation",
             "blocked_fast",
             "Design Partner Trial Report",
+            "Design Partner Outcome Memo",
+            "Sponsor Evidence Replay",
+            "Live Evidence Rehearsal",
+            "sponsors can change decision: False",
+            "decision locked: True",
             "executes external writes: False",
             "can_approve_access=False",
             "Private engine, public proof.",

@@ -42,8 +42,8 @@ class UISkillsTests(unittest.TestCase):
     def test_payload_matches_doc_source(self) -> None:
         payload = build_ui_skills_payload()
         self.assertEqual(payload["source"], "docs/AGENT_SKILLS.md")
-        self.assertEqual(payload["count"], 13)
-        self.assertEqual(len(payload["skills"]), 13)
+        self.assertEqual(payload["count"], len(SKILLS) + 1)
+        self.assertEqual(len(payload["skills"]), len(SKILLS) + 1)
 
     def test_compose_message_with_skills(self) -> None:
         text, used = compose_message_with_skills(
@@ -76,7 +76,7 @@ class UISkillsTests(unittest.TestCase):
         path = root / "web" / "static" / "skills-registry.json"
         self.assertTrue(path.is_file(), "run: python3 -m scripts.generate_agent_skills_doc")
         data = json.loads(path.read_text(encoding="utf-8"))
-        self.assertEqual(data["count"], 13)
+        self.assertEqual(data["count"], len(SKILLS) + 1)
 
 
 if __name__ == "__main__":

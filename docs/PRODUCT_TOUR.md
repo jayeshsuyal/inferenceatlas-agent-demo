@@ -35,6 +35,9 @@ python3 -m agent.outcome_memo
 python3 -m agent.proof_health
 python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
+python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.review_room
 python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
@@ -51,6 +54,9 @@ ia-outcome-memo
 ia-proof-health
 ia-sponsor-readiness
 ia-trial examples/requests/support_triage_trial.yml
+ia-trial-outcome-memo examples/requests/support_triage_trial.yml
+ia-trial-evidence-replay examples/requests/support_triage_trial.yml
+ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ia-review-room
 ia-verify-artifacts
 ```
@@ -58,8 +64,8 @@ ia-verify-artifacts
 In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
-- an Agent Skills registry showing 12 stable public review skills with commands, artifacts, dependencies, and safety boundaries
-- a role-level trial request converted into a report, packet, and access brief
+- an Agent Skills registry showing 14 stable public review skills with commands, artifacts, dependencies, and safety boundaries
+- a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
 - a Packet Outcome Memo converting the support-triage packet into a human decision
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
@@ -81,6 +87,9 @@ In five minutes, a reviewer should see:
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
+| `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` | The trial request becomes a meeting-ready decision: can-move scope, blocked scope, proof owners, and reviewer routes. |
+| `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` | Sponsor proof slots attach to the trial decision while approvals, grants, writes, and production mutation stay locked. |
+| `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial` | Sanitized sponsor outputs rehearse Tavily sources, Composio permission diffs, Nebius narration, and OpenClaw traces without changing the locked decision. |
 | `examples/generated/trust_receipt.md` | A skim-ready receipt joins scenario spread, permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
 | `examples/generated/review_room.html` | A static visual review room works without a web app, scripts, secrets, or external assets. |
 | `examples/generated/support_triage_agent.proof_health.md` | Proof Health shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check before access expands. |
@@ -98,7 +107,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Packet Diff | The three scenarios produce different load-bearing fields while production access and writes stay blocked. |
 | Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
 | Artifact Integrity Gate | Deterministic proof artifacts must remain byte-equal to the current generator output; static review assets must be present; generated inventory must not contain extras. |
-| Public trial request files | The trial runner derives a report, packet, and access brief from the request file. |
+| Public trial request files | The trial runner derives a report, packet, access brief, outcome memo, sponsor evidence replay, and live evidence rehearsal from the request file. |
 | Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
 | Sponsor readiness contracts | The readiness report derives provider value, visible outputs, CTO next steps, and safety boundaries from the adapter contracts. |
 | Conservative safety defaults | The outputs preserve blocked approvals, blocked grants, blocked writes, dry-run sponsor posture, and human approval requirement. |
@@ -152,9 +161,12 @@ Then they compare the public trial output against their current approval path:
 examples/generated/support_triage_trial_report.md
 examples/generated/support_triage_trial.packet.md
 examples/generated/support_triage_trial.decision_brief.md
+examples/generated/support_triage_trial.outcome_memo.md
+examples/evidence/support_triage_trial/
+examples/generated/support_triage_trial.evidence_replay.md
 ```
 
-If the report makes risk, proof debt, and reviewer ownership clearer than their current process, the product is doing its job.
+If the report, outcome memo, and evidence replay make risk, proof debt, reviewer ownership, sponsor proof, and the meeting decision clearer than their current process, the product is doing its job.
 
 ## Safety Boundary
 

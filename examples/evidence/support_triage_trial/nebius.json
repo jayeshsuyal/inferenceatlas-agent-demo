@@ -1,0 +1,20 @@
+{
+  "schema_version": "ia_sponsor_evidence.nebius.v0",
+  "provider": "nebius",
+  "sanitized_from_live_output": true,
+  "source": "cto_redacted_nebius_narration_sample",
+  "narrations": [
+    {
+      "memo_section": "Decision",
+      "draft_purpose": "meeting_ready_summary",
+      "locked_fields_confirmed": [
+        "decision.code",
+        "decision.production_access",
+        "decision.permission_grants",
+        "decision.external_writes",
+        "safety_boundary"
+      ],
+      "summary": "The support triage agent can move into scoped validation only after named reviewers inspect the proof debt. Production access, permission grants, and external writes remain blocked."
+    }
+  ]
+}

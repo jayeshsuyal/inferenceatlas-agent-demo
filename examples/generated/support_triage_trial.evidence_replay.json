@@ -1,0 +1,452 @@
+{
+  "decision_lock": {
+    "can_sponsor_change_decision": false,
+    "decision_code": "scoped_validation_only",
+    "external_writes": false,
+    "permission_grants": false,
+    "production_access": false
+  },
+  "evidence_replay_id": "ia-design-partner-evidence-replay-support_triage_trial-public-v0",
+  "generated_by": "inferenceatlas-agent-demo",
+  "live_evidence_rehearsal": {
+    "decision_locked": true,
+    "evidence_dir": null,
+    "proof_debt_reduction_requires_human_review": true,
+    "providers": [],
+    "sanitized_provider_count": 0,
+    "unsafe_inputs_rejected": true
+  },
+  "meeting_use": [
+    "Start from the Design Partner Outcome Memo decision.",
+    "Use Tavily slots to gather source-backed evidence for missing proof.",
+    "Use Composio permission diffs to inspect requested tool actions without granting permissions.",
+    "Use Nebius only for reviewer-ready narration over locked fields.",
+    "Use OpenClaw only to plan runtime trace checkpoints for blocked and dry-run outcomes.",
+    "Do not reduce proof debt or expand access until named human reviewers approve it."
+  ],
+  "mode": "offline_dry_run_replay",
+  "owner_proof_map": [
+    {
+      "owner": "Engineering",
+      "proof_needed": "GitHub repository allowlist and permission level",
+      "sponsor_support": [
+        {
+          "attached_sanitized_sources": 0,
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "evidence_candidate_plan",
+          "provider": "tavily",
+          "support": "GitHub repository allowlist and permission level policy evidence"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "permission_diff",
+          "provider": "composio",
+          "support": "github permission diff"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "locked_field_narration",
+          "provider": "nebius",
+          "support": "locked-field reviewer narration for the same proof owner"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "runtime_trace_plan",
+          "provider": "openclaw",
+          "support": "runtime trace checkpoint for blocked or dry-run access attempts"
+        }
+      ],
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "owner": "Security/Legal",
+      "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "sponsor_support": [
+        {
+          "attached_sanitized_sources": 0,
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "evidence_candidate_plan",
+          "provider": "tavily",
+          "support": "Slack channel allowlist, retention policy, and customer-data boundary policy evidence"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "permission_diff",
+          "provider": "composio",
+          "support": "slack permission diff"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "locked_field_narration",
+          "provider": "nebius",
+          "support": "locked-field reviewer narration for the same proof owner"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "runtime_trace_plan",
+          "provider": "openclaw",
+          "support": "runtime trace checkpoint for blocked or dry-run access attempts"
+        }
+      ],
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "owner": "Engineering",
+      "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "sponsor_support": [
+        {
+          "attached_sanitized_sources": 0,
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "evidence_candidate_plan",
+          "provider": "tavily",
+          "support": "Jira project scope, draft-only mode, and rollback/off-switch plan policy evidence"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "permission_diff",
+          "provider": "composio",
+          "support": "jira permission diff"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "locked_field_narration",
+          "provider": "nebius",
+          "support": "locked-field reviewer narration for the same proof owner"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "runtime_trace_plan",
+          "provider": "openclaw",
+          "support": "runtime trace checkpoint for blocked or dry-run access attempts"
+        }
+      ],
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "owner": "Support Ops",
+      "proof_needed": "Support escalation workflow and human handoff owner",
+      "sponsor_support": [
+        {
+          "attached_sanitized_sources": 0,
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "evidence_candidate_plan",
+          "provider": "tavily",
+          "support": "Support escalation workflow and human handoff owner policy evidence"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "locked_field_narration",
+          "provider": "nebius",
+          "support": "locked-field reviewer narration for the same proof owner"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "runtime_trace_plan",
+          "provider": "openclaw",
+          "support": "runtime trace checkpoint for blocked or dry-run access attempts"
+        }
+      ],
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "owner": "Security/Engineering",
+      "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "sponsor_support": [
+        {
+          "attached_sanitized_sources": 0,
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "evidence_candidate_plan",
+          "provider": "tavily",
+          "support": "Audit log shape for tool calls, evidence intake, and reviewer decisions policy evidence"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "locked_field_narration",
+          "provider": "nebius",
+          "support": "locked-field reviewer narration for the same proof owner"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "human_review_required": true,
+          "proof_type": "runtime_trace_plan",
+          "provider": "openclaw",
+          "support": "runtime trace checkpoint for blocked or dry-run access attempts"
+        }
+      ],
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "request_path": "examples/requests/support_triage_trial.yml",
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "schema_version": "design_partner_evidence_replay.v0",
+  "source_artifacts": {
+    "decision_brief": "examples/generated/support_triage_trial.decision_brief.json",
+    "outcome_memo": "examples/generated/support_triage_trial.outcome_memo.json",
+    "packet": "examples/generated/support_triage_trial.packet.json",
+    "trial_report": "examples/generated/support_triage_trial_report.json"
+  },
+  "sponsor_replay": {
+    "composio": {
+      "attachments": [
+        {
+          "blocked_actions": [
+            "issue edits",
+            "repo configuration changes",
+            "workflow dispatch"
+          ],
+          "can_grant_permissions": false,
+          "requested": "read issues from named repositories; read labels and linked incident references",
+          "required_proof": [
+            "repository allowlist",
+            "permission level",
+            "audit log owner"
+          ],
+          "tool": "github",
+          "validation_allowance": "dry-run read-scope plan only",
+          "would_execute": false,
+          "writes_default": "blocked"
+        },
+        {
+          "blocked_actions": [
+            "posting messages",
+            "DM access",
+            "workspace-wide history"
+          ],
+          "can_grant_permissions": false,
+          "requested": "summarize named incident channels",
+          "required_proof": [
+            "channel allowlist",
+            "retention terms",
+            "customer-data boundary"
+          ],
+          "tool": "slack",
+          "validation_allowance": "dry-run named-channel summary plan only",
+          "would_execute": false,
+          "writes_default": "blocked"
+        },
+        {
+          "blocked_actions": [
+            "ticket creation",
+            "status changes",
+            "assignment changes"
+          ],
+          "can_grant_permissions": false,
+          "requested": "propose draft tickets",
+          "required_proof": [
+            "project scope",
+            "draft-only mode",
+            "rollback/off-switch plan"
+          ],
+          "tool": "jira",
+          "validation_allowance": "draft ticket proposal only; no production creation",
+          "would_execute": false,
+          "writes_default": "blocked"
+        }
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "can_reduce_proof_debt_automatically": false,
+      "human_review_required": true,
+      "live_call_made": false,
+      "mode": "offline_dry_run_replay",
+      "proof_pack_type": "permission_diff",
+      "provider": "composio",
+      "rehearsal_evidence_attached": false,
+      "requires_api_key": false,
+      "value_added": "Shows requested tool actions, validation-only allowances, blocked actions, and required proof.",
+      "would_execute": false
+    },
+    "nebius": {
+      "attachments": [
+        {
+          "draft_purpose": "reviewer_ready_summary",
+          "human_review_required": true,
+          "llm_can_edit": [
+            "summary language",
+            "meeting close wording"
+          ],
+          "llm_must_not_edit": [
+            "verdict",
+            "blocked scope",
+            "safety boundary"
+          ],
+          "locked_fields": [
+            "decision.code",
+            "decision.production_access",
+            "decision.permission_grants",
+            "decision.external_writes",
+            "safety_boundary"
+          ],
+          "locked_values": {
+            "decision_code": "scoped_validation_only",
+            "external_writes": false,
+            "permission_grants": false,
+            "production_access": false
+          },
+          "memo_section": "Decision"
+        }
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "can_reduce_proof_debt_automatically": false,
+      "human_review_required": true,
+      "live_call_made": false,
+      "mode": "offline_dry_run_replay",
+      "proof_pack_type": "locked_field_narration",
+      "provider": "nebius",
+      "rehearsal_evidence_attached": false,
+      "requires_api_key": false,
+      "value_added": "Drafts reviewer-facing language while locked fields keep the decision deterministic.",
+      "would_execute": false
+    },
+    "openclaw": {
+      "attachments": [
+        {
+          "outcome": "ready_for_scoped_trial",
+          "policy_decision": "inspect_only",
+          "step": "load_public_trial_request",
+          "would_execute": false
+        },
+        {
+          "outcome": "proof_routed_scoped_validation",
+          "policy_decision": "pre_permission_review",
+          "step": "derive_packet_and_brief",
+          "would_execute": false
+        },
+        {
+          "outcome": "scoped_validation_only",
+          "policy_decision": "human_review_required",
+          "step": "emit_outcome_memo",
+          "would_execute": false
+        }
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "can_reduce_proof_debt_automatically": false,
+      "human_review_required": true,
+      "live_call_made": false,
+      "mode": "offline_dry_run_replay",
+      "proof_pack_type": "runtime_trace_plan",
+      "provider": "openclaw",
+      "rehearsal_evidence_attached": false,
+      "requires_api_key": false,
+      "value_added": "Shows the runtime trace that would be recorded around the same blocked and dry-run decisions.",
+      "would_execute": false
+    },
+    "tavily": {
+      "attachments": [
+        {
+          "can_reduce_proof_debt": false,
+          "evidence_type": "policy_or_control_evidence",
+          "freshness": "not_fetched_in_offline_mode",
+          "human_review_required": true,
+          "owner": "Engineering",
+          "planned_query": "GitHub repository allowlist and permission level policy evidence",
+          "proof_needed": "GitHub repository allowlist and permission level",
+          "source_urls": [],
+          "unblocks": "read-only repository evidence review"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "evidence_type": "policy_or_control_evidence",
+          "freshness": "not_fetched_in_offline_mode",
+          "human_review_required": true,
+          "owner": "Security/Legal",
+          "planned_query": "Slack channel allowlist, retention policy, and customer-data boundary policy evidence",
+          "proof_needed": "Slack channel allowlist, retention policy, and customer-data boundary",
+          "source_urls": [],
+          "unblocks": "incident-channel summarization review"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "evidence_type": "policy_or_control_evidence",
+          "freshness": "not_fetched_in_offline_mode",
+          "human_review_required": true,
+          "owner": "Engineering",
+          "planned_query": "Jira project scope, draft-only mode, and rollback/off-switch plan policy evidence",
+          "proof_needed": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+          "source_urls": [],
+          "unblocks": "draft ticket validation"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "evidence_type": "policy_or_control_evidence",
+          "freshness": "not_fetched_in_offline_mode",
+          "human_review_required": true,
+          "owner": "Support Ops",
+          "planned_query": "Support escalation workflow and human handoff owner policy evidence",
+          "proof_needed": "Support escalation workflow and human handoff owner",
+          "source_urls": [],
+          "unblocks": "triage workflow fit review"
+        },
+        {
+          "can_reduce_proof_debt": false,
+          "evidence_type": "policy_or_control_evidence",
+          "freshness": "not_fetched_in_offline_mode",
+          "human_review_required": true,
+          "owner": "Security/Engineering",
+          "planned_query": "Audit log shape for tool calls, evidence intake, and reviewer decisions policy evidence",
+          "proof_needed": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+          "source_urls": [],
+          "unblocks": "reviewable pilot packet"
+        }
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "can_reduce_proof_debt_automatically": false,
+      "human_review_required": true,
+      "live_call_made": false,
+      "mode": "offline_dry_run_replay",
+      "proof_pack_type": "evidence_candidate_plan",
+      "provider": "tavily",
+      "rehearsal_evidence_attached": false,
+      "requires_api_key": false,
+      "value_added": "Turns missing proof into source-backed evidence slots for human reviewers.",
+      "would_execute": false
+    }
+  },
+  "summary": {
+    "all_human_review_required": true,
+    "all_non_approving": true,
+    "all_non_executing": true,
+    "all_non_granting": true,
+    "all_non_mutating": true,
+    "decision_locked_after_rehearsal": true,
+    "proof_attachment_count": 18,
+    "proof_owner_count": 5,
+    "provider_count": 4,
+    "rehearsal_evidence_provider_count": 0,
+    "sanitized_evidence_attached": false
+  }
+}

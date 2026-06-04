@@ -27,6 +27,8 @@ SLASH_BY_SKILL_ID = {
     "reviewer_routing": "routing",
     "risk_aware_scenario_differentiation": "scenarios",
     "design_partner_trial_runner": "trial",
+    "design_partner_outcome_memo": "trial-memo",
+    "design_partner_evidence_replay": "evidence",
     "outcome_memo_generation": "memo",
     "packet_diff_generation": "diff",
     "artifact_integrity_verification": "verify",
@@ -98,6 +100,16 @@ def _prompt_for_chat(skill: SkillSpec) -> str:
         return (
             "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: "
             "what adds evidence vs what cannot approve access."
+        )
+    if skill.id == "design_partner_outcome_memo":
+        return (
+            "Summarize the design-partner outcome memo: what can move, what stays blocked, "
+            "which proof owners are named, and why no access is granted."
+        )
+    if skill.id == "design_partner_evidence_replay":
+        return (
+            "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw "
+            "attach proof, and why the sponsors cannot change the decision or grant access."
         )
     return (
         f"Explain the output of the {skill.name} harness skill for a hackathon judge. "
@@ -289,6 +301,12 @@ def _context_for_skill(skill: UISkill, max_chars: int = 2800) -> str:
     if sid in ("access_request_normalization", "design_partner_trial_runner"):
         return _read_text(GENERATED_DIR / "support_triage_trial_report.md", min(max_chars, 2200))
 
+    if sid == "design_partner_outcome_memo":
+        return _read_text(GENERATED_DIR / "support_triage_trial.outcome_memo.md", min(max_chars, 2600))
+
+    if sid == "design_partner_evidence_replay":
+        return _read_text(GENERATED_DIR / "support_triage_trial.evidence_replay.md", min(max_chars, 2600))
+
     if sid == "sponsor_proof_readiness":
         return _read_text(GENERATED_DIR / "sponsor_live_readiness.md", min(max_chars, 2200))
 
@@ -324,6 +342,8 @@ def skill_suggested_questions(skill_ids: List[str]) -> List[str]:
         hints.append("How do the three scenarios differ on proof and production access?")
     if "full_judge_harness" in ids:
         hints.append("Summarize the full judge proof path for a hackathon judge.")
+    if ids & {"design_partner_outcome_memo", "design_partner_evidence_replay"}:
+        hints.append("How does the design-partner trial move forward without sponsor tools taking over?")
     if not hints:
         hints.append("Summarize what these skills prove and what humans must still approve.")
     return hints[:3]

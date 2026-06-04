@@ -16,7 +16,9 @@ classifiers = [
   "Topic :: Security",
   "Topic :: Software Development :: Quality Assurance",
 ]
-dependencies = []
+dependencies = [
+  "fastapi>=0.110.0",
+]
 
 [project.optional-dependencies]
 live = [
@@ -26,7 +28,6 @@ live = [
   "composio-openai>=0.6.0",
 ]
 web = [
-  "fastapi>=0.110.0",
   "uvicorn[standard]>=0.27.0",
 ]
 

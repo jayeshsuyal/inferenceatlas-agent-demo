@@ -27,6 +27,7 @@ The packet is the canonical object. The brief, Proof Health report, trace, and M
 | Module | Responsibility | Extension rule |
 | --- | --- | --- |
 | `agent/demo.py` | Runs the public demo and writes artifacts. | Keep no-key mode deterministic; add live behavior behind `IA_LIVE_MODE=1`. |
+| `agent/skills.py` | Stores the canonical public Agent Skills registry and renders human/JSON projections. | Add public capability claims here first, with commands, artifacts, dependencies, and safety boundaries. |
 | `agent/packet.py` | Builds the canonical DecisionPacket and trace. | Add fields through schema-backed packet changes. |
 | `agent/decision_brief.py` | Derives the Agent Access Decision Brief from the packet. | Never add separate approval logic here; derive from packet state. |
 | `agent/proof_health.py` | Derives Packet Drift, stale assumptions, expired reviewer gates, and next human health check from the public packet and brief. | Keep it lifecycle-only; it must not approve, grant, write, or mutate production state. |

@@ -17,6 +17,7 @@ The product spine is simple:
 
 ```text
 agent-access question
+-> Agent Skills registry
 -> DecisionPacket
 -> Packet Diff
 -> Agent Access Decision Brief
@@ -38,19 +39,20 @@ A reviewer should be able to follow this order without needing private source co
 
 1. `README.md`
 2. `docs/PRODUCT_TOUR.md`
-3. `docs/PRODUCT_QUALITY_AUDIT.md`
-4. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
-5. `python3 -m agent.judge`
-6. `examples/generated/packet_diff.md`
-7. `examples/generated/support_triage_agent.outcome_memo.md`
-8. `python3 -m agent.verify_artifacts`
-9. `examples/generated/review_room.html`
-10. `examples/generated/trust_receipt.md`
-11. `examples/generated/support_triage_agent.proof_health.md`
-12. `examples/generated/sponsor_live_readiness.md`
-13. `docs/DESIGN_PARTNER_BRIEF.md`
-14. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-15. `examples/generated/support_triage_trial_report.md`
+3. `docs/AGENT_SKILLS.md`
+4. `docs/PRODUCT_QUALITY_AUDIT.md`
+5. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
+6. `python3 -m agent.judge`
+7. `examples/generated/packet_diff.md`
+8. `examples/generated/support_triage_agent.outcome_memo.md`
+9. `python3 -m agent.verify_artifacts`
+10. `examples/generated/review_room.html`
+11. `examples/generated/trust_receipt.md`
+12. `examples/generated/support_triage_agent.proof_health.md`
+13. `examples/generated/sponsor_live_readiness.md`
+14. `docs/DESIGN_PARTNER_BRIEF.md`
+15. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+16. `examples/generated/support_triage_trial_report.md`
 
 This order is the product-quality baseline. It gives a skim reviewer a clear story, gives an agentic reviewer a command path, gives a CTO a build path, and gives a design partner a trial path.
 
@@ -58,6 +60,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 
 | Surface | Product job | Quality bar |
 | --- | --- | --- |
+| Agent Skills registry | Show the public capability map before reviewers inspect individual artifacts. | Must be generated from `agent/skills.py`, preserve safe categories, and keep every skill backed by commands, artifacts, dependencies, and allowlisted safety boundaries. |
 | DecisionPacket | Show the access request, risk posture, proof debt, blocked claims, reviewer owners, and safety state. | Must remain deterministic, schema-backed, and non-approving. |
 | Packet Diff | Show how the same engine relaxes, routes, or blocks across risk levels. | Must compare load-bearing fields and preserve blocked production/write invariants. |
 | Agent Access Decision Brief | Compress the packet into a fast go/no-go review surface. | Must make scoped validation, production access, missing proof, and next validation obvious. |
@@ -101,6 +104,7 @@ Before a PR claims the product surface is stronger, it should preserve these sig
 - `python3 -m unittest discover -s tests` passes.
 - `python3 -m py_compile agent/*.py agent/adapters/*.py web/*.py` passes.
 - `python3 -m json.tool AI_JUDGE_MANIFEST.json` passes.
+- `python3 -m agent.skills --json` passes.
 - `python3 -m agent.verify_artifacts` passes.
 - The artifact checklist includes the review surfaces a judge should skim.
 - The public boundary tests stay clean.
@@ -113,6 +117,7 @@ Use this as the quick premium-quality review:
 | Question | Pass signal |
 | --- | --- |
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
+| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 12 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |

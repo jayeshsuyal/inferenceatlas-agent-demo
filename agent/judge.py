@@ -29,6 +29,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.judge",
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
+    "python3 -m agent.skills",
     "python3 -m agent.packet_diff",
     "python3 -m agent.outcome_memo",
     "python3 -m agent.contract --all",
@@ -44,6 +45,7 @@ JUDGE_COMMANDS = [
 
 PRIMARY_ARTIFACTS = [
     "docs/PRODUCT_TOUR.md",
+    "docs/AGENT_SKILLS.md",
     "docs/PRODUCT_QUALITY_AUDIT.md",
     "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "examples/generated/demo_transcript.md",

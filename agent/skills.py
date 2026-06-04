@@ -160,6 +160,26 @@ SKILLS: tuple[SkillSpec, ...] = (
         depends_on=("decision_packet_generation",),
     ),
     SkillSpec(
+        id="design_partner_outcome_memo",
+        name="Design Partner Outcome Memo",
+        what_it_proves="A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
+        command="python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
+        artifacts=(
+            "agent/trial_outcome_memo.py",
+            "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.outcome_memo.json",
+        ),
+        safety_boundary="memo restates blocked claims; never grants access",
+        tier="stable",
+        category="design_partner_pilot",
+        depends_on=(
+            "access_request_normalization",
+            "decision_packet_generation",
+            "design_partner_trial_runner",
+            "outcome_memo_generation",
+        ),
+    ),
+    SkillSpec(
         id="design_partner_trial_runner",
         name="Design Partner Trial Runner",
         what_it_proves="A role-level trial request becomes a report, packet, and access brief without live credentials.",
@@ -225,6 +245,7 @@ SKILLS: tuple[SkillSpec, ...] = (
         category="proof_integrity",
         depends_on=(
             "decision_packet_generation",
+            "design_partner_outcome_memo",
             "design_partner_trial_runner",
             "outcome_memo_generation",
             "packet_diff_generation",

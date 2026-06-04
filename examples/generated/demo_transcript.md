@@ -18,6 +18,7 @@ python3 -m agent.adapters --all
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m unittest discover -s tests
 ```
 
@@ -271,7 +272,44 @@ examples/generated/support_triage_trial.decision_brief.json
 
 Review signal: the repo can now run a role-level design-partner request through the same deterministic packet and brief machinery without secrets, approvals, grants, writes, or private v1 exposure.
 
-## 9. Unit Tests
+## 9. Design Partner Outcome Memo
+
+Command:
+
+```bash
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
+```
+
+Expected output signal:
+
+```text
+# Design Partner Outcome Memo: support_triage_trial
+
+## Decision
+
+- outcome: scoped_validation_only
+- access speed lane: proof_routed_scoped_validation
+- production access: False
+- permission grants: False
+- external writes: False
+
+## Safety Boundary
+
+- approves access: False
+- grants permissions: False
+- executes external writes: False
+```
+
+Generated outcome artifacts:
+
+```text
+examples/generated/support_triage_trial.outcome_memo.md
+examples/generated/support_triage_trial.outcome_memo.json
+```
+
+Review signal: the design-partner trial now ends in a meeting-ready can-move/stays-blocked memo without granting access.
+
+## 10. Unit Tests
 
 Command:
 
@@ -342,3 +380,5 @@ Private engine, public proof.
 | Trial packet JSON | `examples/generated/support_triage_trial.packet.json` |
 | Trial decision brief | `examples/generated/support_triage_trial.decision_brief.md` |
 | Trial decision brief JSON | `examples/generated/support_triage_trial.decision_brief.json` |
+| Trial outcome memo | `examples/generated/support_triage_trial.outcome_memo.md` |
+| Trial outcome memo JSON | `examples/generated/support_triage_trial.outcome_memo.json` |

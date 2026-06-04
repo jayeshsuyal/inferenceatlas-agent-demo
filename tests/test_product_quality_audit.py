@@ -57,6 +57,7 @@ class ProductQualityAuditTests(unittest.TestCase):
             "docs/DESIGN_PARTNER_BRIEF.md",
             "docs/DESIGN_PARTNER_TRIAL_KIT.md",
             "examples/generated/support_triage_trial_report.md",
+            "examples/generated/support_triage_trial.outcome_memo.md",
         ]
 
         positions = [doc.index(item) for item in expected_order]

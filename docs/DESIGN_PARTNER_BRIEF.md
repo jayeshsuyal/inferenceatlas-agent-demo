@@ -14,7 +14,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 The design-partner question is:
 
 ```text
-Can IA turn one messy agent-access request into a reviewable Trust Receipt, DecisionPacket, access brief, Proof Health report, policy-gate result, and next validation plan that Security, Engineering, Legal, Ops, and Finance can actually act on?
+Can IA turn one messy agent-access request into a reviewable Trust Receipt, DecisionPacket, access brief, Design Partner Outcome Memo, Proof Health report, policy-gate result, and next validation plan that Security, Engineering, Legal, Ops, and Finance can actually act on?
 ```
 
 The public repo proves the contract. A design partner validates the workflow on real internal access requests.
@@ -53,6 +53,7 @@ examples/generated/sponsor_live_readiness.md
 examples/generated/review_room.html
 examples/generated/support_triage_agent.proof_health.md
 examples/generated/support_triage_trial_report.md
+examples/generated/support_triage_trial.outcome_memo.md
 examples/generated/support_triage_agent.decision_brief.md
 policy/agent_access.yml
 docs/REVIEW_ROOM_WALKTHROUGH.md
@@ -70,6 +71,7 @@ examples/requests/support_triage_trial.yml
 
 ```bash
 python3 -m agent.trial examples/requests/support_triage_trial.yml
+python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 ```
 
 5. Pick one real internal agent-access workflow and map it into the same review questions:
@@ -86,6 +88,7 @@ python3 -m agent.trial examples/requests/support_triage_trial.yml
 - Does the Trust Receipt make blast radius visible faster?
 - Does Packet Diff prove lower-risk and critical requests move differently?
 - Does the Packet Outcome Memo make the meeting decision obvious?
+- Does the Design Partner Outcome Memo make the trial decision obvious?
 - Does the access brief give a clearer go/no-go?
 - Does the policy gate block the right class of access?
 - Does reviewer routing remove ambiguity?
@@ -103,6 +106,7 @@ A successful trial should produce:
 - one Agent Access Decision Brief for fast review
 - one Packet Diff showing how the review posture changes across risk levels
 - one Packet Outcome Memo naming what can move, what stays blocked, proof owners, and refresh timing
+- one Design Partner Outcome Memo turning the trial request into can-move scope, blocked scope, proof owners, and reviewer routes
 - one Proof Health report showing Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
 - one Design Partner Trial Report that shows request readiness, access-speed lane, proof debt, and safety boundary
 - one policy-gate result explaining what can move and what stays blocked
@@ -156,6 +160,7 @@ The current public branch gives a builder enough structure to extend a live tria
 | Need | Public surface |
 | --- | --- |
 | One-command review path | `python3 -m agent.judge` |
+| Trial meeting decision | `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` |
 | Product contract | `docs/CONTRACT.md` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
 | Live integration boundary | `docs/LIVE_INTEGRATION_CONTRACT.md` |

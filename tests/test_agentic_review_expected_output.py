@@ -23,12 +23,14 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.packet_diff",
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
+            "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
             "python3 -m agent.verify_artifacts",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
             "Artifact Integrity Gate",
             "Agent Skills",
-            "`summary.available_stable_skills` is `12`",
+            "`summary.available_stable_skills` is `13`",
+            "`summary.generated_artifacts_verified` is `35`",
             "`summary.stale_artifacts` is `0`",
             "`summary.unexpected_checked_in_artifacts` is `0`",
             "`0 unexpected checked-in`",
@@ -39,6 +41,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`packet_diff.has_blocked_critical_lane` is `true`",
             "`packet_outcome_memo.decision_code` is `scoped_validation_only`",
             "`packet_outcome_memo.production_access` is `false`",
+            "`design_partner_outcome_memo.decision_code` is `scoped_validation_only`",
+            "`design_partner_outcome_memo.production_access` is `false`",
             "`private_boundary.private_source_exposed` is `false`",
             "unit tests pass in the current public suite",
             "Failure Signals",
@@ -69,6 +73,7 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("python3 -m agent.skills", manifest["five_minute_review_commands"])
         self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["five_minute_review_commands"])
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])

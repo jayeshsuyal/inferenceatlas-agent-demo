@@ -54,6 +54,12 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertFalse(report["design_partner_trial"]["production_access"])
         self.assertFalse(report["design_partner_trial"]["approves_access"])
         self.assertFalse(report["design_partner_trial"]["grants_permissions"])
+        self.assertEqual(report["design_partner_outcome_memo"]["decision_code"], "scoped_validation_only")
+        self.assertEqual(report["design_partner_outcome_memo"]["access_speed_lane"], "proof_routed_scoped_validation")
+        self.assertFalse(report["design_partner_outcome_memo"]["production_access"])
+        self.assertFalse(report["design_partner_outcome_memo"]["permission_grants"])
+        self.assertFalse(report["design_partner_outcome_memo"]["external_writes"])
+        self.assertFalse(report["design_partner_outcome_memo"]["approves_access"])
         self.assertEqual(report["proof_health"]["scenario"], "support_triage_agent")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertEqual(report["proof_health"]["overall_score"], 67)
@@ -89,6 +95,8 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/requests/support_triage_trial.yml",
             "examples/generated/support_triage_trial_report.md",
             "examples/generated/support_triage_trial_report.json",
+            "examples/generated/support_triage_trial.outcome_memo.md",
+            "examples/generated/support_triage_trial.outcome_memo.json",
             "examples/generated/review_room.desktop.jpg",
         ]:
             self.assertIn(expected, artifact_paths)
@@ -118,6 +126,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("proof_routed_scoped_validation", markdown)
         self.assertIn("blocked_fast", markdown)
         self.assertIn("Design Partner Trial Runner", markdown)
+        self.assertIn("Design Partner Outcome Memo", markdown)
+        self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", markdown)
         self.assertIn("Proof Health", markdown)
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", markdown)
         self.assertIn("examples/requests/support_triage_trial.yml", markdown)
@@ -135,6 +145,7 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Sponsor Live Readiness", result.stdout)
         self.assertIn("all non-approving: True", result.stdout)
         self.assertIn("Design Partner Trial Runner", result.stdout)
+        self.assertIn("Design Partner Outcome Memo", result.stdout)
         self.assertIn("Proof Health", result.stdout)
         self.assertIn("next human health check", result.stdout)
         self.assertIn("blocked_fast", result.stdout)
@@ -158,6 +169,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
         self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
+        self.assertEqual(report["design_partner_outcome_memo"]["decision_code"], "scoped_validation_only")
+        self.assertFalse(report["design_partner_outcome_memo"]["production_access"])
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertFalse(report["proof_health"]["approves_access"])
 

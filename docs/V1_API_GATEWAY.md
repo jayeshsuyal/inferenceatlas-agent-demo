@@ -13,6 +13,13 @@ User cost question
   → LLM slot-filler only (no compare_providers / Tavily for prices)
 ```
 
+When v1 is live, `POST /api/v1/plan/llm` returns the full v1 bundle:
+
+- `rank_configs` deployment plans (score, risk, GPU, monthly USD)
+- `engine_summary` (deterministic narrative — not LLM)
+- `get_provider_compatibility` diagnostics
+- `rank_catalog_offers` per-token catalog ranking (GPT-4o baselines)
+
 If v1 is down or `INFERENCEATLAS_V1_URL` is unset, the demo uses **catalog_fallback** (`agent/catalog_token_fallback.py`) from the static CSV — same monthly math shape, labeled in the UI manifest.
 
 ## Configuration

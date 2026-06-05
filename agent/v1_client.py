@@ -92,12 +92,17 @@ def plan_llm(
             "peak_to_avg": peak_to_avg,
             "top_k": top_k,
             "traffic_pattern": traffic_pattern,
+            "include_catalog": True,
+            "include_compatibility": True,
         },
         {
             "tokens_per_day": tokens_per_day,
             "model": model_bucket,
             "peak_to_avg": peak_to_avg,
             "top_k": top_k,
+            "traffic_pattern": traffic_pattern,
+            "include_catalog": True,
+            "include_compatibility": True,
         },
     ]
     paths = ("/api/v1/plan/llm", "/api/v1/plan/llm/")
@@ -107,13 +112,20 @@ def plan_llm(
             try:
                 data = _request("POST", path, body=body)
                 plans = normalize_plans(data)
+                raw = data if isinstance(data, dict) else {"plans": plans}
                 return {
                     "ok": True,
                     "source": "inferenceatlas-v1",
                     "path": path,
                     "request": body,
                     "plans": plans,
-                    "raw": data if isinstance(data, dict) else {"plans": plans},
+                    "engine_summary": raw.get("engine_summary", ""),
+                    "provider_compatibility": raw.get("provider_compatibility") or [],
+                    "catalog_token_ranking": raw.get("catalog_token_ranking") or [],
+                    "catalog_provider_reasons": raw.get("catalog_provider_reasons") or {},
+                    "engine_model_bucket": raw.get("engine_model_bucket", ""),
+                    "requested_model_bucket": raw.get("requested_model_bucket", ""),
+                    "raw": raw,
                 }
             except Exception as exc:
                 last_err = exc

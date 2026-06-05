@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from .catalog_token_fallback import build_catalog_fallback_plans
 from .config import INFERENCEATLAS_V1_URL
@@ -81,6 +81,47 @@ def _format_roles(roles: AttachmentRoles) -> str:
     return "\n".join(lines)
 
 
+def _format_compatibility(compatibility: List[dict]) -> List[str]:
+    if not compatibility:
+        return []
+    lines = [
+        "",
+        "### Provider compatibility (v1 get_provider_compatibility)",
+        "",
+        "| Provider | Compatible | Reason |",
+        "| --- | --- | --- |",
+    ]
+    for row in compatibility[:16]:
+        name = row.get("provider_name") or row.get("provider_id") or "?"
+        ok = row.get("compatible", False)
+        reason = (row.get("reason") or "")[:80]
+        lines.append(f"| {name} | {'yes' if ok else 'no'} | {reason} |")
+    return lines
+
+
+def _format_catalog_ranking(offers: List[dict]) -> List[str]:
+    if not offers:
+        return []
+    lines = [
+        "",
+        "### Catalog token ranking (v1 rank_catalog_offers — per-token API baselines)",
+        "",
+        "| Rank | Provider | SKU | $/1M (comparator) | Monthly est. USD | Confidence |",
+        "| ---: | --- | --- | ---: | ---: | --- |",
+    ]
+    for i, o in enumerate(offers[:10], 1):
+        lines.append(
+            f"| {i} | {o.get('provider', '?')} | {o.get('offering', '?')} | "
+            f"{o.get('comparator_price', '?')} | {o.get('monthly_estimate_usd', '?')} | "
+            f"{o.get('confidence', '?')} |"
+        )
+    lines.append(
+        "Use this table for **GPT-4o / per-token API** comparisons; deployment plans above are "
+        "**GPU/capacity** alternatives from rank_configs."
+    )
+    return lines
+
+
 def format_engine_block(
     payload: dict[str, Any],
     specs: WorkloadSpecs,
@@ -90,46 +131,66 @@ def format_engine_block(
     plans = payload.get("plans") or []
     tpm = specs.tokens_per_month or (specs.tokens_per_day or 0) * 30
     tpd = specs.tokens_per_day or tpm / 30.0
+    engine_bucket = payload.get("engine_model_bucket") or specs.model_bucket
+    requested_bucket = payload.get("requested_model_bucket") or specs.model_bucket
 
     lines = [
         "--- INFERENCEATLAS ENGINE (deterministic — numbers are authoritative) ---",
         "",
-        f"Source: **{source}** (`rank_configs` / plan_llm pipeline)",
-        f"Workload: model_bucket={specs.model_bucket}, tokens/day={tpd:,.0f}, "
-        f"tokens/month≈{tpm:,.0f}, peak_to_avg={specs.peak_to_avg}",
+        f"Source: **{source}** (v1 `rank_configs` + `rank_catalog_offers` + `get_provider_compatibility`)",
+        f"Workload: requested_bucket={requested_bucket}, engine_bucket={engine_bucket}, "
+        f"tokens/day={tpd:,.0f}, tokens/month≈{tpm:,.0f}, peak_to_avg={specs.peak_to_avg}",
         "",
-        "### Ranked plans (monthly USD from engine)",
-        "",
-        "| Rank | Provider | Billing | Monthly USD | $/1M tok (approx) | Why |",
-        "| --- | --- | --- | ---: | ---: | --- |",
     ]
+
+    summary = payload.get("engine_summary") or ""
+    if summary:
+        lines.extend(["### Engine summary (v1 deterministic)", "", summary, ""])
+
+    lines.extend(
+        [
+            "### Ranked deployment plans (monthly USD — rank_configs)",
+            "",
+            "| Rank | Provider | Offering | Billing | GPU | Monthly USD | Score | Risk | Why |",
+            "| ---: | --- | --- | --- | --- | ---: | ---: | ---: | --- |",
+        ]
+    )
     for p in plans[: specs.top_k]:
-        prov = p.get("provider_id") or p.get("provider") or "?"
+        prov = p.get("provider_name") or p.get("provider_id") or "?"
+        offering = (p.get("offering_id") or "")[:24]
         bill = p.get("billing_mode") or p.get("billing") or "-"
         monthly = p.get("monthly_cost_usd", p.get("monthly_cost", "?"))
-        cpm = p.get("cost_per_million_tokens", p.get("unit_price_usd", "-"))
-        why = (p.get("why") or "")[:120]
+        score = p.get("score", "-")
+        risk = p.get("risk_total", p.get("risk", {}).get("total_risk") if isinstance(p.get("risk"), dict) else "-")
+        why = (p.get("why") or "")[:100]
         rank = p.get("rank", "-")
         gpu = p.get("gpu_type") or p.get("gpu") or ""
-        extra = f" {gpu}" if gpu else ""
+        gpus = p.get("gpu_count", "")
+        gpu_cell = f"{gpu}×{gpus}" if gpu else "-"
         lines.append(
-            f"| {rank} | {prov}{extra} | {bill} | {monthly} | {cpm} | {why} |"
+            f"| {rank} | {prov} | {offering} | {bill} | {gpu_cell} | {monthly} | {score} | {risk} | {why} |"
         )
 
     if not plans:
-        lines.append("| — | (no plans returned) | — | — | — | — |")
+        lines.append("| — | (no plans returned) | — | — | — | — | — | — | — |")
+
+    lines.extend(_format_catalog_ranking(payload.get("catalog_token_ranking") or []))
+    lines.extend(_format_compatibility(payload.get("provider_compatibility") or []))
 
     token_px = payload.get("token_pricing")
     if token_px:
-        lines.extend(["", "### Token catalog reference (fallback CSV)", "", str(token_px)])
+        lines.extend(["", "### Token catalog reference (demo CSV fallback only)", "", str(token_px)])
 
     lines.extend(
         [
             "",
             "### Instructions for the assistant",
-            "- Recommend using the **#1 ranked plan** for cheapest credible capacity at this volume.",
-            "- Compare to user's baseline (GPT-4o) using **monthly USD**, not input price alone.",
-            "- Do **not** change, round differently, or invent prices not in this table.",
+            "- Lead with **Engine summary** and **#1 deployment plan** monthly USD.",
+            "- For GPT-4o / compare_providers questions: cite **Catalog token ranking** for API baselines "
+            "AND **Ranked deployment plans** for infrastructure alternatives.",
+            "- Cite **Provider compatibility** when explaining why providers were excluded.",
+            "- Compare baseline vs recommendation using **monthly USD**, not input price alone.",
+            "- Do **not** change, round differently, or invent prices not in this block.",
             "- Do **not** use Tavily or web search for pricing when this block is present.",
             "",
             _format_roles(roles),

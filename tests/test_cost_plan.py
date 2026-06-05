@@ -43,11 +43,27 @@ def test_v1_plan_when_configured(mock_plan):
     mock_plan.return_value = {
         "ok": True,
         "source": "inferenceatlas-v1",
+        "engine_summary": "Top: nebius at $42/mo",
+        "provider_compatibility": [
+            {"provider_name": "openai", "compatible": True, "reason": "Supports bucket"}
+        ],
+        "catalog_token_ranking": [
+            {
+                "provider": "openai",
+                "offering": "gpt_4o_input",
+                "comparator_price": 2.5,
+                "monthly_estimate_usd": 1250.0,
+                "confidence": "high",
+            }
+        ],
         "plans": [
             {
                 "rank": 1,
                 "provider_id": "nebius",
+                "provider_name": "Nebius",
                 "monthly_cost_usd": 42.0,
+                "score": 42.1,
+                "risk_total": 0.05,
                 "why": "rank_configs",
             }
         ],
@@ -58,4 +74,7 @@ def test_v1_plan_when_configured(mock_plan):
             AttachmentRoles(skills=[], github=[], drive=[], uploads=[]),
         )
     assert result.source == "inferenceatlas-v1"
-    assert "nebius" in result.engine_block
+    assert "nebius" in result.engine_block.lower()
+    assert "Engine summary" in result.engine_block
+    assert "Catalog token ranking" in result.engine_block
+    assert "Provider compatibility" in result.engine_block

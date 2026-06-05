@@ -51,6 +51,7 @@ These pieces are safe to build on:
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
 | AI Spend Review projection | `agent/spend.py` | Finance/Procurement review packet for AI budget shock. Keep it non-approving, provider-neutral, and evidence-first. |
+| ChatAnswer contract | `agent/chat_answer.py` | Structured answer metadata for high-stakes web replies. Keep it packet-backed, source-labeled, and non-approving. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
 | Schemas | `schemas/` | Public contracts for generated JSON artifacts. Update tests with any schema change. |
 | Generated proof | `examples/generated/` | Checked-in artifacts judges and AI reviewers can inspect. Regenerate after behavior changes. |

@@ -24,16 +24,18 @@ from agent.mind import init_mind, load_mind, save_mind, step
 from agent.mind.project import MIND_RUNTIME_DIR, project_mind
 from agent.mind.store import load_all_minds
 from agent.packet import build_support_triage_decision_packet
+from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
-from agent.trial import DEFAULT_TRIAL_REQUEST
+from agent.trial import DEFAULT_TRIAL_REQUEST, build_trial_report
 from agent.trial_evidence_replay import (
     ADAPTER_PROVIDERS,
     DEFAULT_REHEARSAL_EVIDENCE_DIR,
     build_trial_evidence_replay,
     render_trial_evidence_replay_markdown,
 )
+from agent.trial_outcome_memo import build_trial_outcome_memo
 from agent.ui_skills import (
     build_ui_skills_payload,
     compose_message_with_skills,
@@ -112,6 +114,14 @@ class ChatResponse(BaseModel):
 
 def _file_ref(file_id: str, label: str) -> dict:
     return {"file_id": file_id, "label": label, "url": f"/api/files/{file_id}"}
+
+
+def _generated_file_ref(relative_path: str, label: str, *, mime: str = "text/plain; charset=utf-8") -> dict:
+    path = Path(relative_path)
+    if not path.is_absolute():
+        path = Path(__file__).resolve().parents[1] / path
+    file_id = register_download(path, label=label, mime=mime)
+    return _file_ref(file_id, label)
 
 
 class ResetRequest(BaseModel):
@@ -431,6 +441,122 @@ def run_custom_evidence_rehearsal(body: CustomEvidenceRehearsalRequest) -> dict:
             _file_ref(md["file_id"], md["label"]),
             _file_ref(js["file_id"], js["label"]),
         ],
+    }
+
+
+@app.get("/api/walkthrough")
+def design_partner_walkthrough() -> dict:
+    """Return the buyer-facing walkthrough over existing public proof artifacts."""
+    try:
+        trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
+        outcome_memo = build_trial_outcome_memo(DEFAULT_TRIAL_REQUEST)
+        replay = build_trial_evidence_replay(
+            DEFAULT_TRIAL_REQUEST,
+            DEFAULT_REHEARSAL_EVIDENCE_DIR,
+        )
+        pilot_memo = build_pilot_memo(DEFAULT_TRIAL_REQUEST)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    packet_reference = pilot_memo["packet_reference"]
+    provider_rows = _rehearsal_provider_rows(replay)
+    sponsor_roles = [
+        {
+            "provider": item["provider"],
+            "verb": item["verb"],
+            "role": item["role"],
+            "proof_type": item["proof_type"],
+            "human_review_required": item["human_review_required"],
+            "can_change_decision": item["can_change_decision"],
+        }
+        for item in pilot_memo["sponsor_contributions"]
+    ]
+    files = [
+        _generated_file_ref("examples/generated/support_triage_trial.packet.json", "Trial packet JSON"),
+        _generated_file_ref("examples/generated/support_triage_trial.outcome_memo.md", "Outcome memo Markdown"),
+        _generated_file_ref("examples/generated/support_triage_trial.evidence_replay.md", "Sponsor replay Markdown"),
+        _generated_file_ref("examples/generated/support_triage_trial.pilot_memo.md", "PilotMemo Markdown"),
+        _generated_file_ref(
+            "examples/generated/support_triage_trial.pilot_memo.json",
+            "PilotMemo JSON",
+            mime="application/json",
+        ),
+        _generated_file_ref("examples/generated/support_triage_trial.copy_review_brief.md", "Copy review brief"),
+    ]
+
+    return {
+        "ok": True,
+        "title": "Design partner walkthrough",
+        "subtitle": "One trial request becomes one packet, one sponsor replay, one review cycle, and one buyer-carried PilotMemo.",
+        "mode": "offline_deterministic",
+        "request_path": trial_report["request_path"],
+        "safety_anchor": PILOT_MEMO_SAFETY_ANCHOR,
+        "copy_review_brief": render_copy_review_brief(pilot_memo),
+        "packet_reference": packet_reference,
+        "decision": {
+            "verdict_class": pilot_memo["verdict_class"],
+            "access_speed_lane": trial_report["access_speed_lane"]["lane"],
+            "production_access": False,
+            "permission_grants": False,
+            "external_writes": False,
+            "sponsors_can_change_decision": False,
+            "next_human_action": pilot_memo["next_human_action"],
+        },
+        "steps": [
+            {
+                "id": "request",
+                "label": "Request",
+                "title": "Support triage trial request",
+                "summary": trial_report["candidate_agent"]["purpose"],
+                "primary_fact": trial_report["request_readiness"],
+                "artifact": trial_report["request_path"],
+                "boundary": "Public sample request; no secrets or private source.",
+            },
+            {
+                "id": "packet",
+                "label": "Packet",
+                "title": "DecisionPacket forms",
+                "summary": trial_report["packet_summary"]["review_posture"],
+                "primary_fact": packet_reference["content_hash"],
+                "artifact": packet_reference["packet_artifact"],
+                "boundary": "Packet state is hash-pinned; production access stays false.",
+            },
+            {
+                "id": "sponsor_replay",
+                "label": "Sponsor Replay",
+                "title": "Proof contributors attach evidence",
+                "summary": "Tavily finds, Composio simulates, Nebius narrates, OpenClaw traces.",
+                "primary_fact": f"{replay['summary']['provider_count']} providers, decision locked",
+                "artifact": "examples/generated/support_triage_trial.evidence_replay.md",
+                "boundary": "Sponsors cannot approve, grant, execute, mutate, or reduce proof debt automatically.",
+            },
+            {
+                "id": "review_cycle",
+                "label": "Review Cycle",
+                "title": "Owners receive proof debt",
+                "summary": outcome_memo["decision"]["summary"],
+                "primary_fact": f"{len(outcome_memo['reviewer_routes'])} reviewer routes",
+                "artifact": "examples/generated/support_triage_trial.outcome_memo.md",
+                "boundary": "Humans decide scoped validation outside this public harness.",
+            },
+            {
+                "id": "pilot_memo",
+                "label": "PilotMemo",
+                "title": "Buyer-carried artifact",
+                "summary": "Export the memo or copy a short review brief for Security, Finance, and CTO review.",
+                "primary_fact": pilot_memo["memo_id"],
+                "artifact": "examples/generated/support_triage_trial.pilot_memo.md",
+                "boundary": PILOT_MEMO_SAFETY_ANCHOR,
+            },
+        ],
+        "sponsor_roles": sponsor_roles,
+        "provider_rows": provider_rows,
+        "reviewer_routing": pilot_memo["reviewer_routing"],
+        "blocked_claims": pilot_memo["blocked_claims"],
+        "missing_proof": pilot_memo["missing_proof"],
+        "output_files": files,
+        "safety_boundary": pilot_memo["safety_boundary"],
+        "private_boundary": pilot_memo["private_boundary"],
     }
 
 
@@ -1001,6 +1127,11 @@ def reset(body: ResetRequest) -> dict:
 
 @app.get("/")
 def index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/walkthrough")
+def walkthrough_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 

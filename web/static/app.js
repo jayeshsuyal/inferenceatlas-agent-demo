@@ -32,6 +32,7 @@ const walkthroughSubtitle = document.getElementById("walkthrough-subtitle");
 const walkthroughStrip = document.getElementById("walkthrough-strip");
 const walkthroughActiveCard = document.getElementById("walkthrough-active-card");
 const walkthroughDecisionCard = document.getElementById("walkthrough-decision-card");
+const walkthroughSubscriberCard = document.getElementById("walkthrough-subscriber-card");
 const walkthroughSponsorCard = document.getElementById("walkthrough-sponsor-card");
 const walkthroughReviewerCard = document.getElementById("walkthrough-reviewer-card");
 const walkthroughExportCard = document.getElementById("walkthrough-export-card");
@@ -79,6 +80,15 @@ const EMPTY_PROOF_TILES = [
   ["Cost guardrail", "Procurement shortlist · no savings guarantee"],
   ["Review lane", "Scoped validation · humans approve"],
 ];
+
+const SUBSCRIBER_LABELS = {
+  composio_access_gate: "Composio Access Gate",
+  portkey_model_spend_gate: "Portkey Model Spend Gate",
+  github_actions_deploy_gate: "GitHub Actions Deploy Gate",
+  finance_budget_gate: "Finance Budget Gate",
+  security_review_queue: "Security Review Queue",
+  datadog_audit_event: "Datadog Audit Event",
+};
 
 let sessionId = localStorage.getItem(STORAGE_KEY) || crypto.randomUUID();
 localStorage.setItem(STORAGE_KEY, sessionId);
@@ -1678,6 +1688,43 @@ function renderDecisionCard(data) {
   `;
 }
 
+function formatSubscriberName(value) {
+  if (SUBSCRIBER_LABELS[value]) return SUBSCRIBER_LABELS[value];
+  return String(value || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function renderSubscriberCard(data) {
+  const authority = data.packet_authority || {};
+  const rows = data.subscriber_rows || [];
+  walkthroughSubscriberCard.innerHTML = `
+    <span class="eyebrow">Downstream consumers</span>
+    <h3>Systems trust the packet</h3>
+    <p class="walkthrough-summary">${escapeHtml(
+      authority.headline || "Downstream systems consume the read-only packet authority object."
+    )}</p>
+    <code class="walkthrough-fact">${escapeHtml(authority.verification_endpoint || "/api/packets/{packet_id}/verification")}</code>
+  `;
+  const grid = document.createElement("div");
+  grid.className = "subscriber-grid";
+  rows.slice(0, 6).forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "subscriber-row";
+    row.innerHTML = `
+      <div class="subscriber-row-head">
+        <span>${escapeHtml(item.category)}</span>
+        <strong>${escapeHtml(formatSubscriberName(item.subscriber))}</strong>
+      </div>
+      <p>${escapeHtml(item.consumer_question)}</p>
+      <small>${escapeHtml(item.subscriber_action)} · owner: ${escapeHtml(item.owner)}</small>
+      <code>approve ${escapeHtml(String(item.can_approve_access))} · mutate ${escapeHtml(String(item.can_mutate_packet))} · writes ${escapeHtml(String(item.executes_external_writes))}</code>
+    `;
+    grid.appendChild(row);
+  });
+  walkthroughSubscriberCard.appendChild(grid);
+}
+
 function renderSponsorCard(data) {
   walkthroughSponsorCard.innerHTML = `
     <span class="eyebrow">Sponsor proof roles</span>
@@ -1747,6 +1794,7 @@ function renderWalkthrough(data) {
   renderWalkthroughStrip(data);
   renderActiveWalkthroughCard(data);
   renderDecisionCard(data);
+  renderSubscriberCard(data);
   renderSponsorCard(data);
   renderReviewerCard(data);
   renderExportCard(data);

@@ -157,6 +157,32 @@ class WebFilesTests(unittest.TestCase):
         self.assertFalse(data["decision"]["sponsors_can_change_decision"])
         self.assertEqual(data["safety_anchor"], "IA did not approve. The next human action is named above.")
         self.assertIn("Copy Review Brief", data["copy_review_brief"])
+        self.assertEqual(
+            data["packet_authority"]["headline"],
+            "The packet authority layer downstream systems trust before AI moves.",
+        )
+        self.assertEqual(
+            data["packet_authority"]["verification_endpoint"],
+            "/api/packets/ia-agent-access-support-triage-v0/verification",
+        )
+        self.assertTrue(data["packet_authority"]["read_only"])
+        self.assertEqual(data["packet_authority"]["subscriber_count"], 6)
+        self.assertEqual(
+            set(data["packet_authority"]["categories"]),
+            {"gateway", "ci", "spend", "review", "observability"},
+        )
+        self.assertEqual(len(data["subscriber_rows"]), 6)
+        self.assertEqual(
+            {item["category"] for item in data["subscriber_rows"]},
+            {"gateway", "ci", "spend", "review", "observability"},
+        )
+        for item in data["subscriber_rows"]:
+            self.assertFalse(item["can_approve_access"])
+            self.assertFalse(item["can_grant_permissions"])
+            self.assertFalse(item["can_mutate_packet"])
+            self.assertFalse(item["can_override_verdict"])
+            self.assertFalse(item["executes_external_writes"])
+            self.assertTrue(item["requires_human_review"])
         self.assertEqual(len(data["sponsor_roles"]), 4)
         self.assertEqual({item["verb"] for item in data["sponsor_roles"]}, {"finds", "simulates", "narrates", "traces"})
         self.assertTrue(all(not item["can_change_decision"] for item in data["sponsor_roles"]))
@@ -171,14 +197,20 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('data-tab="walkthrough"', html)
         self.assertIn('id="walkthrough-view"', html)
         self.assertIn('id="btn-copy-walkthrough-brief"', html)
+        self.assertIn('id="walkthrough-subscriber-card"', html)
         self.assertIn("/api/walkthrough", js)
         self.assertIn("renderWalkthrough", js)
+        self.assertIn("renderSubscriberCard", js)
+        self.assertIn("Downstream consumers", js)
+        self.assertIn("Systems trust the packet", js)
         self.assertIn("copyWalkthroughBrief", js)
         self.assertIn("Clipboard unavailable. Use PilotMemo export.", js)
         self.assertIn('copied = document.execCommand("copy")', js)
         self.assertIn('window.location.pathname === "/walkthrough"', js)
         self.assertIn(".walkthrough-workspace", css)
         self.assertIn(".walkthrough-strip", css)
+        self.assertIn(".subscriber-grid", css)
+        self.assertIn(".subscriber-row", css)
 
     def test_uploaded_evidence_rehearsal_accepts_sanitized_bundle(self) -> None:
         from web.app import CustomEvidenceRehearsalRequest, run_custom_evidence_rehearsal

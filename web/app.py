@@ -28,6 +28,10 @@ from agent.packet import build_support_triage_decision_packet
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS, build_scenario_packet
+from agent.subscribers import (
+    PACKET_AUTHORITY_SHORT_SENTENCE,
+    build_subscriber_examples,
+)
 from agent.verification import build_verification_artifact_for_scenario
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
@@ -109,6 +113,8 @@ TENSION_LABELS = {
     "observation_pending": "Your note is queued for next cycle",
 }
 
+SUBSCRIBER_CATEGORY_ORDER = ("gateway", "ci", "spend", "review", "observability")
+
 app = FastAPI(title="InferenceAtlas Agent", version="1.0.0")
 
 _sessions: Dict[str, object] = {}
@@ -174,6 +180,31 @@ def _generated_file_ref(relative_path: str, label: str, *, mime: str = "text/pla
         path = Path(__file__).resolve().parents[1] / path
     file_id = register_download(path, label=label, mime=mime)
     return _file_ref(file_id, label)
+
+
+def _walkthrough_subscriber_rows(packet_id: str) -> list[dict]:
+    examples = build_subscriber_examples(packet_id)
+    rows: list[dict] = []
+    for category in SUBSCRIBER_CATEGORY_ORDER:
+        for payload in examples.get(category, {}).values():
+            effect = payload["subscriber_effect"]
+            rows.append(
+                {
+                    "category": category,
+                    "subscriber": payload["subscriber"],
+                    "consumer_question": payload["consumer_question"],
+                    "subscriber_action": effect["subscriber_action"],
+                    "owner": effect["owner"],
+                    "endpoint": payload["read_only_contract"]["endpoint"],
+                    "can_approve_access": effect["can_approve_access"],
+                    "can_grant_permissions": effect["can_grant_permissions"],
+                    "can_mutate_packet": effect["can_mutate_packet"],
+                    "can_override_verdict": effect["can_override_verdict"],
+                    "executes_external_writes": effect["executes_external_writes"],
+                    "requires_human_review": effect["requires_human_review"],
+                }
+            )
+    return rows
 
 
 class ResetRequest(BaseModel):
@@ -797,6 +828,7 @@ def design_partner_walkthrough() -> dict:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     packet_reference = pilot_memo["packet_reference"]
+    subscriber_rows = _walkthrough_subscriber_rows(packet_reference["packet_id"])
     provider_rows = _rehearsal_provider_rows(replay)
     sponsor_roles = [
         {
@@ -831,6 +863,14 @@ def design_partner_walkthrough() -> dict:
         "safety_anchor": PILOT_MEMO_SAFETY_ANCHOR,
         "copy_review_brief": render_copy_review_brief(pilot_memo),
         "packet_reference": packet_reference,
+        "packet_authority": {
+            "headline": PACKET_AUTHORITY_SHORT_SENTENCE,
+            "verification_endpoint": f"/api/packets/{packet_reference['packet_id']}/verification",
+            "read_only": True,
+            "source_of_truth": "packet_authority.verification",
+            "subscriber_count": len(subscriber_rows),
+            "categories": list(SUBSCRIBER_CATEGORY_ORDER),
+        },
         "decision": {
             "verdict_class": pilot_memo["verdict_class"],
             "access_speed_lane": trial_report["access_speed_lane"]["lane"],
@@ -887,6 +927,7 @@ def design_partner_walkthrough() -> dict:
                 "boundary": PILOT_MEMO_SAFETY_ANCHOR,
             },
         ],
+        "subscriber_rows": subscriber_rows,
         "sponsor_roles": sponsor_roles,
         "provider_rows": provider_rows,
         "reviewer_routing": pilot_memo["reviewer_routing"],

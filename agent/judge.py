@@ -22,6 +22,7 @@ from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet, write_scenario_artifacts
 from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
+from .spend import SPEND_SCENARIO_ID, build_spend_review_bundle, write_spend_review_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
 from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
 from .trial_evidence_replay import build_trial_evidence_replay, write_trial_evidence_replay_artifacts
@@ -48,6 +49,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
     "python3 -m agent.proof_health",
+    "python3 -m agent.spend",
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
@@ -76,6 +78,12 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/review_room.html",
     "examples/generated/support_triage_agent.proof_health.md",
     "examples/generated/support_triage_agent.proof_health.json",
+    "examples/generated/ai_spend_budget_overrun.spend_packet.md",
+    "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+    "examples/generated/ai_spend_budget_overrun.finance_receipt.md",
+    "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
+    "examples/generated/ai_spend_budget_overrun.procurement_memo.md",
+    "examples/generated/ai_spend_budget_overrun.procurement_memo.json",
     "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "docs/DESIGN_PARTNER_BRIEF.md",
     "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -130,6 +138,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(write_packet_outcome_memo_artifacts(output_dir=output_dir))
     written.append(write_review_room_html(output_dir))
     written.extend(write_proof_health_artifacts(output_dir=output_dir))
+    written.extend(write_spend_review_artifacts(output_dir=output_dir))
     written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trial_outcome_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trial_evidence_replay_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
@@ -187,6 +196,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     trial_evidence_replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST)
     pilot_memo = build_pilot_memo(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
+    spend_review = build_spend_review_bundle()
     primary_packet = build_scenario_packet("support_triage_agent")
     primary_receipt_ledger = build_evidence_receipt_ledger(primary_packet, "support_triage_agent")
     primary_snapshot = build_packet_authority_snapshot_for_scenario(primary_packet, "support_triage_agent")
@@ -363,6 +373,23 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "executes_external_writes": proof_health["safety_boundary"]["executes_external_writes"],
             "mutates_production": proof_health["safety_boundary"]["mutates_production"],
         },
+        "ai_spend_review": {
+            "scenario": SPEND_SCENARIO_ID,
+            "packet_id": spend_review["packet"]["packet_id"],
+            "verdict_class": spend_review["packet"]["decision"]["verdict_class"],
+            "required_evidence_count": len(spend_review["packet"]["required_evidence"]),
+            "blocked_claim_count": len(spend_review["packet"]["blocked_claims"]),
+            "finance_receipt_id": spend_review["finance_receipt"]["receipt_id"],
+            "procurement_memo_id": spend_review["procurement_memo"]["memo_id"],
+            "approves_spend": spend_review["safety"]["approves_spend"],
+            "guarantees_savings": spend_review["safety"]["guarantees_savings"],
+            "selects_provider": spend_review["safety"]["selects_provider"],
+            "executes_external_writes": spend_review["safety"]["executes_external_writes"],
+            "requires_human_review": spend_review["safety"]["requires_human_review"],
+            "artifact": spend_review["artifacts"]["packet_markdown"],
+            "finance_receipt_artifact": spend_review["artifacts"]["finance_receipt_markdown"],
+            "procurement_memo_artifact": spend_review["artifacts"]["procurement_memo_markdown"],
+        },
         "public_contract": {
             "status": "ok" if all(errors == [] for errors in contract_results.values()) else "fail",
             "results": contract_results,
@@ -494,6 +521,11 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["proof_health"]["grants_permissions"]
         or report["proof_health"]["executes_external_writes"]
         or report["proof_health"]["mutates_production"]
+        or report["ai_spend_review"]["approves_spend"]
+        or report["ai_spend_review"]["guarantees_savings"]
+        or report["ai_spend_review"]["selects_provider"]
+        or report["ai_spend_review"]["executes_external_writes"]
+        or not report["ai_spend_review"]["requires_human_review"]
     )
 
 
@@ -770,6 +802,22 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             f"- human review required: {report['proof_health']['human_review_required']}",
             f"- approves access: {report['proof_health']['approves_access']}",
             f"- grants permissions: {report['proof_health']['grants_permissions']}",
+            "",
+            "## AI Spend Review",
+            "",
+            "The spend lane creates a Finance/Procurement review packet before usage caps, vendor switches, or savings claims move.",
+            "",
+            f"- scenario: `{report['ai_spend_review']['scenario']}`",
+            f"- packet_id: `{report['ai_spend_review']['packet_id']}`",
+            f"- verdict class: {report['ai_spend_review']['verdict_class']}",
+            f"- required evidence items: {report['ai_spend_review']['required_evidence_count']}",
+            f"- blocked claims: {report['ai_spend_review']['blocked_claim_count']}",
+            f"- approves spend: {report['ai_spend_review']['approves_spend']}",
+            f"- guarantees savings: {report['ai_spend_review']['guarantees_savings']}",
+            f"- selects provider: {report['ai_spend_review']['selects_provider']}",
+            f"- artifact: `{report['ai_spend_review']['artifact']}`",
+            f"- finance receipt: `{report['ai_spend_review']['finance_receipt_artifact']}`",
+            f"- procurement memo: `{report['ai_spend_review']['procurement_memo_artifact']}`",
             "",
             "## Public Contract",
             "",

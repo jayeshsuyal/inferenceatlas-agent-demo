@@ -23,6 +23,7 @@ SKILL_CATEGORIES = (
     "design_partner_pilot",
     "packet_lifecycle",
     "proof_integrity",
+    "spend_review",
     "sponsor_readiness",
 )
 
@@ -42,6 +43,7 @@ ALLOWED_SAFETY_BOUNDARIES = frozenset(
         "no live integration path; humans review",
         "regeneration is deterministic; proof bytes locked",
         "receipts are context only; never weaken locks",
+        "spend review packet only; never approves spend",
     }
 )
 
@@ -309,6 +311,22 @@ SKILLS: tuple[SkillSpec, ...] = (
         tier="stable",
         category="proof_integrity",
         depends_on=("decision_packet_generation", "reviewer_routing"),
+    ),
+    SkillSpec(
+        id="ai_spend_review_packet",
+        name="AI Spend Review Packet",
+        what_it_proves="A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings.",
+        command="python3 -m agent.spend --no-write",
+        artifacts=(
+            "agent/spend.py",
+            "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+            "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
+            "examples/generated/ai_spend_budget_overrun.procurement_memo.json",
+        ),
+        safety_boundary="spend review packet only; never approves spend",
+        tier="stable",
+        category="spend_review",
+        depends_on=("evidence_receipt_ledger",),
     ),
     SkillSpec(
         id="sponsor_proof_readiness",

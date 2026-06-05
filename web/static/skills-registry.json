@@ -2,7 +2,7 @@
   "schema_version": "inferenceatlas_ui_skills.v0",
   "source": "docs/AGENT_SKILLS.md",
   "registry_command": "python3 -m agent.skills",
-  "count": 16,
+  "count": 17,
   "skills": [
     {
       "id": "policy_gate_evaluation",
@@ -140,6 +140,8 @@
       "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+      "example_question": "What does Sponsor Evidence Replay show for a hackathon judge?",
       "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
       "artifacts": [
         "agent/trial_evidence_replay.py",
@@ -183,6 +185,8 @@
       "safety_boundary": "memo restates blocked claims; never grants access",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
+      "example_question": "What does Design Partner Outcome Memo show for a hackathon judge?",
       "prompt": "Summarize the design-partner outcome memo: what can move, what stays blocked, which proof owners are named, and why no access is granted.",
       "artifacts": [
         "agent/trial_outcome_memo.py",
@@ -282,6 +286,8 @@
       "safety_boundary": "receipts are context only; never weaken locks",
       "tier": "stable",
       "mode": "assist",
+      "layman_summary": "Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock.",
+      "example_question": "What does Evidence Receipt Ledger show for a hackathon judge?",
       "prompt": "Explain the output of the Evidence Receipt Ledger harness skill for a hackathon judge. Context: Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. Safety: receipts are context only; never weaken locks",
       "artifacts": [
         "agent/evidence_receipts.py",
@@ -307,6 +313,28 @@
       "artifacts": [
         "agent/verify_artifacts.py",
         "tests/test_verify_artifacts.py"
+      ]
+    },
+    {
+      "id": "ai_spend_review_packet",
+      "slash": "spend",
+      "slash_trigger": "/spend",
+      "name": "AI Spend Review Packet",
+      "what_it_proves": "A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings.",
+      "command": "python3 -m agent.spend --no-write",
+      "category": "spend_review",
+      "category_label": "Spend Review",
+      "safety_boundary": "spend review packet only; never approves spend",
+      "tier": "stable",
+      "mode": "assist",
+      "layman_summary": "Turns an AI budget-overrun question into Finance and Procurement review artifacts.",
+      "example_question": "What does IA require before changing AI spend or vendors?",
+      "prompt": "Summarize the AI Spend Review packet for Finance and Procurement: what evidence is required, what claims stay blocked, and why IA does not approve spend, select a provider, or guarantee savings.",
+      "artifacts": [
+        "agent/spend.py",
+        "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+        "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
+        "examples/generated/ai_spend_budget_overrun.procurement_memo.json"
       ]
     },
     {
@@ -479,6 +507,8 @@
           "safety_boundary": "dry-run by default; no live writes; sponsor cannot grant access",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Sponsor proof slots and sanitized live-evidence fixtures attach to a trial decision while verdict, approvals, grants, writes, and production mutation stay locked.",
+          "example_question": "What does Sponsor Evidence Replay show for a hackathon judge?",
           "prompt": "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw attach proof, and why the sponsors cannot change the decision or grant access.",
           "artifacts": [
             "agent/trial_evidence_replay.py",
@@ -522,6 +552,8 @@
           "safety_boundary": "memo restates blocked claims; never grants access",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "A trial request becomes a meeting-ready decision with can-move scope, blocked scope, proof owners, and reviewer routes.",
+          "example_question": "What does Design Partner Outcome Memo show for a hackathon judge?",
           "prompt": "Summarize the design-partner outcome memo: what can move, what stays blocked, which proof owners are named, and why no access is granted.",
           "artifacts": [
             "agent/trial_outcome_memo.py",
@@ -616,6 +648,8 @@
           "safety_boundary": "receipts are context only; never weaken locks",
           "tier": "stable",
           "mode": "assist",
+          "layman_summary": "Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock.",
+          "example_question": "What does Evidence Receipt Ledger show for a hackathon judge?",
           "prompt": "Explain the output of the Evidence Receipt Ledger harness skill for a hackathon judge. Context: Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. Safety: receipts are context only; never weaken locks",
           "artifacts": [
             "agent/evidence_receipts.py",
@@ -641,6 +675,34 @@
           "artifacts": [
             "agent/verify_artifacts.py",
             "tests/test_verify_artifacts.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "spend_review",
+      "label": "Spend Review",
+      "skills": [
+        {
+          "id": "ai_spend_review_packet",
+          "slash": "spend",
+          "slash_trigger": "/spend",
+          "name": "AI Spend Review Packet",
+          "what_it_proves": "A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings.",
+          "command": "python3 -m agent.spend --no-write",
+          "category": "spend_review",
+          "category_label": "Spend Review",
+          "safety_boundary": "spend review packet only; never approves spend",
+          "tier": "stable",
+          "mode": "assist",
+          "layman_summary": "Turns an AI budget-overrun question into Finance and Procurement review artifacts.",
+          "example_question": "What does IA require before changing AI spend or vendors?",
+          "prompt": "Summarize the AI Spend Review packet for Finance and Procurement: what evidence is required, what claims stay blocked, and why IA does not approve spend, select a provider, or guarantee savings.",
+          "artifacts": [
+            "agent/spend.py",
+            "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+            "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
+            "examples/generated/ai_spend_budget_overrun.procurement_memo.json"
           ]
         }
       ]

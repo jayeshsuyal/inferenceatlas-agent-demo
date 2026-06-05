@@ -19,6 +19,7 @@ EXPECTED_SCRIPTS = {
     "ia-review": "agent.review:main",
     "ia-review-room": "agent.review_room:main",
     "ia-skills": "agent.skills:main",
+    "ia-spend": "agent.spend:main",
     "ia-sponsor-readiness": "agent.sponsor_readiness:main",
     "ia-subscribers": "agent.subscribers:main",
     "ia-trial": "agent.trial:main",
@@ -89,6 +90,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-snapshot", readme)
         self.assertIn("ia-outcome-memo", readme)
         self.assertIn("ia-proof-health", readme)
+        self.assertIn("ia-spend", readme)
         self.assertIn("ia-sponsor-readiness", readme)
         self.assertIn("ia-review --list", readme)
         self.assertIn("ia-contract --all", readme)
@@ -109,6 +111,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-snapshot", workflow)
         self.assertIn("ia-outcome-memo --no-write", workflow)
         self.assertIn("ia-proof-health --no-write", workflow)
+        self.assertIn("ia-spend --no-write", workflow)
         self.assertIn("ia-sponsor-readiness --no-write", workflow)
         self.assertIn("ia-trial examples/requests/support_triage_trial.yml", workflow)
         self.assertIn("ia-trial-evidence-replay examples/requests/support_triage_trial.yml", workflow)

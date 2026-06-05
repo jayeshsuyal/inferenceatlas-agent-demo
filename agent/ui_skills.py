@@ -35,6 +35,7 @@ SLASH_BY_SKILL_ID = {
     "artifact_integrity_verification": "verify",
     "evidence_receipt_ledger": "receipts",
     "proof_health_drift_detection": "proof-health",
+    "ai_spend_review_packet": "spend",
     "sponsor_proof_readiness": "sponsor",
 }
 
@@ -83,6 +84,10 @@ LAYMAN_BY_SKILL_ID: dict[str, dict[str, str]] = {
     "proof_health_drift_detection": {
         "layman_summary": "Scores how stale or incomplete the proof bundle is over time.",
         "example_question": "Is proof health drifting for support triage?",
+    },
+    "ai_spend_review_packet": {
+        "layman_summary": "Turns an AI budget-overrun question into Finance and Procurement review artifacts.",
+        "example_question": "What does IA require before changing AI spend or vendors?",
     },
     "sponsor_proof_readiness": {
         "layman_summary": "Shows whether Nebius/Tavily/Composio keys are ready for sponsor demos.",
@@ -172,6 +177,12 @@ def _prompt_for_chat(skill: SkillSpec) -> str:
         return (
             "Explain Sponsor Evidence Replay: where Tavily, Composio, Nebius, and OpenClaw "
             "attach proof, and why the sponsors cannot change the decision or grant access."
+        )
+    if skill.id == "ai_spend_review_packet":
+        return (
+            "Summarize the AI Spend Review packet for Finance and Procurement: what evidence "
+            "is required, what claims stay blocked, and why IA does not approve spend, select "
+            "a provider, or guarantee savings."
         )
     return (
         f"Explain the output of the {skill.name} harness skill for a hackathon judge. "
@@ -397,6 +408,15 @@ def _context_for_skill(skill: UISkill, max_chars: int = 2800) -> str:
             lines.append(f"  - {d.get('name')}: {d.get('score')} ({d.get('status')})")
         return "\n".join(lines)[:max_chars]
 
+    if sid == "ai_spend_review_packet":
+        return "\n\n".join(
+            [
+                _read_text(GENERATED_DIR / "ai_spend_budget_overrun.spend_packet.md", min(max_chars, 1800)),
+                _read_text(GENERATED_DIR / "ai_spend_budget_overrun.finance_receipt.md", min(max_chars, 1000)),
+                _read_text(GENERATED_DIR / "ai_spend_budget_overrun.procurement_memo.md", min(max_chars, 1000)),
+            ]
+        )[:max_chars]
+
     if sid in ("access_request_normalization", "design_partner_trial_runner"):
         return _read_text(GENERATED_DIR / "support_triage_trial_report.md", min(max_chars, 2200))
 
@@ -441,6 +461,8 @@ def skill_suggested_questions(skill_ids: List[str]) -> List[str]:
         hints.append("How do the three scenarios differ on proof and production access?")
     if "evidence_receipt_ledger" in ids:
         hints.append("Which receipts prove the packet still needs human and finance review?")
+    if "ai_spend_review_packet" in ids:
+        hints.append("What evidence is required before AI spend or vendor changes move?")
     if "full_judge_harness" in ids:
         hints.append("Summarize the full judge proof path for a hackathon judge.")
     if ids & {"design_partner_outcome_memo", "design_partner_evidence_replay"}:

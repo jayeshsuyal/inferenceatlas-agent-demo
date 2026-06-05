@@ -30,6 +30,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "agent/trial_evidence_replay.py",
             "agent/decision_brief.py",
             "agent/proof_health.py",
+            "agent/spend.py",
             "agent/renderers.py",
             "agent/sponsor_readiness.py",
             "agent/config.py",
@@ -127,7 +128,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["agent_skills_json_command"], "python3 -m agent.skills --json")
         self.assertEqual(manifest["artifact_integrity_command"], "python3 -m agent.verify_artifacts")
         self.assertEqual(manifest["artifact_integrity_json_command"], "python3 -m agent.verify_artifacts --json")
-        self.assertIn("49 generated artifacts byte-compared", manifest["artifact_integrity_gate"])
+        self.assertIn("58 generated artifacts byte-compared", manifest["artifact_integrity_gate"])
+        self.assertEqual(manifest["ai_spend_review_command"], "python3 -m agent.spend --no-write")
+        self.assertEqual(manifest["ai_spend_review_json_command"], "python3 -m agent.spend --no-write --json")
         self.assertIn("python3 -m agent.judge", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.skills", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.packet_diff", manifest["five_minute_review_commands"])
@@ -142,6 +145,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.trust", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.review_room", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.proof_health", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.spend --no-write", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["five_minute_review_commands"])
@@ -161,6 +165,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.spend --no-write", manifest["product_review_path"])
+        self.assertIn("examples/generated/ai_spend_budget_overrun.spend_packet.md", manifest["product_review_path"])
         self.assertIn("examples/generated/sponsor_live_readiness.md", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml", manifest["product_review_path"])
@@ -275,6 +281,22 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["primary_artifacts"]["proof_health_json"],
             "examples/generated/support_triage_agent.proof_health.json",
         )
+        self.assertEqual(
+            manifest["primary_artifacts"]["ai_spend_review_packet_markdown"],
+            "examples/generated/ai_spend_budget_overrun.spend_packet.md",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["ai_spend_review_packet_json"],
+            "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["ai_spend_finance_receipt_json"],
+            "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
+        )
+        self.assertEqual(
+            manifest["primary_artifacts"]["ai_spend_procurement_memo_json"],
+            "examples/generated/ai_spend_budget_overrun.procurement_memo.json",
+        )
         self.assertEqual(manifest["primary_artifacts"]["packet_diff_markdown"], "examples/generated/packet_diff.md")
         self.assertEqual(manifest["primary_artifacts"]["packet_diff_json"], "examples/generated/packet_diff.json")
         self.assertEqual(
@@ -355,12 +377,14 @@ class CtoHandoffDocsTests(unittest.TestCase):
             "python3 -m agent.trust",
             "python3 -m agent.review_room",
             "python3 -m agent.proof_health",
+            "python3 -m agent.spend --no-write",
             "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
             "examples/generated/trust_receipt.md",
             "examples/generated/packet_diff.md",
             "examples/generated/support_triage_agent.evidence_receipts.md",
             "examples/generated/support_triage_agent.outcome_memo.md",
+            "examples/generated/ai_spend_budget_overrun.spend_packet.md",
             "examples/generated/support_triage_trial.outcome_memo.md",
             "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/sponsor_live_readiness.md",

@@ -33,6 +33,7 @@ python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.proof_health
+python3 -m agent.spend --no-write
 python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
@@ -53,6 +54,7 @@ ia-packet-diff
 ia-receipts
 ia-outcome-memo
 ia-proof-health
+ia-spend
 ia-sponsor-readiness
 ia-subscribers --json
 ia-trial examples/requests/support_triage_trial.yml
@@ -66,11 +68,12 @@ ia-verify-artifacts
 In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
-- an Agent Skills registry showing 15 stable public review skills with commands, artifacts, dependencies, and safety boundaries
+- an Agent Skills registry showing 16 stable public review skills with commands, artifacts, dependencies, and safety boundaries
 - a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
 - an Evidence Receipt Ledger attaching tool scope, proof debt, reviewer routes, and cost/procurement controls without weakening the packet lock
 - a Packet Outcome Memo converting the support-triage packet into a human decision
+- an AI Spend Review packet showing Finance/Procurement review before spend caps, vendor switches, or savings claims move
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
 - a Proof Health report that shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
@@ -88,6 +91,7 @@ In five minutes, a reviewer should see:
 | `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
 | `examples/generated/support_triage_agent.evidence_receipts.md` | Tool scope, missing proof, reviewer routes, and cost/procurement controls attach as receipts without approving access. |
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
+| `python3 -m agent.spend --no-write` | A budget-overrun question becomes a Finance/Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. |
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |

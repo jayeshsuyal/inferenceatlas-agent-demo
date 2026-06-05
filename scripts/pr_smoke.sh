@@ -72,6 +72,7 @@ command_json_check /tmp/ia_gate.all.json "$PYTHON_BIN" -m agent.gate --all --jso
 command_json_check /tmp/ia_adapters.all.json "$PYTHON_BIN" -m agent.adapters --all --json
 command_json_check /tmp/ia_sponsor_readiness.no_write.json "$PYTHON_BIN" -m agent.sponsor_readiness --no-write --json
 command_json_check /tmp/ia_proof_health.no_write.json "$PYTHON_BIN" -m agent.proof_health --no-write --json
+command_json_check /tmp/ia_spend.no_write.json "$PYTHON_BIN" -m agent.spend --no-write --json
 command_json_check /tmp/ia_trial.json "$PYTHON_BIN" -m agent.trial examples/requests/support_triage_trial.yml --json
 command_json_check /tmp/ia_trial_outcome_memo.no_write.json "$PYTHON_BIN" -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_trial_evidence_replay.no_write.json "$PYTHON_BIN" -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
@@ -82,6 +83,7 @@ command_json_check /tmp/ia_verify_artifacts.json "$PYTHON_BIN" -m agent.verify_a
 run "$PYTHON_BIN" -m agent.judge --no-write
 run "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy
 run "$PYTHON_BIN" -m agent.contract --all
+run "$PYTHON_BIN" -m agent.spend --no-write
 run "$PYTHON_BIN" -m agent.verify_artifacts
 run "$PYTHON_BIN" -m unittest discover -s tests
 run_secret_shape_guard

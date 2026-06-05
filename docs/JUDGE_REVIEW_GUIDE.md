@@ -18,12 +18,13 @@ If you are reviewing quickly, use this order:
 7. Inspect the generated Packet Outcome Memo.
 8. Run the no-key demo if you want the full packet output.
 9. Inspect the generated Proof Health report.
-10. Inspect the generated Design Partner Outcome Memo.
-11. Inspect the generated Sponsor Evidence Replay.
-12. Inspect the generated decision brief.
-13. Inspect the scenario matrix.
-14. Validate the public conformance contract.
-15. Check the safety defaults and tests.
+10. Inspect the generated AI Spend Review packet.
+11. Inspect the generated Design Partner Outcome Memo.
+12. Inspect the generated Sponsor Evidence Replay.
+13. Inspect the generated decision brief.
+14. Inspect the scenario matrix.
+15. Validate the public conformance contract.
+16. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -40,6 +41,7 @@ python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
+python3 -m agent.spend --no-write
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
@@ -77,6 +79,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
 | Does the packet lifecycle show drift before stale access? | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` |
+| Can Finance/Procurement review AI budget shock safely? | `python3 -m agent.spend --no-write` and `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
 | What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |
@@ -110,6 +113,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - Sponsor Live Readiness shows where Nebius, Tavily, Composio, and OpenClaw add proof without becoming approval authorities
 - the Trust Receipt gives a public audit-style control-plane artifact without exposing private v1
 - the Proof Health report shows Packet Drift, stale assumptions, expired reviewer gates, and the next human health check
+- the AI Spend Review lane turns a budget-overrun question into Finance and Procurement review artifacts without approving spend, selecting a provider, or guaranteeing savings
 - the Design Partner Brief turns the demo into a one-workflow CTO/platform-owner trial path without asking for secrets
 - the Design Partner Trial Kit and trial runner give that trial a concrete public input and output path without adding live writes or private source exposure
 - the Design Partner Outcome Memo turns that trial output into a can-move, stays-blocked, proof-owner meeting decision

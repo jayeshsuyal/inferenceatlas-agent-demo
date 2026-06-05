@@ -50,6 +50,7 @@ These pieces are safe to build on:
 | Sanitized evidence fixtures | `examples/evidence/support_triage_trial/` | Redacted provider-output shape for CTO-held Tavily, Composio, Nebius, and OpenClaw results. Replace with redacted local files only; never commit secrets. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
+| AI Spend Review projection | `agent/spend.py` | Finance/Procurement review packet for AI budget shock. Keep it non-approving, provider-neutral, and evidence-first. |
 | Renderers | `agent/renderers.py` | Markdown projections for packet, trace, and brief. Add new surfaces here. |
 | Schemas | `schemas/` | Public contracts for generated JSON artifacts. Update tests with any schema change. |
 | Generated proof | `examples/generated/` | Checked-in artifacts judges and AI reviewers can inspect. Regenerate after behavior changes. |
@@ -86,6 +87,7 @@ messy agent-access request
 -> Sponsor Evidence Replay
 -> Live Evidence Rehearsal
 -> Proof Health
+-> AI Spend Review
 -> trace
 -> Markdown/JSON artifacts
 ```

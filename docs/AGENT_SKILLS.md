@@ -13,8 +13,8 @@ python3 -m scripts.generate_agent_skills_doc
 
 ## Summary
 
-- Registered skills: `15`
-- Stable skills: `15`
+- Registered skills: `16`
+- Stable skills: `16`
 - Public harness approves access: `false`
 - Public harness grants permissions: `false`
 - Public harness executes external writes: `false`
@@ -55,6 +55,12 @@ python3 -m scripts.generate_agent_skills_doc
 | Evidence Receipt Ledger | `stable` | Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. | `python3 -m agent.evidence_receipts` | `agent/evidence_receipts.py`<br>`examples/generated/support_triage_agent.evidence_receipts.md`<br>`examples/generated/support_triage_agent.evidence_receipts.json` | receipts are context only; never weaken locks |
 | Proof Health / Drift Detection | `stable` | Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. | `python3 -m agent.proof_health` | `agent/proof_health.py`<br>`examples/generated/support_triage_agent.proof_health.md`<br>`examples/generated/support_triage_agent.proof_health.json` | health is observational; never auto-refreshes |
 
+### Spend Review
+
+| Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
+| --- | --- | --- | --- | --- | --- |
+| AI Spend Review Packet | `stable` | A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. | `python3 -m agent.spend --no-write` | `agent/spend.py`<br>`examples/generated/ai_spend_budget_overrun.spend_packet.json`<br>`examples/generated/ai_spend_budget_overrun.finance_receipt.json`<br>`examples/generated/ai_spend_budget_overrun.procurement_memo.json` | spend review packet only; never approves spend |
+
 ### Sponsor Readiness
 
 | Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
@@ -79,6 +85,7 @@ graph TD
     artifact_integrity_verification["Artifact Integrity Verification"]
     evidence_receipt_ledger["Evidence Receipt Ledger"]
     proof_health_drift_detection["Proof Health / Drift Detection"]
+    ai_spend_review_packet["AI Spend Review Packet"]
     sponsor_proof_readiness["Sponsor Proof Readiness"]
     access_request_normalization --> decision_packet_generation
     decision_packet_generation --> policy_gate_evaluation
@@ -114,6 +121,7 @@ graph TD
     reviewer_routing --> evidence_receipt_ledger
     decision_packet_generation --> proof_health_drift_detection
     reviewer_routing --> proof_health_drift_detection
+    evidence_receipt_ledger --> ai_spend_review_packet
     policy_gate_evaluation --> sponsor_proof_readiness
 ```
 

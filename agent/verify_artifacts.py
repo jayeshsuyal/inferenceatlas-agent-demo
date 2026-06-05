@@ -117,6 +117,17 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "AI Spend Review",
+        (
+            "ai_spend_budget_overrun.spend_packet.md",
+            "ai_spend_budget_overrun.spend_packet.json",
+            "ai_spend_budget_overrun.finance_receipt.md",
+            "ai_spend_budget_overrun.finance_receipt.json",
+            "ai_spend_budget_overrun.procurement_memo.md",
+            "ai_spend_budget_overrun.procurement_memo.json",
+        ),
+    ),
+    ArtifactFamily(
         "Sponsor Readiness",
         (
             "sponsor_live_readiness.md",

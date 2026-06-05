@@ -40,6 +40,7 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 | `agent/trial_outcome_memo.py` | Derives the design-partner meeting decision from the public trial bundle. | Keep it tied to the trial request, packet, and brief; it must not approve, grant, write, or mutate. |
 | `agent/trial_evidence_replay.py` | Derives dry-run sponsor proof attachment from the public trial bundle and outcome memo, with optional sanitized evidence rehearsal from `examples/evidence/support_triage_trial`. | Sponsors can contribute proof slots, but cannot change verdict, approve, grant, write, or mutate. |
 | `agent/proof_health.py` | Derives Packet Drift, stale assumptions, expired reviewer gates, and next human health check from the public packet and brief. | Keep it lifecycle-only; it must not approve, grant, write, or mutate production state. |
+| `agent/spend.py` | Derives AI spend review packet, Finance evidence receipt, and Procurement memo for budget-overrun questions. | Keep it review-only; it must not approve spend, select providers, guarantee savings, or execute writes. |
 | `agent/renderers.py` | Renders packet, trace, and brief to Markdown. | Keep rendering deterministic and side-effect free. |
 | `agent/runtime.py` | Optional Nebius/OpenClaw live runtime. | Live output should enrich packet artifacts and preserve safety invariants. |
 | `agent/tools.py` | Tavily/Composio/tool adapters. | Prefer explicit safe helpers over generic write-capable actions. |
@@ -57,8 +58,9 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 7. Sponsor Evidence Replay attaches sponsor proof slots without changing the access decision.
 8. Live Evidence Rehearsal can attach sanitized provider outputs while keeping the same decision lock.
 9. The Proof Health report derives lifecycle drift status without changing the access decision.
-10. Renderers write Markdown and JSON artifacts.
-11. Tests and CI verify no-key execution and safety defaults.
+10. AI Spend Review derives Finance/Procurement artifacts without approving spend, selecting providers, or promising savings.
+11. Renderers write Markdown and JSON artifacts.
+12. Tests and CI verify no-key execution and safety defaults.
 
 ## Stable Contracts
 

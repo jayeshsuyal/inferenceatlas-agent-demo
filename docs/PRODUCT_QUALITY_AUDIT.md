@@ -127,7 +127,7 @@ Before a PR claims the product surface is stronger, it should preserve these sig
 - `python3 -m agent.verify_artifacts` passes.
 - The artifact checklist includes the review surfaces a judge should skim.
 - The public boundary tests stay clean.
-- The Review Room, Trust Receipt, Packet Diff, Evidence Receipt Ledger, Packet Authority Snapshot, Packet Verification, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, trial report, Design Partner Outcome Memo, Sponsor Evidence Replay, and sanitized evidence fixtures remain public proof surfaces.
+- The Review Room, Trust Receipt, Packet Diff, Evidence Receipt Ledger, Packet Authority Snapshot, Packet Verification, Packet Outcome Memo, Proof Health, AI Spend Review, Sponsor Live Readiness, trial report, Design Partner Outcome Memo, Sponsor Evidence Replay, and sanitized evidence fixtures remain public proof surfaces.
 
 ## Product Spine Check
 
@@ -136,11 +136,11 @@ Use this as the quick premium-quality review:
 | Question | Pass signal |
 | --- | --- |
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
-| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 15 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
+| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 16 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
 | Can every PR smoke-test the public spine safely? | `bash scripts/pr_smoke.sh` runs the no-key product gate locally and `.github/workflows/smoke.yml` runs it on pull requests. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
-| Can finance/procurement see cost controls? | `examples/generated/support_triage_agent.evidence_receipts.md` includes a cost/procurement receipt with budget owner and spend-cap review required. |
+| Can finance/procurement see cost controls? | `examples/generated/ai_spend_budget_overrun.spend_packet.md` creates a Finance/Procurement review packet before spend caps, vendor switches, or savings claims move. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |
 | Can a reviewer trust the public proof inventory is fresh? | `python3 -m agent.verify_artifacts` byte-compares regenerated outputs against `examples/generated/`, validates static review assets, and fails on unexpected generated files. |
 | Can a CTO build on it safely? | `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md` preserve dry-run and human-review defaults. |

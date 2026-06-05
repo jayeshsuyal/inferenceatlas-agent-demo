@@ -41,8 +41,9 @@ Expected human-readable signals across that two-command path:
 - Design Partner Outcome Memo reports `scoped_validation_only` for `support_triage_trial`
 - Sponsor Evidence Replay reports sponsors cannot change the trial decision
 - Live Evidence Rehearsal reports sanitized evidence is attached and the decision remains locked
-- Agent Skills reports `15 / 15 stable skills available`
-- Artifact Integrity Gate reports `49 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
+- AI Spend Review reports Finance/Procurement review required, with no spend approval, provider selection, or savings guarantee
+- Agent Skills reports `16 / 16 stable skills available`
+- Artifact Integrity Gate reports `58 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -62,6 +63,7 @@ python3 -m agent.verification --all --json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
+python3 -m agent.spend --no-write --json
 python3 -m agent.verify_artifacts --json
 ```
 
@@ -206,11 +208,12 @@ Treat these as review failures:
 - Evidence Receipt Ledger weakens the packet lock, skips human review, or claims budget approval
 - Packet Authority Snapshot content hash or revision is nondeterministic
 - Packet Verification claims production access, external writes, permission grants, or approval
-- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 15 stable available skills
+- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 16 stable available skills
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Sponsor Evidence Replay lets a sponsor change the decision, approve access, grant permissions, execute writes, or mutate production
 - Live Evidence Rehearsal accepts evidence containing secrets, approval flags, grant flags, write flags, or production mutation flags
+- AI Spend Review approves spend, selects a provider, guarantees savings, or executes external writes
 - Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts
 - Proof Health approves, grants, writes, or mutates production
 - `admin_code_fix_bot` is not blocked

@@ -1,0 +1,29 @@
+{
+  "blocked_claims": [
+    "vendor switch is approved",
+    "provider decision is already selected",
+    "savings evidence is already complete",
+    "live spend may expand"
+  ],
+  "content_hash": "sha256:9ba4fad2eb91e254a212392b524271398a11f907379ce5d3ff9861a3027ec82c",
+  "decision": "review_required",
+  "memo_id": "ia-spend-review-ai_spend_budget_overrun-v0:procurement-memo:v0",
+  "next_human_action": "Attach invoice, usage, and contract evidence, then run a Finance and Procurement review before any spend control or vendor-change decision.",
+  "packet_content_hash": "sha256:47f8ff3775dec3c56988f5d73cb0bf05692ef38e417a307f836cbb6a37c26f6d",
+  "packet_id": "ia-spend-review-ai_spend_budget_overrun-v0",
+  "required_review": [
+    "current contract minimums, credits, renewal dates, and termination terms",
+    "security and data-processing obligations for any candidate vendor",
+    "quality, latency, support, and migration risk evidence",
+    "Finance approval for any cap, expansion, or contract amendment"
+  ],
+  "safety_boundary": {
+    "approves_spend": false,
+    "executes_external_writes": false,
+    "guarantees_savings": false,
+    "requires_human_review": true,
+    "selects_provider": false
+  },
+  "schema_version": "procurement_review_memo.v0",
+  "summary": "Procurement can review contract terms and vendor-change paths, but this memo does not approve a vendor switch or guarantee savings."
+}

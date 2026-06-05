@@ -1,0 +1,111 @@
+{
+  "blocked_claims": [
+    {
+      "claim": "AI spend changes are approved.",
+      "reason": "The packet has no invoice-backed Finance approval."
+    },
+    {
+      "claim": "Provider-switch savings are already proven.",
+      "reason": "Savings require invoice, usage, contract, latency, and quality evidence."
+    },
+    {
+      "claim": "A provider decision is already selected.",
+      "reason": "Procurement has not reviewed contract terms or operational risk."
+    },
+    {
+      "claim": "The team can expand live model or tool spend.",
+      "reason": "Budget owner approval and spend cap proof are missing."
+    }
+  ],
+  "content_hash": "sha256:47f8ff3775dec3c56988f5d73cb0bf05692ef38e417a307f836cbb6a37c26f6d",
+  "decision": {
+    "question": "Our team spent the 2026 AI budget in Q1. Should we cap usage, switch model classes, or renegotiate vendor terms?",
+    "requested_decision": "spend_review",
+    "review_posture": "Do not approve spend changes, vendor switches, or savings claims until Finance and Procurement review invoice, usage, and contract evidence.",
+    "verdict_class": "finance_procurement_review_required"
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "mode": "offline_deterministic",
+  "next_human_action": {
+    "action": "Attach invoice, usage, and contract evidence, then run a Finance and Procurement review before any spend control or vendor-change decision.",
+    "owner": "Finance + Procurement",
+    "success_criteria": [
+      "invoice baseline confirmed",
+      "per-team usage owner mapped",
+      "contract terms reviewed",
+      "budget owner names the approved next action"
+    ]
+  },
+  "packet_id": "ia-spend-review-ai_spend_budget_overrun-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_v1_source_exposed": false
+  },
+  "requested_finance_decision": {
+    "budget_period": "2026_Q1",
+    "decision_options_under_review": [
+      "usage cap",
+      "model class shift",
+      "vendor contract renegotiation"
+    ],
+    "spend_signal": "budget_exhausted_early"
+  },
+  "required_evidence": [
+    {
+      "evidence": "vendor invoices for the budget period",
+      "owner": "Finance",
+      "unblocks": "baseline spend confirmation"
+    },
+    {
+      "evidence": "per-team usage metrics with workload labels",
+      "owner": "AI Platform / Engineering",
+      "unblocks": "usage ownership and workload fit review"
+    },
+    {
+      "evidence": "contract terms, minimums, credits, and renewal dates",
+      "owner": "Procurement",
+      "unblocks": "renegotiation or vendor-change review"
+    },
+    {
+      "evidence": "budget owner approval for any cap, shift, or expansion",
+      "owner": "Finance",
+      "unblocks": "human decision on spend controls"
+    }
+  ],
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_spend_change",
+      "owner": "Finance",
+      "review_area": "budget baseline, invoice evidence, owner approval"
+    },
+    {
+      "current_state": "required_before_vendor_change",
+      "owner": "Procurement",
+      "review_area": "contract terms, vendor risk, renegotiation path"
+    },
+    {
+      "current_state": "required_before_model_class_shift",
+      "owner": "AI Platform / Engineering",
+      "review_area": "usage metrics, workload fit, quality and latency constraints"
+    }
+  ],
+  "safety_state": {
+    "approval_granted": false,
+    "external_writes_enabled": false,
+    "provider_winner_selected": false,
+    "requires_human_approval": true,
+    "savings_guaranteed": false,
+    "spend_approved": false
+  },
+  "scenario": "ai_spend_budget_overrun",
+  "schema_version": "ai_spend_review_packet.v0",
+  "spend_posture": {
+    "default_public_state": "review_packet_only",
+    "live_spend_approved": false,
+    "provider_winner_selected": false,
+    "renegotiation_approved": false,
+    "savings_guaranteed": false,
+    "usage_cap_approved": false,
+    "vendor_switch_approved": false
+  }
+}

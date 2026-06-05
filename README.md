@@ -61,6 +61,7 @@ python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
+python3 -m agent.spend --no-write
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
@@ -95,6 +96,7 @@ ia-sponsor-readiness
 ia-trust
 ia-review-room
 ia-proof-health
+ia-spend
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml
@@ -142,6 +144,12 @@ The fastest lifecycle artifact is the generated Proof Health report:
 
 ```text
 examples/generated/support_triage_agent.proof_health.md
+```
+
+The fastest Finance/Procurement artifact is the generated AI Spend Review packet:
+
+```text
+examples/generated/ai_spend_budget_overrun.spend_packet.md
 ```
 
 The fastest product-quality guardrail is:
@@ -291,6 +299,7 @@ User asks whether an AI agent should receive tool access.
 -> IA creates a DecisionPacket and Agent Access Decision Brief.
 -> IA compares packet outcomes across risk levels.
 -> IA converts the selected packet into a human outcome memo.
+-> IA can also convert an AI budget-overrun question into a Finance/Procurement spend review packet.
 -> IA blocks unsupported approval/access claims.
 -> IA names reviewer owners and one next human validation.
 ```

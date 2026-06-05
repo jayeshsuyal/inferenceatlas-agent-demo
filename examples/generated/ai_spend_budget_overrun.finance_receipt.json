@@ -1,0 +1,24 @@
+{
+  "blocked_until": [
+    "budget baseline is confirmed",
+    "usage owner is mapped",
+    "spend cap or expansion owner is named"
+  ],
+  "content_hash": "sha256:fcc1f4962c95aeb327d64019aa45c50e99ffd91267d69eb4884bae2c0614343d",
+  "evidence_required": [
+    "vendor invoices for the review period",
+    "team-level usage metrics",
+    "budget owner attestation"
+  ],
+  "packet_id": "ia-spend-review-ai_spend_budget_overrun-v0",
+  "receipt_id": "ia-spend-review-ai_spend_budget_overrun-v0:finance-evidence:v0",
+  "review_owner": "Finance",
+  "safety_boundary": {
+    "approves_spend": false,
+    "executes_external_writes": false,
+    "guarantees_savings": false,
+    "requires_human_review": true,
+    "selects_provider": false
+  },
+  "schema_version": "finance_evidence_receipt.v0"
+}

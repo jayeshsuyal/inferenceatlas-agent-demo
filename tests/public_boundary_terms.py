@@ -1,3 +1,18 @@
+PUBLIC_PACKET_AUTHORITY_TERMS = {
+    "packet_id",
+    "revision_id",
+    "content_hash",
+    "decision_lock",
+    "decision_lock_before",
+    "decision_lock_after",
+    "derived_from_packet_id",
+    "evidence_receipt_id",
+    "evidence_receipt_ids",
+    "snapshot_content_hash",
+    "snapshot_revision_id",
+}
+
+
 FORBIDDEN_PRIVATE_V1_TERMS = [
     "ask_ia",
     "living_document",
@@ -11,7 +26,6 @@ FORBIDDEN_PRIVATE_V1_TERMS = [
     "WorkloadProfile",
     "FactPack",
     "ArtifactProjection",
-    "packet_id",
     "user_problem",
     "decision_title",
     "facts_captured",

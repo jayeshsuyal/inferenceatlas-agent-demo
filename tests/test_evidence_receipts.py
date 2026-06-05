@@ -13,11 +13,10 @@ from agent.evidence_receipts import (
 )
 from agent.packet_authority import build_packet_authority_snapshot_for_scenario
 from agent.scenarios import SCENARIOS, build_scenario_packet
-from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS, PUBLIC_PACKET_AUTHORITY_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_RECEIPT_TERMS = {"packet_id"}
 
 
 class EvidenceReceiptLedgerTests(unittest.TestCase):
@@ -94,7 +93,7 @@ class EvidenceReceiptLedgerTests(unittest.TestCase):
         combined = json.dumps(ledger, sort_keys=True)
 
         private_engine_terms = [
-            term for term in FORBIDDEN_PRIVATE_V1_TERMS if term not in PUBLIC_RECEIPT_TERMS
+            term for term in FORBIDDEN_PRIVATE_V1_TERMS if term not in PUBLIC_PACKET_AUTHORITY_TERMS
         ]
         for forbidden in private_engine_terms:
             self.assertNotIn(forbidden, combined)

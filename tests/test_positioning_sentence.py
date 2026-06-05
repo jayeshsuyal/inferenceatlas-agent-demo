@@ -2,11 +2,10 @@ import json
 import unittest
 from pathlib import Path
 
-from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS, PUBLIC_PACKET_AUTHORITY_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_PACKET_AUTHORITY_TERMS = {"packet_id"}
 POSITIONING_SENTENCE = (
     "Every agent demo shows the agent taking action. "
     "InferenceAtlas shows the proof packet before an agent is allowed to act."

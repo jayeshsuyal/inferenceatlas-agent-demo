@@ -2,6 +2,8 @@ import json
 import unittest
 from pathlib import Path
 
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -90,6 +92,17 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("Private engine, public proof.", contract)
         for forbidden in ["ask_ia", "living_document", "advanced_workspace", "mcp_agent_tool_access"]:
             self.assertNotIn(forbidden, contract)
+
+    def test_v1_capability_passport_uses_public_safe_terms(self) -> None:
+        passport = (ROOT / "docs" / "V1_CAPABILITY_PASSPORT.md").read_text(encoding="utf-8")
+
+        self.assertIn("Status: public redacted capability map", passport)
+        self.assertIn("private engine, public proof", passport)
+        self.assertIn("request profile", passport)
+        self.assertIn("evidence pack", passport)
+        self.assertIn("artifact projection", passport)
+        for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+            self.assertNotIn(forbidden, passport, msg=f"{forbidden} leaked in docs/V1_CAPABILITY_PASSPORT.md")
 
     def test_readme_and_manifest_point_to_judge_fast_path(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

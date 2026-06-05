@@ -12,11 +12,10 @@ from agent.public_contract import (
     validate_public_review_artifacts,
 )
 from agent.scenarios import GENERATED_DIR, SCENARIOS, build_scenario_brief, build_scenario_packet
-from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS, PUBLIC_PACKET_AUTHORITY_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_PACKET_AUTHORITY_TERMS = {"packet_id"}
 CONTRACT_LEAD = (
     "Before an AI agent receives access to tools, data, spend, or production systems, "
     "a pre-permission proof packet should exist. This document defines the public conformance "

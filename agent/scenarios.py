@@ -13,7 +13,9 @@ from .packet import (
     build_decision_packet,
     packet_to_pretty_json,
 )
+from .packet_authority import build_packet_authority_snapshot, snapshot_to_pretty_json
 from .renderers import render_decision_brief_markdown, render_packet_markdown
+from .verification import build_verification_artifact, verification_to_pretty_json
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -48,12 +50,18 @@ def write_scenario_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
         packet_json = output_dir / f"{scenario_name}.packet.json"
         brief_md = output_dir / f"{scenario_name}.decision_brief.md"
         brief_json = output_dir / f"{scenario_name}.decision_brief.json"
+        snapshot_json = output_dir / f"{scenario_name}.snapshot.json"
+        verification_json = output_dir / f"{scenario_name}.verification.json"
 
         packet_md.write_text(render_packet_markdown(packet), encoding="utf-8")
         packet_json.write_text(packet_to_pretty_json(packet) + "\n", encoding="utf-8")
         brief_md.write_text(render_decision_brief_markdown(brief), encoding="utf-8")
         brief_json.write_text(brief_to_pretty_json(brief) + "\n", encoding="utf-8")
-        written.extend([packet_md, packet_json, brief_md, brief_json])
+        snapshot = build_packet_authority_snapshot(packet)
+        verification = build_verification_artifact(packet, snapshot=snapshot)
+        snapshot_json.write_text(snapshot_to_pretty_json(snapshot) + "\n", encoding="utf-8")
+        verification_json.write_text(verification_to_pretty_json(verification) + "\n", encoding="utf-8")
+        written.extend([packet_md, packet_json, brief_md, brief_json, snapshot_json, verification_json])
     return written
 
 

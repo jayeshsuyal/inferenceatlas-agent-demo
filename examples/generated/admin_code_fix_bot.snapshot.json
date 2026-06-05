@@ -1,0 +1,31 @@
+{
+  "accepted_evidence": [],
+  "content_hash": "sha256:8d1a2d3489118eb474d82a64cb464b6d657d5c5d5683948b0156525e9148641c",
+  "decision_lock_after": "blocked",
+  "decision_lock_before": "blocked",
+  "evidence_receipt_ids": [],
+  "generated_by": "inferenceatlas-agent-demo",
+  "locked_fields": [
+    "decision.verdict",
+    "approval_posture.production_access",
+    "approval_posture.validation_review",
+    "approval_posture.write_access",
+    "safety_state.approval_granted",
+    "safety_state.external_writes_enabled",
+    "safety_state.requires_human_approval"
+  ],
+  "mode": "offline_deterministic",
+  "next_human_action": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+  "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+  "rejected_evidence": [],
+  "revision_id": "rev_8d1a2d3489118eb4",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_authority_snapshot.v0",
+  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_8d1a2d3489118eb4"
+}

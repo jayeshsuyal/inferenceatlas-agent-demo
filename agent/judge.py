@@ -13,16 +13,18 @@ from .contract import validate_all
 from .gate import evaluate_all
 from .outcome_memo import build_packet_outcome_memo, write_packet_outcome_memo_artifacts
 from .packet import build_support_triage_trace
+from .packet_authority import build_packet_authority_snapshot
 from .packet_diff import build_packet_diff_report, write_packet_diff_artifacts
 from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
-from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, write_scenario_artifacts
+from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet, write_scenario_artifacts
 from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
 from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
 from .trial_evidence_replay import build_trial_evidence_replay, write_trial_evidence_replay_artifacts
 from .trial_outcome_memo import build_trial_outcome_memo, write_trial_outcome_memo_artifacts
+from .verification import build_verification_artifact
 
 
 JUDGE_HARNESS_VERSION = "agent_judge_harness.v0"
@@ -33,6 +35,8 @@ JUDGE_COMMANDS = [
     "python3 -m agent.review --list",
     "python3 -m agent.skills",
     "python3 -m agent.packet_diff",
+    "python3 -m agent.packet_authority",
+    "python3 -m agent.verification --all",
     "python3 -m agent.outcome_memo",
     "python3 -m agent.contract --all",
     "python3 -m agent.gate --all",
@@ -56,6 +60,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/trust_receipt.md",
     "examples/generated/packet_diff.md",
     "examples/generated/packet_diff.json",
+    "examples/generated/support_triage_agent.snapshot.json",
+    "examples/generated/support_triage_agent.verification.json",
     "examples/generated/support_triage_agent.outcome_memo.md",
     "examples/generated/support_triage_agent.outcome_memo.json",
     "examples/generated/sponsor_live_readiness.md",
@@ -169,6 +175,9 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     trial_outcome_memo = build_trial_outcome_memo(DEFAULT_TRIAL_REQUEST)
     trial_evidence_replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
+    primary_packet = build_scenario_packet("support_triage_agent")
+    primary_snapshot = build_packet_authority_snapshot(primary_packet)
+    primary_verification = build_verification_artifact(primary_packet, snapshot=primary_snapshot)
 
     return {
         "schema_version": JUDGE_HARNESS_VERSION,
@@ -196,6 +205,27 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "has_blocked_critical_lane": packet_diff["summary"]["has_blocked_critical_lane"],
             "all_production_access_blocked": packet_diff["summary"]["all_production_access_blocked"],
             "all_external_writes_blocked": packet_diff["summary"]["all_external_writes_blocked"],
+        },
+        "packet_authority_snapshot": {
+            "scenario": "support_triage_agent",
+            "packet_id": primary_snapshot["packet_id"],
+            "revision_id": primary_snapshot["revision_id"],
+            "content_hash": primary_snapshot["content_hash"],
+            "decision_lock_before": primary_snapshot["decision_lock_before"],
+            "decision_lock_after": primary_snapshot["decision_lock_after"],
+            "evidence_receipt_count": len(primary_snapshot["evidence_receipt_ids"]),
+            "next_human_action": primary_snapshot["next_human_action"],
+            "artifact": "examples/generated/support_triage_agent.snapshot.json",
+        },
+        "packet_verification": {
+            "scenario": "support_triage_agent",
+            "verification_status": primary_verification["verification_status"],
+            "production_access": primary_verification["production_access"],
+            "external_writes": primary_verification["external_writes"],
+            "permission_grants": primary_verification["permission_grants"],
+            "approval_granted": primary_verification["approval_granted"],
+            "scoped_validation": primary_verification["scoped_validation"],
+            "artifact": "examples/generated/support_triage_agent.verification.json",
         },
         "packet_outcome_memo": {
             "scenario": outcome_memo["scenario"],
@@ -331,6 +361,15 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or not report["packet_diff"]["has_blocked_critical_lane"]
         or not report["packet_diff"]["all_production_access_blocked"]
         or not report["packet_diff"]["all_external_writes_blocked"]
+        or (
+            report["packet_authority_snapshot"]["decision_lock_before"]
+            != report["packet_authority_snapshot"]["decision_lock_after"]
+        )
+        or report["packet_verification"]["verification_status"] != "valid_review_required"
+        or report["packet_verification"]["production_access"]
+        or report["packet_verification"]["external_writes"]
+        or report["packet_verification"]["permission_grants"]
+        or report["packet_verification"]["approval_granted"]
         or report["packet_outcome_memo"]["production_access"]
         or report["packet_outcome_memo"]["external_writes"]
         or report["packet_outcome_memo"]["approves_access"]
@@ -431,6 +470,38 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             f"- all production access blocked: {diff['all_production_access_blocked']}",
             f"- all external writes blocked: {diff['all_external_writes_blocked']}",
             f"- artifact: `examples/generated/packet_diff.md`",
+        ]
+    )
+
+    snapshot = report["packet_authority_snapshot"]
+    verification = report["packet_verification"]
+    lines.extend(
+        [
+            "",
+            "## Packet Authority Snapshot",
+            "",
+            "The packet now has canonical identity, revision, hash, and lock state for read-only verification.",
+            "",
+            f"- scenario: `{snapshot['scenario']}`",
+            f"- packet_id: `{snapshot['packet_id']}`",
+            f"- revision_id: `{snapshot['revision_id']}`",
+            f"- content_hash: `{snapshot['content_hash']}`",
+            f"- decision lock: {snapshot['decision_lock_before']} -> {snapshot['decision_lock_after']}",
+            f"- evidence receipts: {snapshot['evidence_receipt_count']}",
+            f"- next human action: {snapshot['next_human_action']}",
+            f"- artifact: `{snapshot['artifact']}`",
+            "",
+            "## Packet Verification",
+            "",
+            "The verification artifact is the read-only surface a future CI gate or subscriber can consume.",
+            "",
+            f"- status: {verification['verification_status']}",
+            f"- scoped validation: {verification['scoped_validation']}",
+            f"- production access: {verification['production_access']}",
+            f"- external writes: {verification['external_writes']}",
+            f"- permission grants: {verification['permission_grants']}",
+            f"- approval granted: {verification['approval_granted']}",
+            f"- artifact: `{verification['artifact']}`",
         ]
     )
 

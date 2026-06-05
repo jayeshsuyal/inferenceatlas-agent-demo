@@ -47,6 +47,22 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Packet Authority Snapshots",
+        (
+            "support_triage_agent.snapshot.json",
+            "read_only_analytics_agent.snapshot.json",
+            "admin_code_fix_bot.snapshot.json",
+        ),
+    ),
+    ArtifactFamily(
+        "Packet Verification",
+        (
+            "support_triage_agent.verification.json",
+            "read_only_analytics_agent.verification.json",
+            "admin_code_fix_bot.verification.json",
+        ),
+    ),
+    ArtifactFamily(
         "Traces",
         (
             "support_triage_agent.trace.md",

@@ -1,0 +1,31 @@
+{
+  "accepted_evidence": [],
+  "content_hash": "sha256:31c862aff79bf60e6e340f7393d24a34061637f709a397baa165f3ec8b58c5ae",
+  "decision_lock_after": "read_only_validation",
+  "decision_lock_before": "read_only_validation",
+  "evidence_receipt_ids": [],
+  "generated_by": "inferenceatlas-agent-demo",
+  "locked_fields": [
+    "decision.verdict",
+    "approval_posture.production_access",
+    "approval_posture.validation_review",
+    "approval_posture.write_access",
+    "safety_state.approval_granted",
+    "safety_state.external_writes_enabled",
+    "safety_state.requires_human_approval"
+  ],
+  "mode": "offline_deterministic",
+  "next_human_action": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
+  "packet_id": "ia-agent-access-read-only-analytics-v0",
+  "rejected_evidence": [],
+  "revision_id": "rev_31c862aff79bf60e",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_authority_snapshot.v0",
+  "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_31c862aff79bf60e"
+}

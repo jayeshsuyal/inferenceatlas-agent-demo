@@ -1,0 +1,31 @@
+{
+  "accepted_evidence": [],
+  "content_hash": "sha256:3182530a3668e50e5a4478c1b8b920d892ba7f947a89ee0d3b79a3fe7ee466dc",
+  "decision_lock_after": "scoped_validation_only",
+  "decision_lock_before": "scoped_validation_only",
+  "evidence_receipt_ids": [],
+  "generated_by": "inferenceatlas-agent-demo",
+  "locked_fields": [
+    "decision.verdict",
+    "approval_posture.production_access",
+    "approval_posture.validation_review",
+    "approval_posture.write_access",
+    "safety_state.approval_granted",
+    "safety_state.external_writes_enabled",
+    "safety_state.requires_human_approval"
+  ],
+  "mode": "offline_deterministic",
+  "next_human_action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "rejected_evidence": [],
+  "revision_id": "rev_3182530a3668e50e",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_authority_snapshot.v0",
+  "snapshot_id": "ia-agent-access-support-triage-v0:rev_3182530a3668e50e"
+}

@@ -45,6 +45,17 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["packet_diff"]["has_proof_routed_lane"])
         self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
         self.assertTrue(report["packet_diff"]["all_production_access_blocked"])
+        self.assertEqual(report["packet_authority_snapshot"]["scenario"], "support_triage_agent")
+        self.assertEqual(
+            report["packet_authority_snapshot"]["decision_lock_before"],
+            report["packet_authority_snapshot"]["decision_lock_after"],
+        )
+        self.assertTrue(report["packet_authority_snapshot"]["content_hash"].startswith("sha256:"))
+        self.assertEqual(report["packet_verification"]["verification_status"], "valid_review_required")
+        self.assertFalse(report["packet_verification"]["production_access"])
+        self.assertFalse(report["packet_verification"]["external_writes"])
+        self.assertFalse(report["packet_verification"]["permission_grants"])
+        self.assertFalse(report["packet_verification"]["approval_granted"])
         self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
         self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertFalse(report["packet_outcome_memo"]["external_writes"])
@@ -91,6 +102,8 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/trust_receipt.md",
             "examples/generated/packet_diff.md",
             "examples/generated/packet_diff.json",
+            "examples/generated/support_triage_agent.snapshot.json",
+            "examples/generated/support_triage_agent.verification.json",
             "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/support_triage_agent.outcome_memo.json",
             "examples/generated/sponsor_live_readiness.md",
@@ -130,6 +143,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Access Speed Layer", markdown)
         self.assertIn("Packet Diff", markdown)
         self.assertIn("examples/generated/packet_diff.md", markdown)
+        self.assertIn("Packet Authority Snapshot", markdown)
+        self.assertIn("examples/generated/support_triage_agent.snapshot.json", markdown)
+        self.assertIn("Packet Verification", markdown)
+        self.assertIn("examples/generated/support_triage_agent.verification.json", markdown)
         self.assertIn("Packet Outcome Memo", markdown)
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", markdown)
         self.assertIn("Sponsor Live Readiness", markdown)

@@ -1,0 +1,65 @@
+{
+  "approval_granted": false,
+  "blocked_claims": [
+    {
+      "claim": "Production access is broadly approved.",
+      "reason": "Only a read-only validation review can move before data owner scope confirmation."
+    },
+    {
+      "claim": "The agent may export rows or mutate dashboards.",
+      "reason": "The request is read-only and does not include export, write, or dashboard mutation proof."
+    }
+  ],
+  "content_hash": "sha256:31c862aff79bf60e6e340f7393d24a34061637f709a397baa165f3ec8b58c5ae",
+  "decision_lock": "read_only_validation",
+  "external_writes": false,
+  "missing_proof": [
+    {
+      "item": "BigQuery read-only allowlist and credential proof",
+      "owner": "Data/Engineering",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "item": "Looker read-only allowlist and credential proof",
+      "owner": "Data/Engineering",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "item": "Data owner confirmation that requested metrics are aggregate and non-customer-specific",
+      "owner": "Data/Analytics",
+      "unblocks": "read-only analytics validation"
+    }
+  ],
+  "next_human_action": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
+  "packet_id": "ia-agent-access-read-only-analytics-v0",
+  "permission_grants": false,
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "production_access": false,
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_validation",
+      "owner": "Data/Analytics",
+      "review_area": "aggregate metric scope, dashboard allowlist, read-only credentials"
+    },
+    {
+      "current_state": "required_before_access",
+      "owner": "Engineering",
+      "review_area": "read-only credential boundary and audit log owner"
+    }
+  ],
+  "revision_id": "rev_31c862aff79bf60e",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_verification.v0",
+  "scoped_validation": true,
+  "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_31c862aff79bf60e",
+  "verification_status": "valid_review_required"
+}

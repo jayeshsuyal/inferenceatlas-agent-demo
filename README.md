@@ -49,6 +49,8 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.skills
 python3 -m agent.packet_diff
+python3 -m agent.packet_authority
+python3 -m agent.verification --all
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
@@ -73,6 +75,8 @@ ia-judge
 ia-review --list
 ia-skills
 ia-packet-diff
+ia-snapshot
+ia-verify --all
 ia-outcome-memo
 ia-contract --all
 ia-gate --all

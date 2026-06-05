@@ -37,6 +37,7 @@ SLASH_BY_SKILL_ID = {
     "proof_health_drift_detection": "proof-health",
     "ai_spend_review_packet": "spend",
     "sponsor_proof_readiness": "sponsor",
+    "sponsor_proof_trace": "proof-trace",
 }
 
 # Plain-language copy for the web + menu (non-technical users).
@@ -92,6 +93,10 @@ LAYMAN_BY_SKILL_ID: dict[str, dict[str, str]] = {
     "sponsor_proof_readiness": {
         "layman_summary": "Shows whether Nebius/Tavily/Composio keys are ready for sponsor demos.",
         "example_question": "What sponsor integrations are configured vs still needed?",
+    },
+    "sponsor_proof_trace": {
+        "layman_summary": "Shows the locked order in which sponsor proof is collected without changing the decision.",
+        "example_question": "How did Tavily, Composio, OpenClaw, and Nebius contribute proof without approving anything?",
     },
     "full_judge_harness": {
         "layman_summary": "Full proof run — all scenarios, gates, and trust receipt in one path.",
@@ -167,6 +172,12 @@ def _prompt_for_chat(skill: SkillSpec) -> str:
         return (
             "Explain sponsor proof readiness (Nebius, Tavily, Composio) for this harness: "
             "what adds evidence vs what cannot approve access."
+        )
+    if skill.id == "sponsor_proof_trace":
+        return (
+            "Explain Sponsor Proof Trace: the locked Tavily -> Composio -> OpenClaw -> Nebius "
+            "order, which access and spend evidence blocks are present, and why the decision lock "
+            "is unchanged."
         )
     if skill.id == "design_partner_outcome_memo":
         return (
@@ -428,6 +439,9 @@ def _context_for_skill(skill: UISkill, max_chars: int = 2800) -> str:
 
     if sid == "sponsor_proof_readiness":
         return _read_text(GENERATED_DIR / "sponsor_live_readiness.md", min(max_chars, 2200))
+
+    if sid == "sponsor_proof_trace":
+        return _read_text(GENERATED_DIR / "support_triage_trial.sponsor_proof_trace.md", min(max_chars, 2600))
 
     if sid == "artifact_integrity_verification":
         return (

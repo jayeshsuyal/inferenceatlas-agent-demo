@@ -57,6 +57,8 @@ jobs:
           ia-spend --no-write --json >/tmp/installed_spend_review.json
           ia-sponsor-readiness --no-write
           ia-sponsor-readiness --no-write --json >/tmp/installed_sponsor_readiness.json
+          ia-sponsor-proof-trace examples/requests/support_triage_trial.yml --no-write
+          ia-sponsor-proof-trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/installed_sponsor_proof_trace.json
           ia-trial examples/requests/support_triage_trial.yml
           ia-trial examples/requests/support_triage_trial.yml --json >/tmp/installed_trial_report.json
           ia-trial-outcome-memo examples/requests/support_triage_trial.yml
@@ -93,6 +95,7 @@ jobs:
           python -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_outcome_memo.cli.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_evidence_replay.cli.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json >/tmp/live_evidence_rehearsal.cli.json
+          python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_trace.cli.json
           python -m agent.spend --no-write --json >/tmp/spend_review.cli.json
 
       - name: Validate public conformance contract
@@ -112,6 +115,8 @@ jobs:
           python -m agent.adapters --all --json >/tmp/sponsor_adapters.all.json
           python -m agent.sponsor_readiness
           python -m agent.sponsor_readiness --no-write --json >/tmp/sponsor_live_readiness.json
+          python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write
+          python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_trace.json
 
       - name: Generate trust receipt
         run: |

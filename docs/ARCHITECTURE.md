@@ -39,6 +39,7 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 | `agent/outcome_memo.py` | Derives the packet-level meeting decision from the public packet, brief, policy gate, Proof Health, and sponsor readiness. | Keep it a projection; it must not approve access or grant permissions. |
 | `agent/trial_outcome_memo.py` | Derives the design-partner meeting decision from the public trial bundle. | Keep it tied to the trial request, packet, and brief; it must not approve, grant, write, or mutate. |
 | `agent/trial_evidence_replay.py` | Derives dry-run sponsor proof attachment from the public trial bundle and outcome memo, with optional sanitized evidence rehearsal from `examples/evidence/support_triage_trial`. | Sponsors can contribute proof slots, but cannot change verdict, approve, grant, write, or mutate. |
+| `agent/sponsor_proof_trace.py` | Builds the canonical locked-order SponsorProofTrace for Tavily -> Composio -> OpenClaw -> Nebius, with access and spend evidence blocks. | Sponsor steps collect proof only; the decision lock before and after must remain identical. |
 | `agent/proof_health.py` | Derives Packet Drift, stale assumptions, expired reviewer gates, and next human health check from the public packet and brief. | Keep it lifecycle-only; it must not approve, grant, write, or mutate production state. |
 | `agent/spend.py` | Derives AI spend review packet, Finance evidence receipt, and Procurement memo for budget-overrun questions. | Keep it review-only; it must not approve spend, select providers, guarantee savings, or execute writes. |
 | `agent/chat_answer.py` | Wraps high-stakes web replies in `chat_answer.v0` metadata with source, artifacts, packet refs, safety flags, and next human action. | Keep answers natural, packet-backed, and non-approving. |
@@ -58,11 +59,12 @@ The packet is the canonical object. The brief, Proof Health report, outcome memo
 6. Outcome memos derive meeting decisions without changing the access decision.
 7. Sponsor Evidence Replay attaches sponsor proof slots without changing the access decision.
 8. Live Evidence Rehearsal can attach sanitized provider outputs while keeping the same decision lock.
-9. The Proof Health report derives lifecycle drift status without changing the access decision.
-10. AI Spend Review derives Finance/Procurement artifacts without approving spend, selecting providers, or promising savings.
-11. ChatAnswer v0 turns packet facts into natural web replies while preserving source and safety metadata.
-12. Renderers write Markdown and JSON artifacts.
-13. Tests and CI verify no-key execution and safety defaults.
+9. SponsorProofTrace records sponsor proof collection in locked order with deterministic fallback.
+10. The Proof Health report derives lifecycle drift status without changing the access decision.
+11. AI Spend Review derives Finance/Procurement artifacts without approving spend, selecting providers, or promising savings.
+12. ChatAnswer v0 turns packet facts into natural web replies while preserving source and safety metadata.
+13. Renderers write Markdown and JSON artifacts.
+14. Tests and CI verify no-key execution and safety defaults.
 
 ## Stable Contracts
 

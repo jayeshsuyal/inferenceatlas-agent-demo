@@ -13,8 +13,8 @@ python3 -m scripts.generate_agent_skills_doc
 
 ## Summary
 
-- Registered skills: `16`
-- Stable skills: `16`
+- Registered skills: `17`
+- Stable skills: `17`
 - Public harness approves access: `false`
 - Public harness grants permissions: `false`
 - Public harness executes external writes: `false`
@@ -66,6 +66,7 @@ python3 -m scripts.generate_agent_skills_doc
 | Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
 | --- | --- | --- | --- | --- | --- |
 | Sponsor Proof Readiness | `stable` | Sponsor adapters show where live proof can attach while remaining non-executing. | `python3 -m agent.sponsor_readiness` | `agent/adapters`<br>`agent/sponsor_readiness.py`<br>`examples/generated/sponsor_live_readiness.md`<br>`examples/generated/sponsor_live_readiness.json` | dry-run by default; no live writes; sponsor cannot grant access |
+| Sponsor Proof Trace | `stable` | Sponsor proof collection is recorded in locked order across access and spend evidence without changing the decision lock. | `python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml` | `agent/sponsor_proof_trace.py`<br>`examples/generated/support_triage_trial.sponsor_proof_trace.md`<br>`examples/generated/support_triage_trial.sponsor_proof_trace.json` | trace is observational; never unlocks decisions |
 
 ## Dependency DAG
 
@@ -87,6 +88,7 @@ graph TD
     proof_health_drift_detection["Proof Health / Drift Detection"]
     ai_spend_review_packet["AI Spend Review Packet"]
     sponsor_proof_readiness["Sponsor Proof Readiness"]
+    sponsor_proof_trace["Sponsor Proof Trace"]
     access_request_normalization --> decision_packet_generation
     decision_packet_generation --> policy_gate_evaluation
     decision_packet_generation --> proof_debt_extraction
@@ -123,6 +125,9 @@ graph TD
     reviewer_routing --> proof_health_drift_detection
     evidence_receipt_ledger --> ai_spend_review_packet
     policy_gate_evaluation --> sponsor_proof_readiness
+    sponsor_proof_readiness --> sponsor_proof_trace
+    design_partner_evidence_replay --> sponsor_proof_trace
+    ai_spend_review_packet --> sponsor_proof_trace
 ```
 
 ## Web UI (InferenceAtlas demo)

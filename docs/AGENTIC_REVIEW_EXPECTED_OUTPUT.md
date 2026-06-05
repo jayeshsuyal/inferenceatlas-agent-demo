@@ -40,10 +40,11 @@ Expected human-readable signals across that two-command path:
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
 - Design Partner Outcome Memo reports `scoped_validation_only` for `support_triage_trial`
 - Sponsor Evidence Replay reports sponsors cannot change the trial decision
+- Sponsor Proof Trace reports Tavily -> Composio -> OpenClaw -> Nebius in locked order with unchanged decision lock
 - Live Evidence Rehearsal reports sanitized evidence is attached and the decision remains locked
 - AI Spend Review reports Finance/Procurement review required, with no spend approval, provider selection, or savings guarantee
-- Agent Skills reports `16 / 16 stable skills available`
-- Artifact Integrity Gate reports `58 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
+- Agent Skills reports `17 / 17 stable skills available`
+- Artifact Integrity Gate reports `60 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -63,6 +64,7 @@ python3 -m agent.verification --all --json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
+python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.spend --no-write --json
 python3 -m agent.verify_artifacts --json
 ```
@@ -96,6 +98,12 @@ Expected judge JSON pass signals:
 - `proof_health.approves_access` is `false`
 - `proof_health.grants_permissions` is `false`
 - `proof_health.executes_external_writes` is `false`
+- `sponsor_proof_trace.decision_lock_unchanged` is `true`
+- `sponsor_proof_trace.all_non_executing` is `true`
+- `sponsor_proof_trace.approves_access` is `false`
+- `sponsor_proof_trace.approves_spend` is `false`
+- `sponsor_proof_trace.selects_provider` is `false`
+- `sponsor_proof_trace.guarantees_savings` is `false`
 - `packet_diff.has_relaxed_read_only_lane` is `true`
 - `packet_diff.has_proof_routed_lane` is `true`
 - `packet_diff.has_blocked_critical_lane` is `true`
@@ -111,7 +119,7 @@ Expected judge JSON pass signals:
 Expected artifact verifier JSON pass signals:
 
 - `status` is `ok`
-- `summary.generated_artifacts_verified` is `49`
+- `summary.generated_artifacts_verified` is `60`
 - `summary.stale_artifacts` is `0`
 - `summary.unexpected_checked_in_artifacts` is `0`
 - `summary.missing_static_assets` is `0`
@@ -119,9 +127,9 @@ Expected artifact verifier JSON pass signals:
 Expected skills JSON pass signals:
 
 - `schema_version` is `agent_skills_registry.v0`
-- `summary.registered_skills` is `15`
-- `summary.stable_skills` is `15`
-- `summary.available_stable_skills` is `15`
+- `summary.registered_skills` is `17`
+- `summary.stable_skills` is `17`
+- `summary.available_stable_skills` is `17`
 - `private_boundary.private_source_exposed` is `false`
 
 ## Full Command Set
@@ -165,6 +173,7 @@ Expected pass signals:
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
 - Design Partner Outcome Memo turns the trial request into a meeting-ready can-move, stays-blocked, proof-owner decision
 - Sponsor Evidence Replay attaches sponsor proof slots to the same trial decision without changing safety state
+- Sponsor Proof Trace records access and spend evidence blocks without changing the decision lock
 - Live Evidence Rehearsal attaches sanitized sponsor outputs while rejecting secret-shaped or write-shaped inputs
 - Artifact Integrity Gate proves deterministic proof artifacts are fresh, static review assets are valid, and no unexpected generated file is checked in
 - policy gate blocks critical/admin/prod-write scope
@@ -212,6 +221,7 @@ Treat these as review failures:
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Sponsor Evidence Replay lets a sponsor change the decision, approve access, grant permissions, execute writes, or mutate production
+- Sponsor Proof Trace changes sponsor order, unlocks a decision, approves access, approves spend, selects a provider, or guarantees savings
 - Live Evidence Rehearsal accepts evidence containing secrets, approval flags, grant flags, write flags, or production mutation flags
 - AI Spend Review approves spend, selects a provider, guarantees savings, or executes external writes
 - Artifact Integrity Gate reports stale, missing, invalid, or unexpected generated artifacts

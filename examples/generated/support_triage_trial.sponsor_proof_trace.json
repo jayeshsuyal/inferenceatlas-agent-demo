@@ -1,0 +1,255 @@
+{
+  "access_review_evidence": {
+    "blocked_actions": [
+      "github: issue edits",
+      "github: repo configuration changes",
+      "github: workflow dispatch",
+      "slack: posting messages",
+      "slack: DM access",
+      "slack: workspace-wide history",
+      "jira: ticket creation",
+      "jira: status changes",
+      "jira: assignment changes"
+    ],
+    "external_writes": false,
+    "missing_proof": [
+      "GitHub repository allowlist and permission level",
+      "Slack channel allowlist, retention policy, and customer-data boundary",
+      "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "Support escalation workflow and human handoff owner",
+      "Audit log shape for tool calls, evidence intake, and reviewer decisions"
+    ],
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "permission_grants": false,
+    "production_access": false,
+    "requested_tools": [
+      "github",
+      "slack",
+      "jira"
+    ],
+    "reviewer_owners": [
+      "Security/Legal",
+      "Engineering",
+      "Support Ops",
+      "Procurement/Finance"
+    ]
+  },
+  "blocked_actions": [
+    "github: issue edits",
+    "github: repo configuration changes",
+    "github: workflow dispatch",
+    "slack: posting messages",
+    "slack: DM access",
+    "slack: workspace-wide history",
+    "jira: ticket creation",
+    "jira: status changes",
+    "jira: assignment changes"
+  ],
+  "content_hash": "sha256:3563828a1fc4e4815cceb092a66254a102859cdb2841bce196c09b7324939439",
+  "decision_lock_after": {
+    "approval_granted": false,
+    "can_sponsor_change_decision": false,
+    "external_writes": false,
+    "permission_grants": false,
+    "production_access": false,
+    "provider_winner_selected": false,
+    "review_posture": "Approve a scoped validation review before any production permission grant.",
+    "savings_guaranteed": false,
+    "spend_approved": false,
+    "verdict": "Do not approve production tool access yet."
+  },
+  "decision_lock_before": {
+    "approval_granted": false,
+    "can_sponsor_change_decision": false,
+    "external_writes": false,
+    "permission_grants": false,
+    "production_access": false,
+    "provider_winner_selected": false,
+    "review_posture": "Approve a scoped validation review before any production permission grant.",
+    "savings_guaranteed": false,
+    "spend_approved": false,
+    "verdict": "Do not approve production tool access yet."
+  },
+  "fallback_used": {
+    "composio": true,
+    "nebius": true,
+    "openclaw": true,
+    "tavily": true
+  },
+  "generated_at": "2026-06-05T00:00:00Z",
+  "lane": "both",
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "revision_id": "rev_965302783cee8688",
+  "safety_boundary": {
+    "approves_access": false,
+    "approves_spend": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "guarantees_savings": false,
+    "mutates_production": false,
+    "requires_human_review": true,
+    "selects_provider": false
+  },
+  "scenario_name": "support_triage_agent",
+  "schema_version": "sponsor_proof_trace.v0",
+  "source_artifacts": {
+    "packet": "examples/generated/support_triage_trial.packet.json",
+    "request": "examples/requests/support_triage_trial.yml",
+    "spend_packet": "examples/generated/ai_spend_budget_overrun.spend_packet.json",
+    "sponsor_evidence_replay": "examples/generated/support_triage_trial.evidence_replay.json",
+    "sponsor_readiness": "examples/generated/sponsor_live_readiness.json"
+  },
+  "spend_review_evidence": {
+    "approves_spend": false,
+    "blocked_dollar_claims": [
+      "AI spend changes are approved.",
+      "Provider-switch savings are already proven.",
+      "A provider decision is already selected.",
+      "The team can expand live model or tool spend."
+    ],
+    "finance_owner": "budget baseline, invoice evidence, owner approval",
+    "guarantees_savings": false,
+    "invoice_evidence_refs": [
+      "vendor invoices for the budget period",
+      "budget owner approval for any cap, shift, or expansion"
+    ],
+    "packet_id": "ia-spend-review-ai_spend_budget_overrun-v0",
+    "procurement_owner": "contract terms, vendor risk, renegotiation path",
+    "requested_budget": "2026_Q1",
+    "selects_provider": false
+  },
+  "sponsor_steps": [
+    {
+      "accepted_fields": [
+        "missing_proof",
+        "blocked_claims"
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "duration_ms": 0,
+      "fallback_used": true,
+      "human_review_required": true,
+      "input_hash": "sha256:bf1541d00a7549dbe0898009c57e1617f2546fe9a29fc2ae0e212c258ac08e0c",
+      "output_hash": "sha256:97b4765dd27c4d147a944ef6e7f3e76b14195648121bbbd4cb5c73d018cd95df",
+      "output_summary": "5 evidence candidate slots planned; no proof debt reduced.",
+      "redacted_fields": [
+        "api_key",
+        "authorization",
+        "secret",
+        "token"
+      ],
+      "rejected_fields": [
+        "approval_posture",
+        "safety_state",
+        "proof_debt_reduction"
+      ],
+      "sponsor": "tavily",
+      "step_verb": "searched",
+      "succeeded": true,
+      "used_live_key": false,
+      "would_execute": false
+    },
+    {
+      "accepted_fields": [
+        "tool_access_plan",
+        "tool_scope"
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "duration_ms": 0,
+      "fallback_used": true,
+      "human_review_required": true,
+      "input_hash": "sha256:fb75f7a0f3c399e3e289b2953b42a7b91ec623488811f94f23139fff50b9d5db",
+      "output_hash": "sha256:fda0791e0b8c1a282bfa3c9c437cdef417d7fcee7899d4b40c78ca4f380771ee",
+      "output_summary": "3 dry-run permission plans built; no tool write executed.",
+      "redacted_fields": [
+        "api_key",
+        "authorization",
+        "secret",
+        "token"
+      ],
+      "rejected_fields": [
+        "approval_granted",
+        "permission_grants",
+        "external_writes"
+      ],
+      "sponsor": "composio",
+      "step_verb": "planned",
+      "succeeded": true,
+      "used_live_key": false,
+      "would_execute": false
+    },
+    {
+      "accepted_fields": [
+        "packet_id",
+        "safety_state",
+        "sponsor_step_outcomes"
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "duration_ms": 0,
+      "fallback_used": true,
+      "human_review_required": true,
+      "input_hash": "sha256:1d194d41a9e507b2543f99d2a4f3d940e1b5802430fd294563d313142ed3a2ef",
+      "output_hash": "sha256:9e323d6e9c19bf6d9918f55284bf64cb31db40bf7459d677d0aaa235b289707b",
+      "output_summary": "3 runtime checkpoints traced; blocked/dry-run state preserved.",
+      "redacted_fields": [
+        "api_key",
+        "authorization",
+        "secret",
+        "token"
+      ],
+      "rejected_fields": [
+        "approval_granted",
+        "permission_grants",
+        "production_mutation"
+      ],
+      "sponsor": "openclaw",
+      "step_verb": "traced",
+      "succeeded": true,
+      "used_live_key": false,
+      "would_execute": false
+    },
+    {
+      "accepted_fields": [
+        "decision.verdict",
+        "decision.review_posture",
+        "safety_state",
+        "blocked_claims"
+      ],
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "duration_ms": 0,
+      "fallback_used": true,
+      "human_review_required": true,
+      "input_hash": "sha256:40599e42a6720982a15a83c6fdd9acf9f54ba23b84d914da17691c31ca5a8413",
+      "output_hash": "sha256:9f50d036239dfc692acbf758bfa96f8a546ea57d00de0b6e0c406c36ca3a3d58",
+      "output_summary": "Reviewer narration prepared from locked packet fields; verdict and safety state unchanged.",
+      "redacted_fields": [
+        "api_key",
+        "authorization",
+        "secret",
+        "token"
+      ],
+      "rejected_fields": [
+        "verdict_change",
+        "safety_state_change",
+        "policy_gate_override"
+      ],
+      "sponsor": "nebius",
+      "step_verb": "narrated",
+      "succeeded": true,
+      "used_live_key": false,
+      "would_execute": false
+    }
+  ],
+  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-3563828a1fc4e481-public-v0"
+}

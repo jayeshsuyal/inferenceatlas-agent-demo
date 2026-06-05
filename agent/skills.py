@@ -44,6 +44,7 @@ ALLOWED_SAFETY_BOUNDARIES = frozenset(
         "regeneration is deterministic; proof bytes locked",
         "receipts are context only; never weaken locks",
         "spend review packet only; never approves spend",
+        "trace is observational; never unlocks decisions",
     }
 )
 
@@ -343,6 +344,21 @@ SKILLS: tuple[SkillSpec, ...] = (
         tier="stable",
         category="sponsor_readiness",
         depends_on=("policy_gate_evaluation",),
+    ),
+    SkillSpec(
+        id="sponsor_proof_trace",
+        name="Sponsor Proof Trace",
+        what_it_proves="Sponsor proof collection is recorded in locked order across access and spend evidence without changing the decision lock.",
+        command="python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
+        artifacts=(
+            "agent/sponsor_proof_trace.py",
+            "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+            "examples/generated/support_triage_trial.sponsor_proof_trace.json",
+        ),
+        safety_boundary="trace is observational; never unlocks decisions",
+        tier="stable",
+        category="sponsor_readiness",
+        depends_on=("sponsor_proof_readiness", "design_partner_evidence_replay", "ai_spend_review_packet"),
     ),
 )
 

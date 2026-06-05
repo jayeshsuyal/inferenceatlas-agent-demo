@@ -47,6 +47,7 @@ These pieces are safe to build on:
 | Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
 | Design Partner Outcome Memo projection | `agent/trial_outcome_memo.py` | Trial-request meeting decision derived from the public trial bundle. Keep it no-key, non-approving, and tied to the same packet/brief spine. |
 | Sponsor Evidence Replay projection | `agent/trial_evidence_replay.py` | Dry-run sponsor proof replay derived from the public trial bundle and outcome memo. It can ingest sanitized evidence from `examples/evidence/support_triage_trial` while keeping sponsors as proof contributors, not decision owners. |
+| Sponsor Proof Trace | `agent/sponsor_proof_trace.py` | Canonical locked-order trace for Tavily, Composio, OpenClaw, and Nebius proof collection. This is the safe runtime object for live sponsor wiring. |
 | Sanitized evidence fixtures | `examples/evidence/support_triage_trial/` | Redacted provider-output shape for CTO-held Tavily, Composio, Nebius, and OpenClaw results. Replace with redacted local files only; never commit secrets. |
 | Decision brief projection | `agent/decision_brief.py` | Skim-ready access decision derived from the packet. Do not make this an independent truth source. |
 | Proof Health projection | `agent/proof_health.py` | Lifecycle report for Packet Drift, stale assumptions, expired reviewer gates, and next human health check. Keep it non-approving. |
@@ -141,6 +142,7 @@ python3 -m json.tool schemas/agent_access_decision_brief.schema.json >/tmp/decis
 python3 -m py_compile agent/*.py
 env NEBIUS_API_KEY= TAVILY_API_KEY= COMPOSIO_API_KEY= IA_LIVE_MODE= python3 -m agent.demo >/tmp/inferenceatlas_demo.txt
 python3 -m agent.sponsor_readiness --no-write
+python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_trace_check.json
 python3 -m agent.evidence_receipts --no-write --json >/tmp/evidence_receipts_check.json
 python3 -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/packet_check.json
 python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/trace_check.json

@@ -2,7 +2,7 @@
   "schema_version": "inferenceatlas_ui_skills.v0",
   "source": "docs/AGENT_SKILLS.md",
   "registry_command": "python3 -m agent.skills",
-  "count": 17,
+  "count": 18,
   "skills": [
     {
       "id": "policy_gate_evaluation",
@@ -335,6 +335,27 @@
         "examples/generated/ai_spend_budget_overrun.spend_packet.json",
         "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
         "examples/generated/ai_spend_budget_overrun.procurement_memo.json"
+      ]
+    },
+    {
+      "id": "sponsor_proof_trace",
+      "slash": "proof-trace",
+      "slash_trigger": "/proof-trace",
+      "name": "Sponsor Proof Trace",
+      "what_it_proves": "Sponsor proof collection is recorded in locked order across access and spend evidence without changing the decision lock.",
+      "command": "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
+      "category": "sponsor_readiness",
+      "category_label": "Sponsor Readiness",
+      "safety_boundary": "trace is observational; never unlocks decisions",
+      "tier": "stable",
+      "mode": "assist",
+      "layman_summary": "Shows the locked order in which sponsor proof is collected without changing the decision.",
+      "example_question": "How did Tavily, Composio, OpenClaw, and Nebius contribute proof without approving anything?",
+      "prompt": "Explain Sponsor Proof Trace: the locked Tavily -> Composio -> OpenClaw -> Nebius order, which access and spend evidence blocks are present, and why the decision lock is unchanged.",
+      "artifacts": [
+        "agent/sponsor_proof_trace.py",
+        "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+        "examples/generated/support_triage_trial.sponsor_proof_trace.json"
       ]
     },
     {
@@ -711,6 +732,27 @@
       "id": "sponsor_readiness",
       "label": "Sponsor Readiness",
       "skills": [
+        {
+          "id": "sponsor_proof_trace",
+          "slash": "proof-trace",
+          "slash_trigger": "/proof-trace",
+          "name": "Sponsor Proof Trace",
+          "what_it_proves": "Sponsor proof collection is recorded in locked order across access and spend evidence without changing the decision lock.",
+          "command": "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
+          "category": "sponsor_readiness",
+          "category_label": "Sponsor Readiness",
+          "safety_boundary": "trace is observational; never unlocks decisions",
+          "tier": "stable",
+          "mode": "assist",
+          "layman_summary": "Shows the locked order in which sponsor proof is collected without changing the decision.",
+          "example_question": "How did Tavily, Composio, OpenClaw, and Nebius contribute proof without approving anything?",
+          "prompt": "Explain Sponsor Proof Trace: the locked Tavily -> Composio -> OpenClaw -> Nebius order, which access and spend evidence blocks are present, and why the decision lock is unchanged.",
+          "artifacts": [
+            "agent/sponsor_proof_trace.py",
+            "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+            "examples/generated/support_triage_trial.sponsor_proof_trace.json"
+          ]
+        },
         {
           "id": "sponsor_proof_readiness",
           "slash": "sponsor",

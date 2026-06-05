@@ -21,6 +21,7 @@ from .proof_health import build_proof_health_report, write_proof_health_artifact
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet, write_scenario_artifacts
+from .sponsor_proof_trace import SPONSOR_ORDER, build_sponsor_proof_trace, write_sponsor_proof_trace_artifacts
 from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
 from .spend import SPEND_SCENARIO_ID, build_spend_review_bundle, write_spend_review_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
@@ -46,6 +47,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.gate --all",
     "python3 -m agent.adapters --all",
     "python3 -m agent.sponsor_readiness",
+    "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
     "python3 -m agent.proof_health",
@@ -74,6 +76,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/support_triage_agent.outcome_memo.json",
     "examples/generated/sponsor_live_readiness.md",
     "examples/generated/sponsor_live_readiness.json",
+    "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+    "examples/generated/support_triage_trial.sponsor_proof_trace.json",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",
     "examples/generated/support_triage_agent.proof_health.md",
@@ -133,6 +137,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(write_scenario_artifacts(output_dir))
     written.extend(_write_support_trace(output_dir))
     written.extend(write_sponsor_live_readiness_artifacts(output_dir=output_dir))
+    written.extend(write_sponsor_proof_trace_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trust_artifacts(output_dir))
     written.extend(write_packet_diff_artifacts(output_dir))
     written.extend(write_packet_outcome_memo_artifacts(output_dir=output_dir))
@@ -194,6 +199,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
     trial_outcome_memo = build_trial_outcome_memo(DEFAULT_TRIAL_REQUEST)
     trial_evidence_replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST)
+    sponsor_proof_trace = build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST)
     pilot_memo = build_pilot_memo(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
     spend_review = build_spend_review_bundle()
@@ -332,6 +338,31 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "approves_access": trial_evidence_replay["safety_boundary"]["approves_access"],
             "grants_permissions": trial_evidence_replay["safety_boundary"]["grants_permissions"],
             "executes_external_writes": trial_evidence_replay["safety_boundary"]["executes_external_writes"],
+        },
+        "sponsor_proof_trace": {
+            "trace_id": sponsor_proof_trace["trace_id"],
+            "packet_id": sponsor_proof_trace["packet_id"],
+            "revision_id": sponsor_proof_trace["revision_id"],
+            "lane": sponsor_proof_trace["lane"],
+            "step_count": len(sponsor_proof_trace["sponsor_steps"]),
+            "sponsor_order": [step["sponsor"] for step in sponsor_proof_trace["sponsor_steps"]],
+            "decision_lock_unchanged": (
+                sponsor_proof_trace["decision_lock_before"] == sponsor_proof_trace["decision_lock_after"]
+            ),
+            "access_evidence_present": sponsor_proof_trace["access_review_evidence"] is not None,
+            "spend_evidence_present": sponsor_proof_trace["spend_review_evidence"] is not None,
+            "all_fallback_used": all(step["fallback_used"] for step in sponsor_proof_trace["sponsor_steps"]),
+            "all_non_executing": all(not step["would_execute"] for step in sponsor_proof_trace["sponsor_steps"]),
+            "all_non_approving": all(not step["can_approve_access"] for step in sponsor_proof_trace["sponsor_steps"]),
+            "all_non_granting": all(not step["can_grant_permissions"] for step in sponsor_proof_trace["sponsor_steps"]),
+            "all_non_mutating": all(not step["can_mutate_external_state"] for step in sponsor_proof_trace["sponsor_steps"]),
+            "approves_access": sponsor_proof_trace["safety_boundary"]["approves_access"],
+            "approves_spend": sponsor_proof_trace["safety_boundary"]["approves_spend"],
+            "selects_provider": sponsor_proof_trace["safety_boundary"]["selects_provider"],
+            "guarantees_savings": sponsor_proof_trace["safety_boundary"]["guarantees_savings"],
+            "requires_human_review": sponsor_proof_trace["safety_boundary"]["requires_human_review"],
+            "artifact": "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+            "json_artifact": "examples/generated/support_triage_trial.sponsor_proof_trace.json",
         },
         "pilot_memo": {
             "memo_id": pilot_memo["memo_id"],
@@ -509,6 +540,18 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["design_partner_evidence_replay"]["approves_access"]
         or report["design_partner_evidence_replay"]["grants_permissions"]
         or report["design_partner_evidence_replay"]["executes_external_writes"]
+        or not report["sponsor_proof_trace"]["decision_lock_unchanged"]
+        or tuple(report["sponsor_proof_trace"]["sponsor_order"]) != SPONSOR_ORDER
+        or not report["sponsor_proof_trace"]["all_fallback_used"]
+        or not report["sponsor_proof_trace"]["all_non_executing"]
+        or not report["sponsor_proof_trace"]["all_non_approving"]
+        or not report["sponsor_proof_trace"]["all_non_granting"]
+        or not report["sponsor_proof_trace"]["all_non_mutating"]
+        or report["sponsor_proof_trace"]["approves_access"]
+        or report["sponsor_proof_trace"]["approves_spend"]
+        or report["sponsor_proof_trace"]["selects_provider"]
+        or report["sponsor_proof_trace"]["guarantees_savings"]
+        or not report["sponsor_proof_trace"]["requires_human_review"]
         or report["pilot_memo"]["sponsors_can_change_decision"]
         or not report["pilot_memo"]["all_sponsors_human_review_required"]
         or report["pilot_memo"]["safety_anchor"] != PILOT_MEMO_SAFETY_ANCHOR
@@ -755,6 +798,35 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             f"- all non-granting: {evidence_replay['all_non_granting']}",
             f"- all non-mutating: {evidence_replay['all_non_mutating']}",
             f"- artifact: `examples/generated/support_triage_trial.evidence_replay.md`",
+        ]
+    )
+
+    sponsor_trace = report["sponsor_proof_trace"]
+    lines.extend(
+        [
+            "",
+            "## Sponsor Proof Trace",
+            "",
+            "The trace records sponsor proof collection in locked order with deterministic fallback and no approval authority.",
+            "",
+            f"- trace_id: `{sponsor_trace['trace_id']}`",
+            f"- packet_id: `{sponsor_trace['packet_id']}`",
+            f"- revision_id: `{sponsor_trace['revision_id']}`",
+            f"- lane: {sponsor_trace['lane']}",
+            f"- steps: {sponsor_trace['step_count']} ({' -> '.join(sponsor_trace['sponsor_order'])})",
+            f"- decision lock unchanged: {sponsor_trace['decision_lock_unchanged']}",
+            f"- access evidence present: {sponsor_trace['access_evidence_present']}",
+            f"- spend evidence present: {sponsor_trace['spend_evidence_present']}",
+            f"- all fallback used: {sponsor_trace['all_fallback_used']}",
+            f"- all non-executing: {sponsor_trace['all_non_executing']}",
+            f"- all non-approving: {sponsor_trace['all_non_approving']}",
+            f"- all non-granting: {sponsor_trace['all_non_granting']}",
+            f"- all non-mutating: {sponsor_trace['all_non_mutating']}",
+            f"- approves access: {sponsor_trace['approves_access']}",
+            f"- approves spend: {sponsor_trace['approves_spend']}",
+            f"- selects provider: {sponsor_trace['selects_provider']}",
+            f"- guarantees savings: {sponsor_trace['guarantees_savings']}",
+            f"- artifact: `{sponsor_trace['artifact']}`",
         ]
     )
 

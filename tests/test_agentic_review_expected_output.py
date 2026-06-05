@@ -29,13 +29,18 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
             "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial",
+            "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
             "python3 -m agent.verify_artifacts",
             "python3 -m unittest discover -s tests",
             "admin_code_fix_bot",
             "Artifact Integrity Gate",
             "Agent Skills",
-            "`summary.available_stable_skills` is `15`",
-            "`summary.generated_artifacts_verified` is `49`",
+            "`17 / 17 stable skills available`",
+            "`60 generated artifacts verified`",
+            "`summary.registered_skills` is `17`",
+            "`summary.stable_skills` is `17`",
+            "`summary.available_stable_skills` is `17`",
+            "`summary.generated_artifacts_verified` is `60`",
             "`summary.stale_artifacts` is `0`",
             "`summary.unexpected_checked_in_artifacts` is `0`",
             "`0 unexpected checked-in`",
@@ -54,6 +59,12 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`design_partner_evidence_replay.can_sponsor_change_decision` is `false`",
             "`design_partner_evidence_replay.all_non_executing` is `true`",
             "`design_partner_evidence_replay.all_non_granting` is `true`",
+            "`sponsor_proof_trace.decision_lock_unchanged` is `true`",
+            "`sponsor_proof_trace.all_non_executing` is `true`",
+            "`sponsor_proof_trace.approves_access` is `false`",
+            "`sponsor_proof_trace.approves_spend` is `false`",
+            "`sponsor_proof_trace.selects_provider` is `false`",
+            "`sponsor_proof_trace.guarantees_savings` is `false`",
             "`summary.sanitized_evidence_attached` is `true`",
             "`live_evidence_rehearsal.decision_locked` is `true`",
             "`private_boundary.private_source_exposed` is `false`",
@@ -62,6 +73,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "Private engine, public proof.",
         ]:
             self.assertIn(expected, doc)
+
+        for stale in ["16 / 16 stable skills available", "58 generated artifacts verified"]:
+            self.assertNotIn(stale, doc)
 
     def test_expected_output_doc_preserves_private_boundary(self) -> None:
         doc = DOC.read_text(encoding="utf-8")

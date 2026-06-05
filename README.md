@@ -58,6 +58,7 @@ python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.sponsor_readiness
+python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
@@ -93,6 +94,7 @@ ia-contract --all
 ia-gate --all
 ia-adapters --all
 ia-sponsor-readiness
+ia-sponsor-proof-trace examples/requests/support_triage_trial.yml
 ia-trust
 ia-review-room
 ia-proof-health
@@ -132,6 +134,12 @@ The fastest sponsor-tool artifact is the Sponsor Live Readiness report:
 
 ```text
 examples/generated/sponsor_live_readiness.md
+```
+
+The fastest agentic proof artifact is the Sponsor Proof Trace:
+
+```text
+examples/generated/support_triage_trial.sponsor_proof_trace.md
 ```
 
 The fastest visual artifact to skim is the static Review Room:
@@ -287,9 +295,10 @@ The Sponsor Live Readiness report shows where live Nebius, Tavily, Composio, and
 
 ```bash
 python3 -m agent.sponsor_readiness
+python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml
 ```
 
-Every sponsor path remains dry-run, non-approving, non-mutating, and human-reviewed by default.
+Every sponsor path remains dry-run, non-approving, non-mutating, and human-reviewed by default. The Sponsor Proof Trace records Tavily -> Composio -> OpenClaw -> Nebius in locked order with deterministic fallback.
 
 ## Demo Flow
 
@@ -452,6 +461,7 @@ Set `INFERENCEATLAS_V1_URL=http://127.0.0.1:8000` in this demo’s `.env` and re
 ```text
 agent/chat_orchestrator.py   # unified context + tool vs engine routing
 agent/chat_answer.py         # structured packet-backed answer contract
+agent/sponsor_proof_trace.py # locked-order sponsor proof trace for access + spend review
 agent/cost_plan.py           # v1 gateway + ENGINE block formatting
 agent/v1_client.py           # HTTP client for /api/v1/plan/llm
 agent/workload_parse.py      # tokens/month + cost-question detection

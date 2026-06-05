@@ -135,6 +135,13 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Sponsor Proof Trace",
+        (
+            "support_triage_trial.sponsor_proof_trace.md",
+            "support_triage_trial.sponsor_proof_trace.json",
+        ),
+    ),
+    ArtifactFamily(
         "Design Partner Trial",
         (
             "support_triage_trial_report.md",

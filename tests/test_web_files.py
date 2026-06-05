@@ -174,6 +174,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("/api/walkthrough", js)
         self.assertIn("renderWalkthrough", js)
         self.assertIn("copyWalkthroughBrief", js)
+        self.assertIn("Clipboard unavailable. Use PilotMemo export.", js)
+        self.assertIn('copied = document.execCommand("copy")', js)
         self.assertIn('window.location.pathname === "/walkthrough"', js)
         self.assertIn(".walkthrough-workspace", css)
         self.assertIn(".walkthrough-strip", css)

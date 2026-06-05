@@ -1774,19 +1774,35 @@ async function copyWalkthroughBrief() {
     await loadWalkthrough({ silent: true });
   }
   const text = walkthroughPayload?.copy_review_brief || "";
-  if (!text) return;
+  if (!text) {
+    setWalkthroughToast("Review brief unavailable.", true);
+    return;
+  }
+  let copied = false;
   try {
-    await navigator.clipboard.writeText(text);
-    setWalkthroughToast("Review brief copied.");
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
   } catch (_) {
+    copied = false;
+  }
+  if (!copied) {
     const textarea = document.createElement("textarea");
     textarea.value = text;
     document.body.appendChild(textarea);
     textarea.select();
-    document.execCommand("copy");
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {
+      copied = false;
+    }
     textarea.remove();
-    setWalkthroughToast("Review brief copied.");
   }
+  setWalkthroughToast(
+    copied ? "Review brief copied." : "Clipboard unavailable. Use PilotMemo export.",
+    !copied
+  );
 }
 
 async function loadSessionMetrics() {

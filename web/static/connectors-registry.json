@@ -1,0 +1,129 @@
+{
+  "schema_version": "inferenceatlas_ui_connectors.v0",
+  "count": 6,
+  "connectors": [
+    {
+      "id": "github",
+      "name": "GitHub",
+      "icon": "github",
+      "layman_summary": "Pull repos, issues, and YAML access requests from your GitHub account.",
+      "helps_with": "Import real repo context and trial request files for access-review evidence.",
+      "how_to_connect": "Click Sign in \u2014 GitHub OAuth popup (your account, cached for this chat session only).",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": [
+        {
+          "id": "repos",
+          "label": "Repositories",
+          "layman": "Search and attach a repo — the chat reads README, tree, and key files."
+        },
+        {
+          "id": "issues",
+          "label": "Issues & PRs",
+          "layman": "Pull recent issues/PR metadata as evidence for triage bots."
+        }
+      ]
+    },
+    {
+      "id": "google_drive",
+      "name": "Google Drive",
+      "icon": "gdrive",
+      "layman_summary": "Pull spreadsheets, docs, and images from Drive as review evidence.",
+      "helps_with": "Attach policy PDFs, architecture diagrams, or trial notes without emailing files.",
+      "how_to_connect": "Click Sign in \u2014 Google OAuth popup for Drive (session-only; not stored in .env).",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": [
+        {
+          "id": "files",
+          "label": "Files & spreadsheets",
+          "layman": "Search Drive and attach docs, sheets, or PDFs — indexed for chat like GitHub repos."
+        },
+        {
+          "id": "photos",
+          "label": "Photos & images",
+          "layman": "Import screenshots, architecture diagrams, and redacted UI captures."
+        },
+        {
+          "id": "videos",
+          "label": "Videos",
+          "layman": "Reference screen recordings or walkthroughs (metadata + transcript if available)."
+        }
+      ]
+    },
+    {
+      "id": "nebius",
+      "name": "Nebius",
+      "icon": "nebius",
+      "layman_summary": "Powers the chat LLM (cost Q&A and access-review narration).",
+      "helps_with": "Runs Llama and other models on Nebius Studio for this demo agent.",
+      "how_to_connect": "Click Sign in \u2014 paste your Nebius API key in the popup (this session only).",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": []
+    },
+    {
+      "id": "tavily",
+      "name": "Tavily",
+      "icon": "tavily",
+      "layman_summary": "Live web search for AI provider pricing, benchmarks, and news.",
+      "helps_with": "Grounds cost comparisons in current public pricing instead of stale guesses.",
+      "how_to_connect": "Click Sign in \u2014 paste your Tavily API key in the popup (this session only).",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": []
+    },
+    {
+      "id": "composio",
+      "name": "Composio",
+      "icon": "composio",
+      "layman_summary": "Your Composio project for integrations (GitHub, Slack, Jira, Sheets).",
+      "helps_with": "Uses your Composio key in-session to plan tool actions.",
+      "how_to_connect": "Click Sign in \u2014 paste your Composio API key in the popup (session only).",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": []
+    },
+    {
+      "id": "openclaw",
+      "name": "OpenClaw",
+      "icon": "openclaw",
+      "layman_summary": "Optional agent runtime for multi-step tool loops (advanced).",
+      "helps_with": "When installed, runs the same tool-calling loop as the built-in agent runtime.",
+      "how_to_connect": "Click Sign in \u2014 confirm OpenClaw for this session in the popup.",
+      "env_vars": [],
+      "auth_type": "oauth_popup",
+      "status": "connect_via_composio",
+      "status_label": "Sign in",
+      "signed_in": false,
+      "session_status": "disconnected",
+      "actions": []
+    }
+  ],
+  "intro": {
+    "skills_title": "Skills",
+    "skills_blurb": "Skills are pre-built **access-review proof packs**. Attach one or more, ask a plain-English question, then Send \u2014 the AI answers from real DecisionPacket data (who is blocked, what proof is missing). They do not grant production access.",
+    "connectors_title": "Connectors",
+    "connectors_blurb": "Connectors sign in to GitHub, Google Drive, and API services. After sign-in, use Import to attach files to your message. Server keys (Nebius, Tavily) come from .env."
+  }
+}

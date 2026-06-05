@@ -359,15 +359,95 @@ python3 -m agent.mind project      # write examples/mind_runtime/
 
 State persists under `state/mind/` (gitignored). The cortex (LLM) may append `evidence_notes` only; verdict and `safety_state` stay locked. Run `python -m agent.mind run` in one terminal and `python -m web` in another to see live mind ticks in the UI.
 
+## Hackathon web harness (what this branch adds)
+
+The public repo remains an **agent-access review harness**; the web UI now also supports a **unified cost + evidence chat** for live demos. Summary of what landed vs `main`:
+
+| Area | What you get |
+| --- | --- |
+| **Unified chat** | One prompt merges Skills, GitHub repo digests, Google Drive files, and local uploads with labeled sections and an honest **Context used** manifest. |
+| **Thinking logs** | `POST /api/chat/stream` streams orchestration steps (SSE) before the final reply. |
+| **Skills** | `/` slash picker + skill chips; harness facts stay authoritative for access review. |
+| **GitHub** | OAuth popup, searchable repo picker, attach/index (README + tree + files), status badges on chips. |
+| **Google Drive** | OAuth popup, tabbed picker (docs / images / video), attach/index, token refresh on 401. |
+| **Connectors** | Registry UI (GitHub, Drive, Nebius/Tavily/Composio keys via session popup); demo sign-in when host OAuth apps are unset. |
+| **Cost engine (Option A)** | Cost questions call **InferenceAtlas-v1** over HTTP (`POST /api/v1/plan/llm`) when `INFERENCEATLAS_V1_URL` is set; otherwise deterministic **catalog fallback** from the static CSV. LLM is slot-filler only — no Tavily/`compare_providers` for prices when the ENGINE block is present. |
+| **v1 health** | Sidebar pill **v1 engine: connected / unreachable / not set** from `GET /api/health`. |
+
+See [V1 API Gateway](docs/V1_API_GATEWAY.md) for the thin-gateway contract. The v1 product API itself lives in [InferenceAtlas-v1](https://github.com/jayeshsuyal/InferenceAtlas-v1) (run locally; this repo does not vendor that engine).
+
+### Web UI quick start
+
+```bash
+cd inferenceatlas-agent-demo
+python3 -m venv .venv && source .venv/bin/activate
+pip install -e ".[live,web]"
+cp .env.example .env
+# LLM: NEBIUS_API_KEY or OPENAI_API_KEY
+# Optional connectors (host OAuth apps, not user secrets in .env):
+#   GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET
+#   GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET
+#   WEB_PUBLIC_URL=http://127.0.0.1:8080
+# Optional v1 cost engine:
+#   INFERENCEATLAS_V1_URL=http://127.0.0.1:8000
+python3 -m web
+```
+
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080). Use **+** for Skills & Connectors, attach GitHub repos and Drive files as chips, then ask cost or access questions.
+
+### Run InferenceAtlas-v1 for full `rank_configs`
+
+In a **second terminal** (sibling clone of InferenceAtlas-v1):
+
+```bash
+cd InferenceAtlas-v1
+python3 -m venv venv && source venv/bin/activate
+python3 -m pip install --upgrade pip setuptools wheel
+pip install -e ".[dev]"
+pip install "fastapi>=0.100" "uvicorn[standard]>=0.23"
+uvicorn inference_atlas.api_server:app --host 127.0.0.1 --port 8000
+```
+
+Set `INFERENCEATLAS_V1_URL=http://127.0.0.1:8000` in this demo’s `.env` and restart `python3 -m web`. Sidebar **v1 engine: connected** means `plan_llm` is live.
+
+### New / extended HTTP APIs
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/connectors` | Connector registry for UI |
+| `POST /api/connectors/connect` | Start OAuth popup flow |
+| `GET /api/connectors/github/repos` | List/search repos |
+| `POST /api/connectors/github/attach` | Index repo digest for chat |
+| `GET /api/connectors/drive/files` | List/search Drive files |
+| `POST /api/connectors/drive/attach` | Index Drive file for chat |
+| `POST /api/chat/stream` | SSE chat with thinking logs |
+| `GET /api/health` | LLM/Tavily/Composio + `inferenceatlas_v1` status |
+
+### New Python modules
+
+```text
+agent/chat_orchestrator.py   # unified context + tool vs engine routing
+agent/cost_plan.py           # v1 gateway + ENGINE block formatting
+agent/v1_client.py           # HTTP client for /api/v1/plan/llm
+agent/workload_parse.py      # tokens/month + cost-question detection
+agent/catalog_token_fallback.py
+agent/github_repo.py
+agent/google_drive_files.py
+agent/connector_oauth.py
+agent/connector_runtime.py
+agent/ui_connectors.py
+docs/V1_API_GATEWAY.md
+```
+
 ## Interactive Paths
 
 ### Web UI (custom questions)
 
 ```bash
-python -m web
+python3 -m web
 ```
 
-Open [http://127.0.0.1:8080](http://127.0.0.1:8080) to chat with the agent, use example prompts, or type your own requests. The sidebar shows **Mind state** (tick, tensions) and can advance ticks; chat also queues observations on `support_triage_agent`.
+Open [http://127.0.0.1:8080](http://127.0.0.1:8080) to chat with the agent, use example prompts, or type your own requests. The sidebar shows **Mind state** (tick, tensions), connector/v1 status pills, and can advance ticks; chat also queues observations on `support_triage_agent`.
 
 ### CLI
 

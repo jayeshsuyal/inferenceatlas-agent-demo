@@ -36,6 +36,62 @@ SLASH_BY_SKILL_ID = {
     "sponsor_proof_readiness": "sponsor",
 }
 
+# Plain-language copy for the web + menu (non-technical users).
+LAYMAN_BY_SKILL_ID: dict[str, dict[str, str]] = {
+    "access_request_normalization": {
+        "layman_summary": "Turns a messy access request into a clean checklist the system can review.",
+        "example_question": "What did the trial request ask for (GitHub, Slack, Jira)?",
+    },
+    "decision_packet_generation": {
+        "layman_summary": "Shows the official “should this agent get access?” packet — blocked vs allowed.",
+        "example_question": "What blocks production access for the support triage bot?",
+    },
+    "policy_gate_evaluation": {
+        "layman_summary": "Runs policy rules: which scenarios are blocked before any pilot.",
+        "example_question": "Which agent scenarios pass or fail the policy gate?",
+    },
+    "proof_debt_extraction": {
+        "layman_summary": "Lists missing proof (owners and what each item unblocks).",
+        "example_question": "What proof is still missing and who owns it?",
+    },
+    "reviewer_routing": {
+        "layman_summary": "Who must sign off next (security, platform, etc.) and what they need to do.",
+        "example_question": "Which reviewers must act before validation can start?",
+    },
+    "risk_aware_scenario_differentiation": {
+        "layman_summary": "Compares low-, medium-, and high-risk agents side by side.",
+        "example_question": "How is the admin bot different from read-only analytics?",
+    },
+    "design_partner_trial_runner": {
+        "layman_summary": "Walks through a design-partner trial request end to end.",
+        "example_question": "Summarize the support triage trial outcome for a judge.",
+    },
+    "outcome_memo_generation": {
+        "layman_summary": "Executive memo after review — still says production is blocked if proof is missing.",
+        "example_question": "Write a short outcome memo for leadership.",
+    },
+    "packet_diff_generation": {
+        "layman_summary": "Diffs packets across scenarios so drift and risk spread are visible.",
+        "example_question": "Where do scenarios disagree on production access?",
+    },
+    "artifact_integrity_verification": {
+        "layman_summary": "Checks public demo artifacts match deterministic harness output.",
+        "example_question": "Are the generated proof files trustworthy for demo?",
+    },
+    "proof_health_drift_detection": {
+        "layman_summary": "Scores how stale or incomplete the proof bundle is over time.",
+        "example_question": "Is proof health drifting for support triage?",
+    },
+    "sponsor_proof_readiness": {
+        "layman_summary": "Shows whether Nebius/Tavily/Composio keys are ready for sponsor demos.",
+        "example_question": "What sponsor integrations are configured vs still needed?",
+    },
+    "full_judge_harness": {
+        "layman_summary": "Full proof run — all scenarios, gates, and trust receipt in one path.",
+        "example_question": "Give a one-minute judge tour of the full harness.",
+    },
+}
+
 # Optional harness shortcut (not a separate registry row).
 EXTRA_UI_SKILLS = (
     {
@@ -63,6 +119,8 @@ class UISkill:
     safety_boundary: str
     tier: str
     mode: UISkillMode
+    layman_summary: str = ""
+    example_question: str = ""
     prompt: Optional[str] = None
     artifacts: tuple[str, ...] = ()
 
@@ -83,6 +141,8 @@ class UISkill:
             "safety_boundary": self.safety_boundary,
             "tier": self.tier,
             "mode": self.mode,
+            "layman_summary": self.layman_summary,
+            "example_question": self.example_question,
             "prompt": self.prompt,
             "artifacts": list(self.artifacts),
         }
@@ -117,8 +177,16 @@ def _prompt_for_chat(skill: SkillSpec) -> str:
     )
 
 
+def _layman_for(skill_id: str, *, name: str, what_it_proves: str) -> tuple[str, str]:
+    entry = LAYMAN_BY_SKILL_ID.get(skill_id, {})
+    summary = entry.get("layman_summary") or what_it_proves
+    example = entry.get("example_question") or f"What does {name} show for a hackathon judge?"
+    return summary, example
+
+
 def _ui_skill_from_spec(skill: SkillSpec) -> UISkill:
     slash = SLASH_BY_SKILL_ID[skill.id]
+    layman, example = _layman_for(skill.id, name=skill.name, what_it_proves=skill.what_it_proves)
     return UISkill(
         id=skill.id,
         slash=slash,
@@ -130,6 +198,8 @@ def _ui_skill_from_spec(skill: SkillSpec) -> UISkill:
         safety_boundary=skill.safety_boundary,
         tier=skill.tier,
         mode="assist",
+        layman_summary=layman,
+        example_question=example,
         prompt=_prompt_for_chat(skill),
         artifacts=skill.artifacts,
     )
@@ -138,6 +208,9 @@ def _ui_skill_from_spec(skill: SkillSpec) -> UISkill:
 def build_ui_skills() -> List[UISkill]:
     skills = [_ui_skill_from_spec(s) for s in SKILLS]
     for extra in EXTRA_UI_SKILLS:
+        layman, example = _layman_for(
+            extra["id"], name=extra["name"], what_it_proves=extra["what_it_proves"]
+        )
         skills.append(
             UISkill(
                 id=extra["id"],
@@ -150,6 +223,8 @@ def build_ui_skills() -> List[UISkill]:
                 safety_boundary=extra["safety_boundary"],
                 tier=extra["tier"],
                 mode="assist",
+                layman_summary=layman,
+                example_question=example,
                 prompt=_prompt_for_chat(
                     SkillSpec(
                         id=extra["id"],
@@ -474,4 +549,18 @@ def build_ui_skills_payload() -> dict[str, Any]:
             for cat_id, label, items in skills_by_category()
         ],
         "help": "Type / or + to attach skills as chips, then ask your question — the LLM answers using skill context.",
+        "intro": {
+            "title": "What are skills?",
+            "blurb": (
+                "Skills are **ready-made access-review briefs** (not magic buttons). "
+                "Attach one or more chips, ask a normal question, then **Send**. "
+                "The AI reads real harness output — who is blocked, what proof is missing — "
+                "and does **not** grant production access."
+            ),
+            "steps": [
+                "Click **+** → **Skills** → pick e.g. /packet",
+                "Type your question (or use the suggested line under the chips)",
+                "Press **Send** — look for “Harness review” in the reply",
+            ],
+        },
     }

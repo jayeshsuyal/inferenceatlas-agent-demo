@@ -2,12 +2,13 @@
 
 import json
 import threading
+import time
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -26,6 +27,31 @@ from agent.mind.store import load_all_minds
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS
 from agent.tools import get_catalog_summary
+from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
+from agent.cost_plan import v1_status_summary
+from agent.github_repo import attach_repository, get_repo_index_status, list_repositories
+from agent.google_drive_files import (
+    attach_drive_file,
+    get_drive_index_status,
+    list_drive_files,
+)
+from agent.connector_oauth import (
+    demo_sign_in,
+    disconnect,
+    finish_github_callback,
+    finish_google_callback,
+    google_access_denied_html,
+    oauth_close_html,
+    render_popup_html,
+    save_user_api_key,
+)
+from agent.connector_runtime import (
+    export_to_connector,
+    import_connector_content,
+    session_statuses,
+    start_connect,
+)
+from agent.ui_connectors import build_connectors_payload
 from agent.trial import DEFAULT_TRIAL_REQUEST
 from agent.trial_evidence_replay import (
     ADAPTER_PROVIDERS,
@@ -35,7 +61,6 @@ from agent.trial_evidence_replay import (
 )
 from agent.ui_skills import (
     build_ui_skills_payload,
-    compose_message_with_skills,
     find_ui_skill,
     run_ui_skill,
     skill_suggested_questions,
@@ -100,6 +125,18 @@ class ChatRequest(BaseModel):
     attachment_ids: List[str] = Field(default_factory=list)
     skill_ids: List[str] = Field(default_factory=list)
     skill_context_position: str = Field(default="prepend")
+    github_repos: List[str] = Field(default_factory=list)
+    drive_file_ids: List[str] = Field(default_factory=list)
+
+
+class GithubAttachRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=120)
+    full_name: str = Field(..., min_length=3, max_length=200)
+
+
+class DriveAttachRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=120)
+    file_id: str = Field(..., min_length=2, max_length=120)
 
 
 class ChatResponse(BaseModel):
@@ -107,6 +144,14 @@ class ChatResponse(BaseModel):
     session_id: str
     output_files: List[dict] = Field(default_factory=list)
     skills_used: List[dict] = Field(default_factory=list)
+    github_repos_used: List[str] = Field(default_factory=list)
+    drive_files_used: List[str] = Field(default_factory=list)
+    thinking_logs: List[str] = Field(default_factory=list)
+    context_manifest: List[str] = Field(default_factory=list)
+    github_index: List[dict] = Field(default_factory=list)
+    use_tools: bool = False
+    engine_source: str = ""
+    cost_plan_ok: bool = False
 
 
 def _file_ref(file_id: str, label: str) -> dict:
@@ -129,6 +174,25 @@ class MindStepRequest(BaseModel):
 
 class SkillRunRequest(BaseModel):
     skill_id: str = Field(..., min_length=1, max_length=80)
+
+
+class ConnectorConnectRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=120)
+    connector_id: str = Field(..., min_length=1, max_length=40)
+
+
+class ConnectorImportRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=120)
+    connector_id: str = Field(..., min_length=1, max_length=40)
+    action: str = Field(default="files", max_length=40)
+    query: str = Field(default="", max_length=500)
+
+
+class ConnectorExportRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=120)
+    connector_id: str = Field(..., min_length=1, max_length=40)
+    content: str = Field(..., min_length=1, max_length=50000)
+    destination: str = Field(default="file", max_length=40)
 
 
 class CustomEvidenceRehearsalRequest(BaseModel):
@@ -254,7 +318,9 @@ def health() -> dict:
     return {
         "ok": bool(LLM_API_KEY) and deps_ok,
         "skills_api": True,
+        "connectors_api": True,
         "skills_count": len(build_ui_skills_payload().get("skills", [])),
+        "connectors_count": len(build_connectors_payload().get("connectors", [])),
         "deps_ok": deps_ok,
         "deps_hint": (
             None
@@ -267,6 +333,7 @@ def health() -> dict:
         "composio": bool(COMPOSIO_API_KEY),
         "composio_dry_run": COMPOSIO_DRY_RUN,
         "catalog": catalog,
+        "inferenceatlas_v1": v1_status_summary(),
     }
 
 
@@ -274,6 +341,248 @@ def health() -> dict:
 def list_ui_skills() -> dict:
     """InferenceAtlas harness skills for the web UI (+ menu and / slash picker)."""
     return build_ui_skills_payload()
+
+
+@app.get("/api/connectors")
+def list_ui_connectors(session_id: Optional[str] = Query(None)) -> dict:
+    """External integrations for the web UI + menu (Drive, GitHub, Nebius, …)."""
+    return build_connectors_payload(session_id)
+
+
+@app.post("/api/connectors/connect")
+def connector_connect(body: ConnectorConnectRequest) -> dict:
+    try:
+        return start_connect(body.session_id, body.connector_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/api/connectors/status")
+def connector_status(
+    session_id: str = Query(...),
+    connector_id: Optional[str] = Query(None),
+) -> dict:
+    if connector_id:
+        from agent.connector_runtime import get_connection_status
+
+        return {"session_id": session_id, "connection": get_connection_status(session_id, connector_id)}
+    return {"session_id": session_id, "connections": session_statuses(session_id)}
+
+
+@app.get("/api/connectors/oauth/callback/github", response_class=HTMLResponse)
+def connector_oauth_callback_github(
+    code: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    error: Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
+) -> HTMLResponse:
+    if error or not code or not state:
+        msg = error_description or error or "Authorization was denied or cancelled."
+        return HTMLResponse(oauth_close_html("github", False, msg))
+    result = finish_github_callback(code, state)
+    return HTMLResponse(
+        oauth_close_html("github", bool(result.get("ok")), result.get("message", ""))
+    )
+
+
+@app.get("/api/connectors/oauth/callback/google_drive", response_class=HTMLResponse)
+def connector_oauth_callback_google(
+    code: Optional[str] = Query(None),
+    state: Optional[str] = Query(None),
+    error: Optional[str] = Query(None),
+    error_description: Optional[str] = Query(None),
+) -> HTMLResponse:
+    if error == "access_denied":
+        return HTMLResponse(google_access_denied_html())
+    if error or not code or not state:
+        msg = error_description or error or "Authorization was denied or cancelled."
+        return HTMLResponse(oauth_close_html("google_drive", False, msg))
+    result = finish_google_callback(code, state)
+    return HTMLResponse(
+        oauth_close_html("google_drive", bool(result.get("ok")), result.get("message", ""))
+    )
+
+
+@app.get("/api/connectors/oauth/popup/{connector_id}", response_class=HTMLResponse)
+def connector_oauth_popup_get(
+    connector_id: str,
+    session_id: str = Query(...),
+) -> HTMLResponse:
+    return HTMLResponse(render_popup_html(connector_id, session_id))
+
+
+@app.post("/api/connectors/oauth/popup/{connector_id}", response_class=HTMLResponse)
+async def connector_oauth_popup_post(
+    connector_id: str,
+    session_id: str = Query(...),
+    api_key: Optional[str] = Form(None),
+    demo: Optional[str] = Form(None),
+    confirm: Optional[str] = Form(None),
+) -> HTMLResponse:
+    if demo:
+        result = demo_sign_in(session_id, connector_id)
+        return HTMLResponse(oauth_close_html(connector_id, result.get("ok", False)))
+    if connector_id == "openclaw" and confirm:
+        result = demo_sign_in(session_id, "openclaw")
+        return HTMLResponse(oauth_close_html("openclaw", result.get("ok", False)))
+    if api_key:
+        result = save_user_api_key(session_id, connector_id, api_key)
+        return HTMLResponse(
+            oauth_close_html(connector_id, result.get("ok", False))
+            if result.get("ok")
+            else render_popup_html(connector_id, session_id, error=result.get("message", "Failed"))
+        )
+    return HTMLResponse(render_popup_html(connector_id, session_id, error="Missing credentials"))
+
+
+@app.post("/api/connectors/disconnect")
+def connector_disconnect(body: ConnectorConnectRequest) -> dict:
+    return disconnect(body.session_id, body.connector_id)
+
+
+@app.get("/api/connectors/github/repos")
+def github_list_repos(
+    session_id: str = Query(...),
+    q: str = Query(""),
+) -> dict:
+    try:
+        return list_repositories(session_id, query=q)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/connectors/github/attach")
+def github_attach_repo(body: GithubAttachRequest) -> dict:
+    scope = f"chat_{body.session_id}"
+    try:
+        result = attach_repository(body.session_id, body.full_name.strip())
+        if result.get("ok"):
+            from agent.github_repo import _attached_repos
+
+            entry = _attached_repos(body.session_id).get(body.full_name.strip(), {})
+            digest = entry.get("digest", "")
+            if digest:
+                safe = body.full_name.strip().replace("/", "_") + ".md"
+                fid, name, preview = save_upload(
+                    scope=scope,
+                    filename=safe,
+                    data=digest.encode("utf-8"),
+                )
+                result["file_id"] = fid
+                result["file_name"] = name
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/api/connectors/github/status")
+def github_repo_status(
+    session_id: str = Query(...),
+    full_name: str = Query(...),
+) -> dict:
+    return get_repo_index_status(session_id, full_name.strip())
+
+
+@app.get("/api/connectors/drive/files")
+def drive_list_files(
+    session_id: str = Query(...),
+    q: str = Query(""),
+    kind: str = Query("all"),
+) -> dict:
+    try:
+        return list_drive_files(session_id, query=q, kind=kind)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/connectors/drive/attach")
+def drive_attach_file(body: DriveAttachRequest) -> dict:
+    scope = f"chat_{body.session_id}"
+    try:
+        result = attach_drive_file(body.session_id, body.file_id.strip())
+        if result.get("ok"):
+            from agent.google_drive_files import _attached_files
+
+            entry = _attached_files(body.session_id).get(body.file_id.strip(), {})
+            digest = entry.get("digest", "")
+            if digest:
+                safe = (result.get("name") or "drive_file").replace("/", "_")[:80]
+                if not safe.endswith((".md", ".txt", ".csv")):
+                    safe += ".md"
+                fid, name, _preview = save_upload(
+                    scope=scope,
+                    filename=safe,
+                    data=digest.encode("utf-8"),
+                )
+                result["upload_file_id"] = fid
+                result["upload_name"] = name
+        return result
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.get("/api/connectors/drive/status")
+def drive_file_status(
+    session_id: str = Query(...),
+    file_id: str = Query(...),
+) -> dict:
+    return get_drive_index_status(session_id, file_id.strip())
+
+
+@app.post("/api/connectors/import")
+def connector_import(body: ConnectorImportRequest) -> dict:
+    scope = f"chat_{body.session_id}"
+    try:
+        result = import_connector_content(
+            body.session_id,
+            body.connector_id,
+            body.action,
+            query=body.query,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if not result.get("ok"):
+        return result
+    attachments: List[dict] = []
+    for item in result.get("files", []):
+        try:
+            file_id, safe_name, preview = save_upload(
+                scope=scope,
+                filename=item.get("name", "import.txt"),
+                data=item.get("content", "").encode("utf-8"),
+            )
+            attachments.append(
+                {
+                    "file_id": file_id,
+                    "name": safe_name,
+                    "preview": preview,
+                    "source": body.connector_id,
+                    "action": body.action,
+                }
+            )
+        except ValueError as exc:
+            attachments.append({"error": str(exc), "name": item.get("name")})
+    result["attachments"] = attachments
+    return result
+
+
+@app.post("/api/connectors/export")
+def connector_export(body: ConnectorExportRequest) -> dict:
+    try:
+        return export_to_connector(
+            body.session_id,
+            body.connector_id,
+            body.content,
+            destination=body.destination,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.post("/api/skills/run")
@@ -440,6 +749,151 @@ def _build_user_message(
     return "\n".join(parts).strip(), warnings
 
 
+def _collect_file_blocks(
+    scope: str,
+    attachment_ids: List[str],
+) -> Tuple[List[Tuple[str, str]], List[str]]:
+    blocks: List[Tuple[str, str]] = []
+    warnings: List[str] = []
+    for file_id in attachment_ids[:5]:
+        loaded = load_upload(scope, file_id)
+        if loaded:
+            blocks.append(loaded)
+        else:
+            warnings.append(f"Attachment {file_id[:8]}… was not found (re-upload).")
+    return blocks, warnings
+
+
+def _chat_validate() -> None:
+    if not _live_deps_available():
+        raise HTTPException(
+            status_code=503,
+            detail="Missing Python deps. Run: pip install -r agent/requirements.txt",
+        )
+    if not LLM_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env",
+        )
+
+
+def _execute_chat(body: ChatRequest) -> ChatResponse:
+    _chat_validate()
+    message = body.message.strip()
+    skill_ids = [s for s in body.skill_ids if s]
+    github_repos = [r.strip() for r in body.github_repos if r.strip()]
+    drive_file_ids = [f.strip() for f in body.drive_file_ids if f.strip()]
+    if (
+        not message
+        and not skill_ids
+        and not github_repos
+        and not drive_file_ids
+        and not body.attachment_ids
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Add a question, skill, GitHub repo, Drive file, or upload",
+        )
+
+    session_id, agent = _get_or_create_session(body.session_id)
+    scope = f"chat_{session_id}"
+    file_blocks, file_warnings = _collect_file_blocks(scope, body.attachment_ids)
+
+    position = (
+        body.skill_context_position
+        if body.skill_context_position in ("prepend", "append")
+        else "prepend"
+    )
+    orch = orchestrate_chat(
+        message=message,
+        skill_ids=skill_ids,
+        skill_position=position,
+        session_id=session_id,
+        github_repos=github_repos,
+        drive_file_ids=drive_file_ids,
+        file_blocks=file_blocks,
+        attach_warnings=file_warnings,
+    )
+
+    plain = (
+        not orch.skills_used
+        and not orch.github_used
+        and not orch.drive_used
+        and not orch.file_names
+        and not orch.engine_source
+    )
+    try:
+        if plain:
+            reply = agent.chat(orch.user_message or message)
+        else:
+            reply = agent.chat_orchestrated(
+                orch.user_display,
+                orch.llm_message,
+                system_prompt=orch.system_prompt,
+                use_tools=orch.use_tools,
+            )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    reply = format_reply_with_manifest(reply, orch.context_manifest)
+    if orch.attach_warnings:
+        reply = reply + "\n\n" + "\n".join(orch.attach_warnings)
+
+    output_files: List[dict] = []
+    try:
+        md = save_output_registered(
+            scope=scope,
+            filename="assistant_reply.md",
+            content=f"# Assistant reply\n\n{reply}\n",
+            label="Reply (Markdown)",
+        )
+        js = save_output_registered(
+            scope=scope,
+            filename="assistant_reply.json",
+            content=json.dumps(
+                {
+                    "message": message,
+                    "reply": reply,
+                    "manifest": orch.context_manifest,
+                    "thinking": orch.thinking_steps,
+                    "attachments": body.attachment_ids,
+                },
+                indent=2,
+            ),
+            label="Reply (JSON)",
+        )
+        output_files = [
+            _file_ref(md["file_id"], md["label"]),
+            _file_ref(js["file_id"], js["label"]),
+        ]
+    except Exception as exc:
+        output_files = [
+            {"file_id": "", "label": f"Could not save output: {exc}", "url": ""}
+        ]
+
+    try:
+        mind_observe(
+            MindObserveRequest(scenario="support_triage_agent", text=message),
+        )
+    except Exception:
+        pass
+
+    return ChatResponse(
+        reply=reply,
+        session_id=session_id,
+        output_files=output_files,
+        skills_used=orch.skills_used,
+        github_repos_used=orch.github_used,
+        drive_files_used=orch.drive_used,
+        thinking_logs=orch.thinking_steps,
+        context_manifest=orch.context_manifest,
+        github_index=orch.github_index,
+        use_tools=orch.use_tools,
+        engine_source=orch.engine_source,
+        cost_plan_ok=orch.cost_plan_ok,
+    )
+
+
 @app.post("/api/upload")
 async def upload_file(
     channel: str = Form(...),
@@ -478,106 +932,137 @@ def download_registered_file(file_id: str) -> FileResponse:
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(body: ChatRequest) -> ChatResponse:
-    if not _live_deps_available():
-        raise HTTPException(
-            status_code=503,
-            detail="Missing Python deps. Run: pip install -r agent/requirements.txt",
-        )
-    if not LLM_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env",
-        )
+    return _execute_chat(body)
 
-    message = body.message.strip()
-    skill_ids = [s for s in body.skill_ids if s]
-    if not message and not skill_ids:
-        raise HTTPException(
-            status_code=400,
-            detail="Add a question or attach at least one skill",
-        )
 
-    session_id, agent = _get_or_create_session(body.session_id)
-    scope = f"chat_{session_id}"
-    llm_message = message
-    skills_used: List[dict] = []
-    if skill_ids:
-        position = body.skill_context_position if body.skill_context_position in (
-            "prepend",
-            "append",
-        ) else "prepend"
-        llm_message, skills_used = compose_message_with_skills(
-            message, skill_ids, position=position
-        )
-    full_message, attach_warnings = _build_user_message(
-        llm_message, scope, body.attachment_ids
+@app.post("/api/chat/stream")
+def chat_stream(body: ChatRequest) -> StreamingResponse:
+    """SSE: thinking log lines, then final reply payload."""
+
+    def event_stream():
+        try:
+            _chat_validate()
+            message = body.message.strip()
+            skill_ids = [s for s in body.skill_ids if s]
+            github_repos = [r.strip() for r in body.github_repos if r.strip()]
+            drive_file_ids = [f.strip() for f in body.drive_file_ids if f.strip()]
+            if (
+                not message
+                and not skill_ids
+                and not github_repos
+                and not drive_file_ids
+                and not body.attachment_ids
+            ):
+                yield _sse({"type": "error", "detail": "Add a question, skill, repo, Drive file, or upload"})
+                return
+
+            session_id, agent = _get_or_create_session(body.session_id)
+            scope = f"chat_{session_id}"
+            file_blocks, file_warnings = _collect_file_blocks(scope, body.attachment_ids)
+            position = (
+                body.skill_context_position
+                if body.skill_context_position in ("prepend", "append")
+                else "prepend"
+            )
+            orch = orchestrate_chat(
+                message=message,
+                skill_ids=skill_ids,
+                skill_position=position,
+                session_id=session_id,
+                github_repos=github_repos,
+                drive_file_ids=drive_file_ids,
+                file_blocks=file_blocks,
+                attach_warnings=file_warnings,
+            )
+
+            for line in orch.thinking_steps:
+                yield _sse({"type": "thinking", "line": line})
+                time.sleep(0.35)
+
+            plain = (
+                not orch.skills_used
+                and not orch.github_used
+                and not orch.drive_used
+                and not orch.file_names
+                and not orch.engine_source
+            )
+            if plain:
+                reply = agent.chat(orch.user_message or message)
+            else:
+                reply = agent.chat_orchestrated(
+                    orch.user_display,
+                    orch.llm_message,
+                    system_prompt=orch.system_prompt,
+                    use_tools=orch.use_tools,
+                )
+            reply = format_reply_with_manifest(reply, orch.context_manifest)
+            if orch.attach_warnings:
+                reply = reply + "\n\n" + "\n".join(orch.attach_warnings)
+
+            output_files: List[dict] = []
+            try:
+                md = save_output_registered(
+                    scope=scope,
+                    filename="assistant_reply.md",
+                    content=f"# Assistant reply\n\n{reply}\n",
+                    label="Reply (Markdown)",
+                )
+                js = save_output_registered(
+                    scope=scope,
+                    filename="assistant_reply.json",
+                    content=json.dumps(
+                        {"message": message, "reply": reply, "manifest": orch.context_manifest},
+                        indent=2,
+                    ),
+                    label="Reply (JSON)",
+                )
+                output_files = [
+                    _file_ref(md["file_id"], md["label"]),
+                    _file_ref(js["file_id"], js["label"]),
+                ]
+            except Exception as exc:
+                output_files = [
+                    {"file_id": "", "label": f"Could not save output: {exc}", "url": ""}
+                ]
+
+            try:
+                mind_observe(
+                    MindObserveRequest(scenario="support_triage_agent", text=message),
+                )
+            except Exception:
+                pass
+
+            yield _sse(
+                {
+                    "type": "done",
+                    "reply": reply,
+                    "session_id": session_id,
+                    "output_files": output_files,
+                    "skills_used": orch.skills_used,
+                    "github_repos_used": orch.github_used,
+                    "drive_files_used": orch.drive_used,
+                    "thinking_logs": orch.thinking_steps,
+                    "context_manifest": orch.context_manifest,
+                    "github_index": orch.github_index,
+                    "use_tools": orch.use_tools,
+                    "engine_source": orch.engine_source,
+                    "cost_plan_ok": orch.cost_plan_ok,
+                }
+            )
+        except HTTPException as exc:
+            yield _sse({"type": "error", "detail": exc.detail})
+        except Exception as exc:
+            yield _sse({"type": "error", "detail": str(exc)})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
-    user_display = message
-    if not user_display and skills_used:
-        user_display = f"[Skills: {', '.join(s['slash_trigger'] for s in skills_used)}]"
 
-    try:
-        if skills_used:
-            reply = agent.chat_with_skills(user_display, full_message)
-        else:
-            reply = agent.chat(full_message)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
-
-    if skills_used:
-        labels = ", ".join(s["slash_trigger"] for s in skills_used)
-        reply = (
-            f"**Harness review** ({labels}) — answered from deterministic artifacts, "
-            f"not live tool calls.\n\n{reply}"
-        )
-
-    if attach_warnings:
-        reply = reply + "\n\n" + "\n".join(attach_warnings)
-
-    output_files: List[dict] = []
-    try:
-        md = save_output_registered(
-            scope=scope,
-            filename="assistant_reply.md",
-            content=f"# Assistant reply\n\n{reply}\n",
-            label="Reply (Markdown)",
-        )
-        js = save_output_registered(
-            scope=scope,
-            filename="assistant_reply.json",
-            content=json.dumps(
-                {"message": message, "reply": reply, "attachments": body.attachment_ids},
-                indent=2,
-            ),
-            label="Reply (JSON)",
-        )
-        output_files = [
-            _file_ref(md["file_id"], md["label"]),
-            _file_ref(js["file_id"], js["label"]),
-        ]
-    except Exception as exc:
-        output_files = [
-            {
-                "file_id": "",
-                "label": f"Could not save output: {exc}",
-                "url": "",
-            }
-        ]
-
-    try:
-        mind_observe(
-            MindObserveRequest(scenario="support_triage_agent", text=message),
-        )
-    except Exception:
-        pass
-
-    return ChatResponse(
-        reply=reply,
-        session_id=session_id,
-        output_files=output_files,
-        skills_used=skills_used,
-    )
+def _sse(payload: dict) -> str:
+    return f"data: {json.dumps(payload)}\n\n"
 
 
 def _live_proof_health(mind) -> dict:

@@ -69,6 +69,31 @@ class InferenceAtlasAgent:
         self._history.append({"role": "assistant", "content": response})
         return response
 
+    def chat_with_github_context(self, user_display: str, llm_prompt: str) -> str:
+        """Answer using attached GitHub repo digest(s) — no tool loop."""
+        response = runtime.run_github_context_assist([{"role": "user", "content": llm_prompt}])
+        self._history.append({"role": "user", "content": user_display})
+        self._history.append({"role": "assistant", "content": response})
+        return response
+
+    def chat_orchestrated(
+        self,
+        user_display: str,
+        llm_prompt: str,
+        *,
+        system_prompt: str,
+        use_tools: bool,
+    ) -> str:
+        """Skills + GitHub + files together; tools when the question requires catalog/pricing."""
+        response = runtime.run_orchestrated(
+            [{"role": "user", "content": llm_prompt}],
+            system_prompt=system_prompt,
+            use_tools=use_tools,
+        )
+        self._history.append({"role": "user", "content": user_display})
+        self._history.append({"role": "assistant", "content": response})
+        return response
+
     def stream(self, user_message: str) -> Generator[str, None, None]:
         """Single-turn streaming — yields response text chunks as they arrive."""
         messages = [{"role": "user", "content": user_message}]

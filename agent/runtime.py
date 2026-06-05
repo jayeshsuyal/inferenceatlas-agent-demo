@@ -24,6 +24,7 @@ from .config import (
     SKILL_ASSIST_SYSTEM_PROMPT,
     SYSTEM_PROMPT,
 )
+from .github_repo import GITHUB_CONTEXT_SYSTEM_PROMPT
 from .tools import TOOL_DISPATCH, TOOL_SCHEMAS
 
 logger = logging.getLogger("inference_atlas.agent")
@@ -54,7 +55,12 @@ def _llm_client() -> Any:
 # OpenClaw integration — primary path
 # ---------------------------------------------------------------------------
 
-def _run_with_openclaw(messages: list[dict], stream: bool = False):
+def _run_with_openclaw(
+    messages: list[dict],
+    stream: bool = False,
+    *,
+    system_prompt: str = SYSTEM_PROMPT,
+):
     """Run the agent loop using the OpenClaw runtime."""
     try:
         import openclaw  # type: ignore
@@ -64,7 +70,7 @@ def _run_with_openclaw(messages: list[dict], stream: bool = False):
             model=LLM_MODEL,
             tools=TOOL_SCHEMAS,
             tool_dispatch=TOOL_DISPATCH,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=system_prompt,
             max_steps=AGENT_MAX_STEPS,
         )
         if stream:
@@ -79,13 +85,13 @@ def _run_with_openclaw(messages: list[dict], stream: bool = False):
 # Built-in fallback loop (mirrors OpenClaw's interface)
 # ---------------------------------------------------------------------------
 
-def _run_builtin(messages: list[dict]) -> str:
+def _run_builtin(messages: list[dict], *, system_prompt: str = SYSTEM_PROMPT) -> str:
     """
     Minimal tool-calling loop that replicates OpenClaw's behaviour.
     Runs until the model stops calling tools or max_steps is reached.
     """
     client = _llm_client()
-    history = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+    history = [{"role": "system", "content": system_prompt}] + messages
 
     for step in range(AGENT_MAX_STEPS):
         response = client.chat.completions.create(
@@ -186,18 +192,37 @@ def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
 # Public interface — used by InferenceAtlasAgent
 # ---------------------------------------------------------------------------
 
-def run_skill_assist(messages: list[dict]) -> str:
+def run_skill_assist(messages: list[dict], *, system_prompt: str = SKILL_ASSIST_SYSTEM_PROMPT) -> str:
     """
-    Single-shot LLM answer grounded in attached skill context — no tools.
-    Avoids burning AGENT_MAX_STEPS on catalog/search when reviewing access proof.
+    Single-shot LLM answer grounded in attached context — no tools.
+    Avoids burning AGENT_MAX_STEPS when context is already in the message.
     """
     client = _llm_client()
     response = client.chat.completions.create(
         model=LLM_MODEL,
-        messages=[{"role": "system", "content": SKILL_ASSIST_SYSTEM_PROMPT}] + messages,
+        messages=[{"role": "system", "content": system_prompt}] + messages,
         temperature=0.2,
     )
     return response.choices[0].message.content or ""
+
+
+def run_github_context_assist(messages: list[dict]) -> str:
+    return run_skill_assist(messages, system_prompt=GITHUB_CONTEXT_SYSTEM_PROMPT)
+
+
+def run_orchestrated(
+    messages: list[dict],
+    *,
+    system_prompt: str,
+    use_tools: bool,
+) -> str:
+    """Single path for skills + GitHub + files: tools or grounded assist."""
+    if use_tools:
+        result = _run_with_openclaw(messages, stream=False, system_prompt=system_prompt)
+        if result is not None:
+            return result
+        return _run_builtin(messages, system_prompt=system_prompt)
+    return run_skill_assist(messages, system_prompt=system_prompt)
 
 
 def run(messages: list[dict]) -> str:

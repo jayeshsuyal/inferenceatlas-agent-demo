@@ -13,14 +13,16 @@ from agent.packet_authority import (
 )
 from agent.scenarios import SCENARIOS, build_scenario_packet
 from agent.verification import build_verification_artifact, verification_has_failures
-from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
+from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS, PUBLIC_PACKET_AUTHORITY_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
-PUBLIC_PACKET_AUTHORITY_TERMS = {"packet_id"}
 
 
 class PacketAuthoritySnapshotTests(unittest.TestCase):
+    def test_packet_authority_terms_are_public_boundary_terms(self) -> None:
+        self.assertFalse(PUBLIC_PACKET_AUTHORITY_TERMS & set(FORBIDDEN_PRIVATE_V1_TERMS))
+
     def test_snapshot_is_deterministic_and_hash_backed(self) -> None:
         packet = build_scenario_packet("support_triage_agent")
         first = build_packet_authority_snapshot(packet)

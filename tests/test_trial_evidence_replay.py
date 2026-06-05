@@ -220,8 +220,6 @@ class TrialEvidenceReplayTests(unittest.TestCase):
 
         for surface in generated:
             for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
-                if forbidden == "packet_id":
-                    continue
                 self.assertNotIn(forbidden, surface)
 
 

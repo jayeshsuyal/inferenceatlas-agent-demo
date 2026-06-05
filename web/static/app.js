@@ -48,6 +48,13 @@ const SKILL_HINT_BY_ID = {
   full_judge_harness: "Summarize the full judge proof path.",
 };
 
+const EMPTY_PROOF_TILES = [
+  ["Packet lock", "Production false · writes false"],
+  ["Sponsor proof", "Tavily evidence · Composio dry-run"],
+  ["Cost guardrail", "Procurement shortlist · no savings guarantee"],
+  ["Review lane", "Scoped validation · humans approve"],
+];
+
 let sessionId = localStorage.getItem(STORAGE_KEY) || crypto.randomUUID();
 localStorage.setItem(STORAGE_KEY, sessionId);
 
@@ -162,6 +169,25 @@ function appendMessage(role, text, extraClass = "", outputFiles = []) {
   return wrap;
 }
 
+function clearEmptyProofBoard() {
+  document.getElementById("empty-proof-board")?.remove();
+}
+
+function renderEmptyProofBoard() {
+  clearEmptyProofBoard();
+  const board = document.createElement("div");
+  board.className = "empty-proof-board";
+  board.id = "empty-proof-board";
+  board.setAttribute("aria-label", "Current public proof state");
+  for (const [label, value] of EMPTY_PROOF_TILES) {
+    const tile = document.createElement("article");
+    tile.className = "proof-tile";
+    tile.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
+    board.appendChild(tile);
+  }
+  messagesEl.appendChild(board);
+}
+
 function removeMessage(el) {
   if (el && el.parentNode) el.parentNode.removeChild(el);
 }
@@ -263,6 +289,7 @@ customEvidenceFile.addEventListener("change", async () => {
 });
 
 function appendUserMessage(message, skills = []) {
+  clearEmptyProofBoard();
   const wrap = document.createElement("div");
   wrap.className = "message user";
 
@@ -463,9 +490,10 @@ async function resetChat() {
   messagesEl.innerHTML = "";
   appendMessage(
     "assistant",
-    "New conversation started. Attach skills with + or /, ask your question, then Send.",
+    "Welcome. Compare AI inference costs, explore the catalog, or ask whether an agent should get tool access.\n\nAttach /packet, /gate, etc., ask a review question, then Send. Skills inject real DecisionPacket facts (no catalog tool loop).",
     "welcome"
   );
+  renderEmptyProofBoard();
 }
 
 function renderMindCard(m, pulse = false) {
@@ -727,7 +755,7 @@ async function loadMeta() {
 
     stackPills.innerHTML = "";
     const pills = [
-      ["LLM", `${health.llm_provider} · ${health.llm_model}`, health.ok],
+      ["LLM", `${health.llm_provider} · live`, health.ok],
       ["Tavily", health.tavily ? "on" : "off", health.tavily],
       ["Composio", health.composio ? (health.composio_dry_run ? "dry-run" : "on") : "off", health.composio],
     ];

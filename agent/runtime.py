@@ -36,6 +36,32 @@ def _last_assistant_text(history: list[dict]) -> str:
     return ""
 
 
+def _summarize_tool_results(tool_results: list[tuple[str, str]]) -> str:
+    """Return a useful answer if a tool-calling model never emits final text."""
+    if not tool_results:
+        return ""
+
+    unique_results: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
+    for tool_name, result in tool_results:
+        key = (tool_name, result)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_results.append(key)
+
+    lines = [
+        "Live tools returned verified output. I am showing the tool result directly "
+        "because the model did not produce a final synthesis before the safety limit."
+    ]
+    for tool_name, result in unique_results[-4:]:
+        text = str(result).strip()
+        if len(text) > 1200:
+            text = text[:1200].rstrip() + "..."
+        lines.extend(["", f"## {tool_name}", text or "(empty result)"])
+    return "\n".join(lines)
+
+
 def _llm_client() -> Any:
     if not LLM_API_KEY:
         raise RuntimeError(
@@ -86,6 +112,8 @@ def _run_builtin(messages: list[dict]) -> str:
     """
     client = _llm_client()
     history = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+    tool_results: list[tuple[str, str]] = []
+    seen_tool_calls: set[tuple[str, str]] = set()
 
     for step in range(AGENT_MAX_STEPS):
         response = client.chat.completions.create(
@@ -93,6 +121,7 @@ def _run_builtin(messages: list[dict]) -> str:
             messages=history,
             tools=TOOL_SCHEMAS,
             tool_choice="auto",
+            parallel_tool_calls=False,
         )
         msg = response.choices[0].message
         history.append(msg.model_dump(exclude_unset=True))
@@ -103,10 +132,15 @@ def _run_builtin(messages: list[dict]) -> str:
         for call in msg.tool_calls:
             fn_name = call.function.name
             fn_args = json.loads(call.function.arguments or "{}")
+            signature = (fn_name, json.dumps(fn_args, sort_keys=True))
+            if signature in seen_tool_calls and tool_results:
+                return _summarize_tool_results(tool_results)
+            seen_tool_calls.add(signature)
             logger.info("Tool call [%s/%s]: %s(%s)", step + 1, AGENT_MAX_STEPS, fn_name, fn_args)
 
             fn = TOOL_DISPATCH.get(fn_name)
             result = fn(**fn_args) if fn else f"[unknown tool: {fn_name}]"
+            tool_results.append((fn_name, str(result)))
 
             history.append({
                 "role": "tool",
@@ -115,13 +149,15 @@ def _run_builtin(messages: list[dict]) -> str:
             })
 
     last = _last_assistant_text(history)
-    return last or "[agent] max steps reached without a final answer"
+    return last or _summarize_tool_results(tool_results) or "[agent] max steps reached without a final answer"
 
 
 def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
     """Streaming variant of the built-in loop — yields text chunks."""
     client = _llm_client()
     history = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
+    tool_results: list[tuple[str, str]] = []
+    seen_tool_calls: set[tuple[str, str]] = set()
 
     for step in range(AGENT_MAX_STEPS):
         response = client.chat.completions.create(
@@ -129,6 +165,7 @@ def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
             messages=history,
             tools=TOOL_SCHEMAS,
             tool_choice="auto",
+            parallel_tool_calls=False,
             stream=True,
         )
 
@@ -176,10 +213,22 @@ def _stream_builtin(messages: list[dict]) -> Generator[str, None, None]:
         for tc in tool_calls_list:
             fn_name = tc["function"]["name"]
             fn_args = json.loads(tc["function"]["arguments"] or "{}")
+            signature = (fn_name, json.dumps(fn_args, sort_keys=True))
+            if signature in seen_tool_calls and tool_results:
+                fallback = _summarize_tool_results(tool_results)
+                if fallback:
+                    yield fallback
+                return
+            seen_tool_calls.add(signature)
             logger.info("Tool call [%s/%s]: %s(%s)", step + 1, AGENT_MAX_STEPS, fn_name, fn_args)
             fn = TOOL_DISPATCH.get(fn_name)
             result = fn(**fn_args) if fn else f"[unknown tool: {fn_name}]"
+            tool_results.append((fn_name, str(result)))
             history.append({"role": "tool", "tool_call_id": tc["id"], "content": str(result)})
+
+    fallback = _summarize_tool_results(tool_results)
+    if fallback:
+        yield fallback
 
 
 # ---------------------------------------------------------------------------

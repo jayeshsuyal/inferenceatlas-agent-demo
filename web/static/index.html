@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — AI Cost & Access Review</title>
-    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/static/style.css?v=10" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -104,6 +105,24 @@
                 <p>Attach <strong>/packet</strong>, <strong>/gate</strong>, etc., ask a review question, then <strong>Send</strong>. Skills inject real DecisionPacket facts (no catalog tool loop).</p>
               </div>
             </div>
+            <div class="empty-proof-board" id="empty-proof-board" aria-label="Current public proof state">
+              <article class="proof-tile">
+                <span>Packet lock</span>
+                <strong>Production false · writes false</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Sponsor proof</span>
+                <strong>Tavily evidence · Composio dry-run</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Cost guardrail</span>
+                <strong>Procurement shortlist · no savings guarantee</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Review lane</span>
+                <strong>Scoped validation · humans approve</strong>
+              </article>
+            </div>
           </div>
           <div class="composer-shell" id="composer-shell">
             <div class="slash-menu" id="slash-menu" role="listbox" hidden></div>
@@ -159,6 +178,6 @@
       </main>
     </div>
 
-    <script src="/static/app.js?v=9"></script>
+    <script src="/static/app.js?v=10"></script>
   </body>
 </html>

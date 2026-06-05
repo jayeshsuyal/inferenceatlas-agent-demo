@@ -3,6 +3,7 @@
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from web.files_io import load_upload, register_download, resolve_download, save_output, save_upload
 
@@ -62,6 +63,51 @@ class WebFilesTests(unittest.TestCase):
         self.assertTrue(all(not provider["would_execute"] for provider in data["providers"]))
         self.assertTrue(any(item["file_id"] for item in data["output_files"]))
 
+    def test_example_cards_have_deterministic_tool_replies(self) -> None:
+        from web.app import _deterministic_example_reply
+
+        catalog = _deterministic_example_reply(
+            "Use get_catalog_summary: what does InferenceAtlas track?"
+        )
+        self.assertIsNotNone(catalog)
+        assert catalog is not None
+        self.assertIn("InferenceAtlas Catalog", catalog)
+
+        alternative = _deterministic_example_reply(
+            "I run 500M tokens/month on GPT-4o input+output. "
+            "Use compare_providers for llm and recommend the cheapest credible alternative."
+        )
+        self.assertIsNotNone(alternative)
+        assert alternative is not None
+        self.assertIn("Catalog comparison", alternative)
+        self.assertIn("procurement shortlist", alternative)
+
+        with patch("web.app.tavily_search", return_value="Mistral live result") as tavily:
+            mistral = _deterministic_example_reply(
+                "Use tavily_search for Mistral Large pricing, then compare_providers "
+                "for llm workloads in the catalog."
+            )
+        tavily.assert_called_once_with(
+            "site:mistral.ai pricing Mistral Large API official", max_results=2
+        )
+        self.assertIsNotNone(mistral)
+        assert mistral is not None
+        self.assertIn("Mistral live result", mistral)
+        self.assertIn("Catalog comparison", mistral)
+        self.assertIn("Composio remains dry-run", mistral)
+
+        access_review = _deterministic_example_reply(
+            "Should our support triage agent get GitHub issues, Slack incident channels, "
+            "and Jira ticket creation access?"
+        )
+        self.assertIsNotNone(access_review)
+        assert access_review is not None
+        self.assertIn("Tool access review", access_review)
+        self.assertIn("Do not grant production access.", access_review)
+        self.assertIn("scoped validation review", access_review)
+        self.assertIn("Runtime Permission Boundary", access_review)
+        self.assertIn("Composio remains dry-run", access_review)
+
     def test_live_evidence_rehearsal_ui_is_reachable(self) -> None:
         html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
         js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
@@ -74,6 +120,24 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("/api/rehearsal/live-evidence", js)
         self.assertIn("/api/rehearsal/custom-evidence", js)
         self.assertIn("renderRehearsalCard", js)
+
+    def test_chat_empty_state_surfaces_locked_proof_state(self) -> None:
+        html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+        js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
+        css = (ROOT / "web" / "static" / "style.css").read_text(encoding="utf-8")
+
+        self.assertIn('id="empty-proof-board"', html)
+        self.assertIn("Production false", html)
+        self.assertIn("Composio dry-run", html)
+        self.assertIn("no savings guarantee", html)
+        self.assertIn('rel="icon"', html)
+        self.assertIn('/static/style.css?v=10', html)
+        self.assertIn('/static/app.js?v=10', html)
+        self.assertIn("EMPTY_PROOF_TILES", js)
+        self.assertIn("clearEmptyProofBoard", js)
+        self.assertIn("LLM\", `${health.llm_provider} · live`", js)
+        self.assertIn(".empty-proof-board", css)
+        self.assertIn("grid-template-columns: repeat(4", css)
 
     def test_uploaded_evidence_rehearsal_accepts_sanitized_bundle(self) -> None:
         from web.app import CustomEvidenceRehearsalRequest, run_custom_evidence_rehearsal

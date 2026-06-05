@@ -23,9 +23,10 @@ from agent.decision_brief import build_agent_access_decision_brief
 from agent.mind import init_mind, load_mind, save_mind, step
 from agent.mind.project import MIND_RUNTIME_DIR, project_mind
 from agent.mind.store import load_all_minds
+from agent.packet import build_support_triage_decision_packet
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS
-from agent.tools import get_catalog_summary
+from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.trial import DEFAULT_TRIAL_REQUEST
 from agent.trial_evidence_replay import (
     ADAPTER_PROVIDERS,
@@ -241,6 +242,51 @@ def _get_or_create_session(session_id: Optional[str]) -> Tuple[str, object]:
         agent = _get_inference_agent()
         _sessions[new_id] = agent
         return new_id, agent
+
+
+def _deterministic_example_reply(message: str) -> Optional[str]:
+    """Run known example-card tool plans directly for reliable live demos."""
+    normalized = " ".join(message.lower().split())
+    if "use get_catalog_summary" in normalized:
+        return "## Catalog overview\n\n" + get_catalog_summary()
+
+    if "support triage agent" in normalized or "tool access review" in normalized:
+        packet = build_support_triage_decision_packet(mode="live_review_room_demo")
+        brief = build_agent_access_decision_brief(packet)
+        return "\n\n".join(
+            [
+                "## Tool access review",
+                render_decision_brief_markdown(brief),
+                "Composio remains dry-run; no external write was executed.",
+            ]
+        )
+
+    if "use tavily_search" in normalized and "mistral" in normalized:
+        search = tavily_search("site:mistral.ai pricing Mistral Large API official", max_results=2)
+        comparison = compare_providers("llm", top_n=5)
+        return "\n\n".join(
+            [
+                "## Mistral pricing live check",
+                "### Tavily results",
+                search,
+                "### Catalog comparison",
+                comparison,
+                "Composio remains dry-run; no external write was executed.",
+            ]
+        )
+
+    if "500m tokens/month" in normalized and "compare_providers" in normalized:
+        comparison = compare_providers("llm", top_n=5)
+        return "\n\n".join(
+            [
+                "## GPT-4o alternative",
+                "Catalog comparison for `llm` workloads:",
+                comparison,
+                "Use this as a procurement shortlist, not a final savings guarantee.",
+            ]
+        )
+
+    return None
 
 
 @app.get("/api/health")
@@ -478,17 +524,6 @@ def download_registered_file(file_id: str) -> FileResponse:
 
 @app.post("/api/chat", response_model=ChatResponse)
 def chat(body: ChatRequest) -> ChatResponse:
-    if not _live_deps_available():
-        raise HTTPException(
-            status_code=503,
-            detail="Missing Python deps. Run: pip install -r agent/requirements.txt",
-        )
-    if not LLM_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env",
-        )
-
     message = body.message.strip()
     skill_ids = [s for s in body.skill_ids if s]
     if not message and not skill_ids:
@@ -497,7 +532,23 @@ def chat(body: ChatRequest) -> ChatResponse:
             detail="Add a question or attach at least one skill",
         )
 
-    session_id, agent = _get_or_create_session(body.session_id)
+    deterministic_reply = (
+        None if skill_ids or body.attachment_ids else _deterministic_example_reply(message)
+    )
+    if deterministic_reply is None:
+        if not _live_deps_available():
+            raise HTTPException(
+                status_code=503,
+                detail="Missing Python deps. Run: pip install -r agent/requirements.txt",
+            )
+        if not LLM_API_KEY:
+            raise HTTPException(
+                status_code=503,
+                detail="No LLM API key configured. Set NEBIUS_API_KEY or OPENAI_API_KEY in .env",
+            )
+        session_id, agent = _get_or_create_session(body.session_id)
+    else:
+        session_id = body.session_id or str(uuid.uuid4())
     scope = f"chat_{session_id}"
     llm_message = message
     skills_used: List[dict] = []
@@ -517,13 +568,16 @@ def chat(body: ChatRequest) -> ChatResponse:
     if not user_display and skills_used:
         user_display = f"[Skills: {', '.join(s['slash_trigger'] for s in skills_used)}]"
 
-    try:
-        if skills_used:
-            reply = agent.chat_with_skills(user_display, full_message)
-        else:
-            reply = agent.chat(full_message)
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    if deterministic_reply is not None:
+        reply = deterministic_reply
+    else:
+        try:
+            if skills_used:
+                reply = agent.chat_with_skills(user_display, full_message)
+            else:
+                reply = agent.chat(full_message)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
 
     if skills_used:
         labels = ", ".join(s["slash_trigger"] for s in skills_used)

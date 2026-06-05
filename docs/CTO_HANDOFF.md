@@ -11,6 +11,7 @@ Run the current proof surface:
 ```bash
 python3 -m agent.demo
 python3 -m agent.skills
+python3 -m agent.evidence_receipts --no-write
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
@@ -22,6 +23,7 @@ Expected result:
 
 - the demo runs without API keys
 - Agent Skills reports the public capability map without exposing private source
+- Evidence Receipt Ledger attaches proof, reviewer, and cost/procurement receipts without weakening the packet lock
 - Design Partner Outcome Memo turns the trial request into a meeting-ready decision without approving access
 - Sponsor Evidence Replay attaches sponsor proof slots without changing the decision, granting permissions, or writing
 - Live Evidence Rehearsal accepts sanitized Tavily, Composio, Nebius, and OpenClaw outputs while preserving the same locked decision
@@ -40,6 +42,7 @@ These pieces are safe to build on:
 | Offline judge harness | `agent/demo.py` | Entry point for no-key and live-mode demo paths. Keep this command stable. |
 | Agent Skills registry | `agent/skills.py` | Canonical public capability map. Add new public skills here before adding docs or CLI projections. |
 | DecisionPacket source | `agent/packet.py` | Canonical structured review object. Live integrations should enrich this shape, not bypass it. |
+| Evidence Receipt Ledger | `agent/evidence_receipts.py` | Receipt-backed proof, reviewer, and cost/procurement controls. Receipts can add context but cannot approve access or weaken packet locks. |
 | Packet Diff projection | `agent/packet_diff.py` | Scenario comparison surface proving low, medium/high, and critical requests produce different load-bearing fields. |
 | Packet Outcome Memo projection | `agent/outcome_memo.py` | Meeting-ready human decision derived from packet, brief, policy gate, Proof Health, and sponsor readiness. |
 | Design Partner Outcome Memo projection | `agent/trial_outcome_memo.py` | Trial-request meeting decision derived from the public trial bundle. Keep it no-key, non-approving, and tied to the same packet/brief spine. |
@@ -76,6 +79,7 @@ messy agent-access request
 -> evidence notes and missing proof
 -> DecisionPacket
 -> Packet Diff
+-> Evidence Receipt Ledger
 -> Agent Access Decision Brief
 -> Packet Outcome Memo
 -> Design Partner Outcome Memo
@@ -134,6 +138,7 @@ python3 -m json.tool schemas/agent_access_decision_brief.schema.json >/tmp/decis
 python3 -m py_compile agent/*.py
 env NEBIUS_API_KEY= TAVILY_API_KEY= COMPOSIO_API_KEY= IA_LIVE_MODE= python3 -m agent.demo >/tmp/inferenceatlas_demo.txt
 python3 -m agent.sponsor_readiness --no-write
+python3 -m agent.evidence_receipts --no-write --json >/tmp/evidence_receipts_check.json
 python3 -m json.tool examples/generated/support_triage_agent.packet.json >/tmp/packet_check.json
 python3 -m json.tool examples/generated/support_triage_agent.trace.json >/tmp/trace_check.json
 python3 -m json.tool examples/generated/support_triage_agent.decision_brief.json >/tmp/brief_check.json

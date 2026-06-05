@@ -9,7 +9,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
 ![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
 
-InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, and next validation plan humans need to review.
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Evidence Receipt Ledger, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, cost controls, and next validation plan humans need to review.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
@@ -49,6 +49,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.skills
 python3 -m agent.packet_diff
+python3 -m agent.evidence_receipts
 python3 -m agent.packet_authority
 python3 -m agent.verification --all
 python3 -m agent.outcome_memo
@@ -75,6 +76,7 @@ ia-judge
 ia-review --list
 ia-skills
 ia-packet-diff
+ia-receipts
 ia-snapshot
 ia-verify --all
 ia-outcome-memo
@@ -189,7 +191,7 @@ For AI judges and fast repo review, see [AI Judge Manifest](AI_JUDGE_MANIFEST.js
 
 For CTO/build handoff, start with [CTO Handoff](docs/CTO_HANDOFF.md), then [Architecture](docs/ARCHITECTURE.md), then [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md).
 
-Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, Packet Diff, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, and Proof Health report showing:
+Before an agent gets tool access, data access, spend, or production permissions, IA creates a DecisionPacket, Agent Access Decision Brief, Trust Receipt, Packet Diff, Evidence Receipt Ledger, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, and Proof Health report showing:
 
 - source status
 - scenario blast-radius diff
@@ -215,7 +217,7 @@ Before an agent gets tool access, data access, spend, or production permissions,
 - next human validation
 - safety state
 
-IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, access brief, Trust Receipt, Packet Diff, Packet Outcome Memo, and Proof Health report humans review.
+IA does not auto-approve, dispatch, or mutate state. It prepares the proof packet, evidence receipts, access brief, Trust Receipt, Packet Diff, Packet Outcome Memo, and Proof Health report humans review.
 
 ## Why This Matters
 

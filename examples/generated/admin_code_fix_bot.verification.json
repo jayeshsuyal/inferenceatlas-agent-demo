@@ -18,7 +18,7 @@
       "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
     }
   ],
-  "content_hash": "sha256:8d1a2d3489118eb474d82a64cb464b6d657d5c5d5683948b0156525e9148641c",
+  "content_hash": "sha256:7dd2645ee8bfe3529ec86e355e402c7da109ea9b68c608e133052bd812c8aca7",
   "decision_lock": "blocked",
   "external_writes": false,
   "missing_proof": [
@@ -58,7 +58,7 @@
       "review_area": "source-code and production infrastructure exposure"
     }
   ],
-  "revision_id": "rev_8d1a2d3489118eb4",
+  "revision_id": "rev_7dd2645ee8bfe352",
   "safety_invariants": [
     "approval_granted=False",
     "production_access=blocked",
@@ -68,6 +68,6 @@
   ],
   "schema_version": "packet_verification.v0",
   "scoped_validation": false,
-  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_8d1a2d3489118eb4",
+  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_7dd2645ee8bfe352",
   "verification_status": "valid_review_required"
 }

@@ -10,10 +10,11 @@ from typing import Any
 
 from .adapters import ADAPTER_NAMES, build_all_adapter_results
 from .contract import validate_all
+from .evidence_receipts import build_evidence_receipt_ledger
 from .gate import evaluate_all
 from .outcome_memo import build_packet_outcome_memo, write_packet_outcome_memo_artifacts
 from .packet import build_support_triage_trace
-from .packet_authority import build_packet_authority_snapshot
+from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .packet_diff import build_packet_diff_report, write_packet_diff_artifacts
 from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
@@ -35,6 +36,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.review --list",
     "python3 -m agent.skills",
     "python3 -m agent.packet_diff",
+    "python3 -m agent.evidence_receipts",
     "python3 -m agent.packet_authority",
     "python3 -m agent.verification --all",
     "python3 -m agent.outcome_memo",
@@ -60,6 +62,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/trust_receipt.md",
     "examples/generated/packet_diff.md",
     "examples/generated/packet_diff.json",
+    "examples/generated/support_triage_agent.evidence_receipts.md",
+    "examples/generated/support_triage_agent.evidence_receipts.json",
     "examples/generated/support_triage_agent.snapshot.json",
     "examples/generated/support_triage_agent.verification.json",
     "examples/generated/support_triage_agent.outcome_memo.md",
@@ -176,7 +180,8 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     trial_evidence_replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
     primary_packet = build_scenario_packet("support_triage_agent")
-    primary_snapshot = build_packet_authority_snapshot(primary_packet)
+    primary_receipt_ledger = build_evidence_receipt_ledger(primary_packet, "support_triage_agent")
+    primary_snapshot = build_packet_authority_snapshot_for_scenario(primary_packet, "support_triage_agent")
     primary_verification = build_verification_artifact(primary_packet, snapshot=primary_snapshot)
 
     return {
@@ -205,6 +210,29 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "has_blocked_critical_lane": packet_diff["summary"]["has_blocked_critical_lane"],
             "all_production_access_blocked": packet_diff["summary"]["all_production_access_blocked"],
             "all_external_writes_blocked": packet_diff["summary"]["all_external_writes_blocked"],
+        },
+        "evidence_receipt_ledger": {
+            "scenario": "support_triage_agent",
+            "packet_id": primary_receipt_ledger["packet_id"],
+            "decision_lock_before": primary_receipt_ledger["decision_lock_before"],
+            "decision_lock_after": primary_receipt_ledger["decision_lock_after"],
+            "receipt_count": primary_receipt_ledger["summary"]["receipt_count"],
+            "tool_scope_receipts": primary_receipt_ledger["summary"]["tool_scope_receipts"],
+            "proof_debt_receipts": primary_receipt_ledger["summary"]["proof_debt_receipts"],
+            "reviewer_route_receipts": primary_receipt_ledger["summary"]["reviewer_route_receipts"],
+            "cost_procurement_receipts": primary_receipt_ledger["summary"]["cost_procurement_receipts"],
+            "all_require_human_review": primary_receipt_ledger["safety"]["all_require_human_review"],
+            "all_non_approving": primary_receipt_ledger["safety"]["all_non_approving"],
+            "all_non_granting": primary_receipt_ledger["safety"]["all_non_granting"],
+            "all_non_executing": primary_receipt_ledger["safety"]["all_non_executing"],
+            "all_non_mutating": primary_receipt_ledger["safety"]["all_non_mutating"],
+            "all_non_auto_reducing": primary_receipt_ledger["safety"]["all_non_auto_reducing"],
+            "budget_owner_required": primary_receipt_ledger["finance_procurement"]["budget_owner_required"],
+            "token_or_tool_spend_cap_required": primary_receipt_ledger["finance_procurement"][
+                "token_or_tool_spend_cap_required"
+            ],
+            "artifact": "examples/generated/support_triage_agent.evidence_receipts.md",
+            "json_artifact": "examples/generated/support_triage_agent.evidence_receipts.json",
         },
         "packet_authority_snapshot": {
             "scenario": "support_triage_agent",
@@ -362,6 +390,18 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or not report["packet_diff"]["all_production_access_blocked"]
         or not report["packet_diff"]["all_external_writes_blocked"]
         or (
+            report["evidence_receipt_ledger"]["decision_lock_before"]
+            != report["evidence_receipt_ledger"]["decision_lock_after"]
+        )
+        or not report["evidence_receipt_ledger"]["all_require_human_review"]
+        or not report["evidence_receipt_ledger"]["all_non_approving"]
+        or not report["evidence_receipt_ledger"]["all_non_granting"]
+        or not report["evidence_receipt_ledger"]["all_non_executing"]
+        or not report["evidence_receipt_ledger"]["all_non_mutating"]
+        or not report["evidence_receipt_ledger"]["all_non_auto_reducing"]
+        or not report["evidence_receipt_ledger"]["budget_owner_required"]
+        or not report["evidence_receipt_ledger"]["token_or_tool_spend_cap_required"]
+        or (
             report["packet_authority_snapshot"]["decision_lock_before"]
             != report["packet_authority_snapshot"]["decision_lock_after"]
         )
@@ -470,6 +510,32 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             f"- all production access blocked: {diff['all_production_access_blocked']}",
             f"- all external writes blocked: {diff['all_external_writes_blocked']}",
             f"- artifact: `examples/generated/packet_diff.md`",
+        ]
+    )
+
+    receipts = report["evidence_receipt_ledger"]
+    lines.extend(
+        [
+            "",
+            "## Evidence Receipt Ledger",
+            "",
+            "Receipts attach proof context to the packet without changing the packet decision lock.",
+            "",
+            f"- scenario: `{receipts['scenario']}`",
+            f"- packet_id: `{receipts['packet_id']}`",
+            f"- decision lock: {receipts['decision_lock_before']} -> {receipts['decision_lock_after']}",
+            f"- receipts: {receipts['receipt_count']}",
+            f"- tool scope receipts: {receipts['tool_scope_receipts']}",
+            f"- proof debt receipts: {receipts['proof_debt_receipts']}",
+            f"- reviewer route receipts: {receipts['reviewer_route_receipts']}",
+            f"- cost/procurement receipts: {receipts['cost_procurement_receipts']}",
+            f"- all require human review: {receipts['all_require_human_review']}",
+            f"- all non-approving: {receipts['all_non_approving']}",
+            f"- all non-granting: {receipts['all_non_granting']}",
+            f"- all non-executing: {receipts['all_non_executing']}",
+            f"- budget owner required: {receipts['budget_owner_required']}",
+            f"- token/tool spend cap required: {receipts['token_or_tool_spend_cap_required']}",
+            f"- artifact: `{receipts['artifact']}`",
         ]
     )
 
@@ -694,19 +760,20 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "2. Read `docs/PRODUCT_QUALITY_AUDIT.md`.",
             "3. Read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`.",
             "4. Read `examples/generated/packet_diff.md`.",
-            "5. Read `examples/generated/support_triage_agent.outcome_memo.md`.",
-            "6. Skim `examples/generated/review_room.html`.",
-            "7. Read `examples/generated/trust_receipt.md`.",
-            "8. Read `examples/generated/support_triage_agent.proof_health.md`.",
-            "9. Read `examples/generated/sponsor_live_readiness.md`.",
-            "10. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "11. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "12. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "13. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
-            "14. Read `examples/generated/support_triage_trial.evidence_replay.md`.",
-            "15. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "16. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "17. Confirm sponsor adapters stay dry-run and non-approving.",
+            "5. Read `examples/generated/support_triage_agent.evidence_receipts.md`.",
+            "6. Read `examples/generated/support_triage_agent.outcome_memo.md`.",
+            "7. Skim `examples/generated/review_room.html`.",
+            "8. Read `examples/generated/trust_receipt.md`.",
+            "9. Read `examples/generated/support_triage_agent.proof_health.md`.",
+            "10. Read `examples/generated/sponsor_live_readiness.md`.",
+            "11. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "12. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "13. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "14. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
+            "15. Read `examples/generated/support_triage_trial.evidence_replay.md`.",
+            "16. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "17. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "18. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

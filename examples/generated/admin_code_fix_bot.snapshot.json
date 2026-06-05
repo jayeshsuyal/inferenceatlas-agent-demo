@@ -1,9 +1,53 @@
 {
-  "accepted_evidence": [],
-  "content_hash": "sha256:8d1a2d3489118eb474d82a64cb464b6d657d5c5d5683948b0156525e9148641c",
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_062ddb020662e370",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_ed2238240f86ed16",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_f2cb1c59a20335c7",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_103993298520093b",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_967ab48578c8fd07",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_validation"
+    },
+    {
+      "receipt_id": "er_688db09f05de6252",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_any_write_path"
+    },
+    {
+      "receipt_id": "er_93e6cbb0780c9f19",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    }
+  ],
+  "content_hash": "sha256:7dd2645ee8bfe3529ec86e355e402c7da109ea9b68c608e133052bd812c8aca7",
   "decision_lock_after": "blocked",
   "decision_lock_before": "blocked",
-  "evidence_receipt_ids": [],
+  "evidence_receipt_ids": [
+    "er_062ddb020662e370",
+    "er_ed2238240f86ed16",
+    "er_f2cb1c59a20335c7",
+    "er_103993298520093b",
+    "er_967ab48578c8fd07",
+    "er_688db09f05de6252",
+    "er_93e6cbb0780c9f19"
+  ],
   "generated_by": "inferenceatlas-agent-demo",
   "locked_fields": [
     "decision.verdict",
@@ -18,7 +62,7 @@
   "next_human_action": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
   "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
   "rejected_evidence": [],
-  "revision_id": "rev_8d1a2d3489118eb4",
+  "revision_id": "rev_7dd2645ee8bfe352",
   "safety_invariants": [
     "approval_granted=False",
     "production_access=blocked",
@@ -27,5 +71,5 @@
     "requires_human_approval=True"
   ],
   "schema_version": "packet_authority_snapshot.v0",
-  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_8d1a2d3489118eb4"
+  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_7dd2645ee8bfe352"
 }

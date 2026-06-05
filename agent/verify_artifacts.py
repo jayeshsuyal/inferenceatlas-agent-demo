@@ -47,6 +47,17 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Evidence Receipt Ledgers",
+        (
+            "support_triage_agent.evidence_receipts.md",
+            "support_triage_agent.evidence_receipts.json",
+            "read_only_analytics_agent.evidence_receipts.md",
+            "read_only_analytics_agent.evidence_receipts.json",
+            "admin_code_fix_bot.evidence_receipts.md",
+            "admin_code_fix_bot.evidence_receipts.json",
+        ),
+    ),
+    ArtifactFamily(
         "Packet Authority Snapshots",
         (
             "support_triage_agent.snapshot.json",

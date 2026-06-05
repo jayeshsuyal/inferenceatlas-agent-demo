@@ -14,6 +14,7 @@ Run the no-key judge path first, then verify the checked-in proof artifacts:
 ```bash
 python3 -m agent.judge --no-write
 python3 -m agent.skills
+python3 -m agent.evidence_receipts --no-write
 python3 -m agent.packet_authority
 python3 -m agent.verification --all
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write
@@ -31,14 +32,15 @@ Expected human-readable signals across that two-command path:
 - private source exposed is `False`
 - scenario matrix includes `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
 - Packet Diff reports relaxed read-only, proof-routed, and blocked critical lanes
+- Evidence Receipt Ledger reports receipt-backed proof context, unchanged decision lock, and budget owner review required
 - Packet Authority Snapshot reports a sha256 content hash, stable revision, and unchanged decision lock
 - Packet Verification reports production access, external writes, permission grants, and approval granted are all `false`
 - Packet Outcome Memo reports `scoped_validation_only` for `support_triage_agent`
 - Design Partner Outcome Memo reports `scoped_validation_only` for `support_triage_trial`
 - Sponsor Evidence Replay reports sponsors cannot change the trial decision
 - Live Evidence Rehearsal reports sanitized evidence is attached and the decision remains locked
-- Agent Skills reports `14 / 14 stable skills available`
-- Artifact Integrity Gate reports `43 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
+- Agent Skills reports `15 / 15 stable skills available`
+- Artifact Integrity Gate reports `49 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -52,6 +54,7 @@ For a strict parser, run both JSON surfaces:
 ```bash
 python3 -m agent.judge --no-write --json
 python3 -m agent.skills --json
+python3 -m agent.evidence_receipts --no-write --json
 python3 -m agent.packet_authority --json
 python3 -m agent.verification --all --json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
@@ -92,6 +95,7 @@ Expected judge JSON pass signals:
 - `packet_diff.has_relaxed_read_only_lane` is `true`
 - `packet_diff.has_proof_routed_lane` is `true`
 - `packet_diff.has_blocked_critical_lane` is `true`
+- Evidence Receipt Ledger JSON has `decision_lock_after` unchanged, `all_non_approving` set to `true`, and `budget_owner_required` set to `true`
 - Packet Authority Snapshot JSON has `decision_lock_after` set to `scoped_validation_only` for the support-triage packet
 - every Packet Verification result has `production_access`, `external_writes`, `permission_grants`, and `approval_granted` set to `false`
 - `packet_outcome_memo.decision_code` is `scoped_validation_only`
@@ -103,7 +107,7 @@ Expected judge JSON pass signals:
 Expected artifact verifier JSON pass signals:
 
 - `status` is `ok`
-- `summary.generated_artifacts_verified` is `43`
+- `summary.generated_artifacts_verified` is `49`
 - `summary.stale_artifacts` is `0`
 - `summary.unexpected_checked_in_artifacts` is `0`
 - `summary.missing_static_assets` is `0`
@@ -111,9 +115,9 @@ Expected artifact verifier JSON pass signals:
 Expected skills JSON pass signals:
 
 - `schema_version` is `agent_skills_registry.v0`
-- `summary.registered_skills` is `14`
-- `summary.stable_skills` is `14`
-- `summary.available_stable_skills` is `14`
+- `summary.registered_skills` is `15`
+- `summary.stable_skills` is `15`
+- `summary.available_stable_skills` is `15`
 - `private_boundary.private_source_exposed` is `false`
 
 ## Full Command Set
@@ -126,6 +130,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.skills
 python3 -m agent.packet_diff
+python3 -m agent.evidence_receipts
 python3 -m agent.packet_authority
 python3 -m agent.verification --all
 python3 -m agent.outcome_memo
@@ -149,6 +154,7 @@ Expected pass signals:
 - Agent Skills maps public capabilities to commands, artifacts, dependencies, and safety boundaries
 - public contract reports all scenarios as `OK`
 - Packet Diff proves the three public scenarios differ in load-bearing fields
+- Evidence Receipt Ledger attaches tool-scope, proof-debt, reviewer-route, and cost/procurement receipts without changing the lock
 - Packet Authority Snapshot gives the support-triage packet a deterministic content hash and revision
 - Packet Verification stays read-only and never claims approval
 - Packet Outcome Memo turns the support-triage packet into a can-move, stays-blocked, proof-owner decision
@@ -170,18 +176,19 @@ Inspect these in order:
 3. `docs/AGENT_SKILLS.md`
 4. `docs/PRODUCT_QUALITY_AUDIT.md`
 5. `examples/generated/packet_diff.md`
-6. `examples/generated/support_triage_agent.snapshot.json`
-7. `examples/generated/support_triage_agent.verification.json`
-8. `examples/generated/support_triage_agent.outcome_memo.md`
-9. `examples/generated/review_room.html`
-10. `examples/generated/trust_receipt.md`
-11. `examples/generated/support_triage_agent.proof_health.md`
-12. `examples/generated/support_triage_trial_report.md`
-13. `examples/generated/support_triage_trial.outcome_memo.md`
-14. `examples/generated/support_triage_trial.evidence_replay.md`
-15. `examples/evidence/support_triage_trial/`
-16. `docs/CONTRACT.md`
-17. `docs/SAFETY_CONTRACT.md`
+6. `examples/generated/support_triage_agent.evidence_receipts.md`
+7. `examples/generated/support_triage_agent.snapshot.json`
+8. `examples/generated/support_triage_agent.verification.json`
+9. `examples/generated/support_triage_agent.outcome_memo.md`
+10. `examples/generated/review_room.html`
+11. `examples/generated/trust_receipt.md`
+12. `examples/generated/support_triage_agent.proof_health.md`
+13. `examples/generated/support_triage_trial_report.md`
+14. `examples/generated/support_triage_trial.outcome_memo.md`
+15. `examples/generated/support_triage_trial.evidence_replay.md`
+16. `examples/evidence/support_triage_trial/`
+17. `docs/CONTRACT.md`
+18. `docs/SAFETY_CONTRACT.md`
 
 ## Failure Signals
 
@@ -193,9 +200,10 @@ Treat these as review failures:
 - sponsor adapters can execute writes by default
 - sponsor adapters can approve access
 - Packet Diff no longer shows all three risk lanes
+- Evidence Receipt Ledger weakens the packet lock, skips human review, or claims budget approval
 - Packet Authority Snapshot content hash or revision is nondeterministic
 - Packet Verification claims production access, external writes, permission grants, or approval
-- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 14 stable available skills
+- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 15 stable available skills
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Sponsor Evidence Replay lets a sponsor change the decision, approve access, grant permissions, execute writes, or mutate production
@@ -215,6 +223,7 @@ If the commands pass and the failure signals are absent, the public repo proves 
 agent request
 -> agent skills registry
 -> proof packet
+-> evidence receipt ledger
 -> packet authority snapshot
 -> packet verification
 -> access brief

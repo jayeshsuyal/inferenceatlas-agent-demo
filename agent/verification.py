@@ -11,6 +11,7 @@ from typing import Any
 from .packet_authority import (
     DEFAULT_SCENARIO,
     build_packet_authority_snapshot,
+    build_packet_authority_snapshot_for_scenario,
     derive_decision_lock,
 )
 
@@ -77,6 +78,18 @@ def build_verification_artifact(
     }
 
 
+def build_verification_artifact_for_scenario(
+    packet: dict[str, Any],
+    scenario_name: str = DEFAULT_SCENARIO,
+    *,
+    snapshot: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build verification for the default public receipt-backed snapshot."""
+    if snapshot is None:
+        snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
+    return build_verification_artifact(packet, snapshot=snapshot)
+
+
 def verification_has_failures(artifact: dict[str, Any]) -> bool:
     """Return True when the public demo verification would unsafe-pass."""
     return (
@@ -125,8 +138,7 @@ def write_verification_artifacts(output_dir: Path | None = None) -> list[Path]:
     written: list[Path] = []
     for scenario_name in SCENARIOS:
         packet = build_scenario_packet(scenario_name)
-        snapshot = build_packet_authority_snapshot(packet)
-        artifact = build_verification_artifact(packet, snapshot=snapshot)
+        artifact = build_verification_artifact_for_scenario(packet, scenario_name)
         path = output_dir / f"{scenario_name}.verification.json"
         path.write_text(verification_to_pretty_json(artifact) + "\n", encoding="utf-8")
         written.append(path)
@@ -182,7 +194,7 @@ def main(argv: list[str] | None = None) -> int:
         artifacts = []
         for scenario_name in _scenario_names():
             _, packet = _scenario_packet(scenario_name)
-            artifacts.append(build_verification_artifact(packet))
+            artifacts.append(build_verification_artifact_for_scenario(packet, scenario_name))
         if args.json:
             print(json.dumps({"results": artifacts}, indent=2, sort_keys=True))
         else:
@@ -190,8 +202,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(render_verification_summary(artifact))
         return 1 if any(verification_has_failures(artifact) for artifact in artifacts) else 0
 
-    _, packet = _scenario_packet(args.scenario_or_packet_id)
-    artifact = build_verification_artifact(packet)
+    scenario_name, packet = _scenario_packet(args.scenario_or_packet_id)
+    artifact = build_verification_artifact_for_scenario(packet, scenario_name)
     if args.json:
         print(verification_to_pretty_json(artifact))
     else:

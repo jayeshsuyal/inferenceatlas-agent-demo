@@ -225,11 +225,34 @@ def write_packet_authority_artifacts(output_dir: Path | None = None) -> list[Pat
     written: list[Path] = []
     for scenario_name in SCENARIOS:
         packet = build_scenario_packet(scenario_name)
-        snapshot = build_packet_authority_snapshot(packet)
+        snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
         path = output_dir / f"{scenario_name}.snapshot.json"
         path.write_text(snapshot_to_pretty_json(snapshot) + "\n", encoding="utf-8")
         written.append(path)
     return written
+
+
+def build_packet_authority_snapshot_for_scenario(
+    packet: dict[str, Any],
+    scenario_name: str = DEFAULT_SCENARIO,
+) -> dict[str, Any]:
+    """Build the default public snapshot, including receipt IDs when available."""
+    from .evidence_receipts import build_evidence_receipt_ledger
+
+    ledger = build_evidence_receipt_ledger(packet, scenario_name, include_snapshot=False)
+    return build_packet_authority_snapshot(
+        packet,
+        evidence_receipt_ids=ledger["receipt_ids"],
+        accepted_evidence=[
+            {
+                "receipt_id": receipt["receipt_id"],
+                "receipt_type": receipt["receipt_type"],
+                "status": receipt["status"],
+            }
+            for receipt in ledger["receipts"]
+        ],
+        decision_lock_before=ledger["decision_lock_before"],
+    )
 
 
 def _scenario_packet(scenario_name: str) -> dict[str, Any]:
@@ -268,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             print(path.relative_to(ROOT_DIR) if path.is_relative_to(ROOT_DIR) else path)
         return 0
 
-    snapshot = build_packet_authority_snapshot(_scenario_packet(args.scenario))
+    snapshot = build_packet_authority_snapshot_for_scenario(_scenario_packet(args.scenario), args.scenario)
     if args.json:
         print(snapshot_to_pretty_json(snapshot))
     else:

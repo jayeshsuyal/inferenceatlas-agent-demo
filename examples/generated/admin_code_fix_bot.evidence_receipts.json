@@ -1,0 +1,333 @@
+{
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_062ddb020662e370",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_ed2238240f86ed16",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_f2cb1c59a20335c7",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_103993298520093b",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_967ab48578c8fd07",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_validation"
+    },
+    {
+      "receipt_id": "er_688db09f05de6252",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_any_write_path"
+    },
+    {
+      "receipt_id": "er_93e6cbb0780c9f19",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    }
+  ],
+  "decision_lock_after": "blocked",
+  "decision_lock_before": "blocked",
+  "finance_procurement": {
+    "approval_granted": false,
+    "budget_owner_required": true,
+    "owner": "Procurement/Finance",
+    "receipt_type": "cost_procurement_receipt",
+    "spend_claim": "No live model/tool/vendor spend is approved by the public receipt ledger.",
+    "token_or_tool_spend_cap_required": true
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "ledger_id": "ia-agent-access-admin-code-fix-bot-v0:evidence_receipts:v0",
+  "mode": "offline_deterministic",
+  "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "receipt_ids": [
+    "er_062ddb020662e370",
+    "er_ed2238240f86ed16",
+    "er_f2cb1c59a20335c7",
+    "er_103993298520093b",
+    "er_967ab48578c8fd07",
+    "er_688db09f05de6252",
+    "er_93e6cbb0780c9f19"
+  ],
+  "receipts": [
+    {
+      "attaches_to": "tool_access_plan.github",
+      "claim": "github stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "admin scope, production repository mutation, workflow dispatch, permission changes"
+        },
+        {
+          "control": "required_proof",
+          "value": "admin scope removal or explicit approval, repository allowlist, rollback/off-switch plan, change-management owner"
+        }
+      ],
+      "evidence_summary": "Requested=push code fixes to production repositories; change organization security settings; trigger production workflows; validation=blocked; admin/write actions require Security and Engineering approval; blocked=admin scope, production repository mutation, workflow dispatch, permission changes.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_062ddb020662e370",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.tool_access_plan.github",
+      "status": "needs_named_owner_review",
+      "unblocks": "github validation boundary review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "GitHub admin scope removal or explicit break-glass approval",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Security/Engineering",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_ed2238240f86ed16",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Security/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "admin access rejection review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Security/Engineering",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_f2cb1c59a20335c7",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Security/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "reviewable pilot packet"
+    },
+    {
+      "attaches_to": "approval_posture.production_access",
+      "claim": "Tool, model, token, and vendor spend must stay capped until a budget owner signs the pilot envelope.",
+      "controls": [
+        {
+          "control": "budget_owner_required",
+          "value": "true"
+        },
+        {
+          "control": "token_or_tool_spend_cap_required",
+          "value": "true"
+        },
+        {
+          "control": "paid_seat_or_vendor_change_requires_review",
+          "value": "true"
+        },
+        {
+          "control": "default_public_live_spend",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Requested systems: github. Public default is no live spend, no paid-seat grant, and no production access until budget owner review.",
+      "owner": "Procurement/Finance",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_103993298520093b",
+      "receipt_type": "cost_procurement_receipt",
+      "review_required_by": "Procurement/Finance",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "public_cost_control_contract",
+      "status": "budget_owner_review_required",
+      "unblocks": "paid tool/vendor spend review if live actions or seats are enabled"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Security/Engineering owns review for admin scopes, production mutation, workflow dispatch, rollback/off-switch.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Security/Engineering",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_967ab48578c8fd07",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Security/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_validation",
+      "unblocks": "admin scopes, production mutation, workflow dispatch, rollback/off-switch"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Engineering Leadership owns review for production change authority, repository allowlist, incident rollback owner.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Engineering Leadership",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_688db09f05de6252",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Engineering Leadership",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_any_write_path",
+      "unblocks": "production change authority, repository allowlist, incident rollback owner"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Security/Legal owns review for source-code and production infrastructure exposure.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Security/Legal",
+      "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+      "receipt_id": "er_93e6cbb0780c9f19",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Security/Legal",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "admin_code_fix_bot",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_access",
+      "unblocks": "source-code and production infrastructure exposure"
+    }
+  ],
+  "safety": {
+    "all_non_approving": true,
+    "all_non_auto_reducing": true,
+    "all_non_executing": true,
+    "all_non_granting": true,
+    "all_non_mutating": true,
+    "all_require_human_review": true,
+    "decision_lock_preserved": true,
+    "receipt_count": 7
+  },
+  "scenario": "admin_code_fix_bot",
+  "schema_version": "evidence_receipt_ledger.v0",
+  "snapshot_content_hash": "sha256:7dd2645ee8bfe3529ec86e355e402c7da109ea9b68c608e133052bd812c8aca7",
+  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_7dd2645ee8bfe352",
+  "snapshot_revision_id": "rev_7dd2645ee8bfe352",
+  "summary": {
+    "cost_procurement_receipts": 1,
+    "proof_debt_receipts": 2,
+    "receipt_count": 7,
+    "reviewer_route_receipts": 3,
+    "tool_scope_receipts": 1
+  }
+}

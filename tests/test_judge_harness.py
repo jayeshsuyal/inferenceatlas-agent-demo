@@ -45,6 +45,19 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["packet_diff"]["has_proof_routed_lane"])
         self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
         self.assertTrue(report["packet_diff"]["all_production_access_blocked"])
+        self.assertEqual(report["evidence_receipt_ledger"]["scenario"], "support_triage_agent")
+        self.assertEqual(
+            report["evidence_receipt_ledger"]["decision_lock_before"],
+            report["evidence_receipt_ledger"]["decision_lock_after"],
+        )
+        self.assertGreaterEqual(report["evidence_receipt_ledger"]["receipt_count"], 1)
+        self.assertEqual(report["evidence_receipt_ledger"]["cost_procurement_receipts"], 1)
+        self.assertTrue(report["evidence_receipt_ledger"]["all_require_human_review"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_approving"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_granting"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_executing"])
+        self.assertTrue(report["evidence_receipt_ledger"]["budget_owner_required"])
+        self.assertTrue(report["evidence_receipt_ledger"]["token_or_tool_spend_cap_required"])
         self.assertEqual(report["packet_authority_snapshot"]["scenario"], "support_triage_agent")
         self.assertEqual(
             report["packet_authority_snapshot"]["decision_lock_before"],
@@ -102,6 +115,8 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/trust_receipt.md",
             "examples/generated/packet_diff.md",
             "examples/generated/packet_diff.json",
+            "examples/generated/support_triage_agent.evidence_receipts.md",
+            "examples/generated/support_triage_agent.evidence_receipts.json",
             "examples/generated/support_triage_agent.snapshot.json",
             "examples/generated/support_triage_agent.verification.json",
             "examples/generated/support_triage_agent.outcome_memo.md",
@@ -143,6 +158,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Access Speed Layer", markdown)
         self.assertIn("Packet Diff", markdown)
         self.assertIn("examples/generated/packet_diff.md", markdown)
+        self.assertIn("Evidence Receipt Ledger", markdown)
+        self.assertIn("examples/generated/support_triage_agent.evidence_receipts.md", markdown)
+        self.assertIn("budget owner required: True", markdown)
         self.assertIn("Packet Authority Snapshot", markdown)
         self.assertIn("examples/generated/support_triage_agent.snapshot.json", markdown)
         self.assertIn("Packet Verification", markdown)
@@ -173,6 +191,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("admin_code_fix_bot", result.stdout)
         self.assertIn("Access Speed Layer", result.stdout)
         self.assertIn("Packet Diff", result.stdout)
+        self.assertIn("Evidence Receipt Ledger", result.stdout)
+        self.assertIn("budget owner required: True", result.stdout)
         self.assertIn("Packet Outcome Memo", result.stdout)
         self.assertIn("Sponsor Live Readiness", result.stdout)
         self.assertIn("all non-approving: True", result.stdout)
@@ -201,6 +221,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)
         self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
+        self.assertEqual(report["evidence_receipt_ledger"]["cost_procurement_receipts"], 1)
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_approving"])
+        self.assertTrue(report["evidence_receipt_ledger"]["budget_owner_required"])
         self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
         self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")

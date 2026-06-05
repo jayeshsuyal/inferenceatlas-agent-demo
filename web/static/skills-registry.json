@@ -2,7 +2,7 @@
   "schema_version": "inferenceatlas_ui_skills.v0",
   "source": "docs/AGENT_SKILLS.md",
   "registry_command": "python3 -m agent.skills",
-  "count": 15,
+  "count": 16,
   "skills": [
     {
       "id": "policy_gate_evaluation",
@@ -246,6 +246,25 @@
         "agent/proof_health.py",
         "examples/generated/support_triage_agent.proof_health.md",
         "examples/generated/support_triage_agent.proof_health.json"
+      ]
+    },
+    {
+      "id": "evidence_receipt_ledger",
+      "slash": "receipts",
+      "slash_trigger": "/receipts",
+      "name": "Evidence Receipt Ledger",
+      "what_it_proves": "Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock.",
+      "command": "python3 -m agent.evidence_receipts",
+      "category": "proof_integrity",
+      "category_label": "Proof Integrity",
+      "safety_boundary": "receipts are context only; never weaken locks",
+      "tier": "stable",
+      "mode": "assist",
+      "prompt": "Explain the output of the Evidence Receipt Ledger harness skill for a hackathon judge. Context: Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. Safety: receipts are context only; never weaken locks",
+      "artifacts": [
+        "agent/evidence_receipts.py",
+        "examples/generated/support_triage_agent.evidence_receipts.md",
+        "examples/generated/support_triage_agent.evidence_receipts.json"
       ]
     },
     {
@@ -537,6 +556,25 @@
             "agent/proof_health.py",
             "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/support_triage_agent.proof_health.json"
+          ]
+        },
+        {
+          "id": "evidence_receipt_ledger",
+          "slash": "receipts",
+          "slash_trigger": "/receipts",
+          "name": "Evidence Receipt Ledger",
+          "what_it_proves": "Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock.",
+          "command": "python3 -m agent.evidence_receipts",
+          "category": "proof_integrity",
+          "category_label": "Proof Integrity",
+          "safety_boundary": "receipts are context only; never weaken locks",
+          "tier": "stable",
+          "mode": "assist",
+          "prompt": "Explain the output of the Evidence Receipt Ledger harness skill for a hackathon judge. Context: Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. Safety: receipts are context only; never weaken locks",
+          "artifacts": [
+            "agent/evidence_receipts.py",
+            "examples/generated/support_triage_agent.evidence_receipts.md",
+            "examples/generated/support_triage_agent.evidence_receipts.json"
           ]
         },
         {

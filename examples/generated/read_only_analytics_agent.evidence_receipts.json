@@ -1,0 +1,376 @@
+{
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_cff66799a0af82fd",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_4a31d1c85d50c406",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_400ba6cde2b288c0",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_567666793b178e26",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_594a27a66eae004f",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_0371e09fe96436cf",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_52190be018a99794",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_validation"
+    },
+    {
+      "receipt_id": "er_bf9ebe27c933f8af",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    }
+  ],
+  "decision_lock_after": "read_only_validation",
+  "decision_lock_before": "read_only_validation",
+  "finance_procurement": {
+    "approval_granted": false,
+    "budget_owner_required": true,
+    "owner": "Procurement/Finance",
+    "receipt_type": "cost_procurement_receipt",
+    "spend_claim": "No live model/tool/vendor spend is approved by the public receipt ledger.",
+    "token_or_tool_spend_cap_required": true
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "ledger_id": "ia-agent-access-read-only-analytics-v0:evidence_receipts:v0",
+  "mode": "offline_deterministic",
+  "packet_id": "ia-agent-access-read-only-analytics-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "receipt_ids": [
+    "er_cff66799a0af82fd",
+    "er_4a31d1c85d50c406",
+    "er_400ba6cde2b288c0",
+    "er_567666793b178e26",
+    "er_594a27a66eae004f",
+    "er_0371e09fe96436cf",
+    "er_52190be018a99794",
+    "er_bf9ebe27c933f8af"
+  ],
+  "receipts": [
+    {
+      "attaches_to": "tool_access_plan.bigquery",
+      "claim": "bigquery stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "writes, exports, permission changes"
+        },
+        {
+          "control": "required_proof",
+          "value": "dataset/resource allowlist, data owner approval, read-only credential proof"
+        }
+      ],
+      "evidence_summary": "Requested=read aggregate product usage tables; validation=read-only validation plan only; blocked=writes, exports, permission changes.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_cff66799a0af82fd",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.tool_access_plan.bigquery",
+      "status": "needs_named_owner_review",
+      "unblocks": "bigquery validation boundary review"
+    },
+    {
+      "attaches_to": "tool_access_plan.looker",
+      "claim": "looker stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "writes, exports, permission changes"
+        },
+        {
+          "control": "required_proof",
+          "value": "dataset/resource allowlist, data owner approval, read-only credential proof"
+        }
+      ],
+      "evidence_summary": "Requested=read dashboards and saved explores; validation=read-only validation plan only; blocked=writes, exports, permission changes.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_4a31d1c85d50c406",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.tool_access_plan.looker",
+      "status": "needs_named_owner_review",
+      "unblocks": "looker validation boundary review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "BigQuery read-only allowlist and credential proof",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Data/Engineering",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_400ba6cde2b288c0",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Data/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Looker read-only allowlist and credential proof",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Data/Engineering",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_567666793b178e26",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Data/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "read-only validation review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Data owner confirmation that requested metrics are aggregate and non-customer-specific",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Data/Analytics",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_594a27a66eae004f",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Data/Analytics",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "read-only analytics validation"
+    },
+    {
+      "attaches_to": "approval_posture.production_access",
+      "claim": "Tool, model, token, and vendor spend must stay capped until a budget owner signs the pilot envelope.",
+      "controls": [
+        {
+          "control": "budget_owner_required",
+          "value": "true"
+        },
+        {
+          "control": "token_or_tool_spend_cap_required",
+          "value": "true"
+        },
+        {
+          "control": "paid_seat_or_vendor_change_requires_review",
+          "value": "true"
+        },
+        {
+          "control": "default_public_live_spend",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Requested systems: bigquery, looker. Public default is no live spend, no paid-seat grant, and no production access until budget owner review.",
+      "owner": "Procurement/Finance",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_0371e09fe96436cf",
+      "receipt_type": "cost_procurement_receipt",
+      "review_required_by": "Procurement/Finance",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "public_cost_control_contract",
+      "status": "budget_owner_review_required",
+      "unblocks": "paid tool/vendor spend review if live actions or seats are enabled"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Data/Analytics owns review for aggregate metric scope, dashboard allowlist, read-only credentials.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Data/Analytics",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_52190be018a99794",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Data/Analytics",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_validation",
+      "unblocks": "aggregate metric scope, dashboard allowlist, read-only credentials"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Engineering owns review for read-only credential boundary and audit log owner.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-read-only-analytics-v0",
+      "receipt_id": "er_bf9ebe27c933f8af",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "read_only_analytics_agent",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_access",
+      "unblocks": "read-only credential boundary and audit log owner"
+    }
+  ],
+  "safety": {
+    "all_non_approving": true,
+    "all_non_auto_reducing": true,
+    "all_non_executing": true,
+    "all_non_granting": true,
+    "all_non_mutating": true,
+    "all_require_human_review": true,
+    "decision_lock_preserved": true,
+    "receipt_count": 8
+  },
+  "scenario": "read_only_analytics_agent",
+  "schema_version": "evidence_receipt_ledger.v0",
+  "snapshot_content_hash": "sha256:325dd666c69fa24e47bada029bae59d8302fe4a3a15c15c3ff4055fc2dc0b84c",
+  "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_325dd666c69fa24e",
+  "snapshot_revision_id": "rev_325dd666c69fa24e",
+  "summary": {
+    "cost_procurement_receipts": 1,
+    "proof_debt_receipts": 3,
+    "receipt_count": 8,
+    "reviewer_route_receipts": 2,
+    "tool_scope_receipts": 2
+  }
+}

@@ -13,8 +13,8 @@ python3 -m scripts.generate_agent_skills_doc
 
 ## Summary
 
-- Registered skills: `14`
-- Stable skills: `14`
+- Registered skills: `15`
+- Stable skills: `15`
 - Public harness approves access: `false`
 - Public harness grants permissions: `false`
 - Public harness executes external writes: `false`
@@ -52,6 +52,7 @@ python3 -m scripts.generate_agent_skills_doc
 | Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
 | --- | --- | --- | --- | --- | --- |
 | Artifact Integrity Verification | `stable` | Checked-in proof inventory is compared against deterministic generator output. | `python3 -m agent.verify_artifacts` | `agent/verify_artifacts.py`<br>`tests/test_verify_artifacts.py` | regeneration is deterministic; proof bytes locked |
+| Evidence Receipt Ledger | `stable` | Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock. | `python3 -m agent.evidence_receipts` | `agent/evidence_receipts.py`<br>`examples/generated/support_triage_agent.evidence_receipts.md`<br>`examples/generated/support_triage_agent.evidence_receipts.json` | receipts are context only; never weaken locks |
 | Proof Health / Drift Detection | `stable` | Packet assumptions, reviewer gates, and refresh timing are surfaced before access expands. | `python3 -m agent.proof_health` | `agent/proof_health.py`<br>`examples/generated/support_triage_agent.proof_health.md`<br>`examples/generated/support_triage_agent.proof_health.json` | health is observational; never auto-refreshes |
 
 ### Sponsor Readiness
@@ -76,6 +77,7 @@ graph TD
     outcome_memo_generation["Outcome Memo Generation"]
     packet_diff_generation["Packet Diff Generation"]
     artifact_integrity_verification["Artifact Integrity Verification"]
+    evidence_receipt_ledger["Evidence Receipt Ledger"]
     proof_health_drift_detection["Proof Health / Drift Detection"]
     sponsor_proof_readiness["Sponsor Proof Readiness"]
     access_request_normalization --> decision_packet_generation
@@ -102,10 +104,14 @@ graph TD
     design_partner_evidence_replay --> artifact_integrity_verification
     design_partner_outcome_memo --> artifact_integrity_verification
     design_partner_trial_runner --> artifact_integrity_verification
+    evidence_receipt_ledger --> artifact_integrity_verification
     outcome_memo_generation --> artifact_integrity_verification
     packet_diff_generation --> artifact_integrity_verification
     proof_health_drift_detection --> artifact_integrity_verification
     sponsor_proof_readiness --> artifact_integrity_verification
+    decision_packet_generation --> evidence_receipt_ledger
+    proof_debt_extraction --> evidence_receipt_ledger
+    reviewer_routing --> evidence_receipt_ledger
     decision_packet_generation --> proof_health_drift_detection
     reviewer_routing --> proof_health_drift_detection
     policy_gate_evaluation --> sponsor_proof_readiness

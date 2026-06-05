@@ -32,6 +32,8 @@ jobs:
           ia-skills --json >/tmp/installed_agent_skills.json
           ia-packet-diff --no-write
           ia-packet-diff --no-write --json >/tmp/installed_packet_diff.json
+          ia-receipts --no-write
+          ia-receipts --no-write --json >/tmp/installed_evidence_receipts.json
           ia-snapshot
           ia-snapshot --json >/tmp/installed_packet_snapshot.json
           ia-verify --all

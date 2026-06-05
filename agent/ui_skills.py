@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, List, Literal, Optional
 
 from .decision_brief import build_agent_access_decision_brief
+from .evidence_receipts import build_evidence_receipt_ledger
 from .gate import evaluate_all, evaluate_gate
 from .packet_diff import build_packet_diff_report
 from .proof_health import build_proof_health_report
@@ -32,6 +33,7 @@ SLASH_BY_SKILL_ID = {
     "outcome_memo_generation": "memo",
     "packet_diff_generation": "diff",
     "artifact_integrity_verification": "verify",
+    "evidence_receipt_ledger": "receipts",
     "proof_health_drift_detection": "proof-health",
     "sponsor_proof_readiness": "sponsor",
 }
@@ -287,6 +289,28 @@ def _context_for_skill(skill: UISkill, max_chars: int = 2800) -> str:
     if sid == "outcome_memo_generation":
         return _read_text(GENERATED_DIR / "support_triage_agent.outcome_memo.md", max_chars)
 
+    if sid == "evidence_receipt_ledger":
+        ledger = build_evidence_receipt_ledger(
+            build_scenario_packet("support_triage_agent"),
+            "support_triage_agent",
+        )
+        summary = ledger["summary"]
+        finance = ledger["finance_procurement"]
+        return "\n".join(
+            [
+                "Evidence Receipt Ledger:",
+                f"- decision lock: {ledger['decision_lock_before']} -> {ledger['decision_lock_after']}",
+                f"- receipts: {summary['receipt_count']}",
+                f"- tool scope receipts: {summary['tool_scope_receipts']}",
+                f"- proof debt receipts: {summary['proof_debt_receipts']}",
+                f"- reviewer route receipts: {summary['reviewer_route_receipts']}",
+                f"- cost/procurement receipts: {summary['cost_procurement_receipts']}",
+                f"- budget owner required: {finance['budget_owner_required']}",
+                f"- token/tool spend cap required: {finance['token_or_tool_spend_cap_required']}",
+                f"- approval granted: {finance['approval_granted']}",
+            ]
+        )[:max_chars]
+
     if sid == "proof_health_drift_detection":
         report = build_proof_health_report("support_triage_agent")
         dims = report.get("dimensions", [])[:4]
@@ -340,6 +364,8 @@ def skill_suggested_questions(skill_ids: List[str]) -> List[str]:
         hints.append("Which scenarios does the policy gate block vs allow validation?")
     if ids & {"packet_diff_generation", "risk_aware_scenario_differentiation"}:
         hints.append("How do the three scenarios differ on proof and production access?")
+    if "evidence_receipt_ledger" in ids:
+        hints.append("Which receipts prove the packet still needs human and finance review?")
     if "full_judge_harness" in ids:
         hints.append("Summarize the full judge proof path for a hackathon judge.")
     if ids & {"design_partner_outcome_memo", "design_partner_evidence_replay"}:

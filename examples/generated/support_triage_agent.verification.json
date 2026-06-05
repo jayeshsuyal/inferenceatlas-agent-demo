@@ -18,7 +18,7 @@
       "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
     }
   ],
-  "content_hash": "sha256:3182530a3668e50e5a4478c1b8b920d892ba7f947a89ee0d3b79a3fe7ee466dc",
+  "content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
   "decision_lock": "scoped_validation_only",
   "external_writes": false,
   "missing_proof": [
@@ -78,7 +78,7 @@
       "review_area": "paid tool/vendor spend if live actions or seats are enabled"
     }
   ],
-  "revision_id": "rev_3182530a3668e50e",
+  "revision_id": "rev_965302783cee8688",
   "safety_invariants": [
     "approval_granted=False",
     "production_access=blocked",
@@ -88,6 +88,6 @@
   ],
   "schema_version": "packet_verification.v0",
   "scoped_validation": true,
-  "snapshot_id": "ia-agent-access-support-triage-v0:rev_3182530a3668e50e",
+  "snapshot_id": "ia-agent-access-support-triage-v0:rev_965302783cee8688",
   "verification_status": "valid_review_required"
 }

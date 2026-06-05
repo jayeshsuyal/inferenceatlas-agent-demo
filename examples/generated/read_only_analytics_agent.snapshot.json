@@ -1,9 +1,59 @@
 {
-  "accepted_evidence": [],
-  "content_hash": "sha256:31c862aff79bf60e6e340f7393d24a34061637f709a397baa165f3ec8b58c5ae",
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_cff66799a0af82fd",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_4a31d1c85d50c406",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_400ba6cde2b288c0",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_567666793b178e26",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_594a27a66eae004f",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_0371e09fe96436cf",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_52190be018a99794",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_validation"
+    },
+    {
+      "receipt_id": "er_bf9ebe27c933f8af",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    }
+  ],
+  "content_hash": "sha256:325dd666c69fa24e47bada029bae59d8302fe4a3a15c15c3ff4055fc2dc0b84c",
   "decision_lock_after": "read_only_validation",
   "decision_lock_before": "read_only_validation",
-  "evidence_receipt_ids": [],
+  "evidence_receipt_ids": [
+    "er_cff66799a0af82fd",
+    "er_4a31d1c85d50c406",
+    "er_400ba6cde2b288c0",
+    "er_567666793b178e26",
+    "er_594a27a66eae004f",
+    "er_0371e09fe96436cf",
+    "er_52190be018a99794",
+    "er_bf9ebe27c933f8af"
+  ],
   "generated_by": "inferenceatlas-agent-demo",
   "locked_fields": [
     "decision.verdict",
@@ -18,7 +68,7 @@
   "next_human_action": "Run a read-only analytics validation with named datasets, dashboards, and aggregate-only metrics.",
   "packet_id": "ia-agent-access-read-only-analytics-v0",
   "rejected_evidence": [],
-  "revision_id": "rev_31c862aff79bf60e",
+  "revision_id": "rev_325dd666c69fa24e",
   "safety_invariants": [
     "approval_granted=False",
     "production_access=blocked",
@@ -27,5 +77,5 @@
     "requires_human_approval=True"
   ],
   "schema_version": "packet_authority_snapshot.v0",
-  "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_31c862aff79bf60e"
+  "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_325dd666c69fa24e"
 }

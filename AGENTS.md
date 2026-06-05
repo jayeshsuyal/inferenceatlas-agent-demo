@@ -24,6 +24,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.skills
 python3 -m agent.packet_diff
+python3 -m agent.evidence_receipts
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
@@ -45,8 +46,9 @@ Expected result:
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
-- the Agent Skills registry reports `14 / 14 stable skills available`
+- the Agent Skills registry reports `15 / 15 stable skills available`
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
+- Evidence Receipt Ledger attaches tool scope, proof debt, reviewer routes, and cost/procurement controls without changing the packet lock
 - Packet Outcome Memo converts the support-triage packet into a scoped-validation human decision
 - the public contract reports all scenarios as `OK`
 - the policy gate blocks `admin_code_fix_bot` and allows lower-risk validation only with gates
@@ -81,21 +83,22 @@ Expected result:
 14. `examples/evidence/support_triage_trial/`
 15. `examples/generated/trust_receipt.md`
 15. `examples/generated/packet_diff.md`
-16. `examples/generated/support_triage_agent.outcome_memo.md`
-17. `examples/generated/sponsor_live_readiness.md`
-18. `examples/generated/review_room.md`
-19. `examples/generated/review_room.html`
-20. `examples/generated/support_triage_agent.proof_health.md`
-21. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-22. `examples/generated/review_room.desktop.jpg`
-23. `policy/agent_access.yml`
-24. `agent/adapters/`
-25. `examples/generated/support_triage_agent.decision_brief.md`
-26. `examples/generated/support_triage_agent.packet.md`
-27. `examples/generated/admin_code_fix_bot.packet.json`
-28. `docs/CONTRACT.md`
-29. `docs/SAFETY_CONTRACT.md`
-30. `docs/V1_CAPABILITY_PASSPORT.md`
+16. `examples/generated/support_triage_agent.evidence_receipts.md`
+17. `examples/generated/support_triage_agent.outcome_memo.md`
+18. `examples/generated/sponsor_live_readiness.md`
+19. `examples/generated/review_room.md`
+20. `examples/generated/review_room.html`
+21. `examples/generated/support_triage_agent.proof_health.md`
+22. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+23. `examples/generated/review_room.desktop.jpg`
+24. `policy/agent_access.yml`
+25. `agent/adapters/`
+26. `examples/generated/support_triage_agent.decision_brief.md`
+27. `examples/generated/support_triage_agent.packet.md`
+28. `examples/generated/admin_code_fix_bot.packet.json`
+29. `docs/CONTRACT.md`
+30. `docs/SAFETY_CONTRACT.md`
+31. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 
@@ -108,6 +111,7 @@ Evaluate the public product contract:
 - Does `docs/PRODUCT_QUALITY_AUDIT.md` keep the public product spine coherent under fast iteration?
 - Does the repo turn a messy agent-access request into a reviewable DecisionPacket?
 - Does `examples/generated/packet_diff.md` prove the packet bends across low, medium/high, and critical access?
+- Does `python3 -m agent.evidence_receipts` attach receipts without approving access or weakening the decision lock?
 - Does `examples/generated/support_triage_agent.outcome_memo.md` turn the packet into a clear human decision?
 - Does `python3 -m agent.verify_artifacts` prove deterministic proof artifacts are fresh and no unexpected generated file is checked in?
 - Does the decision brief give a fast go/no-go surface?

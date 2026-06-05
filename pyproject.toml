@@ -35,6 +35,7 @@ web = [
 [project.scripts]
 ia-adapters = "agent.adapters.__main__:main"
 ia-contract = "agent.contract:main"
+ia-receipts = "agent.evidence_receipts:main"
 ia-gate = "agent.gate:main"
 ia-judge = "agent.judge:main"
 ia-outcome-memo = "agent.outcome_memo:main"

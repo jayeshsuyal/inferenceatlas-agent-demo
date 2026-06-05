@@ -142,9 +142,57 @@ def test_product_positioning_questions_are_direct_control_layer_answers():
 
         assert orch.direct_reply
         assert orch.direct_reply_source == "product_positioning"
+        assert orch.direct_answer["schema_version"] == "chat_answer.v0"
+        assert orch.direct_answer["answer_kind"] == "product_positioning"
         assert orch.use_tools is False
         assert "proof packet" in orch.direct_reply
         assert "DecisionPacket" in orch.direct_reply
-        assert "another general chatbot" in orch.direct_reply
+        assert "better generic chatbot" in orch.direct_reply
         assert "export_report" not in orch.direct_reply
         assert "InferenceAtlas product positioning" in orch.context_manifest
+
+
+def test_spend_review_questions_get_structured_finance_answer():
+    orch = orchestrate_chat(
+        message="Our AI budget was blown in Q1. What should Finance and Procurement review?",
+        skill_ids=[],
+        skill_position="prepend",
+        session_id="orch-spend-review",
+        github_repos=[],
+        drive_file_ids=[],
+        file_blocks=[],
+        attach_warnings=[],
+    )
+
+    assert orch.direct_reply
+    assert orch.direct_reply_source == "spend_review"
+    assert orch.direct_answer["schema_version"] == "chat_answer.v0"
+    assert orch.direct_answer["answer_kind"] == "ai_spend_review"
+    assert orch.direct_answer["safety"]["approves_spend"] is False
+    assert orch.direct_answer["safety"]["selects_provider"] is False
+    assert orch.direct_answer["safety"]["guarantees_savings"] is False
+    assert orch.use_tools is False
+    assert "Finance and Procurement review packet" in orch.direct_reply
+    assert "will save" not in orch.direct_reply.lower()
+    assert "ChatAnswer: ai_spend_review" in orch.context_manifest
+
+
+def test_access_review_direct_answer_has_chat_answer_contract():
+    orch = orchestrate_chat(
+        message="Should our support triage agent get GitHub and Slack tool access?",
+        skill_ids=[],
+        skill_position="prepend",
+        session_id="orch-access-answer",
+        github_repos=[],
+        drive_file_ids=[],
+        file_blocks=[],
+        attach_warnings=[],
+    )
+
+    assert orch.direct_reply
+    assert orch.direct_reply_source == "access_review_example"
+    assert orch.direct_answer["schema_version"] == "chat_answer.v0"
+    assert orch.direct_answer["answer_kind"] == "agent_access_review"
+    assert orch.direct_answer["packet_refs"][0]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert orch.direct_answer["safety"]["production_access"] is False
+    assert "No production access" in orch.direct_reply

@@ -139,6 +139,28 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn(".empty-proof-board", css)
         self.assertIn("grid-template-columns: repeat(4", css)
 
+    def test_chat_api_surfaces_structured_chat_answer_v0(self) -> None:
+        from web.app import ChatRequest, _execute_chat
+
+        with patch("web.app._chat_validate", return_value=None):
+            response = _execute_chat(
+                ChatRequest(
+                    session_id="chat-answer-contract",
+                    message=(
+                        "Our AI budget was blown in Q1. What should Finance and "
+                        "Procurement review?"
+                    ),
+                )
+            )
+
+        self.assertIn("Context used", response.reply)
+        self.assertEqual(response.answer["schema_version"], "chat_answer.v0")
+        self.assertEqual(response.answer["answer_kind"], "ai_spend_review")
+        self.assertFalse(response.answer["safety"]["approves_spend"])
+        self.assertFalse(response.answer["safety"]["selects_provider"])
+        self.assertFalse(response.answer["safety"]["guarantees_savings"])
+        self.assertIn("Finance and Procurement review packet", response.reply)
+
     def test_design_partner_walkthrough_api_is_safe_and_export_ready(self) -> None:
         from web.app import design_partner_walkthrough
 

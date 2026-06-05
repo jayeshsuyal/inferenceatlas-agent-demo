@@ -21,6 +21,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         handoff = (ROOT / "docs" / "CTO_HANDOFF.md").read_text(encoding="utf-8")
         for expected in [
             "agent/demo.py",
+            "agent/chat_answer.py",
             "agent/skills.py",
             "agent/packet.py",
             "agent/evidence_receipts.py",
@@ -248,6 +249,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("docs/AGENT_SKILLS.md", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.skills", manifest["judge_review_path"])
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("chat answer contract", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("evidence receipt ledger", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
@@ -272,6 +274,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["product_tour"], "docs/PRODUCT_TOUR.md")
         self.assertEqual(manifest["primary_artifacts"]["agent_skills"], "docs/AGENT_SKILLS.md")
         self.assertEqual(manifest["primary_artifacts"]["agent_skills_registry"], "agent/skills.py")
+        self.assertEqual(manifest["primary_artifacts"]["chat_answer_contract"], "agent/chat_answer.py")
         self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
         self.assertEqual(
             manifest["primary_artifacts"]["proof_health_markdown"],

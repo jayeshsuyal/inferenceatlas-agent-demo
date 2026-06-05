@@ -389,6 +389,7 @@ The public repo remains an **agent-access review harness**; the web UI now also 
 | Area | What you get |
 | --- | --- |
 | **Unified chat** | One prompt merges Skills, GitHub repo digests, Google Drive files, and local uploads with labeled sections and an honest **Context used** manifest. |
+| **ChatAnswer v0** | Deterministic high-stakes replies expose `chat_answer.v0` metadata: source, artifacts, packet refs, safety flags, and next human action. |
 | **Thinking logs** | `POST /api/chat/stream` streams orchestration steps (SSE) before the final reply. |
 | **Skills** | `/` slash picker + skill chips; harness facts stay authoritative for access review. |
 | **GitHub** | OAuth popup, searchable repo picker, attach/index (README + tree + files), status badges on chips. |
@@ -450,6 +451,7 @@ Set `INFERENCEATLAS_V1_URL=http://127.0.0.1:8000` in this demo’s `.env` and re
 
 ```text
 agent/chat_orchestrator.py   # unified context + tool vs engine routing
+agent/chat_answer.py         # structured packet-backed answer contract
 agent/cost_plan.py           # v1 gateway + ENGINE block formatting
 agent/v1_client.py           # HTTP client for /api/v1/plan/llm
 agent/workload_parse.py      # tokens/month + cost-question detection

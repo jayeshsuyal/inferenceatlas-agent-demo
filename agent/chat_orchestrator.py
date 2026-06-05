@@ -4,16 +4,23 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Tuple
 
+from .chat_answer import (
+    ChatAnswer,
+    build_access_review_answer,
+    build_catalog_answer,
+    build_pricing_answer,
+    build_product_positioning_answer,
+    build_spend_review_answer,
+)
 from .config import V1_SLOT_FILLER_PROMPT
 from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
-from .decision_brief import build_agent_access_decision_brief
 from .github_repo import build_github_chat_context, get_repo_index_status
 from .google_drive_files import build_drive_chat_context, get_drive_index_status
 from .ui_skills import build_skill_context_for_chat, compose_message_with_skills
 from .packet import build_support_triage_decision_packet
-from .renderers import render_decision_brief_markdown, render_packet_markdown
+from .renderers import render_packet_markdown
 from .tools import compare_providers, get_catalog_summary, tavily_search
 from .workload_parse import is_access_review_question, is_cost_question
 
@@ -85,6 +92,7 @@ class OrchestratedChat:
     cost_plan_ok: bool = False
     direct_reply: str = ""
     direct_reply_source: str = ""
+    direct_answer: dict[str, Any] = field(default_factory=dict)
     harness_injected: bool = False
 
 
@@ -99,31 +107,34 @@ def _normalized(message: str) -> str:
     return " ".join(message.lower().split())
 
 
-def _product_positioning_reply() -> str:
-    return "\n\n".join(
-        [
-            "## What InferenceAtlas does",
-            (
-                "InferenceAtlas is not trying to be another general chatbot. It creates the "
-                "proof packet humans and downstream systems need before an AI agent gets tools, "
-                "data, spend, or production access."
-            ),
-            "\n".join(
-                [
-                    "- **Before action**: turn an agent request into a DecisionPacket, policy gate, proof debt, reviewer routing, and PilotMemo.",
-                    "- **For downstream systems**: expose a read-only packet authority object that gateways, CI, spend controls, review queues, and observability can consume.",
-                    "- **For sponsors/tools**: let Nebius narrate, Tavily find evidence, and Composio simulate permission diffs without granting access or executing writes.",
-                    "- **For cost work**: compare provider/catalog options and route spend questions to Finance or Procurement with no savings guarantee.",
-                ]
-            ),
-            (
-                "So the difference from Claude or ChatGPT is the control layer: those tools can "
-                "answer or act; InferenceAtlas produces the reviewable packet that says what is "
-                "blocked, what proof is missing, who owns the next decision, and what downstream "
-                "systems may trust."
-            ),
-        ]
+def _is_spend_review_question(message: str) -> bool:
+    normalized = _normalized(message)
+    spend_terms = (
+        "ai budget",
+        "budget overrun",
+        "spent the",
+        "spent my",
+        "spent our",
+        "finance",
+        "procurement",
+        "usage cap",
+        "cap usage",
+        "vendor switch",
+        "switch vendors",
+        "renegotiate",
+        "spend packet",
+        "spend review",
     )
+    if not any(term in normalized for term in spend_terms):
+        return False
+    optimizer_terms = (
+        "compare_providers",
+        "cheapest",
+        "top 5",
+        "pricing",
+        "catalog",
+    )
+    return not any(term in normalized for term in optimizer_terms)
 
 
 def _summarize_live_search_evidence(raw_search: str) -> str:
@@ -151,43 +162,36 @@ def _summarize_live_search_evidence(raw_search: str) -> str:
     )
 
 
-def _demo_direct_reply(message: str) -> tuple[str, str]:
+def _direct_answer_tuple(answer: ChatAnswer, source: str) -> tuple[str, str, dict[str, Any]]:
+    return answer.reply_markdown, source, answer.to_dict()
+
+
+def _demo_direct_reply(message: str) -> tuple[str, str, dict[str, Any]]:
     """Deterministic replies for demo-critical questions where LLM improvisation hurts trust."""
     normalized = _normalized(message)
     if "use get_catalog_summary" in normalized:
-        return "## Catalog overview\n\n" + get_catalog_summary(), "catalog_example"
+        return _direct_answer_tuple(build_catalog_answer(get_catalog_summary()), "catalog_example")
 
     if "support triage agent" in normalized or "tool access review" in normalized:
-        packet = build_support_triage_decision_packet(mode="live_review_room_demo")
-        brief = build_agent_access_decision_brief(packet)
-        return (
-            "\n\n".join(
-                [
-                    "## Tool access review",
-                    render_decision_brief_markdown(brief),
-                    "Composio remains dry-run; no external write was executed.",
-                ]
-            ),
-            "access_review_example",
-        )
+        return _direct_answer_tuple(build_access_review_answer(message), "access_review_example")
+
+    if _is_spend_review_question(message):
+        return _direct_answer_tuple(build_spend_review_answer(), "spend_review")
 
     if "use tavily_search" in normalized and "mistral" in normalized:
         search = tavily_search("site:mistral.ai pricing Mistral Large API official", max_results=2)
         comparison = compare_providers("llm", top_n=5)
-        return (
-            "\n\n".join(
-                [
-                    "## Mistral pricing live check",
-                    "### Live evidence",
-                    _summarize_live_search_evidence(search),
-                    "### Catalog comparison",
-                    comparison,
-                    (
-                        "This is a procurement shortlist, not a savings guarantee. Composio "
-                        "remains dry-run; no external write was executed."
-                    ),
-                ]
-            ),
+        body = "\n\n".join(
+            [
+                "### Live evidence",
+                _summarize_live_search_evidence(search),
+                "### Catalog comparison",
+                comparison,
+                "Composio remains dry-run; no external write was executed.",
+            ]
+        )
+        return _direct_answer_tuple(
+            build_pricing_answer(title="Mistral pricing live check", body=body),
             "pricing_example",
         )
 
@@ -197,15 +201,14 @@ def _demo_direct_reply(message: str) -> tuple[str, str]:
         and "compare_providers" in normalized
     ):
         comparison = compare_providers("llm", top_n=5)
-        return (
-            "\n\n".join(
-                [
-                    "## GPT-4o alternative",
-                    "Catalog comparison for `llm` workloads:",
-                    comparison,
-                    "Use this as a procurement shortlist, not a final savings guarantee.",
-                ]
-            ),
+        body = "\n\n".join(
+            [
+                "Catalog comparison for `llm` workloads:",
+                comparison,
+            ]
+        )
+        return _direct_answer_tuple(
+            build_pricing_answer(title="GPT-4o alternative", body=body),
             "pricing_example",
         )
 
@@ -222,9 +225,9 @@ def _demo_direct_reply(message: str) -> tuple[str, str]:
         "why are you better",
     )
     if any(pattern in normalized for pattern in product_patterns):
-        return _product_positioning_reply(), "product_positioning"
+        return _direct_answer_tuple(build_product_positioning_answer(), "product_positioning")
 
-    return "", ""
+    return "", "", {}
 
 
 def _wants_tools(message: str) -> bool:
@@ -460,9 +463,10 @@ def orchestrate_chat(
     cost_plan_ok = False
     direct_reply = ""
     direct_reply_source = ""
+    direct_answer: dict[str, Any] = {}
     cost = None
 
-    direct_reply, direct_reply_source = _demo_direct_reply(message)
+    direct_reply, direct_reply_source, direct_answer = _demo_direct_reply(message)
     if direct_reply:
         use_tools = False
 
@@ -473,6 +477,7 @@ def orchestrate_chat(
         if copilot_result.ok and copilot_result.reply:
             direct_reply = copilot_result.reply
             direct_reply_source = "inferenceatlas-v1-copilot"
+            direct_answer = {}
             engine_source = copilot_result.source
             cost_plan_ok = bool(copilot_result.plans)
             use_tools = False
@@ -551,6 +556,12 @@ def orchestrate_chat(
                 1,
                 "Product positioning question detected — using deterministic IA control-layer answer",
             )
+        elif direct_answer:
+            thinking.insert(
+                1,
+                f"Structured ChatAnswer {direct_answer.get('schema_version', 'chat_answer.v0')} "
+                f"selected — {direct_answer.get('answer_kind', direct_reply_source)}",
+            )
         else:
             thinking.insert(
                 1,
@@ -596,6 +607,8 @@ def orchestrate_chat(
         manifest.append(label)
     elif direct_reply_source == "product_positioning":
         manifest.append("InferenceAtlas product positioning")
+    elif direct_reply_source == "spend_review":
+        manifest.append("ChatAnswer: ai_spend_review")
     elif direct_reply_source in {"catalog_example", "pricing_example"}:
         manifest.append("Deterministic catalog example")
     elif direct_reply_source == "access_review_example":
@@ -643,6 +656,7 @@ def orchestrate_chat(
         cost_plan_ok=cost_plan_ok,
         direct_reply=direct_reply,
         direct_reply_source=direct_reply_source,
+        direct_answer=direct_answer,
         harness_injected=harness_injected,
     )
 

@@ -158,6 +158,7 @@ class DriveAttachRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     session_id: str
+    answer: Dict[str, Any] = Field(default_factory=dict)
     output_files: List[dict] = Field(default_factory=list)
     skills_used: List[dict] = Field(default_factory=list)
     github_repos_used: List[str] = Field(default_factory=list)
@@ -1103,6 +1104,7 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
                 {
                     "message": message,
                     "reply": reply,
+                    "answer": orch.direct_answer,
                     "manifest": orch.context_manifest,
                     "thinking": orch.thinking_steps,
                     "attachments": body.attachment_ids,
@@ -1131,6 +1133,7 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
     return ChatResponse(
         reply=reply,
         session_id=session_id,
+        answer=orch.direct_answer,
         output_files=output_files,
         skills_used=orch.skills_used,
         github_repos_used=orch.github_used,
@@ -1269,7 +1272,12 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                     scope=scope,
                     filename="assistant_reply.json",
                     content=json.dumps(
-                        {"message": message, "reply": reply, "manifest": orch.context_manifest},
+                        {
+                            "message": message,
+                            "reply": reply,
+                            "answer": orch.direct_answer,
+                            "manifest": orch.context_manifest,
+                        },
                         indent=2,
                     ),
                     label="Reply (JSON)",
@@ -1295,6 +1303,7 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                     "type": "done",
                     "reply": reply,
                     "session_id": session_id,
+                    "answer": orch.direct_answer,
                     "output_files": output_files,
                     "skills_used": orch.skills_used,
                     "github_repos_used": orch.github_used,

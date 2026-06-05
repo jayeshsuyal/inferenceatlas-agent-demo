@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — AI Cost & Access Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=12" />
+    <link rel="stylesheet" href="/static/style.css?v=13" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -55,11 +55,14 @@
         <section class="tab-panel" id="panel-walkthrough" hidden>
           <div class="how-to compact">
             <h2>Walkthrough</h2>
-            <p class="sidebar-hint">One request becomes a packet, sponsor replay, review cycle, and PilotMemo export.</p>
+            <p class="sidebar-hint">One request becomes a packet, Sponsor Proof Trace, review cycle, and PilotMemo export.</p>
           </div>
           <ol class="judge-steps compact-steps" id="walkthrough-steps-nav"></ol>
           <button type="button" class="btn-primary btn-block" id="btn-load-walkthrough">
             Load walkthrough
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-collect-sponsor-proof">
+            Collect sponsor proof
           </button>
           <button type="button" class="btn-ghost btn-block" id="btn-copy-walkthrough-brief" aria-label="Copy review brief from walkthrough sidebar" disabled>
             Copy review brief
@@ -278,6 +281,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=21"></script>
+    <script src="/static/app.js?v=22"></script>
   </body>
 </html>

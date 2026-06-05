@@ -574,7 +574,7 @@ body {
 
 .walkthrough-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(8.75rem, 1fr));
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
@@ -726,6 +726,80 @@ body {
   display: grid;
   gap: 0.5rem;
   margin-top: 0.75rem;
+}
+
+.trace-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+
+.trace-metrics div {
+  min-height: 3.7rem;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.trace-metrics span,
+.trace-step-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.trace-metrics strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--success);
+  font-size: 0.88rem;
+}
+
+.trace-step-list {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.trace-step-row {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.trace-step-row strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.trace-step-row code {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--success);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.trace-action {
+  margin-top: 0.75rem;
+}
+
+.trace-subhead {
+  display: block;
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .sponsor-role-row {
@@ -2191,6 +2265,10 @@ body {
   }
 
   .walk-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .trace-metrics {
     grid-template-columns: 1fr;
   }
 

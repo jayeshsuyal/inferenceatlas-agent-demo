@@ -20,6 +20,7 @@ const btnMindStep = document.getElementById("btn-mind-step");
 const btnRunRehearsal = document.getElementById("btn-run-rehearsal");
 const btnRunUploadedRehearsal = document.getElementById("btn-run-uploaded-rehearsal");
 const btnLoadWalkthrough = document.getElementById("btn-load-walkthrough");
+const btnCollectSponsorProof = document.getElementById("btn-collect-sponsor-proof");
 const btnCopyWalkthroughBrief = document.getElementById("btn-copy-walkthrough-brief");
 const judgeStepsEl = document.getElementById("judge-steps");
 const walkthroughStepsNav = document.getElementById("walkthrough-steps-nav");
@@ -1652,6 +1653,16 @@ function renderWalkthroughStrip(data) {
   });
 }
 
+function selectWalkthroughStepById(stepId, toastText = "") {
+  if (!walkthroughPayload?.steps) return false;
+  const index = walkthroughPayload.steps.findIndex((step) => step.id === stepId);
+  if (index < 0) return false;
+  walkthroughActiveIndex = index;
+  renderWalkthrough(walkthroughPayload);
+  if (toastText) setWalkthroughToast(toastText);
+  return true;
+}
+
 function renderActiveWalkthroughCard(data) {
   const step = data.steps?.[walkthroughActiveIndex] || data.steps?.[0];
   walkthroughActiveCard.innerHTML = "";
@@ -1726,10 +1737,55 @@ function renderSubscriberCard(data) {
 }
 
 function renderSponsorCard(data) {
+  const trace = data.sponsor_proof_trace || {};
+  const order = trace.sponsor_order || [];
   walkthroughSponsorCard.innerHTML = `
-    <span class="eyebrow">Sponsor proof roles</span>
-    <h3>Proof contributors</h3>
+    <span class="eyebrow">Sponsor proof trace</span>
+    <h3>Collect sponsor proof</h3>
+    <p class="walkthrough-summary">Locked order: ${escapeHtml(order.join(" -> ") || "Tavily -> Composio -> OpenClaw -> Nebius")}</p>
   `;
+  const metrics = document.createElement("div");
+  metrics.className = "trace-metrics";
+  [
+    ["Decision lock", trace.decision_lock_unchanged],
+    ["Fallback", trace.all_fallback_used],
+    ["Access evidence", trace.access_evidence_present],
+    ["Spend evidence", trace.spend_evidence_present],
+  ].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong>`;
+    metrics.appendChild(item);
+  });
+  walkthroughSponsorCard.appendChild(metrics);
+
+  const traceList = document.createElement("div");
+  traceList.className = "trace-step-list";
+  (trace.steps || []).forEach((step, index) => {
+    const row = document.createElement("article");
+    row.className = "trace-step-row";
+    row.innerHTML = `
+      <strong>${escapeHtml(String(index + 1))}. ${escapeHtml(step.sponsor)} ${escapeHtml(step.verb)}</strong>
+      <span>${escapeHtml(step.summary || "")}</span>
+      <code>live ${escapeHtml(String(step.used_live_key))} · fallback ${escapeHtml(String(step.fallback_used))} · approve ${escapeHtml(String(step.can_approve_access))}</code>
+    `;
+    traceList.appendChild(row);
+  });
+  walkthroughSponsorCard.appendChild(traceList);
+
+  const traceAction = document.createElement("button");
+  traceAction.type = "button";
+  traceAction.className = "btn-primary btn-block trace-action";
+  traceAction.textContent = "Collect sponsor proof";
+  traceAction.addEventListener("click", () =>
+    selectWalkthroughStepById("sponsor_proof_trace", "Sponsor Proof Trace selected. Decision lock unchanged.")
+  );
+  walkthroughSponsorCard.appendChild(traceAction);
+
+  const rolesTitle = document.createElement("span");
+  rolesTitle.className = "trace-subhead";
+  rolesTitle.textContent = "Proof contributors";
+  walkthroughSponsorCard.appendChild(rolesTitle);
+
   const list = document.createElement("div");
   list.className = "sponsor-role-list";
   (data.sponsor_roles || []).forEach((item) => {
@@ -1789,6 +1845,7 @@ function renderWalkthrough(data) {
   walkthroughPayload = data;
   walkthroughTitle.textContent = data.title || "Design partner walkthrough";
   walkthroughSubtitle.textContent = data.subtitle || "";
+  btnCollectSponsorProof.disabled = !data.sponsor_proof_trace;
   btnCopyWalkthroughBrief.disabled = !data.copy_review_brief;
   renderWalkthroughNav(data);
   renderWalkthroughStrip(data);
@@ -1851,6 +1908,15 @@ async function copyWalkthroughBrief() {
     copied ? "Review brief copied." : "Clipboard unavailable. Use PilotMemo export.",
     !copied
   );
+}
+
+async function collectSponsorProof() {
+  if (!walkthroughPayload?.sponsor_proof_trace) {
+    await loadWalkthrough({ silent: true });
+  }
+  if (!selectWalkthroughStepById("sponsor_proof_trace", "Sponsor Proof Trace selected. Decision lock unchanged.")) {
+    setWalkthroughToast("Sponsor Proof Trace unavailable.", true);
+  }
 }
 
 async function loadSessionMetrics() {
@@ -2520,6 +2586,7 @@ btnQueueEvidence.addEventListener("click", queueEvidence);
 btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
 btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
 btnLoadWalkthrough.addEventListener("click", () => loadWalkthrough());
+btnCollectSponsorProof.addEventListener("click", collectSponsorProof);
 btnCopyWalkthroughBrief.addEventListener("click", copyWalkthroughBrief);
 
 setupTabs();

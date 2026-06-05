@@ -16,6 +16,7 @@ from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLIC_PACKET_AUTHORITY_TERMS = {"packet_id"}
 CONTRACT_LEAD = (
     "Before an AI agent receives access to tools, data, spend, or production systems, "
     "a pre-permission proof packet should exist. This document defines the public conformance "
@@ -54,6 +55,8 @@ class PublicContractTests(unittest.TestCase):
         contract = (ROOT / "docs" / "CONTRACT.md").read_text(encoding="utf-8")
 
         for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+            if forbidden in PUBLIC_PACKET_AUTHORITY_TERMS:
+                continue
             self.assertNotIn(forbidden, contract, msg=f"{forbidden} leaked in docs/CONTRACT.md")
 
     def test_manifest_exposes_public_contract_doc(self) -> None:

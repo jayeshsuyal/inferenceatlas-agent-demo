@@ -58,8 +58,18 @@
     "packet_state_mutation=False",
     "requires_human_approval=True"
   ],
+  "safety_state": {
+    "approval_granted": false,
+    "external_writes": false,
+    "packet_state_mutation": false,
+    "permission_grants": false,
+    "production_access": false,
+    "requires_human_approval": true,
+    "scoped_validation": true
+  },
   "schema_version": "packet_verification.v0",
   "scoped_validation": true,
   "snapshot_id": "ia-agent-access-read-only-analytics-v0:rev_325dd666c69fa24e",
+  "verdict_class": "read_only_validation",
   "verification_status": "valid_review_required"
 }

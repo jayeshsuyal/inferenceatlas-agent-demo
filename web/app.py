@@ -27,7 +27,8 @@ from agent.mind.store import load_all_minds
 from agent.packet import build_support_triage_decision_packet
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
-from agent.scenarios import SCENARIOS
+from agent.scenarios import SCENARIOS, build_scenario_packet
+from agent.verification import build_verification_artifact_for_scenario
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
 from agent.session_metrics import (
@@ -415,6 +416,22 @@ def list_ui_connectors(session_id: Optional[str] = Query(None)) -> dict:
 def session_metrics(session_id: str = Query(..., min_length=1)) -> dict:
     """Live per-session counters for billable .env services."""
     return get_session_metrics(session_id)
+
+
+@app.get("/api/packets/{scenario_or_packet_id}/verification")
+def packet_verification(scenario_or_packet_id: str) -> dict:
+    """Read-only Packet Authority verification surface for downstream subscribers."""
+    for scenario_name in SCENARIOS:
+        packet = build_scenario_packet(scenario_name)
+        if scenario_or_packet_id in {scenario_name, packet["packet_id"]}:
+            artifact = build_verification_artifact_for_scenario(packet, scenario_name)
+            return {
+                "ok": True,
+                "scenario": scenario_name,
+                "read_only": True,
+                "verification": artifact,
+            }
+    raise HTTPException(status_code=404, detail="unknown scenario or packet_id")
 
 
 @app.post("/api/connectors/connect")

@@ -10,6 +10,21 @@ It defines the minimum review surface a judge, CTO, Security lead, AI platform o
 
 It does not define the private InferenceAtlas v1 implementation, private prompts, production routing, private reviewer queues, customer policies, or account-specific approval maps.
 
+InferenceAtlas is the packet authority layer upstream of tools, gateways, spend controls, CI, and human review.
+
+The packet authority layer downstream systems trust before AI moves.
+
+```mermaid
+flowchart LR
+  A["Agent/team asks for access, spend, data, or production action"] --> B["InferenceAtlas DecisionPacket"]
+  B --> C["Verification API: packet_id, revision_id, content_hash, verdict_class, safety_state"]
+  C --> D["Gateway subscribers: Composio, Portkey, LiteLLM"]
+  C --> E["CI subscribers: GitHub Actions, GitLab CI"]
+  C --> F["Spend subscribers: Finance, procurement"]
+  C --> G["Review subscribers: Security, Legal"]
+  C --> H["Observability subscribers: Datadog, Honeycomb, Sentry"]
+```
+
 The contract is intentionally narrow:
 
 - humans can inspect it
@@ -17,6 +32,49 @@ The contract is intentionally narrow:
 - CI can validate it
 - sponsor adapters can enrich it safely
 - private v1 internals remain private
+
+## Packet Verification API
+
+The public web harness exposes a read-only verification surface:
+
+```text
+GET /api/packets/{scenario_or_packet_id}/verification
+```
+
+The endpoint returns the same packet authority fields that generated artifacts and downstream subscriber examples consume:
+
+- `packet_id`
+- `snapshot_id`
+- `revision_id`
+- `content_hash`
+- `verdict_class`
+- `safety_state`
+- `blocked_claims`
+- `missing_proof`
+- `reviewer_owners`
+- `next_human_action`
+
+The verification endpoint is read-only by protocol. It does not approve access, grant permissions, mutate packet state, execute writes, reduce proof debt, or override the deterministic packet verdict.
+
+## Downstream Subscribers
+
+Subscriber examples live under category folders:
+
+```text
+examples/subscribers/
+```
+
+Each subscriber receives the same packet authority shape and asks a different downstream question:
+
+| Category | Example question |
+| --- | --- |
+| Gateway | Can a tool or model gateway execute this requested action? |
+| CI | Can a workflow deploy, merge, or modify production using this agent? |
+| Spend | Can Finance treat this as approved vendor, model, token, or tool spend? |
+| Review | Which human reviewer queue must inspect this packet before access moves? |
+| Observability | What packet authority object should be attached to audit telemetry? |
+
+Subscribers may consume packet authority. They cannot become packet authority.
 
 ## Public Packet Contract
 

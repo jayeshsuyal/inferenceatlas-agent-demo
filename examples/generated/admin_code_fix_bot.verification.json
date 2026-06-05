@@ -66,8 +66,18 @@
     "packet_state_mutation=False",
     "requires_human_approval=True"
   ],
+  "safety_state": {
+    "approval_granted": false,
+    "external_writes": false,
+    "packet_state_mutation": false,
+    "permission_grants": false,
+    "production_access": false,
+    "requires_human_approval": true,
+    "scoped_validation": false
+  },
   "schema_version": "packet_verification.v0",
   "scoped_validation": false,
   "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_7dd2645ee8bfe352",
+  "verdict_class": "blocked",
   "verification_status": "valid_review_required"
 }

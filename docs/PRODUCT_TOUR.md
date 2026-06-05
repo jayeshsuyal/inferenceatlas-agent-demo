@@ -54,6 +54,7 @@ ia-receipts
 ia-outcome-memo
 ia-proof-health
 ia-sponsor-readiness
+ia-subscribers --json
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml

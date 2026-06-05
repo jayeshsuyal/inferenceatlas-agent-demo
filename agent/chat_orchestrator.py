@@ -8,11 +8,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .config import V1_SLOT_FILLER_PROMPT
 from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
+from .decision_brief import build_agent_access_decision_brief
 from .github_repo import build_github_chat_context, get_repo_index_status
 from .google_drive_files import build_drive_chat_context, get_drive_index_status
 from .ui_skills import build_skill_context_for_chat, compose_message_with_skills
 from .packet import build_support_triage_decision_packet
-from .renderers import render_packet_markdown
+from .renderers import render_decision_brief_markdown, render_packet_markdown
+from .tools import compare_providers, get_catalog_summary, tavily_search
 from .workload_parse import is_access_review_question, is_cost_question
 
 TOOL_KEYWORDS = (
@@ -82,6 +84,7 @@ class OrchestratedChat:
     engine_source: str = ""
     cost_plan_ok: bool = False
     direct_reply: str = ""
+    direct_reply_source: str = ""
     harness_injected: bool = False
 
 
@@ -90,6 +93,138 @@ def _message_snippet(message: str, max_len: int = 72) -> str:
     if len(one) <= max_len:
         return one or "your request"
     return one[: max_len - 1] + "…"
+
+
+def _normalized(message: str) -> str:
+    return " ".join(message.lower().split())
+
+
+def _product_positioning_reply() -> str:
+    return "\n\n".join(
+        [
+            "## What InferenceAtlas does",
+            (
+                "InferenceAtlas is not trying to be another general chatbot. It creates the "
+                "proof packet humans and downstream systems need before an AI agent gets tools, "
+                "data, spend, or production access."
+            ),
+            "\n".join(
+                [
+                    "- **Before action**: turn an agent request into a DecisionPacket, policy gate, proof debt, reviewer routing, and PilotMemo.",
+                    "- **For downstream systems**: expose a read-only packet authority object that gateways, CI, spend controls, review queues, and observability can consume.",
+                    "- **For sponsors/tools**: let Nebius narrate, Tavily find evidence, and Composio simulate permission diffs without granting access or executing writes.",
+                    "- **For cost work**: compare provider/catalog options and route spend questions to Finance or Procurement with no savings guarantee.",
+                ]
+            ),
+            (
+                "So the difference from Claude or ChatGPT is the control layer: those tools can "
+                "answer or act; InferenceAtlas produces the reviewable packet that says what is "
+                "blocked, what proof is missing, who owns the next decision, and what downstream "
+                "systems may trust."
+            ),
+        ]
+    )
+
+
+def _summarize_live_search_evidence(raw_search: str) -> str:
+    """Keep demo replies readable while preserving Tavily as the evidence source."""
+    if not raw_search.strip():
+        return "Live search returned no readable evidence."
+    if raw_search.startswith("[") or raw_search == "No results found.":
+        return raw_search
+
+    sources: List[str] = []
+    for block in raw_search.split("\n\n---\n\n"):
+        first_line = block.splitlines()[0].strip() if block.splitlines() else ""
+        if first_line.startswith("**") and " — " in first_line:
+            title, url = first_line.split(" — ", 1)
+            sources.append(f"- {title.strip('*')} — {url.strip()}")
+    if not sources:
+        return "Live search found evidence, but the result text was too noisy to quote safely."
+    return "\n".join(
+        [
+            "Live search evidence from Tavily:",
+            *sources[:3],
+            "",
+            "Use the linked provider pricing page as the source of truth before any procurement decision.",
+        ]
+    )
+
+
+def _demo_direct_reply(message: str) -> tuple[str, str]:
+    """Deterministic replies for demo-critical questions where LLM improvisation hurts trust."""
+    normalized = _normalized(message)
+    if "use get_catalog_summary" in normalized:
+        return "## Catalog overview\n\n" + get_catalog_summary(), "catalog_example"
+
+    if "support triage agent" in normalized or "tool access review" in normalized:
+        packet = build_support_triage_decision_packet(mode="live_review_room_demo")
+        brief = build_agent_access_decision_brief(packet)
+        return (
+            "\n\n".join(
+                [
+                    "## Tool access review",
+                    render_decision_brief_markdown(brief),
+                    "Composio remains dry-run; no external write was executed.",
+                ]
+            ),
+            "access_review_example",
+        )
+
+    if "use tavily_search" in normalized and "mistral" in normalized:
+        search = tavily_search("site:mistral.ai pricing Mistral Large API official", max_results=2)
+        comparison = compare_providers("llm", top_n=5)
+        return (
+            "\n\n".join(
+                [
+                    "## Mistral pricing live check",
+                    "### Live evidence",
+                    _summarize_live_search_evidence(search),
+                    "### Catalog comparison",
+                    comparison,
+                    (
+                        "This is a procurement shortlist, not a savings guarantee. Composio "
+                        "remains dry-run; no external write was executed."
+                    ),
+                ]
+            ),
+            "pricing_example",
+        )
+
+    if (
+        "i run 500m tokens/month" in normalized
+        and "gpt-4o input+output" in normalized
+        and "compare_providers" in normalized
+    ):
+        comparison = compare_providers("llm", top_n=5)
+        return (
+            "\n\n".join(
+                [
+                    "## GPT-4o alternative",
+                    "Catalog comparison for `llm` workloads:",
+                    comparison,
+                    "Use this as a procurement shortlist, not a final savings guarantee.",
+                ]
+            ),
+            "pricing_example",
+        )
+
+    product_patterns = (
+        "what else can u do",
+        "what else can you do",
+        "what can u do",
+        "what can you do",
+        "how are u better",
+        "how are you better",
+        "better than claude",
+        "better than chatgpt",
+        "why are u better",
+        "why are you better",
+    )
+    if any(pattern in normalized for pattern in product_patterns):
+        return _product_positioning_reply(), "product_positioning"
+
+    return "", ""
 
 
 def _wants_tools(message: str) -> bool:
@@ -324,14 +459,20 @@ def orchestrate_chat(
     engine_source = ""
     cost_plan_ok = False
     direct_reply = ""
+    direct_reply_source = ""
     cost = None
 
+    direct_reply, direct_reply_source = _demo_direct_reply(message)
+    if direct_reply:
+        use_tools = False
+
     # Option A: delegate cost questions to v1 E2E copilot when available
-    if is_cost_question(message):
+    if not direct_reply and is_cost_question(message):
         shell_context = _shell_context_from_message(llm_message)
         copilot_result = fetch_v1_copilot(message, shell_context)
         if copilot_result.ok and copilot_result.reply:
             direct_reply = copilot_result.reply
+            direct_reply_source = "inferenceatlas-v1-copilot"
             engine_source = copilot_result.source
             cost_plan_ok = bool(copilot_result.plans)
             use_tools = False
@@ -352,11 +493,22 @@ def orchestrate_chat(
     # Pure access-review with only skills and no tool keywords → grounded
     if skills_used and not github_used and not drive_used and not file_names and not use_tools:
         use_tools = False
-    elif _wants_tools(message) and not engine_source:
+    elif _wants_tools(message) and not engine_source and not direct_reply:
         use_tools = True
 
     harness_injected = False
-    if (
+    if direct_reply_source == "access_review_example":
+        packet = build_support_triage_decision_packet(mode="live_review_room_demo")
+        harness_block = render_packet_markdown(packet)
+        llm_message = (
+            "--- HARNESS FACTS (auto-injected DecisionPacket — authoritative for access review) ---\n\n"
+            + harness_block
+            + "\n\n"
+            + llm_message
+        )
+        harness_injected = True
+        use_tools = False
+    elif (
         is_access_review_question(message)
         and not skills_used
         and not engine_source
@@ -374,7 +526,7 @@ def orchestrate_chat(
         use_tools = False
 
     has_attachments = bool(skills_used or github_used or drive_used or file_names or harness_injected)
-    if not has_attachments and not engine_source:
+    if not has_attachments and not engine_source and not direct_reply:
         use_tools = True
 
     thinking = build_thinking_steps(
@@ -388,11 +540,22 @@ def orchestrate_chat(
         attach_warnings=attach_warnings,
     )
     if direct_reply:
-        thinking.insert(
-            1,
-            f"InferenceAtlas-v1 copilot E2E — parse → rank → catalog → explain "
-            f"({len(copilot_result.plans) if cost_plan_ok else 0} plans; demo LLM skipped)",
-        )
+        if direct_reply_source == "inferenceatlas-v1-copilot":
+            thinking.insert(
+                1,
+                f"InferenceAtlas-v1 copilot E2E — parse → rank → catalog → explain "
+                f"({len(copilot_result.plans) if cost_plan_ok else 0} plans; demo LLM skipped)",
+            )
+        elif direct_reply_source == "product_positioning":
+            thinking.insert(
+                1,
+                "Product positioning question detected — using deterministic IA control-layer answer",
+            )
+        else:
+            thinking.insert(
+                1,
+                "Known demo prompt detected — using deterministic tool output, demo LLM skipped",
+            )
     elif engine_source == "inferenceatlas-v1":
         thinking.insert(
             1,
@@ -431,6 +594,12 @@ def orchestrate_chat(
         else:
             label = "Catalog fallback engine"
         manifest.append(label)
+    elif direct_reply_source == "product_positioning":
+        manifest.append("InferenceAtlas product positioning")
+    elif direct_reply_source in {"catalog_example", "pricing_example"}:
+        manifest.append("Deterministic catalog example")
+    elif direct_reply_source == "access_review_example":
+        manifest.append("Deterministic access-review example")
     if harness_injected:
         manifest.append("Harness: auto-injected DecisionPacket")
 
@@ -473,6 +642,7 @@ def orchestrate_chat(
         engine_source=engine_source,
         cost_plan_ok=cost_plan_ok,
         direct_reply=direct_reply,
+        direct_reply_source=direct_reply_source,
         harness_injected=harness_injected,
     )
 

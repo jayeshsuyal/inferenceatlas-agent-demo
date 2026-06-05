@@ -94,6 +94,17 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_approving"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_granting"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_mutating"])
+        self.assertEqual(report["pilot_memo"]["schema_version"], "pilot_memo.v0")
+        self.assertEqual(report["pilot_memo"]["verdict_class"], "scoped_validation_only")
+        self.assertTrue(report["pilot_memo"]["content_hash"].startswith("sha256:"))
+        self.assertEqual(report["pilot_memo"]["sponsor_contribution_count"], 4)
+        self.assertTrue(report["pilot_memo"]["all_sponsors_human_review_required"])
+        self.assertFalse(report["pilot_memo"]["sponsors_can_change_decision"])
+        self.assertEqual(report["pilot_memo"]["safety_anchor"], "IA did not approve. The next human action is named above.")
+        self.assertFalse(report["pilot_memo"]["approves_access"])
+        self.assertFalse(report["pilot_memo"]["grants_permissions"])
+        self.assertFalse(report["pilot_memo"]["executes_external_writes"])
+        self.assertFalse(report["pilot_memo"]["mutates_production"])
         self.assertEqual(report["proof_health"]["scenario"], "support_triage_agent")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertEqual(report["proof_health"]["overall_score"], 67)
@@ -135,6 +146,10 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/support_triage_trial_report.json",
             "examples/generated/support_triage_trial.outcome_memo.md",
             "examples/generated/support_triage_trial.outcome_memo.json",
+            "examples/generated/support_triage_trial.pilot_memo.md",
+            "examples/generated/support_triage_trial.pilot_memo.json",
+            "examples/generated/support_triage_trial.copy_review_brief.md",
+            "schemas/pilot_memo.schema.json",
             "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/support_triage_trial.evidence_replay.json",
             "examples/generated/review_room.desktop.jpg",
@@ -178,6 +193,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Sponsor Evidence Replay", markdown)
         self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", markdown)
         self.assertIn("sponsors can change decision: False", markdown)
+        self.assertIn("Pilot Memo", markdown)
+        self.assertIn("examples/generated/support_triage_trial.pilot_memo.md", markdown)
+        self.assertIn("examples/generated/support_triage_trial.copy_review_brief.md", markdown)
+        self.assertIn("IA did not approve. The next human action is named above.", markdown)
         self.assertIn("Proof Health", markdown)
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", markdown)
         self.assertIn("examples/requests/support_triage_trial.yml", markdown)
@@ -201,6 +220,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Sponsor Evidence Replay", result.stdout)
         self.assertIn("sponsors can change decision: False", result.stdout)
         self.assertIn("all non-granting: True", result.stdout)
+        self.assertIn("Pilot Memo", result.stdout)
+        self.assertIn("copy_review_brief", result.stdout)
+        self.assertIn("IA did not approve. The next human action is named above.", result.stdout)
         self.assertIn("Proof Health", result.stdout)
         self.assertIn("next human health check", result.stdout)
         self.assertIn("blocked_fast", result.stdout)
@@ -233,6 +255,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertFalse(report["design_partner_evidence_replay"]["production_access"])
         self.assertFalse(report["design_partner_evidence_replay"]["can_sponsor_change_decision"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_executing"])
+        self.assertEqual(report["pilot_memo"]["verdict_class"], "scoped_validation_only")
+        self.assertFalse(report["pilot_memo"]["sponsors_can_change_decision"])
+        self.assertFalse(report["pilot_memo"]["approves_access"])
+        self.assertEqual(report["pilot_memo"]["safety_anchor"], "IA did not approve. The next human action is named above.")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertFalse(report["proof_health"]["approves_access"])
 

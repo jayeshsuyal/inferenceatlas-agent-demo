@@ -16,6 +16,7 @@ from .outcome_memo import build_packet_outcome_memo, write_packet_outcome_memo_a
 from .packet import build_support_triage_trace
 from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .packet_diff import build_packet_diff_report, write_packet_diff_artifacts
+from .pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, write_pilot_memo_artifacts
 from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
@@ -50,6 +51,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.trial examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
+    "python3 -m agent.pilot_memo examples/requests/support_triage_trial.yml",
     "python3 -m unittest discover -s tests",
 ]
 
@@ -85,6 +87,10 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/support_triage_trial.decision_brief.json",
     "examples/generated/support_triage_trial.outcome_memo.md",
     "examples/generated/support_triage_trial.outcome_memo.json",
+    "examples/generated/support_triage_trial.pilot_memo.md",
+    "examples/generated/support_triage_trial.pilot_memo.json",
+    "examples/generated/support_triage_trial.copy_review_brief.md",
+    "schemas/pilot_memo.schema.json",
     "examples/generated/support_triage_trial.evidence_replay.md",
     "examples/generated/support_triage_trial.evidence_replay.json",
     "examples/generated/review_room.desktop.jpg",
@@ -127,6 +133,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(write_trial_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trial_outcome_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trial_evidence_replay_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
+    written.extend(write_pilot_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     return written
 
 
@@ -178,6 +185,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     trial_report = build_trial_report(DEFAULT_TRIAL_REQUEST)
     trial_outcome_memo = build_trial_outcome_memo(DEFAULT_TRIAL_REQUEST)
     trial_evidence_replay = build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST)
+    pilot_memo = build_pilot_memo(DEFAULT_TRIAL_REQUEST)
     proof_health = build_proof_health_report()
     primary_packet = build_scenario_packet("support_triage_agent")
     primary_receipt_ledger = build_evidence_receipt_ledger(primary_packet, "support_triage_agent")
@@ -315,6 +323,32 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "grants_permissions": trial_evidence_replay["safety_boundary"]["grants_permissions"],
             "executes_external_writes": trial_evidence_replay["safety_boundary"]["executes_external_writes"],
         },
+        "pilot_memo": {
+            "memo_id": pilot_memo["memo_id"],
+            "schema_version": pilot_memo["schema_version"],
+            "packet_id": pilot_memo["packet_reference"]["packet_id"],
+            "revision_id": pilot_memo["packet_reference"]["revision_id"],
+            "content_hash": pilot_memo["packet_reference"]["content_hash"],
+            "packet_artifact": pilot_memo["packet_reference"]["packet_artifact"],
+            "verdict_class": pilot_memo["verdict_class"],
+            "sponsor_contribution_count": len(pilot_memo["sponsor_contributions"]),
+            "all_sponsors_human_review_required": all(
+                item["human_review_required"] for item in pilot_memo["sponsor_contributions"]
+            ),
+            "sponsors_can_change_decision": any(item["can_change_decision"] for item in pilot_memo["sponsor_contributions"]),
+            "reviewer_route_count": len(pilot_memo["reviewer_routing"]),
+            "blocked_claim_count": len(pilot_memo["blocked_claims"]),
+            "missing_proof_count": len(pilot_memo["missing_proof"]),
+            "next_human_action": pilot_memo["next_human_action"],
+            "safety_anchor": pilot_memo["safety_anchor"],
+            "approves_access": pilot_memo["safety_boundary"]["approves_access"],
+            "grants_permissions": pilot_memo["safety_boundary"]["grants_permissions"],
+            "executes_external_writes": pilot_memo["safety_boundary"]["executes_external_writes"],
+            "mutates_production": pilot_memo["safety_boundary"]["mutates_production"],
+            "artifact": "examples/generated/support_triage_trial.pilot_memo.md",
+            "json_artifact": "examples/generated/support_triage_trial.pilot_memo.json",
+            "copy_artifact": "examples/generated/support_triage_trial.copy_review_brief.md",
+        },
         "proof_health": {
             "scenario": proof_health["scenario"],
             "overall_status": proof_health["overall_status"],
@@ -448,6 +482,13 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["design_partner_evidence_replay"]["approves_access"]
         or report["design_partner_evidence_replay"]["grants_permissions"]
         or report["design_partner_evidence_replay"]["executes_external_writes"]
+        or report["pilot_memo"]["sponsors_can_change_decision"]
+        or not report["pilot_memo"]["all_sponsors_human_review_required"]
+        or report["pilot_memo"]["safety_anchor"] != PILOT_MEMO_SAFETY_ANCHOR
+        or report["pilot_memo"]["approves_access"]
+        or report["pilot_memo"]["grants_permissions"]
+        or report["pilot_memo"]["executes_external_writes"]
+        or report["pilot_memo"]["mutates_production"]
         or not report["proof_health"]["human_review_required"]
         or report["proof_health"]["approves_access"]
         or report["proof_health"]["grants_permissions"]
@@ -685,6 +726,36 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
         ]
     )
 
+    pilot = report["pilot_memo"]
+    lines.extend(
+        [
+            "",
+            "## Pilot Memo",
+            "",
+            "The PilotMemo is the buyer-carried export artifact: packet reference, sponsor proof roles, reviewer routing, blocked claims, missing proof, and next human action.",
+            "",
+            f"- memo_id: `{pilot['memo_id']}`",
+            f"- packet_id: `{pilot['packet_id']}`",
+            f"- revision_id: `{pilot['revision_id']}`",
+            f"- content_hash: `{pilot['content_hash']}`",
+            f"- packet artifact: `{pilot['packet_artifact']}`",
+            f"- verdict class: {pilot['verdict_class']}",
+            f"- sponsor contributions: {pilot['sponsor_contribution_count']}",
+            f"- sponsors can change decision: {pilot['sponsors_can_change_decision']}",
+            f"- all sponsors require human review: {pilot['all_sponsors_human_review_required']}",
+            f"- reviewer routes: {pilot['reviewer_route_count']}",
+            f"- blocked claims: {pilot['blocked_claim_count']}",
+            f"- missing proof: {pilot['missing_proof_count']}",
+            f"- next human action: {pilot['next_human_action']}",
+            f"- safety anchor: {pilot['safety_anchor']}",
+            f"- approves access: {pilot['approves_access']}",
+            f"- grants permissions: {pilot['grants_permissions']}",
+            f"- executes external writes: {pilot['executes_external_writes']}",
+            f"- artifact: `{pilot['artifact']}`",
+            f"- copy brief: `{pilot['copy_artifact']}`",
+        ]
+    )
+
     lines.extend(
         [
             "",
@@ -771,9 +842,10 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "13. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
             "14. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
             "15. Read `examples/generated/support_triage_trial.evidence_replay.md`.",
-            "16. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "17. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "18. Confirm sponsor adapters stay dry-run and non-approving.",
+            "16. Read `examples/generated/support_triage_trial.pilot_memo.md` and copy `examples/generated/support_triage_trial.copy_review_brief.md`.",
+            "17. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "18. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "19. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

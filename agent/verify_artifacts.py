@@ -142,6 +142,14 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Pilot Memo",
+        (
+            "support_triage_trial.pilot_memo.md",
+            "support_triage_trial.pilot_memo.json",
+            "support_triage_trial.copy_review_brief.md",
+        ),
+    ),
+    ArtifactFamily(
         "Sponsor Evidence Replay",
         (
             "support_triage_trial.evidence_replay.md",

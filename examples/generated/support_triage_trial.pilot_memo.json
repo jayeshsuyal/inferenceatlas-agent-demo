@@ -1,0 +1,120 @@
+{
+  "blocked_claims": [
+    "Production tool access is approved.",
+    "Customer-data handling is safe.",
+    "The agent may create or mutate Jira/GitHub/Slack state.",
+    "The workflow is compliance-ready."
+  ],
+  "export_variants": {
+    "copy_review_brief": {
+      "artifact": "examples/generated/support_triage_trial.copy_review_brief.md",
+      "format": "markdown"
+    },
+    "export_pilot_memo": {
+      "artifacts": [
+        "examples/generated/support_triage_trial.pilot_memo.json",
+        "examples/generated/support_triage_trial.pilot_memo.md"
+      ],
+      "formats": [
+        "json",
+        "markdown"
+      ]
+    }
+  },
+  "generated_at": "2026-06-05T00:00:00Z",
+  "generated_by": "inferenceatlas-agent-demo",
+  "memo_id": "ia-pilot-memo-support_triage_trial-0a03b1790baa1f36-public-v0",
+  "missing_proof": [
+    "GitHub repository allowlist and permission level",
+    "Slack channel allowlist, retention policy, and customer-data boundary",
+    "Jira project scope, draft-only mode, and rollback/off-switch plan",
+    "Support escalation workflow and human handoff owner",
+    "Audit log shape for tool calls, evidence intake, and reviewer decisions"
+  ],
+  "mode": "offline_deterministic",
+  "next_human_action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+  "packet_reference": {
+    "content_hash": "sha256:88d8eb01dcc8817774770a07bd4859fdac699eb4dc3f802c059777555a3c235c",
+    "packet_artifact": "examples/generated/support_triage_trial.packet.json",
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "revision_id": "rev_88d8eb01dcc88177"
+  },
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "reviewer_routing": [
+    {
+      "blocks": "Slack channel summarization and customer incident context access",
+      "decision_needed": "Confirm allowed data scope, retention, and logging terms",
+      "owner": "Security/Legal",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "GitHub/Jira tool connection and any write-action pilot",
+      "decision_needed": "Provide repository/project allowlists, permission boundaries, audit logs, and off-switch proof",
+      "owner": "Engineering",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "support operations pilot",
+      "decision_needed": "Validate triage workflow fit, escalation rules, and human handoff owner",
+      "owner": "Support Ops",
+      "required_before": "scoped_validation_or_permission_expansion"
+    },
+    {
+      "blocks": "paid production rollout",
+      "decision_needed": "Review paid seats or vendor spend only if live integrations move beyond dry-run",
+      "owner": "Procurement/Finance",
+      "required_before": "scoped_validation_or_permission_expansion"
+    }
+  ],
+  "safety_anchor": "IA did not approve. The next human action is named above.",
+  "safety_boundary": {
+    "approves_access": false,
+    "executes_external_writes": false,
+    "grants_permissions": false,
+    "mutates_production": false,
+    "requires_human_review": true
+  },
+  "schema_version": "pilot_memo.v0",
+  "sponsor_contributions": [
+    {
+      "can_change_decision": false,
+      "contribution": "Turns missing proof into source-backed evidence slots for human reviewers.",
+      "human_review_required": true,
+      "proof_type": "evidence_candidate_plan",
+      "provider": "tavily",
+      "role": "discovery",
+      "verb": "finds"
+    },
+    {
+      "can_change_decision": false,
+      "contribution": "Shows requested tool actions, validation-only allowances, blocked actions, and required proof.",
+      "human_review_required": true,
+      "proof_type": "permission_diff",
+      "provider": "composio",
+      "role": "simulation",
+      "verb": "simulates"
+    },
+    {
+      "can_change_decision": false,
+      "contribution": "Drafts reviewer-facing language while locked fields keep the decision deterministic.",
+      "human_review_required": true,
+      "proof_type": "locked_field_narration",
+      "provider": "nebius",
+      "role": "narration",
+      "verb": "narrates"
+    },
+    {
+      "can_change_decision": false,
+      "contribution": "Shows the runtime trace that would be recorded around the same blocked and dry-run decisions.",
+      "human_review_required": true,
+      "proof_type": "runtime_trace_plan",
+      "provider": "openclaw",
+      "role": "observation",
+      "verb": "traces"
+    }
+  ],
+  "verdict_class": "scoped_validation_only"
+}

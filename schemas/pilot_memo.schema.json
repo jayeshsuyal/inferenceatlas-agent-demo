@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jayeshsuyal/inferenceatlas-agent-demo/schemas/pilot_memo.schema.json",
+  "title": "InferenceAtlas PilotMemo",
+  "description": "Public export contract for a buyer-carried design-partner pilot memo derived from one pre-permission packet.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "memo_id",
+    "generated_by",
+    "mode",
+    "packet_reference",
+    "verdict_class",
+    "sponsor_contributions",
+    "reviewer_routing",
+    "blocked_claims",
+    "missing_proof",
+    "next_human_action",
+    "safety_anchor",
+    "generated_at",
+    "export_variants",
+    "safety_boundary",
+    "private_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "pilot_memo.v0"
+    },
+    "memo_id": {
+      "type": "string",
+      "pattern": "^ia-pilot-memo-.+-[0-9a-f]{16}-public-v0$"
+    },
+    "generated_by": {
+      "type": "string",
+      "const": "inferenceatlas-agent-demo"
+    },
+    "mode": {
+      "type": "string",
+      "const": "offline_deterministic"
+    },
+    "packet_reference": {
+      "type": "object",
+      "required": ["packet_id", "revision_id", "content_hash", "packet_artifact"],
+      "properties": {
+        "packet_id": { "type": "string", "minLength": 1 },
+        "revision_id": { "type": "string", "pattern": "^rev_[0-9a-f]{16}$" },
+        "content_hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "packet_artifact": { "type": "string", "pattern": "^examples/generated/.+\\.packet\\.json$" }
+      }
+    },
+    "verdict_class": {
+      "type": "string",
+      "enum": ["scoped_validation_only", "blocked_before_validation"]
+    },
+    "sponsor_contributions": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "provider",
+          "verb",
+          "role",
+          "proof_type",
+          "contribution",
+          "human_review_required",
+          "can_change_decision"
+        ],
+        "properties": {
+          "provider": { "type": "string", "enum": ["tavily", "nebius", "composio", "openclaw"] },
+          "verb": { "type": "string", "enum": ["finds", "narrates", "simulates", "traces"] },
+          "role": { "type": "string", "enum": ["discovery", "narration", "simulation", "observation"] },
+          "proof_type": { "type": "string", "minLength": 1 },
+          "contribution": { "type": "string", "minLength": 1 },
+          "human_review_required": { "type": "boolean", "const": true },
+          "can_change_decision": { "type": "boolean", "const": false }
+        }
+      }
+    },
+    "reviewer_routing": {
+      "type": "array",
+      "minItems": 1
+    },
+    "blocked_claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "missing_proof": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "next_human_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety_anchor": {
+      "type": "string",
+      "const": "IA did not approve. The next human action is named above."
+    },
+    "generated_at": {
+      "type": "string",
+      "const": "2026-06-05T00:00:00Z"
+    },
+    "export_variants": {
+      "type": "object",
+      "required": ["copy_review_brief", "export_pilot_memo"]
+    },
+    "safety_boundary": {
+      "type": "object",
+      "required": [
+        "approves_access",
+        "grants_permissions",
+        "executes_external_writes",
+        "mutates_production",
+        "requires_human_review"
+      ],
+      "properties": {
+        "approves_access": { "type": "boolean", "const": false },
+        "grants_permissions": { "type": "boolean", "const": false },
+        "executes_external_writes": { "type": "boolean", "const": false },
+        "mutates_production": { "type": "boolean", "const": false },
+        "requires_human_review": { "type": "boolean", "const": true }
+      }
+    },
+    "private_boundary": {
+      "type": "object",
+      "required": ["private_source_exposed", "principle"],
+      "properties": {
+        "private_source_exposed": { "type": "boolean", "const": false },
+        "principle": { "type": "string", "const": "Private engine, public proof." }
+      }
+    }
+  }
+}

@@ -58,6 +58,7 @@ json_check AI_JUDGE_MANIFEST.json /tmp/ia_manifest.checked.json
 json_check web/static/skills-registry.json /tmp/ia_skills_registry.checked.json
 json_check schemas/decision_packet.schema.json /tmp/ia_decision_packet_schema.checked.json
 json_check schemas/agent_access_decision_brief.schema.json /tmp/ia_decision_brief_schema.checked.json
+json_check schemas/pilot_memo.schema.json /tmp/ia_pilot_memo_schema.checked.json
 
 command_json_check /tmp/ia_judge.no_write.json "$PYTHON_BIN" -m agent.judge --no-write --json
 command_json_check /tmp/ia_skills.json "$PYTHON_BIN" -m agent.skills --json
@@ -74,9 +75,11 @@ command_json_check /tmp/ia_trial.json "$PYTHON_BIN" -m agent.trial examples/requ
 command_json_check /tmp/ia_trial_outcome_memo.no_write.json "$PYTHON_BIN" -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_trial_evidence_replay.no_write.json "$PYTHON_BIN" -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_live_evidence_rehearsal.no_write.json "$PYTHON_BIN" -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
+command_json_check /tmp/ia_pilot_memo.no_write.json "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_verify_artifacts.json "$PYTHON_BIN" -m agent.verify_artifacts --json
 
 run "$PYTHON_BIN" -m agent.judge --no-write
+run "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy
 run "$PYTHON_BIN" -m agent.contract --all
 run "$PYTHON_BIN" -m agent.verify_artifacts
 run "$PYTHON_BIN" -m unittest discover -s tests

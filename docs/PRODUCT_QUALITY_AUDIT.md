@@ -117,6 +117,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 
 Before a PR claims the product surface is stronger, it should preserve these signals:
 
+- `bash scripts/pr_smoke.sh` passes as the no-key local mirror of the PR smoke gate.
 - `python3 -m agent.judge --no-write` passes.
 - `python3 -m agent.judge --no-write --json` remains machine-readable.
 - `python3 -m unittest discover -s tests` passes.
@@ -137,6 +138,7 @@ Use this as the quick premium-quality review:
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
 | Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 15 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
+| Can every PR smoke-test the public spine safely? | `bash scripts/pr_smoke.sh` runs the no-key product gate locally and `.github/workflows/smoke.yml` runs it on pull requests. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
 | Can finance/procurement see cost controls? | `examples/generated/support_triage_agent.evidence_receipts.md` includes a cost/procurement receipt with budget owner and spend-cap review required. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |

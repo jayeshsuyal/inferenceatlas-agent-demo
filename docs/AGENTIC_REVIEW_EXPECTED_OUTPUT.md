@@ -12,6 +12,7 @@ Private engine, public proof.
 Run the no-key judge path first, then verify the checked-in proof artifacts:
 
 ```bash
+bash scripts/pr_smoke.sh
 python3 -m agent.judge --no-write
 python3 -m agent.skills
 python3 -m agent.evidence_receipts --no-write
@@ -25,6 +26,7 @@ python3 -m agent.verify_artifacts
 
 Expected human-readable signals across that two-command path:
 
+- PR smoke gate reports `InferenceAtlas PR smoke gate passed.`
 - mode is `offline_deterministic`
 - live keys required is `False`
 - external writes enabled is `False`
@@ -125,6 +127,7 @@ Expected skills JSON pass signals:
 An agentic reviewer can use this complete no-key path:
 
 ```bash
+bash scripts/pr_smoke.sh
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list

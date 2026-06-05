@@ -19,6 +19,7 @@ docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md
 Run:
 
 ```bash
+bash scripts/pr_smoke.sh
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
@@ -43,6 +44,7 @@ python3 -m unittest discover -s tests
 
 Expected result:
 
+- the PR smoke gate completes with no keys, no live mode, no secret-shaped tracked tokens, and no default writes
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`

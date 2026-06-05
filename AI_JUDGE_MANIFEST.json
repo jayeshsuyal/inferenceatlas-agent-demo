@@ -19,6 +19,8 @@
   "support_triage_trial_sample": "examples/requests/support_triage_trial.yml",
   "judge_harness_command": "python3 -m agent.judge",
   "judge_harness_json_command": "python3 -m agent.judge --json",
+  "pr_smoke_command": "bash scripts/pr_smoke.sh",
+  "pr_smoke_scope": "No-key local mirror of the PR smoke gate: manifest/schema parse, JSON command surfaces, artifact integrity, unit tests, and tracked secret-shaped token guard.",
   "agent_skills_command": "python3 -m agent.skills",
   "agent_skills_json_command": "python3 -m agent.skills --json",
   "install_command": "pip install -e .",
@@ -118,6 +120,7 @@
     "python3 -m agent.outcome_memo",
     "examples/generated/support_triage_agent.outcome_memo.md",
     "python3 -m agent.verify_artifacts",
+    "bash scripts/pr_smoke.sh",
     "python3 -m agent.proof_health",
     "examples/generated/support_triage_agent.proof_health.md",
     "python3 -m agent.sponsor_readiness",
@@ -133,6 +136,7 @@
     "examples/generated/review_room.html"
   ],
   "five_minute_review_commands": [
+    "bash scripts/pr_smoke.sh",
     "python3 -m agent.judge",
     "python3 -m agent.demo",
     "python3 -m agent.review --list",
@@ -245,6 +249,7 @@
   },
   "verification": {
     "ci_workflow": ".github/workflows/smoke.yml",
+    "pr_smoke_gate": "bash scripts/pr_smoke.sh",
     "installable_cli": "pip install -e . && ia-judge --no-write",
     "local_tests": "python3 -m unittest discover -s tests",
     "schema_parse": "python3 -m json.tool schemas/decision_packet.schema.json && python3 -m json.tool schemas/agent_access_decision_brief.schema.json",
@@ -319,6 +324,7 @@
     "docs/JUDGE_REVIEW_GUIDE.md",
     "BUILD_PLAN_TO_JUNE_12.md",
     "AI_JUDGE_MANIFEST.json",
+    "bash scripts/pr_smoke.sh",
     "python3 -m agent.judge",
     "python3 -m agent.skills",
     "python3 -m agent.packet_diff",

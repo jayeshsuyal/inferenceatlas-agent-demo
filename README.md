@@ -68,6 +68,12 @@ python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
+For the PR-grade local safety gate, run:
+
+```bash
+bash scripts/pr_smoke.sh
+```
+
 Or use the installed command set:
 
 ```bash

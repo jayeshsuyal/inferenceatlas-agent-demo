@@ -20,6 +20,7 @@ EXPECTED_SCRIPTS = {
     "ia-review-room": "agent.review_room:main",
     "ia-skills": "agent.skills:main",
     "ia-sponsor-readiness": "agent.sponsor_readiness:main",
+    "ia-subscribers": "agent.subscribers:main",
     "ia-trial": "agent.trial:main",
     "ia-trial-evidence-replay": "agent.trial_evidence_replay:main",
     "ia-trial-outcome-memo": "agent.trial_outcome_memo:main",

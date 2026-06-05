@@ -40,6 +40,18 @@ def _scoped_validation(packet: dict[str, Any]) -> bool:
     return packet.get("approval_posture", {}).get("validation_review") == "allowed"
 
 
+def _safety_state(packet: dict[str, Any]) -> dict[str, bool]:
+    return {
+        "production_access": _production_access(packet),
+        "external_writes": _external_writes(packet),
+        "permission_grants": _permission_grants(packet),
+        "approval_granted": _bool_safety(packet, "approval_granted"),
+        "scoped_validation": _scoped_validation(packet),
+        "requires_human_approval": _bool_safety(packet, "requires_human_approval"),
+        "packet_state_mutation": _bool_safety(packet, "packet_state_mutation"),
+    }
+
+
 def build_verification_artifact(
     packet: dict[str, Any],
     *,
@@ -60,7 +72,9 @@ def build_verification_artifact(
         "snapshot_id": snapshot["snapshot_id"],
         "revision_id": snapshot["revision_id"],
         "content_hash": snapshot["content_hash"],
+        "verdict_class": lock_state,
         "decision_lock": snapshot["decision_lock_after"],
+        "safety_state": _safety_state(packet),
         "production_access": _production_access(packet),
         "external_writes": _external_writes(packet),
         "permission_grants": _permission_grants(packet),

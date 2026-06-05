@@ -46,6 +46,8 @@ jobs:
           ia-snapshot --json >/tmp/installed_packet_snapshot.json
           ia-verify --all
           ia-verify --all --json >/tmp/installed_packet_verification.json
+          ia-subscribers
+          ia-subscribers --json >/tmp/installed_packet_subscribers.json
           ia-outcome-memo --no-write
           ia-outcome-memo --no-write --json >/tmp/installed_outcome_memo.json
           ia-contract --all

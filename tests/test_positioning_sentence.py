@@ -6,6 +6,7 @@ from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
+PUBLIC_PACKET_AUTHORITY_TERMS = {"packet_id"}
 POSITIONING_SENTENCE = (
     "Every agent demo shows the agent taking action. "
     "InferenceAtlas shows the proof packet before an agent is allowed to act."
@@ -62,7 +63,12 @@ class PositioningSentenceTests(unittest.TestCase):
 
         for relative_path in surfaces:
             text = (ROOT / relative_path).read_text(encoding="utf-8")
-            for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+            private_terms = (
+                [term for term in FORBIDDEN_PRIVATE_V1_TERMS if term not in PUBLIC_PACKET_AUTHORITY_TERMS]
+                if relative_path in {"AI_JUDGE_MANIFEST.json", "docs/CONTRACT.md"}
+                else FORBIDDEN_PRIVATE_V1_TERMS
+            )
+            for forbidden in private_terms:
                 self.assertNotIn(forbidden, text, msg=f"{forbidden} leaked in {relative_path}")
 
     def test_manifest_safety_defaults_stay_conservative(self) -> None:

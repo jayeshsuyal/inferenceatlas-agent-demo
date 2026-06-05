@@ -66,6 +66,7 @@ command_json_check /tmp/ia_packet_diff.no_write.json "$PYTHON_BIN" -m agent.pack
 command_json_check /tmp/ia_evidence_receipts.no_write.json "$PYTHON_BIN" -m agent.evidence_receipts --no-write --json
 command_json_check /tmp/ia_packet_authority.json "$PYTHON_BIN" -m agent.packet_authority --json
 command_json_check /tmp/ia_verification.all.json "$PYTHON_BIN" -m agent.verification --all --json
+command_json_check /tmp/ia_subscribers.json "$PYTHON_BIN" -m agent.subscribers --json
 command_json_check /tmp/ia_outcome_memo.no_write.json "$PYTHON_BIN" -m agent.outcome_memo --no-write --json
 command_json_check /tmp/ia_gate.all.json "$PYTHON_BIN" -m agent.gate --all --json
 command_json_check /tmp/ia_adapters.all.json "$PYTHON_BIN" -m agent.adapters --all --json

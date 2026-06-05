@@ -1,0 +1,44 @@
+{
+  "category_sentence": "The packet authority layer downstream systems trust before AI moves.",
+  "consumer_question": "Which human reviewer queue must inspect this packet before access can move?",
+  "fields_used": [
+    "packet_authority.packet_id",
+    "packet_authority.revision_id",
+    "packet_authority.safety_state.requires_human_approval"
+  ],
+  "packet_authority": {
+    "content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "revision_id": "rev_965302783cee8688",
+    "safety_state": {
+      "approval_granted": false,
+      "external_writes": false,
+      "packet_state_mutation": false,
+      "permission_grants": false,
+      "production_access": false,
+      "requires_human_approval": true,
+      "scoped_validation": true
+    },
+    "snapshot_id": "ia-agent-access-support-triage-v0:rev_965302783cee8688",
+    "verdict_class": "scoped_validation_only",
+    "verification_status": "valid_review_required"
+  },
+  "read_only_contract": {
+    "endpoint": "/api/packets/ia-agent-access-support-triage-v0/verification",
+    "method": "GET",
+    "source_of_truth": "packet_authority.verification"
+  },
+  "schema_version": "packet_authority_subscriber.v0",
+  "subscriber": "security_review_queue",
+  "subscriber_category": "review",
+  "subscriber_effect": {
+    "can_approve_access": false,
+    "can_grant_permissions": false,
+    "can_mutate_packet": false,
+    "can_override_verdict": false,
+    "executes_external_writes": false,
+    "owner": "Security",
+    "requires_human_review": true,
+    "subscriber_action": "open a Security review item against the packet revision"
+  }
+}

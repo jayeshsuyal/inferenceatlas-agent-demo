@@ -7,7 +7,7 @@ from typing import Any, Dict, List
 
 from .catalog_token_fallback import build_catalog_fallback_plans
 from .config import INFERENCEATLAS_V1_URL
-from .v1_client import is_v1_configured, plan_llm, v1_health
+from .v1_client import copilot, is_v1_configured, plan_llm, v1_health
 from .workload_parse import WorkloadSpecs, parse_workload_specs
 
 
@@ -23,10 +23,37 @@ class AttachmentRoles:
 class CostPlanResult:
     ok: bool
     engine_block: str
-    source: str  # inferenceatlas-v1 | catalog_fallback
+    source: str  # inferenceatlas-v1 | inferenceatlas-v1-copilot | catalog_fallback
     specs: WorkloadSpecs
     plans: List[dict]
     message: str = ""
+    direct_reply: str = ""
+
+
+@dataclass
+class CopilotResult:
+    ok: bool
+    reply: str
+    source: str
+    plans: List[dict]
+    message: str = ""
+
+
+def fetch_v1_copilot(message: str, shell_context: str = "") -> CopilotResult:
+    """Delegate full cost answer to v1 E2E copilot (no demo LLM re-summarization)."""
+    if not is_v1_configured():
+        return CopilotResult(ok=False, reply="", source="", plans=[], message="v1 not configured")
+    try:
+        data = copilot(message=message, shell_context=shell_context)
+        return CopilotResult(
+            ok=True,
+            reply=data.get("reply", ""),
+            source=str(data.get("source", "inferenceatlas-v1-copilot")),
+            plans=data.get("plans") or [],
+            message="v1 copilot E2E",
+        )
+    except Exception as exc:
+        return CopilotResult(ok=False, reply="", source="", plans=[], message=str(exc))
 
 
 def fetch_cost_plans(specs: WorkloadSpecs) -> dict[str, Any]:

@@ -50,6 +50,7 @@ pip install -e .
 ia-judge
 ia-skills
 ia-packet-diff
+ia-receipts
 ia-outcome-memo
 ia-proof-health
 ia-sponsor-readiness
@@ -64,9 +65,10 @@ ia-verify-artifacts
 In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
-- an Agent Skills registry showing 14 stable public review skills with commands, artifacts, dependencies, and safety boundaries
+- an Agent Skills registry showing 15 stable public review skills with commands, artifacts, dependencies, and safety boundaries
 - a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
+- an Evidence Receipt Ledger attaching tool scope, proof debt, reviewer routes, and cost/procurement controls without weakening the packet lock
 - a Packet Outcome Memo converting the support-triage packet into a human decision
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power
 - a Trust Receipt and Review Room that summarize blast radius, proof debt, reviewer routing, sponsor proof, and safety state
@@ -83,6 +85,7 @@ In five minutes, a reviewer should see:
 | `docs/AGENT_SKILLS.md` | The public capability registry maps each agent review skill to proof, command, artifact, dependency, tier, and safety boundary. |
 | `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |
 | `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
+| `examples/generated/support_triage_agent.evidence_receipts.md` | Tool scope, missing proof, reviewer routes, and cost/procurement controls attach as receipts without approving access. |
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
@@ -105,6 +108,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Three public scenarios | Verdict, proof debt, reviewer routing, access-speed lane, and safety state are derived from structured request inputs. |
 | Agent Skills registry | Public capability claims are structured as registry entries with commands, artifacts, dependencies, and allowlisted safety boundaries. |
 | Packet Diff | The three scenarios produce different load-bearing fields while production access and writes stay blocked. |
+| Evidence Receipt Ledger | Receipt IDs attach to the Packet Authority Snapshot while each receipt remains context-only and human-reviewed. |
 | Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
 | Artifact Integrity Gate | Deterministic proof artifacts must remain byte-equal to the current generator output; static review assets must be present; generated inventory must not contain extras. |
 | Public trial request files | The trial runner derives a report, packet, access brief, outcome memo, sponsor evidence replay, and live evidence rehearsal from the request file. |

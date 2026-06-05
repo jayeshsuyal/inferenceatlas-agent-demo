@@ -21,6 +21,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "python3 -m agent.skills",
             "python3 -m agent.skills --json",
             "python3 -m agent.packet_diff",
+            "python3 -m agent.evidence_receipts",
+            "python3 -m agent.packet_authority",
+            "python3 -m agent.verification --all",
             "python3 -m agent.outcome_memo",
             "python3 -m agent.proof_health",
             "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
@@ -31,8 +34,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "admin_code_fix_bot",
             "Artifact Integrity Gate",
             "Agent Skills",
-            "`summary.available_stable_skills` is `14`",
-            "`summary.generated_artifacts_verified` is `37`",
+            "`summary.available_stable_skills` is `15`",
+            "`summary.generated_artifacts_verified` is `49`",
             "`summary.stale_artifacts` is `0`",
             "`summary.unexpected_checked_in_artifacts` is `0`",
             "`0 unexpected checked-in`",
@@ -41,6 +44,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
             "`proof_health.human_review_required` is `true`",
             "`proof_health.approves_access` is `false`",
             "`packet_diff.has_blocked_critical_lane` is `true`",
+            "Evidence Receipt Ledger JSON has `decision_lock_after` unchanged",
+            "Packet Authority Snapshot JSON has `decision_lock_after` set to `scoped_validation_only`",
+            "every Packet Verification result has `production_access`, `external_writes`, `permission_grants`, and `approval_granted` set to `false`",
             "`packet_outcome_memo.decision_code` is `scoped_validation_only`",
             "`packet_outcome_memo.production_access` is `false`",
             "`design_partner_outcome_memo.decision_code` is `scoped_validation_only`",
@@ -79,6 +85,13 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("python3 -m agent.skills", manifest["judge_review_path"])
         self.assertIn("python3 -m agent.skills", manifest["five_minute_review_commands"])
         self.assertIn("examples/generated/packet_diff.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.evidence_receipts.md", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.evidence_receipts.json", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.snapshot.json", manifest["judge_review_path"])
+        self.assertIn("examples/generated/support_triage_agent.verification.json", manifest["judge_review_path"])
+        self.assertIn("python3 -m agent.evidence_receipts", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.packet_authority", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.verification --all", manifest["five_minute_review_commands"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_trial.outcome_memo.md", manifest["judge_review_path"])
         self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", manifest["judge_review_path"])
@@ -93,6 +106,9 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("agentic review expected output", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet diff", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("evidence receipt ledger", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("packet authority snapshot", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("packet verification", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("live evidence rehearsal", manifest["private_v1_boundary"]["public_proof_surface"])

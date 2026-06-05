@@ -41,6 +41,7 @@ ALLOWED_SAFETY_BOUNDARIES = frozenset(
         "dry-run by default; no live writes; sponsor cannot grant access",
         "no live integration path; humans review",
         "regeneration is deterministic; proof bytes locked",
+        "receipts are context only; never weaken locks",
     }
 )
 
@@ -268,10 +269,30 @@ SKILLS: tuple[SkillSpec, ...] = (
             "design_partner_evidence_replay",
             "design_partner_outcome_memo",
             "design_partner_trial_runner",
+            "evidence_receipt_ledger",
             "outcome_memo_generation",
             "packet_diff_generation",
             "proof_health_drift_detection",
             "sponsor_proof_readiness",
+        ),
+    ),
+    SkillSpec(
+        id="evidence_receipt_ledger",
+        name="Evidence Receipt Ledger",
+        what_it_proves="Tool scope, proof debt, reviewer routes, and cost/procurement controls attach as receipts without weakening the packet decision lock.",
+        command="python3 -m agent.evidence_receipts",
+        artifacts=(
+            "agent/evidence_receipts.py",
+            "examples/generated/support_triage_agent.evidence_receipts.md",
+            "examples/generated/support_triage_agent.evidence_receipts.json",
+        ),
+        safety_boundary="receipts are context only; never weaken locks",
+        tier="stable",
+        category="proof_integrity",
+        depends_on=(
+            "decision_packet_generation",
+            "proof_debt_extraction",
+            "reviewer_routing",
         ),
     ),
     SkillSpec(

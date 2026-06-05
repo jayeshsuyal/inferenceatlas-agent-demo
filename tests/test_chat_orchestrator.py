@@ -54,10 +54,18 @@ def test_orchestrate_cost_uses_v1_engine_not_tools():
         attach_warnings=[],
     )
     assert orch.use_tools is False
-    assert orch.engine_source in ("inferenceatlas-v1", "catalog_fallback")
-    assert "INFERENCEATLAS ENGINE" in orch.llm_message
+    assert orch.engine_source in (
+        "inferenceatlas-v1-copilot",
+        "inferenceatlas-v1",
+        "catalog_fallback",
+    )
+    if orch.direct_reply:
+        assert "Recommendation" in orch.direct_reply or "Engine summary" in orch.direct_reply
+    else:
+        assert "INFERENCEATLAS ENGINE" in orch.llm_message
     assert any(
-        "engine" in s.lower()
+        "copilot" in s.lower()
+        or "engine" in s.lower()
         or "catalog fallback" in s.lower()
         or "inferenceatlas-v1" in s.lower()
         or "plan_llm" in s.lower()

@@ -285,6 +285,8 @@ def build_repo_digest(session_id: str, full_name: str) -> str:
 
 def attach_repository(session_id: str, full_name: str) -> dict[str, Any]:
     """Index a repo into session cache for chat."""
+    from .session_metrics import record_connector_index
+
     conn = _raw_connection(session_id, "github")
     if conn.get("status") != "connected":
         return {"ok": False, "message": "Sign in to GitHub first."}
@@ -306,6 +308,7 @@ def attach_repository(session_id: str, full_name: str) -> dict[str, Any]:
     }
     attached[full_name]["digest"] = digest
     save_session(session_id, data)
+    record_connector_index("github", session_id)
 
     return {
         "ok": True,

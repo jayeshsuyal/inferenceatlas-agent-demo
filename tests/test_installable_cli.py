@@ -9,10 +9,12 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_SCRIPTS = {
     "ia-adapters": "agent.adapters.__main__:main",
     "ia-contract": "agent.contract:main",
+    "ia-receipts": "agent.evidence_receipts:main",
     "ia-gate": "agent.gate:main",
     "ia-judge": "agent.judge:main",
     "ia-outcome-memo": "agent.outcome_memo:main",
     "ia-packet-diff": "agent.packet_diff:main",
+    "ia-snapshot": "agent.packet_authority:main",
     "ia-proof-health": "agent.proof_health:main",
     "ia-review": "agent.review:main",
     "ia-review-room": "agent.review_room:main",
@@ -22,6 +24,7 @@ EXPECTED_SCRIPTS = {
     "ia-trial-evidence-replay": "agent.trial_evidence_replay:main",
     "ia-trial-outcome-memo": "agent.trial_outcome_memo:main",
     "ia-trust": "agent.trust:main",
+    "ia-verify": "agent.verification:main",
     "ia-verify-artifacts": "agent.verify_artifacts:main",
     "ia-mind": "agent.mind.__main__:main",
 }
@@ -81,6 +84,8 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-judge", readme)
         self.assertIn("ia-skills", readme)
         self.assertIn("ia-packet-diff", readme)
+        self.assertIn("ia-receipts", readme)
+        self.assertIn("ia-snapshot", readme)
         self.assertIn("ia-outcome-memo", readme)
         self.assertIn("ia-proof-health", readme)
         self.assertIn("ia-sponsor-readiness", readme)
@@ -93,11 +98,14 @@ class InstallableCliTests(unittest.TestCase):
             readme,
         )
         self.assertIn("ia-trial-outcome-memo examples/requests/support_triage_trial.yml", readme)
+        self.assertIn("ia-verify", readme)
         self.assertIn("ia-verify-artifacts", readme)
         self.assertIn("python -m pip install -e .", workflow)
         self.assertIn("ia-judge --no-write", workflow)
         self.assertIn("ia-skills", workflow)
         self.assertIn("ia-packet-diff --no-write", workflow)
+        self.assertIn("ia-receipts --no-write", workflow)
+        self.assertIn("ia-snapshot", workflow)
         self.assertIn("ia-outcome-memo --no-write", workflow)
         self.assertIn("ia-proof-health --no-write", workflow)
         self.assertIn("ia-sponsor-readiness --no-write", workflow)
@@ -108,6 +116,7 @@ class InstallableCliTests(unittest.TestCase):
             workflow,
         )
         self.assertIn("ia-trial-outcome-memo examples/requests/support_triage_trial.yml", workflow)
+        self.assertIn("ia-verify", workflow)
         self.assertIn("ia-verify-artifacts", workflow)
 
 

@@ -1,0 +1,575 @@
+{
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_2fe17eaf588c92ad",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_fc736c48ea198d94",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_a7362c6fe960c7df",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_a7267003be51e55d",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_63d164800d685d3b",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_ecabc8a8bea4740a",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_0b5ed36ea3f50bcc",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_f58babb45618bec1",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_bf0869ceaf61de8b",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_5cdf73746b1e0698",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    },
+    {
+      "receipt_id": "er_6287389305d5d4b7",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_write_actions"
+    },
+    {
+      "receipt_id": "er_0aca40aff390f80e",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_pilot"
+    },
+    {
+      "receipt_id": "er_c923c0796d896bc5",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "conditional"
+    }
+  ],
+  "decision_lock_after": "scoped_validation_only",
+  "decision_lock_before": "scoped_validation_only",
+  "finance_procurement": {
+    "approval_granted": false,
+    "budget_owner_required": true,
+    "owner": "Procurement/Finance",
+    "receipt_type": "cost_procurement_receipt",
+    "spend_claim": "No live model/tool/vendor spend is approved by the public receipt ledger.",
+    "token_or_tool_spend_cap_required": true
+  },
+  "generated_by": "inferenceatlas-agent-demo",
+  "ledger_id": "ia-agent-access-support-triage-v0:evidence_receipts:v0",
+  "mode": "offline_deterministic",
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "receipt_ids": [
+    "er_2fe17eaf588c92ad",
+    "er_fc736c48ea198d94",
+    "er_a7362c6fe960c7df",
+    "er_a7267003be51e55d",
+    "er_63d164800d685d3b",
+    "er_ecabc8a8bea4740a",
+    "er_0b5ed36ea3f50bcc",
+    "er_f58babb45618bec1",
+    "er_bf0869ceaf61de8b",
+    "er_5cdf73746b1e0698",
+    "er_6287389305d5d4b7",
+    "er_0aca40aff390f80e",
+    "er_c923c0796d896bc5"
+  ],
+  "receipts": [
+    {
+      "attaches_to": "tool_access_plan.github",
+      "claim": "github stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "issue edits, repo configuration changes, workflow dispatch"
+        },
+        {
+          "control": "required_proof",
+          "value": "repository allowlist, permission level, audit log owner"
+        }
+      ],
+      "evidence_summary": "Requested=read issues for bug reports and incident context; validation=dry-run read-scope plan only; blocked=issue edits, repo configuration changes, workflow dispatch.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_2fe17eaf588c92ad",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.tool_access_plan.github",
+      "status": "needs_named_owner_review",
+      "unblocks": "github validation boundary review"
+    },
+    {
+      "attaches_to": "tool_access_plan.slack",
+      "claim": "slack stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "posting messages, DM access, workspace-wide history"
+        },
+        {
+          "control": "required_proof",
+          "value": "channel allowlist, retention terms, customer-data boundary"
+        }
+      ],
+      "evidence_summary": "Requested=summarize incident channels; validation=dry-run named-channel summary plan only; blocked=posting messages, DM access, workspace-wide history.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_fc736c48ea198d94",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.tool_access_plan.slack",
+      "status": "needs_named_owner_review",
+      "unblocks": "slack validation boundary review"
+    },
+    {
+      "attaches_to": "tool_access_plan.jira",
+      "claim": "jira stays within validation allowance until required proof is reviewed.",
+      "controls": [
+        {
+          "control": "dry_run_default",
+          "value": "external writes disabled"
+        },
+        {
+          "control": "blocked_actions",
+          "value": "ticket creation, status changes, assignment changes"
+        },
+        {
+          "control": "required_proof",
+          "value": "project scope, draft-only mode, rollback/off-switch plan"
+        }
+      ],
+      "evidence_summary": "Requested=create draft tickets; validation=draft ticket proposal only; no production creation; blocked=ticket creation, status changes, assignment changes.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_a7362c6fe960c7df",
+      "receipt_type": "tool_scope_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.tool_access_plan.jira",
+      "status": "needs_named_owner_review",
+      "unblocks": "jira validation boundary review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "GitHub repository allowlist and permission level",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_a7267003be51e55d",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Security/Legal",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_63d164800d685d3b",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Security/Legal",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_ecabc8a8bea4740a",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Support escalation workflow and human handoff owner",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Support Ops",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_0b5ed36ea3f50bcc",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Support Ops",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "attaches_to": "missing_proof",
+      "claim": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "controls": [
+        {
+          "control": "human_review_required",
+          "value": "true"
+        },
+        {
+          "control": "auto_reduce_proof_debt",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Proof is named and owner-routed; it is not accepted yet.",
+      "owner": "Security/Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_f58babb45618bec1",
+      "receipt_type": "proof_debt_receipt",
+      "review_required_by": "Security/Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.missing_proof",
+      "status": "missing_human_confirmation",
+      "unblocks": "reviewable pilot packet"
+    },
+    {
+      "attaches_to": "approval_posture.production_access",
+      "claim": "Tool, model, token, and vendor spend must stay capped until a budget owner signs the pilot envelope.",
+      "controls": [
+        {
+          "control": "budget_owner_required",
+          "value": "true"
+        },
+        {
+          "control": "token_or_tool_spend_cap_required",
+          "value": "true"
+        },
+        {
+          "control": "paid_seat_or_vendor_change_requires_review",
+          "value": "true"
+        },
+        {
+          "control": "default_public_live_spend",
+          "value": "false"
+        }
+      ],
+      "evidence_summary": "Requested systems: github, slack, jira. Public default is no live spend, no paid-seat grant, and no production access until budget owner review.",
+      "owner": "Procurement/Finance",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_bf0869ceaf61de8b",
+      "receipt_type": "cost_procurement_receipt",
+      "review_required_by": "Procurement/Finance",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "public_cost_control_contract",
+      "status": "budget_owner_review_required",
+      "unblocks": "paid tool/vendor spend review if live actions or seats are enabled"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Security/Legal owns review for customer-data exposure, retention, logging, policy boundary.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Security/Legal",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_5cdf73746b1e0698",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Security/Legal",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_access",
+      "unblocks": "customer-data exposure, retention, logging, policy boundary"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Engineering owns review for permission boundaries, rollback, off-switch, audit logs.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Engineering",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_6287389305d5d4b7",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Engineering",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_write_actions",
+      "unblocks": "permission boundaries, rollback, off-switch, audit logs"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Support Ops owns review for workflow fit, escalation rules, human handoff.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Support Ops",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_0aca40aff390f80e",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Support Ops",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.reviewer_owners",
+      "status": "required_before_pilot",
+      "unblocks": "workflow fit, escalation rules, human handoff"
+    },
+    {
+      "attaches_to": "reviewer_owners",
+      "claim": "Procurement/Finance owns review for paid tool/vendor spend if live actions or seats are enabled.",
+      "controls": [
+        {
+          "control": "approval_inferred",
+          "value": "false"
+        },
+        {
+          "control": "named_owner_required",
+          "value": "true"
+        }
+      ],
+      "evidence_summary": "Reviewer route is explicit; approval is not inferred.",
+      "owner": "Procurement/Finance",
+      "packet_id": "ia-agent-access-support-triage-v0",
+      "receipt_id": "er_c923c0796d896bc5",
+      "receipt_type": "reviewer_route_receipt",
+      "review_required_by": "Procurement/Finance",
+      "safety_boundary": {
+        "approves_access": false,
+        "enables_production_access": false,
+        "executes_external_writes": false,
+        "grants_permissions": false,
+        "mutates_packet_state": false,
+        "reduces_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "scenario": "support_triage_agent",
+      "source": "packet.reviewer_owners",
+      "status": "conditional",
+      "unblocks": "paid tool/vendor spend if live actions or seats are enabled"
+    }
+  ],
+  "safety": {
+    "all_non_approving": true,
+    "all_non_auto_reducing": true,
+    "all_non_executing": true,
+    "all_non_granting": true,
+    "all_non_mutating": true,
+    "all_require_human_review": true,
+    "decision_lock_preserved": true,
+    "receipt_count": 13
+  },
+  "scenario": "support_triage_agent",
+  "schema_version": "evidence_receipt_ledger.v0",
+  "snapshot_content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
+  "snapshot_id": "ia-agent-access-support-triage-v0:rev_965302783cee8688",
+  "snapshot_revision_id": "rev_965302783cee8688",
+  "summary": {
+    "cost_procurement_receipts": 1,
+    "proof_debt_receipts": 5,
+    "receipt_count": 13,
+    "reviewer_route_receipts": 4,
+    "tool_scope_receipts": 3
+  }
+}

@@ -108,6 +108,11 @@ class InferenceAtlasAgent:
             yield chunk
         self._history.append({"role": "assistant", "content": "".join(collected)})
 
+    def remember_exchange(self, user_display: str, reply: str) -> None:
+        """Record a turn answered outside the demo LLM (e.g. v1 copilot direct reply)."""
+        self._history.append({"role": "user", "content": user_display})
+        self._history.append({"role": "assistant", "content": reply})
+
     def reset(self) -> None:
         """Clear conversation history."""
         self._history = []

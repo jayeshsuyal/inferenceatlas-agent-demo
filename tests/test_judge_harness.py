@@ -45,6 +45,30 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["packet_diff"]["has_proof_routed_lane"])
         self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
         self.assertTrue(report["packet_diff"]["all_production_access_blocked"])
+        self.assertEqual(report["evidence_receipt_ledger"]["scenario"], "support_triage_agent")
+        self.assertEqual(
+            report["evidence_receipt_ledger"]["decision_lock_before"],
+            report["evidence_receipt_ledger"]["decision_lock_after"],
+        )
+        self.assertGreaterEqual(report["evidence_receipt_ledger"]["receipt_count"], 1)
+        self.assertEqual(report["evidence_receipt_ledger"]["cost_procurement_receipts"], 1)
+        self.assertTrue(report["evidence_receipt_ledger"]["all_require_human_review"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_approving"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_granting"])
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_executing"])
+        self.assertTrue(report["evidence_receipt_ledger"]["budget_owner_required"])
+        self.assertTrue(report["evidence_receipt_ledger"]["token_or_tool_spend_cap_required"])
+        self.assertEqual(report["packet_authority_snapshot"]["scenario"], "support_triage_agent")
+        self.assertEqual(
+            report["packet_authority_snapshot"]["decision_lock_before"],
+            report["packet_authority_snapshot"]["decision_lock_after"],
+        )
+        self.assertTrue(report["packet_authority_snapshot"]["content_hash"].startswith("sha256:"))
+        self.assertEqual(report["packet_verification"]["verification_status"], "valid_review_required")
+        self.assertFalse(report["packet_verification"]["production_access"])
+        self.assertFalse(report["packet_verification"]["external_writes"])
+        self.assertFalse(report["packet_verification"]["permission_grants"])
+        self.assertFalse(report["packet_verification"]["approval_granted"])
         self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
         self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertFalse(report["packet_outcome_memo"]["external_writes"])
@@ -70,6 +94,17 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_approving"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_granting"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_mutating"])
+        self.assertEqual(report["pilot_memo"]["schema_version"], "pilot_memo.v0")
+        self.assertEqual(report["pilot_memo"]["verdict_class"], "scoped_validation_only")
+        self.assertTrue(report["pilot_memo"]["content_hash"].startswith("sha256:"))
+        self.assertEqual(report["pilot_memo"]["sponsor_contribution_count"], 4)
+        self.assertTrue(report["pilot_memo"]["all_sponsors_human_review_required"])
+        self.assertFalse(report["pilot_memo"]["sponsors_can_change_decision"])
+        self.assertEqual(report["pilot_memo"]["safety_anchor"], "IA did not approve. The next human action is named above.")
+        self.assertFalse(report["pilot_memo"]["approves_access"])
+        self.assertFalse(report["pilot_memo"]["grants_permissions"])
+        self.assertFalse(report["pilot_memo"]["executes_external_writes"])
+        self.assertFalse(report["pilot_memo"]["mutates_production"])
         self.assertEqual(report["proof_health"]["scenario"], "support_triage_agent")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertEqual(report["proof_health"]["overall_score"], 67)
@@ -91,6 +126,10 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/trust_receipt.md",
             "examples/generated/packet_diff.md",
             "examples/generated/packet_diff.json",
+            "examples/generated/support_triage_agent.evidence_receipts.md",
+            "examples/generated/support_triage_agent.evidence_receipts.json",
+            "examples/generated/support_triage_agent.snapshot.json",
+            "examples/generated/support_triage_agent.verification.json",
             "examples/generated/support_triage_agent.outcome_memo.md",
             "examples/generated/support_triage_agent.outcome_memo.json",
             "examples/generated/sponsor_live_readiness.md",
@@ -107,6 +146,10 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/support_triage_trial_report.json",
             "examples/generated/support_triage_trial.outcome_memo.md",
             "examples/generated/support_triage_trial.outcome_memo.json",
+            "examples/generated/support_triage_trial.pilot_memo.md",
+            "examples/generated/support_triage_trial.pilot_memo.json",
+            "examples/generated/support_triage_trial.copy_review_brief.md",
+            "schemas/pilot_memo.schema.json",
             "examples/generated/support_triage_trial.evidence_replay.md",
             "examples/generated/support_triage_trial.evidence_replay.json",
             "examples/generated/review_room.desktop.jpg",
@@ -130,6 +173,13 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Access Speed Layer", markdown)
         self.assertIn("Packet Diff", markdown)
         self.assertIn("examples/generated/packet_diff.md", markdown)
+        self.assertIn("Evidence Receipt Ledger", markdown)
+        self.assertIn("examples/generated/support_triage_agent.evidence_receipts.md", markdown)
+        self.assertIn("budget owner required: True", markdown)
+        self.assertIn("Packet Authority Snapshot", markdown)
+        self.assertIn("examples/generated/support_triage_agent.snapshot.json", markdown)
+        self.assertIn("Packet Verification", markdown)
+        self.assertIn("examples/generated/support_triage_agent.verification.json", markdown)
         self.assertIn("Packet Outcome Memo", markdown)
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", markdown)
         self.assertIn("Sponsor Live Readiness", markdown)
@@ -143,6 +193,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Sponsor Evidence Replay", markdown)
         self.assertIn("examples/generated/support_triage_trial.evidence_replay.md", markdown)
         self.assertIn("sponsors can change decision: False", markdown)
+        self.assertIn("Pilot Memo", markdown)
+        self.assertIn("examples/generated/support_triage_trial.pilot_memo.md", markdown)
+        self.assertIn("examples/generated/support_triage_trial.copy_review_brief.md", markdown)
+        self.assertIn("IA did not approve. The next human action is named above.", markdown)
         self.assertIn("Proof Health", markdown)
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", markdown)
         self.assertIn("examples/requests/support_triage_trial.yml", markdown)
@@ -156,6 +210,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("admin_code_fix_bot", result.stdout)
         self.assertIn("Access Speed Layer", result.stdout)
         self.assertIn("Packet Diff", result.stdout)
+        self.assertIn("Evidence Receipt Ledger", result.stdout)
+        self.assertIn("budget owner required: True", result.stdout)
         self.assertIn("Packet Outcome Memo", result.stdout)
         self.assertIn("Sponsor Live Readiness", result.stdout)
         self.assertIn("all non-approving: True", result.stdout)
@@ -164,6 +220,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("Sponsor Evidence Replay", result.stdout)
         self.assertIn("sponsors can change decision: False", result.stdout)
         self.assertIn("all non-granting: True", result.stdout)
+        self.assertIn("Pilot Memo", result.stdout)
+        self.assertIn("copy_review_brief", result.stdout)
+        self.assertIn("IA did not approve. The next human action is named above.", result.stdout)
         self.assertIn("Proof Health", result.stdout)
         self.assertIn("next human health check", result.stdout)
         self.assertIn("blocked_fast", result.stdout)
@@ -184,6 +243,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)
         self.assertTrue(report["packet_diff"]["has_blocked_critical_lane"])
+        self.assertEqual(report["evidence_receipt_ledger"]["cost_procurement_receipts"], 1)
+        self.assertTrue(report["evidence_receipt_ledger"]["all_non_approving"])
+        self.assertTrue(report["evidence_receipt_ledger"]["budget_owner_required"])
         self.assertEqual(report["packet_outcome_memo"]["decision_code"], "scoped_validation_only")
         self.assertFalse(report["packet_outcome_memo"]["production_access"])
         self.assertEqual(report["design_partner_trial"]["access_speed_lane"], "proof_routed_scoped_validation")
@@ -193,6 +255,10 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertFalse(report["design_partner_evidence_replay"]["production_access"])
         self.assertFalse(report["design_partner_evidence_replay"]["can_sponsor_change_decision"])
         self.assertTrue(report["design_partner_evidence_replay"]["all_non_executing"])
+        self.assertEqual(report["pilot_memo"]["verdict_class"], "scoped_validation_only")
+        self.assertFalse(report["pilot_memo"]["sponsors_can_change_decision"])
+        self.assertFalse(report["pilot_memo"]["approves_access"])
+        self.assertEqual(report["pilot_memo"]["safety_anchor"], "IA did not approve. The next human action is named above.")
         self.assertEqual(report["proof_health"]["overall_status"], "drifting")
         self.assertFalse(report["proof_health"]["approves_access"])
 

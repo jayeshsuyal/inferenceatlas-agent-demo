@@ -14,15 +14,16 @@ If you are reviewing quickly, use this order:
 3. Read the Product Quality Audit.
 4. Run the one-command judge harness.
 5. Inspect the generated Packet Diff.
-6. Inspect the generated Packet Outcome Memo.
-7. Run the no-key demo if you want the full packet output.
-8. Inspect the generated Proof Health report.
-9. Inspect the generated Design Partner Outcome Memo.
-10. Inspect the generated Sponsor Evidence Replay.
-11. Inspect the generated decision brief.
-12. Inspect the scenario matrix.
-13. Validate the public conformance contract.
-14. Check the safety defaults and tests.
+6. Inspect the generated Evidence Receipt Ledger.
+7. Inspect the generated Packet Outcome Memo.
+8. Run the no-key demo if you want the full packet output.
+9. Inspect the generated Proof Health report.
+10. Inspect the generated Design Partner Outcome Memo.
+11. Inspect the generated Sponsor Evidence Replay.
+12. Inspect the generated decision brief.
+13. Inspect the scenario matrix.
+14. Validate the public conformance contract.
+15. Check the safety defaults and tests.
 
 ```bash
 python3 -m agent.judge
@@ -30,6 +31,7 @@ python3 -m agent.demo
 python3 -m agent.review --list
 python3 -m agent.skills
 python3 -m agent.packet_diff
+python3 -m agent.evidence_receipts
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
@@ -62,6 +64,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What is the one-command judge path? | `python3 -m agent.judge` |
 | What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | Does the packet bend across risk? | `python3 -m agent.packet_diff` and `examples/generated/packet_diff.md` |
+| Which evidence receipts attach without weakening the lock? | `python3 -m agent.evidence_receipts` and `examples/generated/support_triage_agent.evidence_receipts.md` |
 | What decision should a human leave with? | `python3 -m agent.outcome_memo` and `examples/generated/support_triage_agent.outcome_memo.md` |
 | Are the checked-in artifacts fresh? | `python3 -m agent.verify_artifacts` |
 | How would a CTO trial this with one real workflow? | `docs/DESIGN_PARTNER_BRIEF.md` |
@@ -99,6 +102,7 @@ The public harness proves that InferenceAtlas can turn a messy agent-access requ
 - Agent Skills maps public capabilities to commands, artifacts, dependencies, and safety boundaries
 - low-risk, medium-risk, and critical-risk scenarios produce materially different review postures
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
+- Evidence Receipt Ledger attaches tool-scope, proof-debt, reviewer-route, and cost/procurement receipts without approving access or weakening the packet lock
 - Packet Outcome Memo turns the packet into can-move, stays-blocked, proof-owner, and refresh decisions
 - the Artifact Integrity Gate proves deterministic proof artifacts match generator output, static review assets are valid, and no unexpected generated file is checked in
 - the public policy gate blocks critical/admin/prod-write access
@@ -141,6 +145,7 @@ README thesis
 -> Agentic Review Expected Output
 -> one-command judge harness
 -> Packet Diff
+-> Evidence Receipt Ledger
 -> Packet Outcome Memo
 -> Artifact Integrity Gate
 -> Design Partner Brief

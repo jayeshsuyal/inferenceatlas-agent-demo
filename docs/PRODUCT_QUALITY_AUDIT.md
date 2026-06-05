@@ -20,6 +20,9 @@ agent-access question
 -> Agent Skills registry
 -> DecisionPacket
 -> Packet Diff
+-> Evidence Receipt Ledger
+-> Packet Authority Snapshot
+-> Packet Verification
 -> Agent Access Decision Brief
 -> Trust Receipt
 -> Packet Outcome Memo
@@ -47,18 +50,21 @@ A reviewer should be able to follow this order without needing private source co
 5. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
 6. `python3 -m agent.judge`
 7. `examples/generated/packet_diff.md`
-8. `examples/generated/support_triage_agent.outcome_memo.md`
-9. `python3 -m agent.verify_artifacts`
-10. `examples/generated/review_room.html`
-11. `examples/generated/trust_receipt.md`
-12. `examples/generated/support_triage_agent.proof_health.md`
-13. `examples/generated/sponsor_live_readiness.md`
-14. `docs/DESIGN_PARTNER_BRIEF.md`
-15. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-16. `examples/generated/support_triage_trial_report.md`
-17. `examples/generated/support_triage_trial.outcome_memo.md`
-18. `examples/evidence/support_triage_trial/`
-19. `examples/generated/support_triage_trial.evidence_replay.md`
+8. `examples/generated/support_triage_agent.evidence_receipts.md`
+9. `examples/generated/support_triage_agent.snapshot.json`
+10. `examples/generated/support_triage_agent.verification.json`
+11. `examples/generated/support_triage_agent.outcome_memo.md`
+12. `python3 -m agent.verify_artifacts`
+13. `examples/generated/review_room.html`
+14. `examples/generated/trust_receipt.md`
+15. `examples/generated/support_triage_agent.proof_health.md`
+16. `examples/generated/sponsor_live_readiness.md`
+17. `docs/DESIGN_PARTNER_BRIEF.md`
+18. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+19. `examples/generated/support_triage_trial_report.md`
+20. `examples/generated/support_triage_trial.outcome_memo.md`
+21. `examples/evidence/support_triage_trial/`
+22. `examples/generated/support_triage_trial.evidence_replay.md`
 
 This order is the product-quality baseline. It gives a skim reviewer a clear story, gives an agentic reviewer a command path, gives a CTO a build path, and gives a design partner a trial path.
 
@@ -69,6 +75,9 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 | Agent Skills registry | Show the public capability map before reviewers inspect individual artifacts. | Must be generated from `agent/skills.py`, preserve safe categories, and keep every skill backed by commands, artifacts, dependencies, and allowlisted safety boundaries. |
 | DecisionPacket | Show the access request, risk posture, proof debt, blocked claims, reviewer owners, and safety state. | Must remain deterministic, schema-backed, and non-approving. |
 | Packet Diff | Show how the same engine relaxes, routes, or blocks across risk levels. | Must compare load-bearing fields and preserve blocked production/write invariants. |
+| Evidence Receipt Ledger | Attach tool-scope, proof-debt, reviewer-route, and cost/procurement receipts to the packet. | Must preserve the packet decision lock, require human review, and never approve access, grant permissions, write externally, mutate the packet, or auto-reduce proof debt. |
+| Packet Authority Snapshot | Give the packet a stable revision, content hash, receipt IDs, and decision lock. | Must be deterministic and fail closed if evidence would weaken the lock. |
+| Packet Verification | Give downstream readers a read-only proof artifact. | Must keep production access, external writes, permission grants, and approval false. |
 | Agent Access Decision Brief | Compress the packet into a fast go/no-go review surface. | Must make scoped validation, production access, missing proof, and next validation obvious. |
 | Trust Receipt | Give the fastest audit-style summary. | Must join permission envelope, proof debt, reviewer routing, sponsor proof, and safety state. |
 | Packet Outcome Memo | Convert the packet into a human decision. | Must name what can move, what stays blocked, proof owners, reviewer routes, and refresh timing without approving access. |
@@ -93,7 +102,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 - External writes stay disabled in the public harness.
 - Human approval remains required.
 - Every new public artifact must clarify reviewer decision, design-partner trial, or CTO build path.
-- Packet-adjacent artifacts must derive from the packet, brief, policy gate, Proof Health, or sponsor readiness.
+- Packet-adjacent artifacts must derive from the packet, receipt ledger, brief, policy gate, Proof Health, or sponsor readiness.
 
 ## What Not To Add
 
@@ -108,6 +117,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 
 Before a PR claims the product surface is stronger, it should preserve these signals:
 
+- `bash scripts/pr_smoke.sh` passes as the no-key local mirror of the PR smoke gate.
 - `python3 -m agent.judge --no-write` passes.
 - `python3 -m agent.judge --no-write --json` remains machine-readable.
 - `python3 -m unittest discover -s tests` passes.
@@ -117,7 +127,7 @@ Before a PR claims the product surface is stronger, it should preserve these sig
 - `python3 -m agent.verify_artifacts` passes.
 - The artifact checklist includes the review surfaces a judge should skim.
 - The public boundary tests stay clean.
-- The Review Room, Trust Receipt, Packet Diff, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, trial report, Design Partner Outcome Memo, Sponsor Evidence Replay, and sanitized evidence fixtures remain public proof surfaces.
+- The Review Room, Trust Receipt, Packet Diff, Evidence Receipt Ledger, Packet Authority Snapshot, Packet Verification, Packet Outcome Memo, Proof Health, Sponsor Live Readiness, trial report, Design Partner Outcome Memo, Sponsor Evidence Replay, and sanitized evidence fixtures remain public proof surfaces.
 
 ## Product Spine Check
 
@@ -126,9 +136,11 @@ Use this as the quick premium-quality review:
 | Question | Pass signal |
 | --- | --- |
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
-| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 14 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
+| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 15 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
+| Can every PR smoke-test the public spine safely? | `bash scripts/pr_smoke.sh` runs the no-key product gate locally and `.github/workflows/smoke.yml` runs it on pull requests. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |
+| Can finance/procurement see cost controls? | `examples/generated/support_triage_agent.evidence_receipts.md` includes a cost/procurement receipt with budget owner and spend-cap review required. |
 | Can the packet become a meeting decision? | `examples/generated/support_triage_agent.outcome_memo.md` names can-move scope, blocked scope, proof owners, and refresh timing. |
 | Can a reviewer trust the public proof inventory is fresh? | `python3 -m agent.verify_artifacts` byte-compares regenerated outputs against `examples/generated/`, validates static review assets, and fails on unexpected generated files. |
 | Can a CTO build on it safely? | `docs/CTO_HANDOFF.md`, `docs/ARCHITECTURE.md`, and `docs/LIVE_INTEGRATION_CONTRACT.md` preserve dry-run and human-review defaults. |

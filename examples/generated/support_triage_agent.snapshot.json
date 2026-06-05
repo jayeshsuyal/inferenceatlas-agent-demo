@@ -1,0 +1,111 @@
+{
+  "accepted_evidence": [
+    {
+      "receipt_id": "er_2fe17eaf588c92ad",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_fc736c48ea198d94",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_a7362c6fe960c7df",
+      "receipt_type": "tool_scope_receipt",
+      "status": "needs_named_owner_review"
+    },
+    {
+      "receipt_id": "er_a7267003be51e55d",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_63d164800d685d3b",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_ecabc8a8bea4740a",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_0b5ed36ea3f50bcc",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_f58babb45618bec1",
+      "receipt_type": "proof_debt_receipt",
+      "status": "missing_human_confirmation"
+    },
+    {
+      "receipt_id": "er_bf0869ceaf61de8b",
+      "receipt_type": "cost_procurement_receipt",
+      "status": "budget_owner_review_required"
+    },
+    {
+      "receipt_id": "er_5cdf73746b1e0698",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_access"
+    },
+    {
+      "receipt_id": "er_6287389305d5d4b7",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_write_actions"
+    },
+    {
+      "receipt_id": "er_0aca40aff390f80e",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "required_before_pilot"
+    },
+    {
+      "receipt_id": "er_c923c0796d896bc5",
+      "receipt_type": "reviewer_route_receipt",
+      "status": "conditional"
+    }
+  ],
+  "content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
+  "decision_lock_after": "scoped_validation_only",
+  "decision_lock_before": "scoped_validation_only",
+  "evidence_receipt_ids": [
+    "er_2fe17eaf588c92ad",
+    "er_fc736c48ea198d94",
+    "er_a7362c6fe960c7df",
+    "er_a7267003be51e55d",
+    "er_63d164800d685d3b",
+    "er_ecabc8a8bea4740a",
+    "er_0b5ed36ea3f50bcc",
+    "er_f58babb45618bec1",
+    "er_bf0869ceaf61de8b",
+    "er_5cdf73746b1e0698",
+    "er_6287389305d5d4b7",
+    "er_0aca40aff390f80e",
+    "er_c923c0796d896bc5"
+  ],
+  "generated_by": "inferenceatlas-agent-demo",
+  "locked_fields": [
+    "decision.verdict",
+    "approval_posture.production_access",
+    "approval_posture.validation_review",
+    "approval_posture.write_access",
+    "safety_state.approval_granted",
+    "safety_state.external_writes_enabled",
+    "safety_state.requires_human_approval"
+  ],
+  "mode": "offline_deterministic",
+  "next_human_action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "rejected_evidence": [],
+  "revision_id": "rev_965302783cee8688",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_authority_snapshot.v0",
+  "snapshot_id": "ia-agent-access-support-triage-v0:rev_965302783cee8688"
+}

@@ -4,6 +4,7 @@ const REVIEW_SCOPE_KEY = "ia_review_scope";
 const messagesEl = document.getElementById("messages");
 const chatView = document.getElementById("chat-view");
 const reviewView = document.getElementById("review-view");
+const walkthroughView = document.getElementById("walkthrough-view");
 const cycleFeed = document.getElementById("cycle-feed");
 const form = document.getElementById("chat-form");
 const input = document.getElementById("message-input");
@@ -18,10 +19,22 @@ const btnMindInit = document.getElementById("btn-mind-init");
 const btnMindStep = document.getElementById("btn-mind-step");
 const btnRunRehearsal = document.getElementById("btn-run-rehearsal");
 const btnRunUploadedRehearsal = document.getElementById("btn-run-uploaded-rehearsal");
+const btnLoadWalkthrough = document.getElementById("btn-load-walkthrough");
+const btnCopyWalkthroughBrief = document.getElementById("btn-copy-walkthrough-brief");
 const judgeStepsEl = document.getElementById("judge-steps");
+const walkthroughStepsNav = document.getElementById("walkthrough-steps-nav");
 const guideTitle = document.getElementById("guide-title");
 const guideSubtitle = document.getElementById("guide-subtitle");
 const blockedNote = document.getElementById("blocked-note");
+const walkthroughToast = document.getElementById("walkthrough-toast");
+const walkthroughTitle = document.getElementById("walkthrough-title");
+const walkthroughSubtitle = document.getElementById("walkthrough-subtitle");
+const walkthroughStrip = document.getElementById("walkthrough-strip");
+const walkthroughActiveCard = document.getElementById("walkthrough-active-card");
+const walkthroughDecisionCard = document.getElementById("walkthrough-decision-card");
+const walkthroughSponsorCard = document.getElementById("walkthrough-sponsor-card");
+const walkthroughReviewerCard = document.getElementById("walkthrough-reviewer-card");
+const walkthroughExportCard = document.getElementById("walkthrough-export-card");
 const reviewNote = document.getElementById("review-note");
 const reviewFile = document.getElementById("review-file");
 const reviewFileChip = document.getElementById("review-file-chip");
@@ -60,6 +73,13 @@ const SKILL_HINT_BY_ID = {
   full_judge_harness: "Summarize the full judge proof path.",
 };
 
+const EMPTY_PROOF_TILES = [
+  ["Packet lock", "Production false · writes false"],
+  ["Sponsor proof", "Tavily evidence · Composio dry-run"],
+  ["Cost guardrail", "Procurement shortlist · no savings guarantee"],
+  ["Review lane", "Scoped validation · humans approve"],
+];
+
 let sessionId = localStorage.getItem(STORAGE_KEY) || crypto.randomUUID();
 localStorage.setItem(STORAGE_KEY, sessionId);
 
@@ -85,6 +105,8 @@ let slashActiveIndex = 0;
 let slashFilter = "";
 let skillsLoadError = null;
 let skillsLoaded = false;
+let walkthroughPayload = null;
+let walkthroughActiveIndex = 0;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
 let selectedSkills = [];
 /** @type {Array<{full_name:string, preview?:string, indexing?:boolean}>} */
@@ -257,6 +279,25 @@ async function consumeChatStream(response, thinkingUi) {
   throw new Error("Stream ended without a reply");
 }
 
+function clearEmptyProofBoard() {
+  document.getElementById("empty-proof-board")?.remove();
+}
+
+function renderEmptyProofBoard() {
+  clearEmptyProofBoard();
+  const board = document.createElement("div");
+  board.className = "empty-proof-board";
+  board.id = "empty-proof-board";
+  board.setAttribute("aria-label", "Current public proof state");
+  for (const [label, value] of EMPTY_PROOF_TILES) {
+    const tile = document.createElement("article");
+    tile.className = "proof-tile";
+    tile.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
+    board.appendChild(tile);
+  }
+  messagesEl.appendChild(board);
+}
+
 function removeMessage(el) {
   if (el && el.parentNode) el.parentNode.removeChild(el);
 }
@@ -275,6 +316,10 @@ function setJudgeStep(n) {
 
 function showReviewPanel() {
   document.querySelector('.tab[data-tab="review"]')?.click();
+}
+
+function showWalkthroughPanel() {
+  document.querySelector('.tab[data-tab="walkthrough"]')?.click();
 }
 
 async function uploadFile(channel, fileInput, chipEl, idStore) {
@@ -751,6 +796,7 @@ customEvidenceFile.addEventListener("change", async () => {
 });
 
 function appendUserMessage(message, skills = [], githubRepos = [], driveFiles = []) {
+  clearEmptyProofBoard();
   const wrap = document.createElement("div");
   wrap.className = "message user";
 
@@ -1305,6 +1351,9 @@ async function sendMessage(text) {
     }
 
     const data = await consumeChatStream(res, thinkingUi);
+    if (!document.getElementById("panel-metrics")?.hidden) {
+      loadSessionMetrics();
+    }
 
     sessionId = data.session_id;
     localStorage.setItem(STORAGE_KEY, sessionId);
@@ -1350,9 +1399,10 @@ async function resetChat() {
   messagesEl.innerHTML = "";
   appendMessage(
     "assistant",
-    "New conversation started. Attach skills with + or /, ask your question, then Send.",
+    "Welcome. Compare AI inference costs, explore the catalog, or ask whether an agent should get tool access.\n\nAttach /packet, /gate, etc., ask a review question, then Send. Skills inject real DecisionPacket facts (no catalog tool loop).",
     "welcome"
   );
+  renderEmptyProofBoard();
 }
 
 function renderMindCard(m, pulse = false) {
@@ -1541,11 +1591,264 @@ function renderRehearsalCard(data) {
   cycleFeed.appendChild(card);
 }
 
+function setWalkthroughToast(text, isError = false) {
+  if (!walkthroughToast) return;
+  walkthroughToast.textContent = text || "";
+  walkthroughToast.classList.toggle("error", isError);
+}
+
+function renderMiniList(items, { limit = 4 } = {}) {
+  const ul = document.createElement("ul");
+  ul.className = "mini-list";
+  (items || []).slice(0, limit).forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = typeof item === "string" ? item : JSON.stringify(item);
+    ul.appendChild(li);
+  });
+  if ((items || []).length > limit) {
+    const li = document.createElement("li");
+    li.textContent = `${items.length - limit} more in export`;
+    ul.appendChild(li);
+  }
+  return ul;
+}
+
+function renderWalkthroughNav(data) {
+  walkthroughStepsNav.innerHTML = "";
+  (data.steps || []).forEach((step, index) => {
+    const li = document.createElement("li");
+    li.classList.toggle("active", index === walkthroughActiveIndex);
+    li.innerHTML = `<strong>${escapeHtml(step.label)}</strong> ${escapeHtml(step.title)}`;
+    li.addEventListener("click", () => {
+      walkthroughActiveIndex = index;
+      renderWalkthrough(data);
+    });
+    walkthroughStepsNav.appendChild(li);
+  });
+}
+
+function renderWalkthroughStrip(data) {
+  walkthroughStrip.innerHTML = "";
+  (data.steps || []).forEach((step, index) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `walk-step${index === walkthroughActiveIndex ? " active" : ""}`;
+    btn.innerHTML = `<span>${escapeHtml(String(index + 1))}</span><strong>${escapeHtml(step.label)}</strong>`;
+    btn.addEventListener("click", () => {
+      walkthroughActiveIndex = index;
+      renderWalkthrough(data);
+    });
+    walkthroughStrip.appendChild(btn);
+  });
+}
+
+function renderActiveWalkthroughCard(data) {
+  const step = data.steps?.[walkthroughActiveIndex] || data.steps?.[0];
+  walkthroughActiveCard.innerHTML = "";
+  if (!step) return;
+  const label = document.createElement("span");
+  label.className = "eyebrow";
+  label.textContent = step.label;
+  const h = document.createElement("h3");
+  h.textContent = step.title;
+  const summary = document.createElement("p");
+  summary.className = "walkthrough-summary";
+  summary.textContent = step.summary;
+  const fact = document.createElement("code");
+  fact.className = "walkthrough-fact";
+  fact.textContent = step.primary_fact;
+  const boundary = document.createElement("p");
+  boundary.className = "safety-anchor";
+  boundary.textContent = step.boundary;
+  walkthroughActiveCard.append(label, h, summary, fact, boundary);
+}
+
+function renderDecisionCard(data) {
+  const decision = data.decision || {};
+  walkthroughDecisionCard.innerHTML = `
+    <span class="eyebrow">Decision lock</span>
+    <h3>${escapeHtml(decision.verdict_class || "review_required")}</h3>
+    <div class="walk-metrics">
+      <div><span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong></div>
+      <div><span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong></div>
+      <div><span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong></div>
+      <div><span>Sponsors change</span><strong>${escapeHtml(String(decision.sponsors_can_change_decision))}</strong></div>
+    </div>
+    <p class="walkthrough-summary">${escapeHtml(decision.next_human_action || "")}</p>
+  `;
+}
+
+function renderSponsorCard(data) {
+  walkthroughSponsorCard.innerHTML = `
+    <span class="eyebrow">Sponsor proof roles</span>
+    <h3>Proof contributors</h3>
+  `;
+  const list = document.createElement("div");
+  list.className = "sponsor-role-list";
+  (data.sponsor_roles || []).forEach((item) => {
+    const row = document.createElement("article");
+    row.className = "sponsor-role-row";
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(item.provider)}</strong>
+        <span>${escapeHtml(item.verb)} ${escapeHtml(item.role)}</span>
+      </div>
+      <code>${escapeHtml(item.proof_type)}</code>
+      <small>changes decision: ${escapeHtml(String(item.can_change_decision))}</small>
+    `;
+    list.appendChild(row);
+  });
+  walkthroughSponsorCard.appendChild(list);
+}
+
+function renderReviewerCard(data) {
+  walkthroughReviewerCard.innerHTML = `
+    <span class="eyebrow">Reviewer routing</span>
+    <h3>${escapeHtml(String(data.reviewer_routing?.length || 0))} owner gates</h3>
+  `;
+  const routes = (data.reviewer_routing || []).map(
+    (item) => `${item.owner}: ${item.decision_needed}`
+  );
+  walkthroughReviewerCard.appendChild(renderMiniList(routes, { limit: 4 }));
+}
+
+function renderExportCard(data) {
+  walkthroughExportCard.innerHTML = `
+    <span class="eyebrow">Export</span>
+    <h3>PilotMemo</h3>
+    <p class="walkthrough-summary">${escapeHtml(data.safety_anchor || "")}</p>
+  `;
+  const actions = document.createElement("div");
+  actions.className = "walk-actions";
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "btn-primary";
+  copy.textContent = "Copy review brief";
+  copy.addEventListener("click", () => copyWalkthroughBrief());
+  const review = document.createElement("button");
+  review.type = "button";
+  review.className = "btn-ghost";
+  review.textContent = "Run review cycle";
+  review.addEventListener("click", () => {
+    showReviewPanel();
+    mindStep();
+  });
+  actions.append(copy, review);
+  walkthroughExportCard.appendChild(actions);
+  renderArtifactLinks(data.output_files || [], walkthroughExportCard);
+}
+
+function renderWalkthrough(data) {
+  walkthroughPayload = data;
+  walkthroughTitle.textContent = data.title || "Design partner walkthrough";
+  walkthroughSubtitle.textContent = data.subtitle || "";
+  btnCopyWalkthroughBrief.disabled = !data.copy_review_brief;
+  renderWalkthroughNav(data);
+  renderWalkthroughStrip(data);
+  renderActiveWalkthroughCard(data);
+  renderDecisionCard(data);
+  renderSponsorCard(data);
+  renderReviewerCard(data);
+  renderExportCard(data);
+}
+
+async function loadWalkthrough({ silent = false } = {}) {
+  btnLoadWalkthrough.disabled = true;
+  if (!silent) setWalkthroughToast("Loading walkthrough...");
+  try {
+    const res = await fetch("/api/walkthrough");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Walkthrough failed");
+    renderWalkthrough(data);
+    setWalkthroughToast("Walkthrough loaded. PilotMemo export is ready.");
+  } catch (err) {
+    setWalkthroughToast(String(err.message || err), true);
+    walkthroughActiveCard.innerHTML = `<p class="empty-feed">Walkthrough failed: ${escapeHtml(err.message || err)}</p>`;
+  } finally {
+    btnLoadWalkthrough.disabled = false;
+  }
+}
+
+async function copyWalkthroughBrief() {
+  if (!walkthroughPayload?.copy_review_brief) {
+    await loadWalkthrough({ silent: true });
+  }
+  const text = walkthroughPayload?.copy_review_brief || "";
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    setWalkthroughToast("Review brief copied.");
+  } catch (_) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+    setWalkthroughToast("Review brief copied.");
+  }
+}
+
+async function loadSessionMetrics() {
+  const metaEl = document.getElementById("metrics-meta");
+  const tableWrap = document.getElementById("metrics-table-wrap");
+  const eventsEl = document.getElementById("metrics-events");
+  if (!metaEl || !tableWrap || !eventsEl || !sessionId) return;
+  try {
+    const data = await fetch(`/api/session/metrics?session_id=${encodeURIComponent(sessionId)}`).then(
+      (r) => r.json()
+    );
+    metaEl.textContent = `Session ${data.session_id?.slice(0, 8)}… · ${data.llm_provider || "?"} / ${data.llm_model || "?"} · updated ${data.updated_at || "—"}`;
+    const b = data.billable || {};
+    const rows = [
+      ["Demo LLM", `${b.demo_llm?.calls ?? 0} calls`, `${b.demo_llm?.total_tokens ?? 0} tokens`],
+      ["Tavily", `${b.tavily?.calls ?? 0} searches`, "—"],
+      ["Composio", `${b.composio?.calls ?? 0} calls`, b.composio?.dry_run ? "dry-run" : "live"],
+      [
+        "v1 HTTP",
+        `copilot ${b.v1_http?.copilot_calls ?? 0} · plan ${b.v1_http?.plan_llm_calls ?? 0}`,
+        `health ${b.v1_http?.health_calls ?? 0}`,
+      ],
+      ["GitHub API", `${b.github_api?.index_calls ?? 0} index`, "—"],
+      ["Google Drive API", `${b.google_drive_api?.index_calls ?? 0} index`, "—"],
+    ];
+    tableWrap.innerHTML = `
+      <table class="metrics-table">
+        <thead><tr><th>Service</th><th>Usage</th><th>Detail</th></tr></thead>
+        <tbody>${rows
+          .map(
+            ([svc, u, d]) =>
+              `<tr><td>${escapeHtml(svc)}</td><td>${escapeHtml(String(u))}</td><td>${escapeHtml(String(d))}</td></tr>`
+          )
+          .join("")}</tbody>
+      </table>`;
+    eventsEl.innerHTML = "";
+    (data.recent_events || [])
+      .slice()
+      .reverse()
+      .slice(0, 24)
+      .forEach((ev) => {
+        const li = document.createElement("li");
+        const svc = ev.service || "?";
+        const detail = ev.endpoint || ev.tool || ev.label || ev.action || "";
+        li.innerHTML = `<strong>${escapeHtml(svc)}</strong> ${escapeHtml(detail)} <span>${escapeHtml((ev.at || "").slice(11, 19))}</span>`;
+        eventsEl.appendChild(li);
+      });
+    if (!(data.recent_events || []).length) {
+      eventsEl.innerHTML = "<li>No billable events yet this session.</li>";
+    }
+  } catch (err) {
+    metaEl.textContent = `Metrics unavailable: ${err.message || err}`;
+  }
+}
+
 function setupTabs() {
   const tabs = document.querySelectorAll(".sidebar-tabs .tab");
   const panels = {
     start: document.getElementById("panel-start"),
+    walkthrough: document.getElementById("panel-walkthrough"),
     review: document.getElementById("panel-review"),
+    metrics: document.getElementById("panel-metrics"),
   };
 
   tabs.forEach((tab) => {
@@ -1559,15 +1862,27 @@ function setupTabs() {
         panel.classList.toggle("active", on);
       });
       const isReview = id === "review";
-      chatView.hidden = isReview;
+      const isWalkthrough = id === "walkthrough";
+      const isMetrics = id === "metrics";
+      chatView.hidden = isReview || isWalkthrough || isMetrics;
       reviewView.hidden = !isReview;
+      walkthroughView.hidden = !isWalkthrough;
       if (isReview) {
         await loadGuide();
         await ensureMindsReady();
         await loadMind();
+      } else if (isWalkthrough) {
+        if (!walkthroughPayload) {
+          await loadWalkthrough({ silent: true });
+        }
+      }
+      if (isMetrics) {
+        await loadSessionMetrics();
       }
     });
   });
+
+  document.getElementById("btn-refresh-metrics")?.addEventListener("click", () => loadSessionMetrics());
 }
 
 async function loadGuide() {
@@ -2140,6 +2455,8 @@ btnMindStep.addEventListener("click", mindStep);
 btnQueueEvidence.addEventListener("click", queueEvidence);
 btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
 btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
+btnLoadWalkthrough.addEventListener("click", () => loadWalkthrough());
+btnCopyWalkthroughBrief.addEventListener("click", copyWalkthroughBrief);
 
 setupTabs();
 
@@ -2147,6 +2464,9 @@ setupTabs();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await loadMeta();
   loadGuide();
+  if (window.location.pathname === "/walkthrough") {
+    showWalkthroughPanel();
+  }
   if (connectorsLoadError && uiConnectors.length) {
     appendMessage("assistant", connectorsLoadError, "welcome");
   }

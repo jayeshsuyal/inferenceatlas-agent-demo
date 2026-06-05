@@ -74,6 +74,26 @@ def _with_tokens(specs: WorkloadSpecs, amount: float, *, per_month: bool) -> Wor
     return replace(specs, tokens_per_day=amount, tokens_per_month=amount * 30.0)
 
 
+def is_access_review_question(message: str) -> bool:
+    """Detect agent-access / harness questions (not cost)."""
+    if is_cost_question(message):
+        return False
+    lower = message.lower()
+    patterns = (
+        r"should\b.*\b(agent|bot)\b.*\b(get|have|grant|receive)\b",
+        r"support triage",
+        r"production access",
+        r"access review",
+        r"github.*slack.*jira",
+        r"tool access",
+        r"who must approve",
+        r"proof gap",
+        r"decision packet",
+        r"scoped validation",
+    )
+    return any(re.search(p, lower) for p in patterns)
+
+
 def is_cost_question(message: str) -> bool:
     lower = message.lower()
     if any(kw in lower for kw in ("compare_providers", "get_catalog_summary", "cheapest", "pricing")):

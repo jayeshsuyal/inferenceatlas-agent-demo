@@ -361,6 +361,8 @@ def _digest_index_meta(digest: str, entry: dict) -> dict[str, Any]:
 
 
 def attach_drive_file(session_id: str, file_id: str) -> dict[str, Any]:
+    from .session_metrics import record_connector_index
+
     conn = _raw_connection(session_id, "google_drive")
     if conn.get("status") != "connected":
         return {"ok": False, "message": "Sign in to Google Drive first."}
@@ -388,6 +390,7 @@ def attach_drive_file(session_id: str, file_id: str) -> dict[str, Any]:
     index_meta = _digest_index_meta(digest, attached[file_id])
     attached[file_id].update(index_meta)
     save_session(session_id, data)
+    record_connector_index("google_drive", session_id)
 
     return {
         "ok": True,

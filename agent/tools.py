@@ -14,6 +14,7 @@ import sys
 from typing import Any
 
 from .config import COMPOSIO_API_KEY, COMPOSIO_DRY_RUN, TAVILY_API_KEY
+from .session_metrics import record_tool_call
 
 # ---------------------------------------------------------------------------
 # Tavily search
@@ -26,6 +27,7 @@ def tavily_search(query: str, max_results: int = 5) -> str:
     try:
         from tavily import TavilyClient
         client = TavilyClient(api_key=TAVILY_API_KEY)
+        record_tool_call("tavily_search", detail=query[:120])
         results = client.search(query=query, max_results=max_results, search_depth="advanced")
         items = results.get("results", [])
         if not items:
@@ -153,6 +155,7 @@ def composio_action(action_name: str, params: dict | None = None) -> str:
     """Run any Composio action by name with the given params dict."""
     if not COMPOSIO_API_KEY:
         return f"[composio_action skipped] COMPOSIO_API_KEY is not set. action={action_name}"
+    record_tool_call("composio_action", detail=action_name)
     if COMPOSIO_DRY_RUN:
         return json.dumps(
             {

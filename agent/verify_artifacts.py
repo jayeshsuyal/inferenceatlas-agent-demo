@@ -47,6 +47,33 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Evidence Receipt Ledgers",
+        (
+            "support_triage_agent.evidence_receipts.md",
+            "support_triage_agent.evidence_receipts.json",
+            "read_only_analytics_agent.evidence_receipts.md",
+            "read_only_analytics_agent.evidence_receipts.json",
+            "admin_code_fix_bot.evidence_receipts.md",
+            "admin_code_fix_bot.evidence_receipts.json",
+        ),
+    ),
+    ArtifactFamily(
+        "Packet Authority Snapshots",
+        (
+            "support_triage_agent.snapshot.json",
+            "read_only_analytics_agent.snapshot.json",
+            "admin_code_fix_bot.snapshot.json",
+        ),
+    ),
+    ArtifactFamily(
+        "Packet Verification",
+        (
+            "support_triage_agent.verification.json",
+            "read_only_analytics_agent.verification.json",
+            "admin_code_fix_bot.verification.json",
+        ),
+    ),
+    ArtifactFamily(
         "Traces",
         (
             "support_triage_agent.trace.md",
@@ -112,6 +139,14 @@ GENERATED_ARTIFACT_FAMILIES = (
         (
             "support_triage_trial.outcome_memo.md",
             "support_triage_trial.outcome_memo.json",
+        ),
+    ),
+    ArtifactFamily(
+        "Pilot Memo",
+        (
+            "support_triage_trial.pilot_memo.md",
+            "support_triage_trial.pilot_memo.json",
+            "support_triage_trial.copy_review_brief.md",
         ),
     ),
     ArtifactFamily(

@@ -7,11 +7,13 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
 from .config import V1_SLOT_FILLER_PROMPT
-from .cost_plan import AttachmentRoles, build_cost_plan
+from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
 from .github_repo import build_github_chat_context, get_repo_index_status
 from .google_drive_files import build_drive_chat_context, get_drive_index_status
 from .ui_skills import build_skill_context_for_chat, compose_message_with_skills
-from .workload_parse import is_cost_question
+from .packet import build_support_triage_decision_packet
+from .renderers import render_packet_markdown
+from .workload_parse import is_access_review_question, is_cost_question
 
 TOOL_KEYWORDS = (
     "compare_providers",
@@ -79,6 +81,8 @@ class OrchestratedChat:
     context_manifest: List[str] = field(default_factory=list)
     engine_source: str = ""
     cost_plan_ok: bool = False
+    direct_reply: str = ""
+    harness_injected: bool = False
 
 
 def _message_snippet(message: str, max_len: int = 72) -> str:
@@ -283,6 +287,14 @@ def assemble_orchestrated_message(
     return "\n\n".join(sections), skills_used, github_used, github_index, drive_used, drive_index
 
 
+def _shell_context_from_message(llm_message: str) -> str:
+    """Extract attachment sections for v1 copilot (exclude USER QUESTION)."""
+    marker = "--- USER QUESTION ---"
+    if marker in llm_message:
+        return llm_message.split(marker, 1)[0].strip()
+    return llm_message.strip()
+
+
 def orchestrate_chat(
     *,
     message: str,
@@ -311,21 +323,31 @@ def orchestrate_chat(
     use_tools = _wants_tools(message)
     engine_source = ""
     cost_plan_ok = False
+    direct_reply = ""
+    cost = None
 
-    # Option A: InferenceAtlas-v1 engine for cost questions (deterministic numbers)
+    # Option A: delegate cost questions to v1 E2E copilot when available
     if is_cost_question(message):
-        roles = AttachmentRoles(
-            skills=[s["slash_trigger"] for s in skills_used],
-            github=list(github_used),
-            drive=list(drive_used),
-            uploads=file_names,
-        )
-        cost = build_cost_plan(message, roles)
-        if cost.engine_block:
-            llm_message = f"{cost.engine_block}\n\n{llm_message}"
-            engine_source = cost.source
-            cost_plan_ok = cost.ok
+        shell_context = _shell_context_from_message(llm_message)
+        copilot_result = fetch_v1_copilot(message, shell_context)
+        if copilot_result.ok and copilot_result.reply:
+            direct_reply = copilot_result.reply
+            engine_source = copilot_result.source
+            cost_plan_ok = bool(copilot_result.plans)
             use_tools = False
+        else:
+            roles = AttachmentRoles(
+                skills=[s["slash_trigger"] for s in skills_used],
+                github=list(github_used),
+                drive=list(drive_used),
+                uploads=file_names,
+            )
+            cost = build_cost_plan(message, roles)
+            if cost.engine_block:
+                llm_message = f"{cost.engine_block}\n\n{llm_message}"
+                engine_source = cost.source
+                cost_plan_ok = cost.ok
+                use_tools = False
 
     # Pure access-review with only skills and no tool keywords → grounded
     if skills_used and not github_used and not drive_used and not file_names and not use_tools:
@@ -333,7 +355,25 @@ def orchestrate_chat(
     elif _wants_tools(message) and not engine_source:
         use_tools = True
 
-    has_attachments = bool(skills_used or github_used or drive_used or file_names)
+    harness_injected = False
+    if (
+        is_access_review_question(message)
+        and not skills_used
+        and not engine_source
+        and not direct_reply
+    ):
+        packet = build_support_triage_decision_packet(message)
+        harness_block = render_packet_markdown(packet)
+        llm_message = (
+            "--- HARNESS FACTS (auto-injected DecisionPacket — authoritative for access review) ---\n\n"
+            + harness_block
+            + "\n\n"
+            + llm_message
+        )
+        harness_injected = True
+        use_tools = False
+
+    has_attachments = bool(skills_used or github_used or drive_used or file_names or harness_injected)
     if not has_attachments and not engine_source:
         use_tools = True
 
@@ -347,15 +387,26 @@ def orchestrate_chat(
         use_tools=use_tools,
         attach_warnings=attach_warnings,
     )
-    if engine_source == "inferenceatlas-v1":
+    if direct_reply:
         thinking.insert(
             1,
-            f"InferenceAtlas-v1 plan_llm returned {len(cost.plans) if cost_plan_ok else 0} ranked plans — numbers locked",
+            f"InferenceAtlas-v1 copilot E2E — parse → rank → catalog → explain "
+            f"({len(copilot_result.plans) if cost_plan_ok else 0} plans; demo LLM skipped)",
+        )
+    elif engine_source == "inferenceatlas-v1":
+        thinking.insert(
+            1,
+            f"InferenceAtlas-v1 plan_llm returned {len(cost.plans) if cost and cost_plan_ok else 0} ranked plans — numbers locked",
         )
     elif engine_source == "catalog_fallback":
         thinking.insert(
             1,
             "InferenceAtlas-v1 unreachable — using deterministic catalog fallback (start v1 API for full rank_configs)",
+        )
+    elif harness_injected:
+        thinking.insert(
+            1,
+            "Access review detected — auto-injected support triage DecisionPacket (no Composio tool loop)",
         )
     elif not has_attachments:
         thinking.insert(
@@ -373,12 +424,15 @@ def orchestrate_chat(
         use_tools=use_tools,
     )
     if engine_source:
-        label = (
-            "InferenceAtlas-v1 engine"
-            if engine_source == "inferenceatlas-v1"
-            else "Catalog fallback engine"
-        )
+        if engine_source == "inferenceatlas-v1-copilot":
+            label = "InferenceAtlas-v1 copilot (E2E)"
+        elif engine_source == "inferenceatlas-v1":
+            label = "InferenceAtlas-v1 engine"
+        else:
+            label = "Catalog fallback engine"
         manifest.append(label)
+    if harness_injected:
+        manifest.append("Harness: auto-injected DecisionPacket")
 
     user_display = message.strip()
     if not user_display and skills_used:
@@ -390,8 +444,12 @@ def orchestrate_chat(
     if not user_display and file_names:
         user_display = f"[Uploads: {', '.join(file_names[:3])}]"
 
-    if engine_source:
+    if direct_reply:
+        system_prompt = ""
+    elif engine_source:
         system_prompt = V1_SLOT_FILLER_PROMPT
+    elif harness_injected or (skills_used and not use_tools):
+        system_prompt = ORCHESTRATED_GROUNDED_PROMPT
     elif use_tools:
         system_prompt = ORCHESTRATED_TOOLS_PROMPT
     else:
@@ -414,6 +472,8 @@ def orchestrate_chat(
         context_manifest=manifest,
         engine_source=engine_source,
         cost_plan_ok=cost_plan_ok,
+        direct_reply=direct_reply,
+        harness_injected=harness_injected,
     )
 
 

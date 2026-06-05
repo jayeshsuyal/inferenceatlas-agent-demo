@@ -9,6 +9,7 @@ import urllib.request
 from typing import Any, Dict, List, Optional
 
 from .config import INFERENCEATLAS_V1_TIMEOUT, INFERENCEATLAS_V1_URL
+from .session_metrics import record_v1_http
 
 
 def is_v1_configured() -> bool:
@@ -53,6 +54,7 @@ def v1_health() -> dict[str, Any]:
     for path in ("/api/health", "/health", "/"):
         try:
             data = _request("GET", path, timeout=5)
+            record_v1_http("health")
             return {"ok": True, "path": path, "data": data}
         except Exception as exc:
             last = str(exc)
@@ -111,6 +113,7 @@ def plan_llm(
         for body in bodies:
             try:
                 data = _request("POST", path, body=body)
+                record_v1_http("plan_llm")
                 plans = normalize_plans(data)
                 raw = data if isinstance(data, dict) else {"plans": plans}
                 return {
@@ -130,3 +133,43 @@ def plan_llm(
             except Exception as exc:
                 last_err = exc
     raise RuntimeError(str(last_err or "plan_llm failed"))
+
+
+def copilot(
+    *,
+    message: str,
+    shell_context: str = "",
+    top_k: int = 8,
+    include_explain: bool = True,
+) -> dict[str, Any]:
+    """
+    POST /api/v1/ai/copilot — full v1 E2E (parse → rank → catalog → explain).
+    Demo shell passes cascade context; v1 owns the reply.
+    """
+    body = {
+        "message": message,
+        "shell_context": shell_context,
+        "top_k": top_k,
+        "include_explain": include_explain,
+        "include_catalog": True,
+        "include_compatibility": True,
+    }
+    paths = ("/api/v1/ai/copilot", "/api/v1/ai/copilot/")
+    last_err: Optional[Exception] = None
+    for path in paths:
+        try:
+            data = _request("POST", path, body=body)
+            record_v1_http("copilot")
+            if isinstance(data, dict) and data.get("ok") and data.get("reply"):
+                return {
+                    "ok": True,
+                    "source": data.get("source", "inferenceatlas-v1-copilot"),
+                    "reply": str(data["reply"]),
+                    "plans": normalize_plans(data),
+                    "path": path,
+                    "raw": data,
+                }
+            raise RuntimeError("copilot response missing ok/reply")
+        except Exception as exc:
+            last_err = exc
+    raise RuntimeError(str(last_err or "copilot failed"))

@@ -1,0 +1,73 @@
+{
+  "approval_granted": false,
+  "blocked_claims": [
+    {
+      "claim": "Admin or production write access is approved.",
+      "reason": "Admin scopes and production mutations require explicit Security and Engineering approval."
+    },
+    {
+      "claim": "The agent may change organization security settings.",
+      "reason": "Organization-level permissions are blocked until admin scope removal or break-glass approval exists."
+    },
+    {
+      "claim": "The agent may trigger production workflows.",
+      "reason": "Workflow dispatch can mutate production state and requires rollback/off-switch proof."
+    },
+    {
+      "claim": "The workflow is compliance-ready.",
+      "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
+    }
+  ],
+  "content_hash": "sha256:7dd2645ee8bfe3529ec86e355e402c7da109ea9b68c608e133052bd812c8aca7",
+  "decision_lock": "blocked",
+  "external_writes": false,
+  "missing_proof": [
+    {
+      "item": "GitHub admin scope removal or explicit break-glass approval",
+      "owner": "Security/Engineering",
+      "unblocks": "admin access rejection review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "next_human_action": "Reject production write/admin access until the request is rewritten without admin scopes and with rollback proof.",
+  "packet_id": "ia-agent-access-admin-code-fix-bot-v0",
+  "permission_grants": false,
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "production_access": false,
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_validation",
+      "owner": "Security/Engineering",
+      "review_area": "admin scopes, production mutation, workflow dispatch, rollback/off-switch"
+    },
+    {
+      "current_state": "required_before_any_write_path",
+      "owner": "Engineering Leadership",
+      "review_area": "production change authority, repository allowlist, incident rollback owner"
+    },
+    {
+      "current_state": "required_before_access",
+      "owner": "Security/Legal",
+      "review_area": "source-code and production infrastructure exposure"
+    }
+  ],
+  "revision_id": "rev_7dd2645ee8bfe352",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_verification.v0",
+  "scoped_validation": false,
+  "snapshot_id": "ia-agent-access-admin-code-fix-bot-v0:rev_7dd2645ee8bfe352",
+  "verification_status": "valid_review_required"
+}

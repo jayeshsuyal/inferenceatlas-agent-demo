@@ -2,7 +2,16 @@
 
 The demo harness does **not** copy `rank_configs` from [InferenceAtlas-v1](https://github.com/jayeshsuyal/InferenceAtlas-v1). Cost questions call the v1 FastAPI over HTTP when configured.
 
-## Flow
+## Flow (preferred — v1 copilot E2E)
+
+```text
+User cost question + shell context (skills, GitHub, Drive, uploads)
+  → POST {INFERENCEATLAS_V1_URL}/api/v1/ai/copilot
+  → v1: parse_workload_text → rank_configs → rank_catalog_offers → LLMRouter.explain
+  → demo returns v1 reply directly (no demo LLM re-summarization)
+```
+
+## Fallback (v1 copilot unavailable)
 
 ```text
 User cost question
@@ -10,10 +19,10 @@ User cost question
   → POST {INFERENCEATLAS_V1_URL}/api/v1/plan/llm
   → format_engine_block (deterministic table)
   → prepend to orchestrated prompt
-  → LLM slot-filler only (no compare_providers / Tavily for prices)
+  → demo LLM slot-filler only (no compare_providers / Tavily for prices)
 ```
 
-When v1 is live, `POST /api/v1/plan/llm` returns the full v1 bundle:
+When v1 is live, `POST /api/v1/ai/copilot` runs the full product pipeline. `POST /api/v1/plan/llm` returns the deterministic bundle only:
 
 - `rank_configs` deployment plans (score, risk, GPU, monthly USD)
 - `engine_summary` (deterministic narrative — not LLM)
@@ -24,13 +33,26 @@ If v1 is down or `INFERENCEATLAS_V1_URL` is unset, the demo uses **catalog_fallb
 
 ## Configuration
 
+**Demo** (`.env` in `inferenceatlas-agent-demo`):
+
 ```bash
-# .env
 INFERENCEATLAS_V1_URL=http://127.0.0.1:8000
 INFERENCEATLAS_V1_TIMEOUT=25
 ```
 
-Start v1 locally (your fork, e.g. `oasb16/InferenceAtlas-v1`), then restart `python3 -m web`.
+**v1 server** (separate process — keys for `LLMRouter` parse/explain):
+
+```bash
+cd InferenceAtlas-v1
+cp .env.example .env   # set OPENAI_API_KEY and/or ANTHROPIC_API_KEY
+source venv/bin/activate
+uvicorn inference_atlas.api_server:app --host 127.0.0.1 --port 8000
+```
+
+v1 loads `InferenceAtlas-v1/.env` automatically when `python-dotenv` is installed.
+Without keys, copilot still returns deterministic engine + catalog tables.
+
+Start v1, then restart `python3 -m web` in the demo repo.
 
 ## Health
 

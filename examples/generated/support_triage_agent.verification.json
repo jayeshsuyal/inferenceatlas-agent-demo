@@ -1,0 +1,93 @@
+{
+  "approval_granted": false,
+  "blocked_claims": [
+    {
+      "claim": "Production tool access is approved.",
+      "reason": "No named Security/Legal reviewer and no tool scope proof."
+    },
+    {
+      "claim": "Customer-data handling is safe.",
+      "reason": "Retention, logging, deletion, and channel/repository boundaries are not proven."
+    },
+    {
+      "claim": "The agent may create or mutate Jira/GitHub/Slack state.",
+      "reason": "Write actions require rollback/off-switch proof and explicit human approval."
+    },
+    {
+      "claim": "The workflow is compliance-ready.",
+      "reason": "Compliance approval cannot be inferred from an agent request or demo transcript."
+    }
+  ],
+  "content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
+  "decision_lock": "scoped_validation_only",
+  "external_writes": false,
+  "missing_proof": [
+    {
+      "item": "GitHub repository allowlist and permission level",
+      "owner": "Engineering",
+      "unblocks": "read-only repository evidence review"
+    },
+    {
+      "item": "Slack channel allowlist, retention policy, and customer-data boundary",
+      "owner": "Security/Legal",
+      "unblocks": "incident-channel summarization review"
+    },
+    {
+      "item": "Jira project scope, draft-only mode, and rollback/off-switch plan",
+      "owner": "Engineering",
+      "unblocks": "draft ticket validation"
+    },
+    {
+      "item": "Support escalation workflow and human handoff owner",
+      "owner": "Support Ops",
+      "unblocks": "triage workflow fit review"
+    },
+    {
+      "item": "Audit log shape for tool calls, evidence intake, and reviewer decisions",
+      "owner": "Security/Engineering",
+      "unblocks": "reviewable pilot packet"
+    }
+  ],
+  "next_human_action": "Run a scoped dry-run pilot review with named repositories, channels, and Jira project.",
+  "packet_id": "ia-agent-access-support-triage-v0",
+  "permission_grants": false,
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "production_access": false,
+  "reviewer_owners": [
+    {
+      "current_state": "required_before_access",
+      "owner": "Security/Legal",
+      "review_area": "customer-data exposure, retention, logging, policy boundary"
+    },
+    {
+      "current_state": "required_before_write_actions",
+      "owner": "Engineering",
+      "review_area": "permission boundaries, rollback, off-switch, audit logs"
+    },
+    {
+      "current_state": "required_before_pilot",
+      "owner": "Support Ops",
+      "review_area": "workflow fit, escalation rules, human handoff"
+    },
+    {
+      "current_state": "conditional",
+      "owner": "Procurement/Finance",
+      "review_area": "paid tool/vendor spend if live actions or seats are enabled"
+    }
+  ],
+  "revision_id": "rev_965302783cee8688",
+  "safety_invariants": [
+    "approval_granted=False",
+    "production_access=blocked",
+    "external_writes_enabled=False",
+    "packet_state_mutation=False",
+    "requires_human_approval=True"
+  ],
+  "schema_version": "packet_verification.v0",
+  "scoped_validation": true,
+  "snapshot_id": "ia-agent-access-support-triage-v0:rev_965302783cee8688",
+  "verification_status": "valid_review_required"
+}

@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — AI Cost & Access Review</title>
-    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/static/style.css?v=11" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,7 +30,9 @@
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
           <button type="button" class="tab active" data-tab="start">Chat</button>
+          <button type="button" class="tab" data-tab="walkthrough">Walkthrough</button>
           <button type="button" class="tab" data-tab="review">Access review</button>
+          <button type="button" class="tab" data-tab="metrics">Metrics</button>
         </nav>
 
         <section class="tab-panel active" id="panel-start">
@@ -47,6 +50,36 @@
           <h3 class="section-label">Examples</h3>
           <ul class="examples" id="examples-list"></ul>
           <p class="catalog" id="catalog-info"></p>
+        </section>
+
+        <section class="tab-panel" id="panel-walkthrough" hidden>
+          <div class="how-to compact">
+            <h2>Walkthrough</h2>
+            <p class="sidebar-hint">One request becomes a packet, sponsor replay, review cycle, and PilotMemo export.</p>
+          </div>
+          <ol class="judge-steps compact-steps" id="walkthrough-steps-nav"></ol>
+          <button type="button" class="btn-primary btn-block" id="btn-load-walkthrough">
+            Load walkthrough
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-copy-walkthrough-brief" disabled>
+            Copy review brief
+          </button>
+          <p class="status-toast" id="walkthrough-toast" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="tab-panel" id="panel-metrics" hidden>
+          <div class="how-to compact">
+            <h2>Session metrics</h2>
+            <p class="sidebar-hint">
+              Live counters for this chat session — demo LLM (Nebius/OpenAI), Tavily, Composio,
+              v1 HTTP, GitHub/Drive indexing. v1’s internal OpenAI/Anthropic bills on the v1 server.
+            </p>
+          </div>
+          <p class="metrics-meta" id="metrics-meta"></p>
+          <div class="metrics-table-wrap" id="metrics-table-wrap"></div>
+          <h3 class="section-label">Recent events</h3>
+          <ul class="metrics-events" id="metrics-events"></ul>
+          <button type="button" class="btn-ghost btn-block" id="btn-refresh-metrics">Refresh metrics</button>
         </section>
 
         <section class="tab-panel" id="panel-review" hidden>
@@ -107,6 +140,24 @@
                 <p><strong>Skills</strong> (click <strong>+</strong>) attach proof about blocked production access — e.g. <strong>/packet</strong> + “What blocks support triage?” then <strong>Send</strong>.</p>
                 <p><strong>Connectors</strong> link Drive, web search, and integrations; set API keys in <code>.env</code> and restart the server.</p>
               </div>
+            </div>
+            <div class="empty-proof-board" id="empty-proof-board" aria-label="Current public proof state">
+              <article class="proof-tile">
+                <span>Packet lock</span>
+                <strong>Production false · writes false</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Sponsor proof</span>
+                <strong>Tavily evidence · Composio dry-run</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Cost guardrail</span>
+                <strong>Procurement shortlist · no savings guarantee</strong>
+              </article>
+              <article class="proof-tile">
+                <span>Review lane</span>
+                <strong>Scoped validation · humans approve</strong>
+              </article>
             </div>
           </div>
           <div class="composer-shell" id="composer-shell">
@@ -194,10 +245,38 @@
             <p class="empty-feed">Complete step 1 (Reset), then step 3 (Run review cycle) to see what changed.</p>
           </div>
         </div>
+
+        <div id="walkthrough-view" class="walkthrough-workspace" hidden>
+          <header class="walkthrough-header">
+            <div>
+              <span class="eyebrow">Design partner flow</span>
+              <h2 id="walkthrough-title">Design partner walkthrough</h2>
+              <p id="walkthrough-subtitle" class="walkthrough-subtitle"></p>
+            </div>
+            <div class="walkthrough-lock" aria-label="Walkthrough safety state">
+              <span>Production</span>
+              <strong>false</strong>
+              <span>Grants</span>
+              <strong>false</strong>
+              <span>Writes</span>
+              <strong>false</strong>
+            </div>
+          </header>
+
+          <section class="walkthrough-strip" id="walkthrough-strip" aria-label="Walkthrough steps"></section>
+
+          <section class="walkthrough-grid">
+            <article class="walkthrough-panel span-2" id="walkthrough-active-card"></article>
+            <article class="walkthrough-panel" id="walkthrough-decision-card"></article>
+            <article class="walkthrough-panel" id="walkthrough-sponsor-card"></article>
+            <article class="walkthrough-panel" id="walkthrough-reviewer-card"></article>
+            <article class="walkthrough-panel span-2" id="walkthrough-export-card"></article>
+          </section>
+        </div>
       </main>
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=18"></script>
+    <script src="/static/app.js?v=19"></script>
   </body>
 </html>

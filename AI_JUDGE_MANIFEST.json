@@ -25,7 +25,7 @@
   "judge_harness_command": "python3 -m agent.judge",
   "judge_harness_json_command": "python3 -m agent.judge --json",
   "pr_smoke_command": "bash scripts/pr_smoke.sh",
-  "pr_smoke_scope": "No-key local mirror of the PR smoke gate: manifest/schema parse, JSON command surfaces, artifact integrity, unit tests, and tracked secret-shaped token guard.",
+  "pr_smoke_scope": "No-key local mirror of the PR smoke gate: manifest/schema parse, JSON command surfaces, walkthrough API/static surface, artifact integrity, unit tests, and tracked secret-shaped token guard.",
   "agent_skills_command": "python3 -m agent.skills",
   "agent_skills_json_command": "python3 -m agent.skills --json",
   "install_command": "pip install -e .",

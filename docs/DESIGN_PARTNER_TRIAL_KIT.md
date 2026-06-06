@@ -25,6 +25,7 @@ These files are not live secrets, customer data, or production grants. They are 
 1. Run the one-command judge harness:
 
 ```bash
+bash scripts/run.sh
 python3 -m agent.judge
 ```
 

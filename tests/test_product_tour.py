@@ -23,6 +23,7 @@ class ProductTourTests(unittest.TestCase):
             POSITIONING_SENTENCE,
             "Private engine, public proof.",
             "Five-Minute Product Trial",
+            "bash scripts/run.sh",
             "python3 -m agent.judge",
             "python3 -m agent.skills",
             "ia-skills",
@@ -79,10 +80,15 @@ class ProductTourTests(unittest.TestCase):
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
-        for surface in [readme, agents, guide]:
+        for surface in [agents, guide]:
             self.assertIn("docs/PRODUCT_TOUR.md", surface)
             self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
+
+        self.assertIn("docs/PRODUCT_TOUR.md", readme)
+        self.assertIn("docs/AGENT_SKILLS.md", readme)
+        self.assertIn("docs/COMMAND_REFERENCE.md", readme)
+        self.assertIn("docs/ARTIFACT_MAP.md", readme)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ The product moment is not an autonomous yes. The product moment is a faster, cle
 Run this path from a clean checkout:
 
 ```bash
+bash scripts/run.sh
 python3 -m agent.judge
 python3 -m agent.skills
 python3 -m agent.packet_diff
@@ -85,6 +86,7 @@ In five minutes, a reviewer should see:
 
 | Surface | What it proves |
 | --- | --- |
+| `bash scripts/run.sh` | One no-key public command for the default review path. |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
 | `docs/AGENT_SKILLS.md` | The public capability registry maps each agent review skill to proof, command, artifact, dependency, tier, and safety boundary. |
 | `docs/PRODUCT_QUALITY_AUDIT.md` | The public proof surface has a premium spine and guardrails for fast iteration. |

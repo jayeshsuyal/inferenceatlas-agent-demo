@@ -12,6 +12,7 @@ Private engine, public proof.
 Run the no-key judge path first, then verify the checked-in proof artifacts:
 
 ```bash
+bash scripts/run.sh
 bash scripts/pr_smoke.sh
 python3 -m agent.judge --no-write
 python3 -m agent.skills
@@ -56,6 +57,7 @@ Expected human-readable signals across that two-command path:
 For a strict parser, run both JSON surfaces:
 
 ```bash
+bash scripts/run.sh --json
 python3 -m agent.judge --no-write --json
 python3 -m agent.skills --json
 python3 -m agent.evidence_receipts --no-write --json
@@ -137,6 +139,7 @@ Expected skills JSON pass signals:
 An agentic reviewer can use this complete no-key path:
 
 ```bash
+bash scripts/run.sh
 bash scripts/pr_smoke.sh
 python3 -m agent.judge
 python3 -m agent.demo

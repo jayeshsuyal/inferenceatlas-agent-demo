@@ -48,14 +48,15 @@ A reviewer should be able to follow this order without needing private source co
 3. `docs/AGENT_SKILLS.md`
 4. `docs/PRODUCT_QUALITY_AUDIT.md`
 5. `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md`
-6. `python3 -m agent.judge`
-7. `examples/generated/packet_diff.md`
-8. `examples/generated/support_triage_agent.evidence_receipts.md`
-9. `examples/generated/support_triage_agent.snapshot.json`
-10. `examples/generated/support_triage_agent.verification.json`
-11. `examples/generated/support_triage_agent.outcome_memo.md`
-12. `python3 -m agent.verify_artifacts`
-13. `examples/generated/review_room.html`
+6. `bash scripts/run.sh`
+7. `python3 -m agent.judge`
+8. `examples/generated/packet_diff.md`
+9. `examples/generated/support_triage_agent.evidence_receipts.md`
+10. `examples/generated/support_triage_agent.snapshot.json`
+11. `examples/generated/support_triage_agent.verification.json`
+12. `examples/generated/support_triage_agent.outcome_memo.md`
+13. `python3 -m agent.verify_artifacts`
+14. `examples/generated/review_room.html`
 14. `examples/generated/trust_receipt.md`
 15. `examples/generated/support_triage_agent.proof_health.md`
 16. `examples/generated/sponsor_live_readiness.md`
@@ -94,7 +95,8 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 ## What Stays Premium
 
 - The first screen stays product-first: private engine, public proof.
-- The default path stays one command: `python3 -m agent.judge`.
+- The default path stays one command: `bash scripts/run.sh`.
+- The direct judge harness stays available as `python3 -m agent.judge`.
 - The review path stays no-key and deterministic.
 - Sponsor tools contribute proof, not approval authority.
 - Composio remains dry-run by default.
@@ -118,6 +120,7 @@ This order is the product-quality baseline. It gives a skim reviewer a clear sto
 Before a PR claims the product surface is stronger, it should preserve these signals:
 
 - `bash scripts/pr_smoke.sh` passes as the no-key local mirror of the PR smoke gate.
+- `bash scripts/run.sh` passes as the public no-key entrypoint.
 - `python3 -m agent.judge --no-write` passes.
 - `python3 -m agent.judge --no-write --json` remains machine-readable.
 - `python3 -m unittest discover -s tests` passes.

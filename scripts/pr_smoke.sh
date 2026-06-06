@@ -60,6 +60,7 @@ json_check schemas/decision_packet.schema.json /tmp/ia_decision_packet_schema.ch
 json_check schemas/agent_access_decision_brief.schema.json /tmp/ia_decision_brief_schema.checked.json
 json_check schemas/pilot_memo.schema.json /tmp/ia_pilot_memo_schema.checked.json
 
+command_json_check /tmp/ia_public_run.no_write.json bash scripts/run.sh --json
 command_json_check /tmp/ia_judge.no_write.json "$PYTHON_BIN" -m agent.judge --no-write --json
 command_json_check /tmp/ia_skills.json "$PYTHON_BIN" -m agent.skills --json
 command_json_check /tmp/ia_packet_diff.no_write.json "$PYTHON_BIN" -m agent.packet_diff --no-write --json

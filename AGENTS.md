@@ -19,6 +19,7 @@ docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md
 Run:
 
 ```bash
+bash scripts/run.sh
 bash scripts/pr_smoke.sh
 python3 -m agent.judge
 python3 -m agent.demo
@@ -106,7 +107,8 @@ Expected result:
 
 Evaluate the public product contract:
 
-- Does `python3 -m agent.judge` summarize the full safe review path in one command?
+- Does `bash scripts/run.sh` summarize the full safe review path in one no-key command?
+- Does `python3 -m agent.judge` remain available as the direct judge harness?
 - Does `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` give exact pass/fail signals for automated review?
 - Does `docs/PRODUCT_TOUR.md` explain the product trial path and what is fixed versus derived?
 - Does `docs/AGENT_SKILLS.md` map public agent skills to commands, artifacts, dependencies, and safety boundaries?

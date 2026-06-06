@@ -1,0 +1,177 @@
+schema_version: design_partner_trial_request.v0
+status: public_case_study_no_secrets
+purpose: >
+  Worked public case-study request for an AI-assisted dependency and release
+  workflow that wants to inspect package, repository, CI, and credential-boundary
+  context before any install, publish, workflow, or secret-bearing scope moves.
+
+redaction_boundary:
+  do_not_include:
+    - production credentials
+    - live sponsor tokens
+    - customer data
+    - private prompts
+    - private v1 source code
+    - actual CI secrets
+    - actual npm tokens
+    - actual cloud credentials
+    - actual SSH keys
+  public_repo_posture: role_level_descriptions_only
+
+case_study_boundary:
+  required_framing:
+    - worked example based on publicly reported attack vectors
+    - not a security claim about any specific product or vendor
+    - what InferenceAtlas would ask before this scope was granted
+    - the actual incident exploited the absence of this layer
+  public_sources:
+    - https://access.redhat.com/security/vulnerabilities/RHSB-2026-006
+    - https://www.microsoft.com/en-us/security/blog/2026/06/02/preinstall-persistence-inside-red-hat-npm-miasma-credential-stealing-campaign/
+    - https://www.wiz.io/blog/miasma-supply-chain-attack-targeting-redhat-npm-packages
+
+candidate_agent:
+  name: dependency_release_review_agent
+  business_owner: Engineering / Release
+  purpose: >
+    Review package metadata, repository workflow configuration, provenance
+    claims, and role-level credential exposure before a human decides whether
+    dependency install, package publish, or CI workflow scope can move.
+  requested_environment: validation_only
+  current_approval_path: manual_security_engineering_devsecops_release_review
+
+requested_access:
+  production_access_requested: false
+  admin_scopes_requested: false
+  external_writes_requested: false
+  tools:
+    - system: GitHub
+      requested_actions:
+        - read repository metadata and dependency diffs
+        - read GitHub Actions workflow configuration
+        - propose a human-reviewed workflow boundary
+      blocked_actions:
+        - push commits
+        - create or modify workflow files
+        - read repository secrets
+        - dispatch workflows
+      data_classes:
+        - repository metadata
+        - workflow configuration
+        - maintainer identity signals
+      proposed_demo_allowance: dry_run_repository_and_workflow_review_only
+    - system: npm registry
+      requested_actions:
+        - inspect package metadata and version history
+        - compare package provenance claims
+        - identify install-time script review needs
+      blocked_actions:
+        - install package in a credential-bearing environment
+        - publish package versions
+        - read or modify npm tokens
+      data_classes:
+        - package metadata
+        - provenance attestation
+        - maintainer package scope
+      proposed_demo_allowance: dry_run_package_metadata_review_only
+    - system: CI/CD
+      requested_actions:
+        - review non-secret workflow permissions
+        - draft isolated sandbox execution plan
+        - map publish-capable jobs for human review
+      blocked_actions:
+        - execute untrusted install hooks
+        - access CI secrets
+        - run with elevated permissions
+        - publish artifacts or packages
+      data_classes:
+        - workflow configuration
+        - secret presence indicators
+        - sandbox execution plan
+      proposed_demo_allowance: dry_run_ci_boundary_plan_only
+    - system: Developer workstation
+      requested_actions:
+        - enumerate role-level credential stores that require quarantine
+        - propose least-privilege local execution boundary
+      blocked_actions:
+        - read SSH keys
+        - read cloud credentials
+        - read npm tokens
+        - export local environment variables
+      data_classes:
+        - developer credential stores
+        - cloud identity inventory
+      proposed_demo_allowance: role_level_quarantine_plan_only
+  data_classes:
+    - repository metadata
+    - workflow configuration
+    - maintainer identity signals
+    - package metadata
+    - provenance attestation
+    - maintainer package scope
+    - secret presence indicators
+    - sandbox execution plan
+    - developer credential stores
+    - cloud identity inventory
+
+proof_debt:
+  missing_proof:
+    - item: package version lockfile, provenance evidence, and install-script review
+      owner: Engineering
+      unblocks: dependency metadata review
+    - item: isolated sandbox proof for any package install or script execution
+      owner: Security
+      unblocks: non-credentialed execution review
+    - item: CI workflow permission and secret boundary evidence
+      owner: DevSecOps / Platform
+      unblocks: workflow scope review
+    - item: maintainer identity, package publish permission, rollback, and revocation plan
+      owner: Release owner
+      unblocks: package publication review
+    - item: credential rotation and quarantine plan for any exposed environment
+      owner: Security
+      unblocks: post-exposure human response
+  unsupported_claims:
+    - claim: The dependency can be installed in a credential-bearing developer or CI environment.
+      reason: Install-time behavior, sandboxing, and credential reachability are not proven.
+    - claim: The agent may publish packages or modify release workflows.
+      reason: Publish permissions, rollback, and human release ownership are not approved.
+    - claim: Provenance signatures alone prove the package is safe.
+      reason: Pipeline compromise and install-time execution require separate evidence.
+    - claim: Developer or CI credentials are safe to expose to this workflow.
+      reason: Least-privilege, quarantine, and rotation evidence are missing.
+
+reviewer_routing:
+  required_reviewers:
+    - role: Security
+      review_area: credential_exposure_sandboxing_secret_rotation_install_time_execution
+    - role: Engineering
+      review_area: dependency_scope_lockfile_evidence_package_behavior_review
+    - role: DevSecOps / Platform
+      review_area: ci_permissions_workflow_boundaries_publish_token_exposure
+    - role: Release owner
+      review_area: package_publication_authority_rollback_maintainer_verification
+  conditional_reviewers:
+    - role: Legal / Communications
+      condition: public_disclosure_customer_notice_or_vendor_obligation
+
+safety_defaults:
+  access_approval_granted: false
+  permission_grant_allowed: false
+  external_writes_enabled: false
+  production_mutation_allowed: false
+  packet_state_mutation_allowed: false
+  composio_dry_run_default: true
+  human_approval_required: true
+
+trial_outputs:
+  expected_artifacts:
+    - DecisionPacket
+    - Agent Access Decision Brief
+    - pre-permission proof debt
+    - reviewer routing
+    - next human validation step
+  success_criteria:
+    - install_publish_workflow_and_secret_scope_are_visible
+    - risky_claims_stay_blocked
+    - reviewer_owners_are_named
+    - no_runtime_or_security_overclaim_is_made

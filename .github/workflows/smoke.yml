@@ -48,6 +48,8 @@ jobs:
           ia-verify --all --json >/tmp/installed_packet_verification.json
           ia-subscribers
           ia-subscribers --json >/tmp/installed_packet_subscribers.json
+          ia-downstream-gate --all
+          ia-downstream-gate --all --json >/tmp/installed_downstream_gate.json
           ia-outcome-memo --no-write
           ia-outcome-memo --no-write --json >/tmp/installed_outcome_memo.json
           ia-contract --all

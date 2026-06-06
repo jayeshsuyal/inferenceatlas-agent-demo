@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED_SCRIPTS = {
     "ia-adapters": "agent.adapters.__main__:main",
     "ia-contract": "agent.contract:main",
+    "ia-downstream-gate": "agent.downstream_gate:main",
     "ia-receipts": "agent.evidence_receipts:main",
     "ia-gate": "agent.gate:main",
     "ia-judge": "agent.judge:main",
@@ -92,6 +93,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-receipts", command_reference)
         self.assertIn("ia-snapshot", command_reference)
         self.assertIn("ia-outcome-memo", command_reference)
+        self.assertIn("ia-downstream-gate --all", command_reference)
         self.assertIn("ia-proof-health", command_reference)
         self.assertIn("ia-spend", command_reference)
         self.assertIn("ia-sponsor-proof-trace", command_reference)
@@ -107,6 +109,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-trial-outcome-memo examples/requests/support_triage_trial.yml", command_reference)
         self.assertIn("ia-verify", command_reference)
         self.assertIn("ia-verify-artifacts", command_reference)
+        self.assertIn("ia-downstream-gate --all", workflow)
         self.assertIn("python -m pip install -e .", workflow)
         self.assertIn("ia-judge --no-write", workflow)
         self.assertIn("ia-skills", workflow)

@@ -35,6 +35,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("bash scripts/run.sh --json", script)
         self.assertIn("agent.judge --no-write --json", script)
         self.assertIn("agent.evidence_receipts --no-write --json", script)
+        self.assertIn("agent.downstream_gate --all --json", script)
         self.assertIn("agent.trial_evidence_replay", script)
         self.assertIn("schemas/pilot_memo.schema.json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json", script)

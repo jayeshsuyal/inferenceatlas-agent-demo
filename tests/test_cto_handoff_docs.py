@@ -165,6 +165,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.evidence_receipts", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.packet_authority", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.verification --all", manifest["five_minute_review_commands"])
+        self.assertIn("python3 -m agent.downstream_gate --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.outcome_memo", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.contract --all", manifest["five_minute_review_commands"])
         self.assertIn("python3 -m agent.gate --all", manifest["five_minute_review_commands"])
@@ -191,6 +192,8 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("examples/generated/support_triage_agent.evidence_receipts.json", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.snapshot.json", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.verification.json", manifest["product_review_path"])
+        self.assertIn("python3 -m agent.downstream_gate --all", manifest["product_review_path"])
+        self.assertIn("/api/downstream-gates/{subscriber}/decision", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", manifest["product_review_path"])
         self.assertIn("python3 -m agent.verify_artifacts", manifest["product_review_path"])
         self.assertIn("examples/generated/support_triage_agent.proof_health.md", manifest["product_review_path"])
@@ -255,6 +258,9 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["evidence_receipt_ledger_json_command"],
             "python3 -m agent.evidence_receipts --no-write --json",
         )
+        self.assertEqual(manifest["downstream_gate_command"], "python3 -m agent.downstream_gate --all")
+        self.assertEqual(manifest["downstream_gate_json_command"], "python3 -m agent.downstream_gate --all --json")
+        self.assertEqual(manifest["downstream_gate_surface"], "/api/downstream-gates/{subscriber}/decision")
         self.assertEqual(manifest["packet_outcome_memo_command"], "python3 -m agent.outcome_memo")
         self.assertEqual(
             manifest["packet_outcome_memo_json_command"],
@@ -279,6 +285,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("chat answer contract", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("evidence receipt ledger", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("downstream gate decisions", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("design partner outcome memo", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("sponsor evidence replay", manifest["private_v1_boundary"]["public_proof_surface"])

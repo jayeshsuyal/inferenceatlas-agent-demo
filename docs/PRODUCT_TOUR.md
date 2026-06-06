@@ -58,6 +58,7 @@ ia-proof-health
 ia-spend
 ia-sponsor-readiness
 ia-subscribers --json
+ia-downstream-gate --all
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml
@@ -73,6 +74,7 @@ In five minutes, a reviewer should see:
 - a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
 - an Evidence Receipt Ledger attaching tool scope, proof debt, reviewer routes, and cost/procurement controls without weakening the packet lock
+- a Downstream Gate decision showing gateways, CI, spend controls, review queues, and observability consume the packet instead of raw agent intent
 - a Packet Outcome Memo converting the support-triage packet into a human decision
 - an AI Spend Review packet showing Finance/Procurement review before spend caps, vendor switches, or savings claims move
 - a sponsor live-readiness report showing where Nebius, Tavily, Composio, and OpenClaw add proof without approval power

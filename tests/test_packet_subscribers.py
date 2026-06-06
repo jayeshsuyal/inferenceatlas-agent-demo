@@ -111,9 +111,12 @@ class PacketSubscriberTests(unittest.TestCase):
 
         self.assertIn(PACKET_AUTHORITY_SENTENCE, contract)
         self.assertIn(PACKET_AUTHORITY_SHORT_SENTENCE, contract)
+        self.assertIn("GET /api/downstream-gates/{subscriber}/decision", contract)
+        self.assertIn("must not approve access, grant permissions, authorize spend, execute writes", contract)
         self.assertEqual(manifest["packet_authority_layer"], PACKET_AUTHORITY_SENTENCE)
         self.assertEqual(manifest["packet_authority_short"], PACKET_AUTHORITY_SHORT_SENTENCE)
         self.assertEqual(manifest["packet_verification_api"], "/api/packets/{scenario_or_packet_id}/verification")
+        self.assertEqual(manifest["downstream_gate_api"], "/api/downstream-gates/{subscriber}/decision")
         self.assertEqual(set(manifest["subscriber_categories"]), EXPECTED_CATEGORIES)
 
     def test_subscriber_cli_is_machine_readable(self) -> None:

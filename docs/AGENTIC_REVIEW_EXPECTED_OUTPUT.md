@@ -63,6 +63,7 @@ python3 -m agent.skills --json
 python3 -m agent.evidence_receipts --no-write --json
 python3 -m agent.packet_authority --json
 python3 -m agent.verification --all --json
+python3 -m agent.downstream_gate --all --json
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
@@ -245,6 +246,7 @@ agent request
 -> evidence receipt ledger
 -> packet authority snapshot
 -> packet verification
+-> downstream gate decisions
 -> access brief
 -> trust receipt
 -> packet diff

@@ -21,6 +21,7 @@ from agent.config import (
     TAVILY_API_KEY,
 )
 from agent.decision_brief import build_agent_access_decision_brief
+from agent.downstream_gate import build_downstream_gate_decision
 from agent.mind import init_mind, load_mind, save_mind, step
 from agent.mind.project import MIND_RUNTIME_DIR, project_mind
 from agent.mind.store import load_all_minds
@@ -465,6 +466,26 @@ def packet_verification(scenario_or_packet_id: str) -> dict:
                 "verification": artifact,
             }
     raise HTTPException(status_code=404, detail="unknown scenario or packet_id")
+
+
+@app.get("/api/downstream-gates/{subscriber}/decision")
+def downstream_gate_decision(
+    subscriber: str,
+    scenario_or_packet_id: str = Query("support_triage_agent"),
+) -> dict:
+    """Read-only answer for downstream systems asking whether an agent action can proceed."""
+    try:
+        decision = build_downstream_gate_decision(
+            subscriber,
+            scenario_or_packet_id=scenario_or_packet_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "read_only": True,
+        "decision": decision,
+    }
 
 
 @app.post("/api/connectors/connect")

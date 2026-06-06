@@ -10,6 +10,7 @@ from typing import Any
 
 from .adapters import ADAPTER_NAMES, build_all_adapter_results
 from .contract import validate_all
+from .downstream_gate import build_all_downstream_gate_decisions
 from .evidence_receipts import build_evidence_receipt_ledger
 from .gate import evaluate_all
 from .outcome_memo import build_packet_outcome_memo, write_packet_outcome_memo_artifacts
@@ -42,6 +43,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.evidence_receipts",
     "python3 -m agent.packet_authority",
     "python3 -m agent.verification --all",
+    "python3 -m agent.downstream_gate --all",
     "python3 -m agent.outcome_memo",
     "python3 -m agent.contract --all",
     "python3 -m agent.gate --all",
@@ -207,6 +209,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     primary_receipt_ledger = build_evidence_receipt_ledger(primary_packet, "support_triage_agent")
     primary_snapshot = build_packet_authority_snapshot_for_scenario(primary_packet, "support_triage_agent")
     primary_verification = build_verification_artifact(primary_packet, snapshot=primary_snapshot)
+    downstream_gate_decisions = build_all_downstream_gate_decisions("support_triage_agent")
 
     return {
         "schema_version": JUDGE_HARNESS_VERSION,
@@ -278,6 +281,24 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "approval_granted": primary_verification["approval_granted"],
             "scoped_validation": primary_verification["scoped_validation"],
             "artifact": "examples/generated/support_triage_agent.verification.json",
+        },
+        "downstream_gate_decisions": {
+            "decision_count": len(downstream_gate_decisions),
+            "all_access_or_spend_movement_blocked": all(
+                not item["access_or_spend_movement_allowed"] for item in downstream_gate_decisions
+            ),
+            "all_read_only": all(item["invariants"]["read_only"] for item in downstream_gate_decisions),
+            "all_raw_agent_intent_untrusted": all(
+                not item["invariants"]["raw_agent_intent_trusted"] for item in downstream_gate_decisions
+            ),
+            "blocked_action_count": sum(
+                not item["requested_action_can_proceed"] for item in downstream_gate_decisions
+            ),
+            "read_only_route_count": sum(item["requested_action_can_proceed"] for item in downstream_gate_decisions),
+            "sample": next(
+                item for item in downstream_gate_decisions if item["subscriber"] == "composio_access_gate"
+            ),
+            "decisions": downstream_gate_decisions,
         },
         "packet_outcome_memo": {
             "scenario": outcome_memo["scenario"],
@@ -502,6 +523,25 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["packet_verification"]["external_writes"]
         or report["packet_verification"]["permission_grants"]
         or report["packet_verification"]["approval_granted"]
+        or not report["downstream_gate_decisions"]["all_access_or_spend_movement_blocked"]
+        or not report["downstream_gate_decisions"]["all_read_only"]
+        or not report["downstream_gate_decisions"]["all_raw_agent_intent_untrusted"]
+        or any(
+            item["invariants"]["subscriber_can_approve_access"]
+            for item in report["downstream_gate_decisions"]["decisions"]
+        )
+        or any(
+            item["invariants"]["subscriber_can_grant_permissions"]
+            for item in report["downstream_gate_decisions"]["decisions"]
+        )
+        or any(
+            item["invariants"]["subscriber_can_override_verdict"]
+            for item in report["downstream_gate_decisions"]["decisions"]
+        )
+        or any(
+            item["invariants"]["subscriber_executes_external_writes"]
+            for item in report["downstream_gate_decisions"]["decisions"]
+        )
         or report["packet_outcome_memo"]["production_access"]
         or report["packet_outcome_memo"]["external_writes"]
         or report["packet_outcome_memo"]["approves_access"]
@@ -657,6 +697,9 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
 
     snapshot = report["packet_authority_snapshot"]
     verification = report["packet_verification"]
+    downstream_gate = report["downstream_gate_decisions"]
+    downstream_sample = downstream_gate["sample"]
+    downstream_packet = downstream_sample["packet_reference"]
     lines.extend(
         [
             "",
@@ -684,6 +727,21 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             f"- permission grants: {verification['permission_grants']}",
             f"- approval granted: {verification['approval_granted']}",
             f"- artifact: `{verification['artifact']}`",
+            "",
+            "## Downstream Gate Decisions",
+            "",
+            "Downstream systems ask IA whether a requested agent action can proceed. IA answers from the packet, not raw agent intent.",
+            "",
+            f"- decisions: {downstream_gate['decision_count']}",
+            f"- all access/spend movement blocked: {downstream_gate['all_access_or_spend_movement_blocked']}",
+            f"- all read-only: {downstream_gate['all_read_only']}",
+            f"- raw agent intent trusted: {not downstream_gate['all_raw_agent_intent_untrusted']}",
+            "- sample subscriber: `composio_access_gate`",
+            f"- sample decision: {downstream_sample['decision']}",
+            f"- requested action can proceed: {downstream_sample['requested_action_can_proceed']}",
+            f"- allowed mode: {downstream_sample['allowed_mode']}",
+            f"- packet_id: `{downstream_packet['packet_id']}`",
+            f"- blocked reason: {downstream_sample['blocked_reason']}",
         ]
     )
 

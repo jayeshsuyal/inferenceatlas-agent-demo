@@ -18,11 +18,12 @@ The packet authority layer downstream systems trust before AI moves.
 flowchart LR
   A["Agent/team asks for access, spend, data, or production action"] --> B["InferenceAtlas DecisionPacket"]
   B --> C["Verification API: packet_id, revision_id, content_hash, verdict_class, safety_state"]
-  C --> D["Gateway subscribers: Composio, Portkey, LiteLLM"]
-  C --> E["CI subscribers: GitHub Actions, GitLab CI"]
-  C --> F["Spend subscribers: Finance, procurement"]
-  C --> G["Review subscribers: Security, Legal"]
-  C --> H["Observability subscribers: Datadog, Honeycomb, Sentry"]
+  C --> I["Downstream Gate API: proceed, blocked reason, allowed mode"]
+  I --> D["Gateway subscribers: Composio, Portkey, LiteLLM"]
+  I --> E["CI subscribers: GitHub Actions, GitLab CI"]
+  I --> F["Spend subscribers: Finance, procurement"]
+  I --> G["Review subscribers: Security, Legal"]
+  I --> H["Observability subscribers: Datadog, Honeycomb, Sentry"]
 ```
 
 The contract is intentionally narrow:
@@ -55,6 +56,18 @@ The endpoint returns the same packet authority fields that generated artifacts a
 - `next_human_action`
 
 The verification endpoint is read-only by protocol. It does not approve access, grant permissions, mutate packet state, execute writes, reduce proof debt, or override the deterministic packet verdict.
+
+## Downstream Gate Decision API
+
+Downstream systems can ask whether a requested agent action may proceed:
+
+```text
+GET /api/downstream-gates/{subscriber}/decision
+```
+
+The response is derived from Packet Authority verification. It names `requested_action_can_proceed`, `access_or_spend_movement_allowed`, `decision`, `allowed_mode`, `blocked_reason`, `safe_next_step`, and the packet reference used to answer.
+
+The gate may return a read-only review or audit route, but it must not approve access, grant permissions, authorize spend, execute writes, mutate packet state, or trust raw agent intent.
 
 ## Downstream Subscribers
 

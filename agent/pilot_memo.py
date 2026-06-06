@@ -27,6 +27,13 @@ SPONSOR_ROLE_VERBS = {
     "openclaw": ("traces", "observation"),
 }
 
+SPONSOR_BRIEF_PHRASES = {
+    "tavily": "Tavily sources evidence candidates",
+    "composio": "Composio drafts dry-run permission diffs",
+    "nebius": "Nebius prepares reviewer narration",
+    "openclaw": "OpenClaw records runtime traces",
+}
+
 
 @dataclass(frozen=True)
 class PacketRef:
@@ -270,7 +277,11 @@ def render_copy_review_brief(memo: dict[str, Any]) -> str:
     """Render the short markdown a buyer can paste into Slack or email."""
     packet = memo["packet_reference"]
     sponsors = ", ".join(
-        f"{item['provider']} {item['verb']} {item['role']}" for item in memo["sponsor_contributions"]
+        SPONSOR_BRIEF_PHRASES.get(
+            item["provider"],
+            f"{item['provider']} contributes {item['role']} proof",
+        )
+        for item in memo["sponsor_contributions"]
     )
     blocked = "; ".join(_without_terminal_punctuation(item) for item in memo["blocked_claims"][:2])
     proof = "; ".join(_without_terminal_punctuation(item) for item in memo["missing_proof"][:2])

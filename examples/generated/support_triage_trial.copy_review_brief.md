@@ -4,7 +4,7 @@ Pilot memo `ia-pilot-memo-support_triage_trial-0a03b1790baa1f36-public-v0` refer
 
 Verdict class: `scoped_validation_only`. Next human action: Run a scoped dry-run pilot review with named repositories, channels, and Jira project.
 
-Sponsor proof roles: tavily finds discovery, composio simulates simulation, nebius narrates narration, openclaw traces observation. Sponsors contribute proof only; they do not approve, grant, execute, or mutate.
+Sponsor proof roles: Tavily sources evidence candidates, Composio drafts dry-run permission diffs, Nebius prepares reviewer narration, OpenClaw records runtime traces. Sponsors contribute proof only; they do not approve, grant, execute, or mutate.
 
 Blocked claims: Production tool access is approved; Customer-data handling is safe. Missing proof: GitHub repository allowlist and permission level; Slack channel allowlist, retention policy, and customer-data boundary.
 

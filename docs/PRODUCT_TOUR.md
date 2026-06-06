@@ -104,6 +104,8 @@ In five minutes, a reviewer should see:
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
 | `examples/requests/ai_spend_budget_overrun.yml` | A public role-level spend request fixture for Finance, Procurement, and AI Platform review. |
 | `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write` | A budget-overrun question becomes a Finance/Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. |
+| `docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md` | A public attack-vector case study framed as pre-permission proof, not detection or prevention. |
+| `python3 -m agent.trial examples/requests/miasma_pre_permission_packet.yml --json` | A Miasma-inspired request fixture becomes a non-approving access review with reviewer routing and blocked claims. |
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |

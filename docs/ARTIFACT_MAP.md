@@ -19,6 +19,8 @@ Private engine, public proof.
 | What is the lifecycle/drift signal? | `examples/generated/support_triage_agent.proof_health.md` |
 | What request creates the spend packet? | `examples/requests/ai_spend_budget_overrun.yml` |
 | What should Finance and Procurement review? | `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
+| What public attack-vector case study shows pre-permission proof? | `docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md` |
+| What request fixture drives that case study? | `examples/requests/miasma_pre_permission_packet.yml` |
 | What is the guided walkthrough? | `docs/REVIEW_ROOM_WALKTHROUGH.md` |
 | What is the design-partner trial output? | `examples/generated/support_triage_trial_report.md` |
 | What is the design-partner meeting memo? | `examples/generated/support_triage_trial.outcome_memo.md` |
@@ -33,6 +35,7 @@ Private engine, public proof.
 - [Public Conformance Contract](CONTRACT.md)
 - [Safety Contract](SAFETY_CONTRACT.md)
 - [V1 Capability Passport](V1_CAPABILITY_PASSPORT.md)
+- [Miasma Pre-Permission Packet](case_studies/MIASMA_PRE_PERMISSION_PACKET.md)
 
 ## Safety Boundary
 

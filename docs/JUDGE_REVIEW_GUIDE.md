@@ -82,6 +82,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
 | Does the packet lifecycle show drift before stale access? | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` |
 | Can Finance/Procurement review AI budget shock safely? | `examples/requests/ai_spend_budget_overrun.yml`, `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write`, and `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
+| What public attack-vector case study shows the pre-permission packet? | `docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md` and `python3 -m agent.trial examples/requests/miasma_pre_permission_packet.yml --json` |
 | What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |

@@ -9,39 +9,47 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
 ![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
 
-InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. Before an AI agent receives tools, data, spend, or production permissions, IA prepares the Trust Receipt, DecisionPacket, Packet Diff, Evidence Receipt Ledger, Packet Outcome Memo, Design Partner Outcome Memo, Sponsor Evidence Replay, access brief, policy-gate result, Proof Health report, proof debt, reviewer routing, cost controls, and next validation plan humans need to review.
+InferenceAtlas is a public, no-key review harness for the private InferenceAtlas v1 product. It turns an agent's access request into a structured DecisionPacket that humans review and downstream systems can reference before any tool, data, spend, or production access moves. Private engine, public proof.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 
-Start with the product tour: [Product Tour](docs/PRODUCT_TOUR.md). For the capability map, read [Agent Skills](docs/AGENT_SKILLS.md).
+This public harness does not approve access.
 
-Then run the full public judge path:
+## Try It In 30 Seconds
+
+Run the full public judge path:
 
 ```bash
 python3 -m agent.judge
 ```
 
-Run the design-partner trial sample:
+For the guided product path, read [Product Tour](docs/PRODUCT_TOUR.md). For the capability map, read [Agent Skills](docs/AGENT_SKILLS.md). For AI/coding-agent review, use [Agent Reviewer Instructions](AGENTS.md) and [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md).
 
-```bash
-python3 -m agent.trial examples/requests/support_triage_trial.yml
-python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
-python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
-python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
-```
+## Architecture In 10 Seconds
 
-Install the public harness commands:
-
-```bash
-pip install -e .
-ia-judge
+```mermaid
+flowchart LR
+  A["Agent asks for tools,<br/>data, spend, or production"] --> B["InferenceAtlas<br/>DecisionPacket"]
+  B --> C["Verification API<br/>packet_id / revision / hash / verdict"]
+  C --> D["Gateway<br/>Composio / Portkey / LiteLLM"]
+  C --> E["CI<br/>GitHub Actions / GitLab"]
+  C --> F["Spend Controls<br/>Finance / Procurement"]
+  C --> G["Review<br/>Security / Legal"]
+  C --> H["Observability<br/>Datadog / Honeycomb"]
 ```
 
 ## Judge Fast Path
 
-If you are reviewing quickly, start with the [Product Tour](docs/PRODUCT_TOUR.md), then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating product quality under fast iteration, read the [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are using an AI reviewer or coding agent, start with [Agent Reviewer Instructions](AGENTS.md) and [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md).
+If you are reviewing quickly, run `python3 -m agent.judge`, then use the [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md). If you are evaluating product quality under fast iteration, read the [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md). If you are evaluating design-partner fit, read the [Design Partner Brief](docs/DESIGN_PARTNER_BRIEF.md). If you are extending the live/sponsor lane, read [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), and [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md). The judge path includes Proof Health and artifact integrity checks.
 
-Then run:
+For the PR-grade local safety gate, run:
+
+```bash
+bash scripts/pr_smoke.sh
+```
+
+<details>
+<summary>Full public Python command reference</summary>
 
 ```bash
 python3 -m agent.judge
@@ -71,13 +79,10 @@ python3 -m agent.verify_artifacts
 python3 -m unittest discover -s tests
 ```
 
-For the PR-grade local safety gate, run:
+</details>
 
-```bash
-bash scripts/pr_smoke.sh
-```
-
-Or use the installed command set:
+<details>
+<summary>Installed command reference</summary>
 
 ```bash
 pip install -e .
@@ -105,6 +110,8 @@ ia-trial-evidence-replay examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 ia-verify-artifacts
 ```
+
+</details>
 
 The fastest artifact to skim is the generated Trust Receipt:
 

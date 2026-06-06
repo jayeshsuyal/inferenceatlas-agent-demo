@@ -29,6 +29,8 @@ The product moment is not an autonomous yes. The product moment is a faster, cle
 | --- | --- | --- |
 | Agent access review | `support_triage_agent` · `read_only_analytics_agent` · `admin_code_fix_bot` | DecisionPacket, access brief, Trust Receipt, Proof Health, Sponsor Proof Trace |
 | AI spend review | `examples/requests/ai_spend_budget_overrun.yml` | spend packet, Finance Evidence Receipt, Procurement Review Memo, Sponsor Proof Trace |
+| Supply-chain / CI review | `examples/requests/miasma_pre_permission_packet.yml` | DecisionPacket, proof debt, reviewer routing, Sponsor Proof Trace |
+| MCP / tool blast-radius review | `examples/requests/mcp_tool_blast_radius.yml` | DecisionPacket, proof debt, reviewer routing, local verification hash |
 
 ## Five-Minute Product Trial
 
@@ -77,6 +79,7 @@ ia-verify-artifacts
 In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
+- a Packet Workbench where a reviewer can choose a lane, generate a packet, copy a review brief, and view the local verification hash
 - an Agent Skills registry showing 16 stable public review skills with commands, artifacts, dependencies, and safety boundaries
 - a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
@@ -95,6 +98,8 @@ In five minutes, a reviewer should see:
 
 | Surface | What it proves |
 | --- | --- |
+| `/workbench` | A reviewer can choose a lane and registered fixture, generate a packet, copy a review brief, export the result, and view a local hash without paste input or live writes. |
+| `/api/workbench/generate` | The Workbench operates on existing deterministic packet builders and does not call private v1. |
 | `bash scripts/run.sh` | One no-key public command for the default review path. |
 | `python3 -m agent.judge` | One command assembles the public product trial path, artifact checklist, safety checks, and design-partner trial summary. |
 | `docs/AGENT_SKILLS.md` | The public capability registry maps each agent review skill to proof, command, artifact, dependency, tier, and safety boundary. |
@@ -106,6 +111,7 @@ In five minutes, a reviewer should see:
 | `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write` | A budget-overrun question becomes a Finance/Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. |
 | `docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md` | A public attack-vector case study framed as pre-permission proof, not detection or prevention. |
 | `python3 -m agent.trial examples/requests/miasma_pre_permission_packet.yml --json` | A Miasma-inspired request fixture becomes a non-approving access review with reviewer routing and blocked claims. |
+| `examples/requests/mcp_tool_blast_radius.yml` | A connector/tool blast-radius request becomes a non-approving packet with dry-run scope and named reviewers. |
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |

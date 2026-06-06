@@ -1,0 +1,165 @@
+schema_version: design_partner_trial_request.v0
+status: public_sample_no_secrets
+purpose: >
+  Example request for an agent that wants connector and managed-tool access
+  across repository context, document context, chat actions, and browser
+  sandbox review. The fixture keeps all scope role-level and dry-run.
+
+redaction_boundary:
+  do_not_include:
+    - production credentials
+    - live sponsor tokens
+    - customer data
+    - private prompts
+    - private v1 source code
+    - OAuth refresh tokens
+    - repository secrets
+    - document contents
+    - browser session cookies
+  public_repo_posture: role_level_descriptions_only
+
+candidate_agent:
+  name: connector_tool_boundary_agent
+  business_owner: AI Platform
+  purpose: >
+    Review whether a managed agent can inspect connector metadata, repository
+    summaries, drive-file summaries, and sandboxed browser evidence before a
+    human decides which tool actions can enter scoped validation.
+  requested_environment: validation_only
+  current_approval_path: manual_security_ai_platform_tool_owner_review
+
+requested_access:
+  production_access_requested: false
+  admin_scopes_requested: false
+  external_writes_requested: false
+  tools:
+    - system: Connector gateway
+      requested_actions:
+        - read connector registry metadata
+        - inspect OAuth permission labels
+        - draft a dry-run permission diff
+      blocked_actions:
+        - exchange OAuth codes for live credentials
+        - store refresh tokens
+        - invoke connector write actions
+      data_classes:
+        - connector metadata
+        - OAuth scope labels
+        - dry-run permission diff
+      proposed_demo_allowance: dry_run_connector_scope_review_only
+    - system: GitHub
+      requested_actions:
+        - read repository summaries attached by a human
+        - inspect branch and workflow metadata
+      blocked_actions:
+        - push commits
+        - create pull requests
+        - dispatch workflows
+        - read repository secrets
+      data_classes:
+        - repository metadata
+        - workflow configuration
+        - branch protection summary
+      proposed_demo_allowance: human_attached_repository_summary_only
+    - system: Google Drive
+      requested_actions:
+        - read human-attached file summaries
+        - classify document risk labels
+      blocked_actions:
+        - read arbitrary Drive files
+        - export full document contents
+        - share files
+        - edit files
+      data_classes:
+        - document summary
+        - file metadata
+        - risk label
+      proposed_demo_allowance: human_attached_file_summary_only
+    - system: Browser sandbox
+      requested_actions:
+        - review public page metadata
+        - record sandboxed evidence notes
+      blocked_actions:
+        - submit forms
+        - click purchase or deploy actions
+        - read authenticated session cookies
+        - mutate external state
+      data_classes:
+        - public page metadata
+        - sandbox observation notes
+      proposed_demo_allowance: read_only_public_page_review_only
+  data_classes:
+    - connector metadata
+    - OAuth scope labels
+    - dry-run permission diff
+    - repository metadata
+    - workflow configuration
+    - branch protection summary
+    - document summary
+    - file metadata
+    - risk label
+    - public page metadata
+    - sandbox observation notes
+
+proof_debt:
+  missing_proof:
+    - item: connector allowlist and OAuth scope boundary
+      owner: Security
+      unblocks: connector scope review
+    - item: repository allowlist, workflow boundary, and secret-isolation proof
+      owner: Engineering
+      unblocks: repository context review
+    - item: document attachment policy and data-retention boundary
+      owner: Legal / Data Governance
+      unblocks: drive-file summary review
+    - item: browser sandbox policy, no-submit rule, and audit trace
+      owner: AI Platform
+      unblocks: browser evidence review
+    - item: tool-owner approval for any future live invocation
+      owner: Tool owner
+      unblocks: scoped validation planning
+  unsupported_claims:
+    - claim: The agent may invoke connector tools live.
+      reason: OAuth scope, tool allowlist, and human tool-owner approval are missing.
+    - claim: Repository and document context can be read broadly.
+      reason: Human-attached source boundaries and data-retention proof are missing.
+    - claim: Browser actions can mutate external state.
+      reason: The sandbox is read-only and no-submit proof is required.
+    - claim: The gateway can approve permissions from this fixture.
+      reason: The public harness only produces a packet for human review.
+
+reviewer_routing:
+  required_reviewers:
+    - role: Security
+      review_area: connector_oauth_scope_boundary_secret_isolation
+    - role: Engineering
+      review_area: repository_workflow_boundaries_branch_protection
+    - role: AI Platform
+      review_area: managed_agent_runtime_sandbox_audit_trace
+    - role: Tool owner
+      review_area: connector_allowlist_and_future_live_invocation
+  conditional_reviewers:
+    - role: Legal / Data Governance
+      condition: attached_docs_include_regulated_or_customer_data
+
+safety_defaults:
+  access_approval_granted: false
+  permission_grant_allowed: false
+  external_writes_enabled: false
+  production_mutation_allowed: false
+  packet_state_mutation_allowed: false
+  composio_dry_run_default: true
+  human_approval_required: true
+
+trial_outputs:
+  expected_artifacts:
+    - DecisionPacket
+    - Agent Access Decision Brief
+    - Sponsor Proof Trace
+    - reviewer routing
+    - next human validation step
+  success_criteria:
+    - tool_blast_radius_is_visible
+    - connector_scope_stays_dry_run
+    - repository_file_and_browser_scope_have_boundaries
+    - future_live_invocation_requires_human_tool_owner_review

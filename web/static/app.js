@@ -4,6 +4,7 @@ const REVIEW_SCOPE_KEY = "ia_review_scope";
 const messagesEl = document.getElementById("messages");
 const chatView = document.getElementById("chat-view");
 const reviewView = document.getElementById("review-view");
+const workbenchView = document.getElementById("workbench-view");
 const walkthroughView = document.getElementById("walkthrough-view");
 const cycleFeed = document.getElementById("cycle-feed");
 const form = document.getElementById("chat-form");
@@ -19,6 +20,20 @@ const btnMindInit = document.getElementById("btn-mind-init");
 const btnMindStep = document.getElementById("btn-mind-step");
 const btnRunRehearsal = document.getElementById("btn-run-rehearsal");
 const btnRunUploadedRehearsal = document.getElementById("btn-run-uploaded-rehearsal");
+const workbenchLaneSelect = document.getElementById("workbench-lane-select");
+const workbenchFixtureSelect = document.getElementById("workbench-fixture-select");
+const btnGenerateWorkbench = document.getElementById("btn-generate-workbench");
+const btnCopyWorkbenchBrief = document.getElementById("btn-copy-workbench-brief");
+const btnExportWorkbench = document.getElementById("btn-export-workbench");
+const workbenchToast = document.getElementById("workbench-toast");
+const workbenchTitle = document.getElementById("workbench-title");
+const workbenchSubtitle = document.getElementById("workbench-subtitle");
+const workbenchIntakeCard = document.getElementById("workbench-intake-card");
+const workbenchDecisionCard = document.getElementById("workbench-decision-card");
+const workbenchHashCard = document.getElementById("workbench-hash-card");
+const workbenchProofCard = document.getElementById("workbench-proof-card");
+const workbenchReviewerCard = document.getElementById("workbench-reviewer-card");
+const workbenchExportCard = document.getElementById("workbench-export-card");
 const btnLoadWalkthrough = document.getElementById("btn-load-walkthrough");
 const btnCollectSponsorProof = document.getElementById("btn-collect-sponsor-proof");
 const btnCopyWalkthroughBrief = document.getElementById("btn-copy-walkthrough-brief");
@@ -116,6 +131,8 @@ let slashActiveIndex = 0;
 let slashFilter = "";
 let skillsLoadError = null;
 let skillsLoaded = false;
+let workbenchRegistry = null;
+let workbenchResult = null;
 let walkthroughPayload = null;
 let walkthroughActiveIndex = 0;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
@@ -331,6 +348,10 @@ function showReviewPanel() {
 
 function showWalkthroughPanel() {
   document.querySelector('.tab[data-tab="walkthrough"]')?.click();
+}
+
+function showWorkbenchPanel() {
+  document.querySelector('.tab[data-tab="workbench"]')?.click();
 }
 
 async function uploadFile(channel, fileInput, chipEl, idStore) {
@@ -1522,6 +1543,230 @@ function boolLabel(value) {
   return value ? "True" : "False";
 }
 
+function setWorkbenchToast(text, isError = false) {
+  if (!workbenchToast) return;
+  workbenchToast.textContent = text || "";
+  workbenchToast.classList.toggle("error", isError);
+}
+
+function selectedWorkbenchFixture() {
+  return (workbenchRegistry?.fixtures || []).find(
+    (fixture) => fixture.fixture_id === workbenchFixtureSelect.value
+  );
+}
+
+function renderWorkbenchFixtureOptions() {
+  if (!workbenchRegistry || !workbenchLaneSelect || !workbenchFixtureSelect) return;
+  const laneId = workbenchLaneSelect.value || workbenchRegistry.lanes?.[0]?.lane_id;
+  const fixtures = (workbenchRegistry.fixtures || []).filter((fixture) => fixture.lane_id === laneId);
+  workbenchFixtureSelect.innerHTML = "";
+  fixtures.forEach((fixture) => {
+    const option = document.createElement("option");
+    option.value = fixture.fixture_id;
+    option.textContent = fixture.label;
+    workbenchFixtureSelect.appendChild(option);
+  });
+  if (fixtures.length) {
+    workbenchFixtureSelect.value = fixtures[0].fixture_id;
+  }
+}
+
+function applyWorkbenchRegistry(data) {
+  workbenchRegistry = data;
+  workbenchLaneSelect.innerHTML = "";
+  (data.lanes || []).forEach((lane) => {
+    const option = document.createElement("option");
+    option.value = lane.lane_id;
+    option.textContent = lane.label;
+    workbenchLaneSelect.appendChild(option);
+  });
+  const defaultFixture = (data.fixtures || []).find(
+    (fixture) => fixture.fixture_id === data.default_fixture_id
+  );
+  if (defaultFixture) {
+    workbenchLaneSelect.value = defaultFixture.lane_id;
+  }
+  renderWorkbenchFixtureOptions();
+  if (defaultFixture) {
+    workbenchFixtureSelect.value = defaultFixture.fixture_id;
+  }
+}
+
+async function loadWorkbenchRegistry() {
+  if (workbenchRegistry) return workbenchRegistry;
+  setWorkbenchToast("Loading workbench registry...");
+  const res = await fetch("/api/workbench");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || "Workbench registry failed");
+  applyWorkbenchRegistry(data);
+  setWorkbenchToast("Workbench registry loaded.");
+  return data;
+}
+
+function renderWorkbenchList(items, { limit = 5 } = {}) {
+  return renderMiniList(items || [], { limit });
+}
+
+function renderWorkbenchResult(data) {
+  workbenchResult = data;
+  const fixture = data.fixture || {};
+  const decision = data.decision || {};
+  const packet = data.packet_reference || {};
+  const local = data.local_verification || {};
+  workbenchTitle.textContent = data.title || "Packet Workbench";
+  workbenchSubtitle.textContent = fixture.description || "Fixture-only packet generation.";
+
+  workbenchIntakeCard.innerHTML = `
+    <span class="eyebrow">Input</span>
+    <h3>${escapeHtml(fixture.label || fixture.fixture_id || "Registered fixture")}</h3>
+    <p class="walkthrough-summary">${escapeHtml(fixture.description || "")}</p>
+    <code class="walkthrough-fact">${escapeHtml(fixture.path || fixture.scenario_name || fixture.fixture_id || "")}</code>
+  `;
+  const systems = document.createElement("div");
+  systems.className = "workbench-list-block";
+  systems.innerHTML = `<span class="trace-subhead">Requested systems</span>`;
+  systems.appendChild(renderWorkbenchList(data.requested_systems || [], { limit: 6 }));
+  workbenchIntakeCard.appendChild(systems);
+
+  workbenchDecisionCard.innerHTML = `
+    <span class="eyebrow">Decision</span>
+    <h3>${escapeHtml(decision.verdict_class || "review_required")}</h3>
+    <div class="walk-metrics">
+      <div><span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong></div>
+      <div><span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong></div>
+      <div><span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong></div>
+      <div><span>Human review</span><strong>${escapeHtml(String(decision.requires_human_review))}</strong></div>
+    </div>
+    <p class="walkthrough-summary">${escapeHtml(decision.next_human_action || "")}</p>
+  `;
+
+  workbenchHashCard.innerHTML = `
+    <span class="eyebrow">Local verification hash</span>
+    <h3>Canonical packet hash</h3>
+    <p class="walkthrough-summary">Computed locally from the public packet result. No private v1 endpoint is called.</p>
+    <code class="walkthrough-fact">${escapeHtml(packet.content_hash || local.content_hash || "")}</code>
+    <p class="safety-anchor">v1 call: ${escapeHtml(String(local.calls_v1))} · read-only: ${escapeHtml(String(local.read_only))}</p>
+  `;
+
+  workbenchProofCard.innerHTML = `
+    <span class="eyebrow">Proof debt</span>
+    <h3>Blocked claims and missing proof</h3>
+  `;
+  const proofGrid = document.createElement("div");
+  proofGrid.className = "workbench-proof-grid";
+  const blocked = document.createElement("div");
+  blocked.innerHTML = `<span class="trace-subhead">Blocked claims</span>`;
+  blocked.appendChild(renderWorkbenchList(data.blocked_claims || [], { limit: 5 }));
+  const missing = document.createElement("div");
+  missing.innerHTML = `<span class="trace-subhead">Missing proof</span>`;
+  missing.appendChild(renderWorkbenchList(data.missing_proof || [], { limit: 5 }));
+  proofGrid.append(blocked, missing);
+  workbenchProofCard.appendChild(proofGrid);
+
+  workbenchReviewerCard.innerHTML = `
+    <span class="eyebrow">Reviewer routing</span>
+    <h3>${escapeHtml(String((data.reviewer_routing || []).length))} owner gates</h3>
+  `;
+  workbenchReviewerCard.appendChild(renderWorkbenchList(data.reviewer_routing || [], { limit: 6 }));
+  if (data.sponsor_proof_trace) {
+    const trace = data.sponsor_proof_trace;
+    const traceBox = document.createElement("p");
+    traceBox.className = "safety-anchor";
+    traceBox.textContent = `Sponsor trace: ${trace.sponsor_order?.join(" -> ") || "locked order"}; decision lock unchanged ${trace.decision_lock_unchanged}.`;
+    workbenchReviewerCard.appendChild(traceBox);
+  }
+
+  workbenchExportCard.innerHTML = `
+    <span class="eyebrow">Export</span>
+    <h3>${escapeHtml(data.export_label || "Export workbench result")}</h3>
+    <p class="walkthrough-summary">${escapeHtml(data.safety_anchor || "")}</p>
+  `;
+  const actions = document.createElement("div");
+  actions.className = "walk-actions";
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "btn-primary";
+  copy.textContent = "Copy review brief";
+  copy.addEventListener("click", () => copyWorkbenchBrief());
+  const viewHash = document.createElement("button");
+  viewHash.type = "button";
+  viewHash.className = "btn-ghost";
+  viewHash.textContent = "View verification hash";
+  viewHash.addEventListener("click", () => setWorkbenchToast(packet.content_hash || "Hash unavailable."));
+  actions.append(copy, viewHash);
+  workbenchExportCard.appendChild(actions);
+  renderArtifactLinks(data.output_files || [], workbenchExportCard);
+  btnCopyWorkbenchBrief.disabled = !data.copy_review_brief;
+  btnExportWorkbench.disabled = !(data.output_files || []).length;
+}
+
+async function generateWorkbench() {
+  btnGenerateWorkbench.disabled = true;
+  setWorkbenchToast("Generating packet...");
+  try {
+    if (!workbenchRegistry) await loadWorkbenchRegistry();
+    const fixture = selectedWorkbenchFixture();
+    if (!fixture) throw new Error("Choose a workbench fixture first.");
+    const res = await fetch("/api/workbench/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fixture_id: fixture.fixture_id }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Workbench generation failed");
+    renderWorkbenchResult(data);
+    setWorkbenchToast("Packet generated. Review brief and export are ready.");
+  } catch (err) {
+    setWorkbenchToast(String(err.message || err), true);
+  } finally {
+    btnGenerateWorkbench.disabled = false;
+  }
+}
+
+async function copyWorkbenchBrief() {
+  const text = workbenchResult?.copy_review_brief || "";
+  if (!text) {
+    setWorkbenchToast("Generate a packet first.", true);
+    return;
+  }
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch (_) {
+    copied = false;
+  }
+  if (!copied) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {
+      copied = false;
+    }
+    textarea.remove();
+  }
+  setWorkbenchToast(copied ? "Review brief copied." : "Clipboard unavailable. Use export.", !copied);
+}
+
+async function exportWorkbenchResult() {
+  const first = (workbenchResult?.output_files || [])[0];
+  if (!first?.file_id) {
+    setWorkbenchToast("Generate a packet first.", true);
+    return;
+  }
+  try {
+    await downloadFile(first.file_id, first.label || "workbench-result.md");
+    setWorkbenchToast("Workbench result exported.");
+  } catch (err) {
+    setWorkbenchToast(String(err.message || err), true);
+  }
+}
+
 function renderRehearsalCard(data) {
   cycleFeed.innerHTML = "";
   const card = document.createElement("article");
@@ -1976,6 +2221,7 @@ function setupTabs() {
   const tabs = document.querySelectorAll(".sidebar-tabs .tab");
   const panels = {
     start: document.getElementById("panel-start"),
+    workbench: document.getElementById("panel-workbench"),
     walkthrough: document.getElementById("panel-walkthrough"),
     review: document.getElementById("panel-review"),
     metrics: document.getElementById("panel-metrics"),
@@ -1992,15 +2238,24 @@ function setupTabs() {
         panel.classList.toggle("active", on);
       });
       const isReview = id === "review";
+      const isWorkbench = id === "workbench";
       const isWalkthrough = id === "walkthrough";
       const isMetrics = id === "metrics";
-      chatView.hidden = isReview || isWalkthrough || isMetrics;
+      chatView.hidden = isReview || isWorkbench || isWalkthrough || isMetrics;
       reviewView.hidden = !isReview;
+      workbenchView.hidden = !isWorkbench;
       walkthroughView.hidden = !isWalkthrough;
       if (isReview) {
         await loadGuide();
         await ensureMindsReady();
         await loadMind();
+      } else if (isWorkbench) {
+        if (!workbenchRegistry) {
+          await loadWorkbenchRegistry();
+        }
+        if (!workbenchResult) {
+          await generateWorkbench();
+        }
       } else if (isWalkthrough) {
         if (!walkthroughPayload) {
           await loadWalkthrough({ silent: true });
@@ -2585,6 +2840,22 @@ btnMindStep.addEventListener("click", mindStep);
 btnQueueEvidence.addEventListener("click", queueEvidence);
 btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
 btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
+workbenchLaneSelect.addEventListener("change", () => {
+  renderWorkbenchFixtureOptions();
+  workbenchResult = null;
+  btnCopyWorkbenchBrief.disabled = true;
+  btnExportWorkbench.disabled = true;
+  setWorkbenchToast("Lane changed. Generate a packet to refresh the result.");
+});
+workbenchFixtureSelect.addEventListener("change", () => {
+  workbenchResult = null;
+  btnCopyWorkbenchBrief.disabled = true;
+  btnExportWorkbench.disabled = true;
+  setWorkbenchToast("Fixture changed. Generate a packet to refresh the result.");
+});
+btnGenerateWorkbench.addEventListener("click", generateWorkbench);
+btnCopyWorkbenchBrief.addEventListener("click", copyWorkbenchBrief);
+btnExportWorkbench.addEventListener("click", exportWorkbenchResult);
 btnLoadWalkthrough.addEventListener("click", () => loadWalkthrough());
 btnCollectSponsorProof.addEventListener("click", collectSponsorProof);
 btnCopyWalkthroughBrief.addEventListener("click", copyWalkthroughBrief);
@@ -2595,6 +2866,9 @@ setupTabs();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await loadMeta();
   loadGuide();
+  if (window.location.pathname === "/workbench") {
+    showWorkbenchPanel();
+  }
   if (window.location.pathname === "/walkthrough") {
     showWalkthroughPanel();
   }

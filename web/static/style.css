@@ -147,6 +147,7 @@ body {
 
 .sidebar-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
   padding: 0.25rem;
   background: var(--bg);
@@ -155,7 +156,8 @@ body {
 }
 
 .tab {
-  flex: 1;
+  flex: 1 1 5rem;
+  min-width: 0;
   padding: 0.5rem 0.6rem;
   font-family: var(--font);
   font-size: 0.78rem;
@@ -166,6 +168,28 @@ body {
   color: var(--muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+}
+
+.workbench-label {
+  display: block;
+  margin: 0.75rem 0 0.35rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.workbench-select {
+  width: 100%;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.84rem;
 }
 
 .tab:hover {
@@ -636,6 +660,10 @@ body {
   gap: 1rem;
 }
 
+.workbench-grid {
+  align-items: stretch;
+}
+
 .walkthrough-panel {
   min-width: 0;
   min-height: 14rem;
@@ -912,6 +940,16 @@ body {
 
 .mini-list li {
   margin-bottom: 0.35rem;
+}
+
+.workbench-list-block {
+  margin-top: 0.85rem;
+}
+
+.workbench-proof-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .walk-actions {
@@ -2250,6 +2288,10 @@ body {
   }
 
   .walkthrough-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workbench-proof-grid {
     grid-template-columns: 1fr;
   }
 

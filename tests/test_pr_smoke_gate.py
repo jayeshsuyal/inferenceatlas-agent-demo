@@ -1,5 +1,7 @@
 import json
 import os
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -25,6 +27,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("schemas/pilot_memo.schema.json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy", script)
+        self.assertIn("scripts/walkthrough_smoke.py", script)
         self.assertIn("agent.verify_artifacts --json", script)
         self.assertIn("unittest discover -s tests", script)
         self.assertIn("git grep -l -E", script)
@@ -45,10 +48,27 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn('COMPOSIO_API_KEY: ""', workflow)
         self.assertIn('IA_LIVE_MODE: ""', workflow)
 
+    def test_walkthrough_smoke_script_locks_product_surface(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "scripts/walkthrough_smoke.py"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn(
+            "Walkthrough smoke passed: request -> packet -> sponsor_proof_trace -> sponsor_replay -> review_cycle -> pilot_memo",
+            result.stdout,
+        )
+
     def test_manifest_and_review_docs_expose_pr_smoke_gate(self) -> None:
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 
         self.assertEqual(manifest["pr_smoke_command"], "bash scripts/pr_smoke.sh")
+        self.assertIn("walkthrough API/static surface", manifest["pr_smoke_scope"])
         self.assertEqual(manifest["verification"]["pr_smoke_gate"], "bash scripts/pr_smoke.sh")
         self.assertIn("bash scripts/pr_smoke.sh", manifest["product_review_path"])
         self.assertIn("bash scripts/pr_smoke.sh", manifest["five_minute_review_commands"])

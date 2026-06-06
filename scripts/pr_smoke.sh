@@ -86,6 +86,7 @@ run "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml
 run "$PYTHON_BIN" -m agent.contract --all
 run "$PYTHON_BIN" -m agent.spend --no-write
 run "$PYTHON_BIN" -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write
+run "$PYTHON_BIN" scripts/walkthrough_smoke.py
 run "$PYTHON_BIN" -m agent.verify_artifacts
 run "$PYTHON_BIN" -m unittest discover -s tests
 run_secret_shape_guard

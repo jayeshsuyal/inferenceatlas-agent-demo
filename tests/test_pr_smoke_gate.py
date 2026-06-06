@@ -10,6 +10,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PrSmokeGateTests(unittest.TestCase):
+    def test_public_run_script_is_no_write_judge_entrypoint(self) -> None:
+        script_path = ROOT / "scripts" / "run.sh"
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertTrue(script_path.is_file())
+        self.assertTrue(os.access(script_path, os.X_OK))
+        self.assertIn("set -euo pipefail", script)
+        self.assertIn('COMPOSIO_DRY_RUN="${COMPOSIO_DRY_RUN:-1}"', script)
+        self.assertIn('IA_LIVE_MODE="${IA_LIVE_MODE:-}"', script)
+        self.assertIn("-m agent.judge --no-write", script)
+
     def test_script_is_no_key_product_safety_gate(self) -> None:
         script_path = ROOT / "scripts" / "pr_smoke.sh"
         script = script_path.read_text(encoding="utf-8")
@@ -21,6 +32,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn('export TAVILY_API_KEY=""', script)
         self.assertIn('export COMPOSIO_API_KEY=""', script)
         self.assertIn('export IA_LIVE_MODE=""', script)
+        self.assertIn("bash scripts/run.sh --json", script)
         self.assertIn("agent.judge --no-write --json", script)
         self.assertIn("agent.evidence_receipts --no-write --json", script)
         self.assertIn("agent.trial_evidence_replay", script)
@@ -75,13 +87,17 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("bash scripts/pr_smoke.sh", manifest["judge_review_path"])
 
         for relative_path in (
-            "README.md",
             "AGENTS.md",
+            "docs/COMMAND_REFERENCE.md",
             "docs/PRODUCT_QUALITY_AUDIT.md",
             "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
         ):
             text = (ROOT / relative_path).read_text(encoding="utf-8")
             self.assertIn("bash scripts/pr_smoke.sh", text)
+
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("bash scripts/run.sh", readme)
+        self.assertIn("docs/COMMAND_REFERENCE.md", readme)
 
 
 if __name__ == "__main__":

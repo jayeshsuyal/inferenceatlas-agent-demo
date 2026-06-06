@@ -16,6 +16,8 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         for expected in [
             "# Agentic Review Expected Output",
             "Status: public AI reviewer checklist",
+            "bash scripts/run.sh",
+            "bash scripts/run.sh --json",
             "python3 -m agent.judge --no-write",
             "python3 -m agent.judge --no-write --json",
             "python3 -m agent.skills",
@@ -128,10 +130,14 @@ class AgenticReviewExpectedOutputTests(unittest.TestCase):
         self.assertIn("live evidence rehearsal", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
-        for surface in [agents, readme, guide]:
+        for surface in [agents, guide]:
             self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", surface)
             self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
+
+        self.assertIn("docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md", readme)
+        self.assertIn("docs/AGENT_SKILLS.md", readme)
+        self.assertIn("docs/COMMAND_REFERENCE.md", readme)
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ If you are reviewing quickly, use this order:
 1. Read the Product Tour.
 2. Read the Agent Skills registry.
 3. Read the Product Quality Audit.
-4. Run the one-command judge harness.
+4. Run the one-command public harness.
 5. Inspect the generated Packet Diff.
 6. Inspect the generated Evidence Receipt Ledger.
 7. Inspect the generated Packet Outcome Memo.
@@ -27,6 +27,7 @@ If you are reviewing quickly, use this order:
 16. Check the safety defaults and tests.
 
 ```bash
+bash scripts/run.sh
 python3 -m agent.judge
 python3 -m agent.demo
 python3 -m agent.review --list
@@ -63,7 +64,8 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What does the product do? | `docs/PRODUCT_TOUR.md` and `README.md` |
 | What public agent skills are available? | `docs/AGENT_SKILLS.md` and `python3 -m agent.skills --json` |
 | What keeps the product surface premium? | `docs/PRODUCT_QUALITY_AUDIT.md` |
-| What is the one-command judge path? | `python3 -m agent.judge` |
+| What is the one-command public path? | `bash scripts/run.sh` |
+| What is the direct judge harness? | `python3 -m agent.judge` |
 | What should an automated reviewer treat as pass/fail? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` |
 | Does the packet bend across risk? | `python3 -m agent.packet_diff` and `examples/generated/packet_diff.md` |
 | Which evidence receipts attach without weakening the lock? | `python3 -m agent.evidence_receipts` and `examples/generated/support_triage_agent.evidence_receipts.md` |
@@ -147,7 +149,7 @@ README thesis
 -> Agent Skills
 -> Product Quality Audit
 -> Agentic Review Expected Output
--> one-command judge harness
+-> one-command public harness
 -> Packet Diff
 -> Evidence Receipt Ledger
 -> Packet Outcome Memo

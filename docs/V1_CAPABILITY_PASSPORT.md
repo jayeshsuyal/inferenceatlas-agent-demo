@@ -83,7 +83,8 @@ Public files to inspect:
 | Support triage trial sample | `examples/requests/support_triage_trial.yml` |
 | Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
 | Public conformance contract | `docs/CONTRACT.md` |
-| One-command judge harness | `python3 -m agent.judge` |
+| One-command public harness | `bash scripts/run.sh` |
+| Direct judge harness | `python3 -m agent.judge` |
 | Trust Receipt | `examples/generated/trust_receipt.md` |
 | Review Room | `examples/generated/review_room.md` |
 | Static Review Room HTML | `examples/generated/review_room.html` |

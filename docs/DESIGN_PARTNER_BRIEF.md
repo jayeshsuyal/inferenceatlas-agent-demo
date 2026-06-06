@@ -40,6 +40,7 @@ Use this sequence for a first CTO or platform-owner evaluation:
 1. Run the public judge harness:
 
 ```bash
+bash scripts/run.sh
 python3 -m agent.judge
 ```
 
@@ -167,7 +168,8 @@ The current public branch gives a builder enough structure to extend a live tria
 
 | Need | Public surface |
 | --- | --- |
-| One-command review path | `python3 -m agent.judge` |
+| One-command review path | `bash scripts/run.sh` |
+| Direct judge harness | `python3 -m agent.judge` |
 | Trial meeting decision | `python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml` |
 | Trial sponsor proof replay | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml` |
 | Trial live evidence rehearsal | `python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial` |

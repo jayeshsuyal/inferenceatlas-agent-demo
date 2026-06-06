@@ -94,10 +94,15 @@ class ProductQualityAuditTests(unittest.TestCase):
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
 
-        for surface in [readme, agents, guide, tour, expected_output]:
+        for surface in [agents, guide, tour, expected_output]:
             self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", surface)
             self.assertIn("docs/AGENT_SKILLS.md", surface)
             self.assertIn("python3 -m agent.verify_artifacts", surface)
+
+        self.assertIn("docs/PRODUCT_QUALITY_AUDIT.md", readme)
+        self.assertIn("docs/AGENT_SKILLS.md", readme)
+        self.assertIn("docs/COMMAND_REFERENCE.md", readme)
+        self.assertIn("docs/ARTIFACT_MAP.md", readme)
 
     def test_judge_harness_names_product_quality_audit(self) -> None:
         report = build_judge_report(write_artifacts=False)

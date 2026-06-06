@@ -68,6 +68,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
     def test_readme_top_fold_frames_public_harness(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         first_screen = "\n".join(readme.splitlines()[:24])
+        first_minute = "\n".join(readme.splitlines()[:60])
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 
         self.assertEqual(readme.splitlines()[0], "# InferenceAtlas — Public Agent-Access Review Harness")
@@ -75,6 +76,16 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("python3 -m agent.judge", first_screen)
         self.assertIn("public, no-key review harness", first_screen)
         self.assertIn("not a private v1 code dump", first_screen)
+        self.assertIn(
+            "It turns an agent's access request into a structured DecisionPacket",
+            first_screen,
+        )
+        self.assertIn("Architecture In 10 Seconds", first_minute)
+        self.assertIn("flowchart LR", first_minute)
+        self.assertIn("Verification API", first_minute)
+        self.assertIn("Spend Controls", first_minute)
+        self.assertIn("Observability", first_minute)
+        self.assertNotIn("Trust Receipt, DecisionPacket, Packet Diff", first_minute)
         self.assertIn("tests-passing", first_screen)
         self.assertIn("CI-smoke%20green", first_screen)
         self.assertIn("public%20contract-v0", first_screen)

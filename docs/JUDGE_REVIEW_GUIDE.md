@@ -42,7 +42,7 @@ python3 -m agent.sponsor_readiness
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
-python3 -m agent.spend --no-write
+python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
@@ -81,7 +81,7 @@ For exact automated pass/fail signals, read `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT
 | What should a judge skim as one room? | `examples/generated/review_room.md` |
 | What visual artifact works without a server? | `examples/generated/review_room.html` |
 | Does the packet lifecycle show drift before stale access? | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` |
-| Can Finance/Procurement review AI budget shock safely? | `python3 -m agent.spend --no-write` and `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
+| Can Finance/Procurement review AI budget shock safely? | `examples/requests/ai_spend_budget_overrun.yml`, `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write`, and `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
 | What should a reviewer use for the demo talk track? | `docs/REVIEW_ROOM_WALKTHROUGH.md` and `examples/generated/review_room.desktop.jpg` |
 | What policy gate is enforced? | `policy/agent_access.yml` and `python3 -m agent.gate --all` |
 | How do sponsor integrations enter safely? | `python3 -m agent.adapters --all` |

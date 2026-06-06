@@ -12,12 +12,15 @@ from pathlib import Path
 from typing import Any
 
 from .scenarios import GENERATED_DIR, ROOT_DIR
+from .trial import TrialRequestError, parse_public_trial_yaml
 
 
+SPEND_REQUEST_SCHEMA_VERSION = "ai_spend_review_request.v0"
 SPEND_REVIEW_SCHEMA_VERSION = "ai_spend_review_packet.v0"
 FINANCE_RECEIPT_SCHEMA_VERSION = "finance_evidence_receipt.v0"
 PROCUREMENT_MEMO_SCHEMA_VERSION = "procurement_review_memo.v0"
 SPEND_SCENARIO_ID = "ai_spend_budget_overrun"
+DEFAULT_SPEND_REQUEST_PATH = ROOT_DIR / "examples" / "requests" / "ai_spend_budget_overrun.yml"
 
 SPEND_REVIEW_QUESTION = (
     "Our team spent the 2026 AI budget in Q1. Should we cap usage, switch model "
@@ -28,9 +31,12 @@ _FORBIDDEN_SPEND_CLAIM_PATTERNS = (
     r"approved\s+spend",
     r"spend\s+approved",
     r"guaranteed\s+savings",
+    r"guarantee[sd]?\s+roi",
     r"will\s+save\s+\$",
     r"saved\s+\$[\d,]+",
+    r"reduced\s+spend\s+by\s+\$",
     r"\d+%\s+savings?",
+    r"\d+%\s+cost\s+reduction",
     r"final\s+winner",
     r"best\s+provider",
     r"vendor\s+selected",
@@ -50,6 +56,10 @@ class SpendReviewRequest:
     spend_signal: str
 
 
+class SpendReviewRequestError(ValueError):
+    """Raised when a public AI spend request cannot be parsed."""
+
+
 DEFAULT_SPEND_REQUEST = SpendReviewRequest(
     scenario_id=SPEND_SCENARIO_ID,
     question=SPEND_REVIEW_QUESTION,
@@ -64,6 +74,59 @@ DEFAULT_SPEND_REQUEST = SpendReviewRequest(
     budget_period="2026_Q1",
     spend_signal="budget_exhausted_early",
 )
+
+
+def _as_mapping(value: Any, field_name: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise SpendReviewRequestError(f"{field_name} must be a mapping")
+    return value
+
+
+def _required_text(mapping: dict[str, Any], field_name: str) -> str:
+    value = mapping.get(field_name)
+    if not isinstance(value, str) or not value.strip():
+        raise SpendReviewRequestError(f"{field_name} must be a non-empty string")
+    return value.strip()
+
+
+def _required_text_tuple(mapping: dict[str, Any], field_name: str) -> tuple[str, ...]:
+    value = mapping.get(field_name)
+    if not isinstance(value, list) or not value:
+        raise SpendReviewRequestError(f"{field_name} must be a non-empty list")
+    values: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            raise SpendReviewRequestError(f"{field_name} must contain only non-empty strings")
+        values.append(item.strip())
+    return tuple(values)
+
+
+def spend_review_request_from_payload(payload: dict[str, Any]) -> SpendReviewRequest:
+    """Build a SpendReviewRequest from the public request fixture mapping."""
+    schema_version = payload.get("schema_version")
+    if schema_version != SPEND_REQUEST_SCHEMA_VERSION:
+        raise SpendReviewRequestError(
+            f"schema_version must be {SPEND_REQUEST_SCHEMA_VERSION}; got {schema_version!r}"
+        )
+    request = _as_mapping(payload.get("spend_request"), "spend_request")
+    return SpendReviewRequest(
+        scenario_id=_required_text(request, "scenario_id"),
+        question=_required_text(request, "question"),
+        environment=_required_text(request, "environment"),
+        requested_decision=_required_text(request, "requested_decision"),
+        data_classes=_required_text_tuple(request, "data_classes"),
+        budget_period=_required_text(request, "budget_period"),
+        spend_signal=_required_text(request, "spend_signal"),
+    )
+
+
+def load_spend_review_request(path: Path = DEFAULT_SPEND_REQUEST_PATH) -> SpendReviewRequest:
+    """Load a public AI spend review request from disk."""
+    try:
+        payload = parse_public_trial_yaml(path.read_text(encoding="utf-8"))
+    except TrialRequestError as exc:
+        raise SpendReviewRequestError(str(exc)) from exc
+    return spend_review_request_from_payload(payload)
 
 
 def _stable_digest(payload: dict[str, Any]) -> str:
@@ -281,6 +344,15 @@ def spend_packet_to_pretty_json(packet: dict[str, Any]) -> str:
     return json.dumps(packet, indent=2, sort_keys=True)
 
 
+def _display_request_path(path: Path | None) -> str:
+    request_path = path or DEFAULT_SPEND_REQUEST_PATH
+    absolute = request_path if request_path.is_absolute() else ROOT_DIR / request_path
+    try:
+        return str(absolute.resolve().relative_to(ROOT_DIR))
+    except ValueError:
+        return str(request_path)
+
+
 def render_spend_review_packet_markdown(packet: dict[str, Any]) -> str:
     lines = [
         "# AI Spend Review Packet",
@@ -372,19 +444,23 @@ def render_procurement_memo_markdown(memo: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def write_spend_review_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
+def write_spend_review_artifacts(
+    output_dir: Path = GENERATED_DIR,
+    request: SpendReviewRequest = DEFAULT_SPEND_REQUEST,
+) -> list[Path]:
     """Write spend review artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    packet = build_spend_review_packet()
+    packet = build_spend_review_packet(request)
     receipt = build_finance_evidence_receipt(packet)
     memo = build_procurement_review_memo(packet)
+    scenario_id = request.scenario_id
     artifacts = {
-        f"{SPEND_SCENARIO_ID}.spend_packet.json": spend_packet_to_pretty_json(packet) + "\n",
-        f"{SPEND_SCENARIO_ID}.spend_packet.md": render_spend_review_packet_markdown(packet),
-        f"{SPEND_SCENARIO_ID}.finance_receipt.json": spend_packet_to_pretty_json(receipt) + "\n",
-        f"{SPEND_SCENARIO_ID}.finance_receipt.md": render_finance_receipt_markdown(receipt),
-        f"{SPEND_SCENARIO_ID}.procurement_memo.json": spend_packet_to_pretty_json(memo) + "\n",
-        f"{SPEND_SCENARIO_ID}.procurement_memo.md": render_procurement_memo_markdown(memo),
+        f"{scenario_id}.spend_packet.json": spend_packet_to_pretty_json(packet) + "\n",
+        f"{scenario_id}.spend_packet.md": render_spend_review_packet_markdown(packet),
+        f"{scenario_id}.finance_receipt.json": spend_packet_to_pretty_json(receipt) + "\n",
+        f"{scenario_id}.finance_receipt.md": render_finance_receipt_markdown(receipt),
+        f"{scenario_id}.procurement_memo.json": spend_packet_to_pretty_json(memo) + "\n",
+        f"{scenario_id}.procurement_memo.md": render_procurement_memo_markdown(memo),
     }
     written: list[Path] = []
     for file_name, content in artifacts.items():
@@ -394,14 +470,20 @@ def write_spend_review_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]
     return written
 
 
-def build_spend_review_bundle() -> dict[str, Any]:
+def build_spend_review_bundle(
+    request: SpendReviewRequest = DEFAULT_SPEND_REQUEST,
+    *,
+    request_path: Path | None = None,
+) -> dict[str, Any]:
     """Build all spend lane outputs as one machine-readable bundle."""
-    packet = build_spend_review_packet()
+    packet = build_spend_review_packet(request)
     receipt = build_finance_evidence_receipt(packet)
     memo = build_procurement_review_memo(packet)
+    scenario_id = request.scenario_id
     return {
         "schema_version": "ai_spend_review_bundle.v0",
-        "scenario": SPEND_SCENARIO_ID,
+        "scenario": scenario_id,
+        "request_path": _display_request_path(request_path),
         "packet": packet,
         "finance_receipt": receipt,
         "procurement_memo": memo,
@@ -413,12 +495,12 @@ def build_spend_review_bundle() -> dict[str, Any]:
             "requires_human_review": True,
         },
         "artifacts": {
-            "packet_markdown": f"examples/generated/{SPEND_SCENARIO_ID}.spend_packet.md",
-            "packet_json": f"examples/generated/{SPEND_SCENARIO_ID}.spend_packet.json",
-            "finance_receipt_markdown": f"examples/generated/{SPEND_SCENARIO_ID}.finance_receipt.md",
-            "finance_receipt_json": f"examples/generated/{SPEND_SCENARIO_ID}.finance_receipt.json",
-            "procurement_memo_markdown": f"examples/generated/{SPEND_SCENARIO_ID}.procurement_memo.md",
-            "procurement_memo_json": f"examples/generated/{SPEND_SCENARIO_ID}.procurement_memo.json",
+            "packet_markdown": f"examples/generated/{scenario_id}.spend_packet.md",
+            "packet_json": f"examples/generated/{scenario_id}.spend_packet.json",
+            "finance_receipt_markdown": f"examples/generated/{scenario_id}.finance_receipt.md",
+            "finance_receipt_json": f"examples/generated/{scenario_id}.finance_receipt.json",
+            "procurement_memo_markdown": f"examples/generated/{scenario_id}.procurement_memo.md",
+            "procurement_memo_json": f"examples/generated/{scenario_id}.procurement_memo.json",
         },
     }
 
@@ -427,6 +509,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m agent.spend",
         description="Build the public AI spend review packet.",
+    )
+    parser.add_argument(
+        "request_path",
+        nargs="?",
+        type=Path,
+        default=DEFAULT_SPEND_REQUEST_PATH,
+        help="Public AI spend review request fixture.",
     )
     parser.add_argument("--json", action="store_true", help="Print the spend review bundle as JSON.")
     parser.add_argument("--write", action="store_true", help="Write spend review artifacts.")
@@ -441,10 +530,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    bundle = build_spend_review_bundle()
+    request = load_spend_review_request(args.request_path)
+    bundle = build_spend_review_bundle(request, request_path=args.request_path)
 
     if args.write:
-        for path in write_spend_review_artifacts():
+        for path in write_spend_review_artifacts(request=request):
             print(path.relative_to(ROOT_DIR))
         return 0
 

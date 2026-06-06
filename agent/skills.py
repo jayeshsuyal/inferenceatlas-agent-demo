@@ -316,10 +316,11 @@ SKILLS: tuple[SkillSpec, ...] = (
     SkillSpec(
         id="ai_spend_review_packet",
         name="AI Spend Review Packet",
-        what_it_proves="A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings.",
-        command="python3 -m agent.spend --no-write",
+        what_it_proves="A public spend request becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings.",
+        command="python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write",
         artifacts=(
             "agent/spend.py",
+            "examples/requests/ai_spend_budget_overrun.yml",
             "examples/generated/ai_spend_budget_overrun.spend_packet.json",
             "examples/generated/ai_spend_budget_overrun.finance_receipt.json",
             "examples/generated/ai_spend_budget_overrun.procurement_memo.json",

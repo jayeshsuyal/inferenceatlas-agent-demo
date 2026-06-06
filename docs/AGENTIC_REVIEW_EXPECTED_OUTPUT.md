@@ -68,7 +68,7 @@ python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml -
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json
 python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json
-python3 -m agent.spend --no-write --json
+python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write --json
 python3 -m agent.verify_artifacts --json
 ```
 

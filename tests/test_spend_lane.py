@@ -7,6 +7,8 @@ from pathlib import Path
 
 from agent.judge import build_judge_report, report_has_failures
 from agent.spend import (
+    DEFAULT_SPEND_REQUEST,
+    DEFAULT_SPEND_REQUEST_PATH,
     FINANCE_RECEIPT_SCHEMA_VERSION,
     PROCUREMENT_MEMO_SCHEMA_VERSION,
     SPEND_REVIEW_SCHEMA_VERSION,
@@ -15,6 +17,7 @@ from agent.spend import (
     build_procurement_review_memo,
     build_spend_review_bundle,
     build_spend_review_packet,
+    load_spend_review_request,
     render_finance_receipt_markdown,
     render_procurement_memo_markdown,
     render_spend_review_packet_markdown,
@@ -27,6 +30,43 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class SpendLaneTests(unittest.TestCase):
+    def test_public_spend_request_fixture_loads_to_default_request(self) -> None:
+        request = load_spend_review_request(DEFAULT_SPEND_REQUEST_PATH)
+
+        self.assertEqual(request, DEFAULT_SPEND_REQUEST)
+        self.assertEqual(request.scenario_id, SPEND_SCENARIO_ID)
+        self.assertEqual(
+            set(request.data_classes),
+            {
+                "vendor_invoice_evidence",
+                "per_team_usage_metrics",
+                "contract_terms",
+                "budget_owner_attestation",
+            },
+        )
+
+    def test_request_fixture_generates_canonical_spend_artifacts(self) -> None:
+        request = load_spend_review_request(DEFAULT_SPEND_REQUEST_PATH)
+        packet = build_spend_review_packet(request)
+        finance = build_finance_evidence_receipt(packet)
+        procurement = build_procurement_review_memo(packet)
+
+        self.assertEqual(
+            packet,
+            json.loads((ROOT / "examples/generated/ai_spend_budget_overrun.spend_packet.json").read_text()),
+            "Fixture must produce the canonical spend packet, not a divergent artifact.",
+        )
+        self.assertEqual(
+            finance,
+            json.loads((ROOT / "examples/generated/ai_spend_budget_overrun.finance_receipt.json").read_text()),
+            "Fixture must produce the canonical finance receipt, not a divergent artifact.",
+        )
+        self.assertEqual(
+            procurement,
+            json.loads((ROOT / "examples/generated/ai_spend_budget_overrun.procurement_memo.json").read_text()),
+            "Fixture must produce the canonical procurement memo, not a divergent artifact.",
+        )
+
     def test_spend_packet_is_finance_procurement_review_not_optimizer(self) -> None:
         packet = build_spend_review_packet()
 
@@ -61,6 +101,7 @@ class SpendLaneTests(unittest.TestCase):
         finance = build_finance_evidence_receipt(packet)
         procurement = build_procurement_review_memo(packet)
         surfaces = [
+            DEFAULT_SPEND_REQUEST_PATH.read_text(encoding="utf-8"),
             json.dumps(packet, sort_keys=True),
             json.dumps(finance, sort_keys=True),
             json.dumps(procurement, sort_keys=True),
@@ -75,6 +116,9 @@ class SpendLaneTests(unittest.TestCase):
         self.assertNotIn("best provider", combined.lower())
         self.assertNotIn("final winner", combined.lower())
         self.assertTrue(spend_review_has_forbidden_claims("IA will save $500,000"))
+        self.assertTrue(spend_review_has_forbidden_claims("IA reduced spend by $500,000"))
+        self.assertTrue(spend_review_has_forbidden_claims("This guarantees ROI."))
+        self.assertTrue(spend_review_has_forbidden_claims("This provides 40% cost reduction."))
         self.assertTrue(spend_review_has_forbidden_claims("The best provider is final winner."))
 
     def test_spend_artifacts_are_written(self) -> None:
@@ -108,9 +152,34 @@ class SpendLaneTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         payload = json.loads(result.stdout)
         self.assertEqual(payload["scenario"], SPEND_SCENARIO_ID)
+        self.assertEqual(payload["request_path"], "examples/requests/ai_spend_budget_overrun.yml")
         self.assertFalse(payload["safety"]["approves_spend"])
         self.assertFalse(payload["safety"]["guarantees_savings"])
         self.assertFalse(payload["safety"]["selects_provider"])
+
+    def test_spend_cli_accepts_public_request_fixture(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "agent.spend",
+                "examples/requests/ai_spend_budget_overrun.yml",
+                "--no-write",
+                "--json",
+            ],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["scenario"], SPEND_SCENARIO_ID)
+        self.assertEqual(payload["packet"]["scenario"], SPEND_SCENARIO_ID)
+        self.assertEqual(payload["request_path"], "examples/requests/ai_spend_budget_overrun.yml")
+        self.assertFalse(payload["safety"]["approves_spend"])
 
     def test_judge_report_includes_spend_lane_safely(self) -> None:
         report = build_judge_report(write_artifacts=False)

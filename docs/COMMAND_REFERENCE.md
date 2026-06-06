@@ -43,7 +43,7 @@ python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml
 python3 -m agent.trust
 python3 -m agent.review_room
 python3 -m agent.proof_health
-python3 -m agent.spend --no-write
+python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
@@ -74,7 +74,7 @@ ia-sponsor-proof-trace examples/requests/support_triage_trial.yml
 ia-trust
 ia-review-room
 ia-proof-health
-ia-spend
+ia-spend examples/requests/ai_spend_budget_overrun.yml
 ia-trial examples/requests/support_triage_trial.yml
 ia-trial-outcome-memo examples/requests/support_triage_trial.yml
 ia-trial-evidence-replay examples/requests/support_triage_trial.yml

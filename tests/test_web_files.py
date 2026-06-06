@@ -168,8 +168,13 @@ class WebFilesTests(unittest.TestCase):
 
         self.assertTrue(data["ok"])
         self.assertEqual(data["title"], "Design partner walkthrough")
-        self.assertEqual(len(data["steps"]), 5)
+        self.assertEqual(len(data["steps"]), 6)
+        self.assertEqual(
+            [step["id"] for step in data["steps"]],
+            ["request", "packet", "sponsor_proof_trace", "sponsor_replay", "review_cycle", "pilot_memo"],
+        )
         self.assertEqual(data["steps"][-1]["id"], "pilot_memo")
+        self.assertEqual(data["steps"][2]["title"], "Collect sponsor proof")
         self.assertIn("support_triage_trial.packet.json", data["packet_reference"]["packet_artifact"])
         self.assertTrue(data["packet_reference"]["content_hash"].startswith("sha256:"))
         self.assertEqual(data["decision"]["verdict_class"], "scoped_validation_only")
@@ -208,7 +213,23 @@ class WebFilesTests(unittest.TestCase):
         self.assertEqual(len(data["sponsor_roles"]), 4)
         self.assertEqual({item["verb"] for item in data["sponsor_roles"]}, {"finds", "simulates", "narrates", "traces"})
         self.assertTrue(all(not item["can_change_decision"] for item in data["sponsor_roles"]))
-        self.assertGreaterEqual(len(data["output_files"]), 6)
+        trace = data["sponsor_proof_trace"]
+        self.assertEqual(trace["sponsor_order"], ["tavily", "composio", "openclaw", "nebius"])
+        self.assertEqual(trace["step_count"], 4)
+        self.assertTrue(trace["decision_lock_unchanged"])
+        self.assertTrue(trace["access_evidence_present"])
+        self.assertTrue(trace["spend_evidence_present"])
+        self.assertTrue(trace["all_fallback_used"])
+        self.assertTrue(trace["all_non_executing"])
+        self.assertTrue(trace["all_non_approving"])
+        self.assertTrue(trace["all_non_granting"])
+        self.assertTrue(trace["all_non_mutating"])
+        self.assertFalse(trace["approves_access"])
+        self.assertFalse(trace["approves_spend"])
+        self.assertFalse(trace["selects_provider"])
+        self.assertFalse(trace["guarantees_savings"])
+        self.assertIn("support_triage_trial.sponsor_proof_trace.md", trace["artifact"])
+        self.assertGreaterEqual(len(data["output_files"]), 8)
         self.assertTrue(any(item["file_id"] for item in data["output_files"]))
 
     def test_design_partner_walkthrough_ui_is_reachable(self) -> None:
@@ -218,11 +239,17 @@ class WebFilesTests(unittest.TestCase):
 
         self.assertIn('data-tab="walkthrough"', html)
         self.assertIn('id="walkthrough-view"', html)
+        self.assertIn('id="btn-collect-sponsor-proof"', html)
+        self.assertIn("Collect sponsor proof", html)
         self.assertIn('id="btn-copy-walkthrough-brief"', html)
         self.assertIn('id="walkthrough-subscriber-card"', html)
         self.assertIn("/api/walkthrough", js)
         self.assertIn("renderWalkthrough", js)
         self.assertIn("renderSubscriberCard", js)
+        self.assertIn("renderSponsorCard", js)
+        self.assertIn("selectWalkthroughStepById", js)
+        self.assertIn("collectSponsorProof", js)
+        self.assertIn("Sponsor Proof Trace selected. Decision lock unchanged.", js)
         self.assertIn("Downstream consumers", js)
         self.assertIn("Systems trust the packet", js)
         self.assertIn("copyWalkthroughBrief", js)
@@ -233,6 +260,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn(".walkthrough-strip", css)
         self.assertIn(".subscriber-grid", css)
         self.assertIn(".subscriber-row", css)
+        self.assertIn(".trace-metrics", css)
+        self.assertIn(".trace-step-row", css)
 
     def test_uploaded_evidence_rehearsal_accepts_sanitized_bundle(self) -> None:
         from web.app import CustomEvidenceRehearsalRequest, run_custom_evidence_rehearsal

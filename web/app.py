@@ -32,6 +32,7 @@ from agent.subscribers import (
     PACKET_AUTHORITY_SHORT_SENTENCE,
     build_subscriber_examples,
 )
+from agent.sponsor_proof_trace import build_sponsor_proof_trace
 from agent.verification import build_verification_artifact_for_scenario
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
@@ -824,6 +825,7 @@ def design_partner_walkthrough() -> dict:
             DEFAULT_TRIAL_REQUEST,
             DEFAULT_REHEARSAL_EVIDENCE_DIR,
         )
+        sponsor_trace = build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST)
         pilot_memo = build_pilot_memo(DEFAULT_TRIAL_REQUEST)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
@@ -831,6 +833,44 @@ def design_partner_walkthrough() -> dict:
     packet_reference = pilot_memo["packet_reference"]
     subscriber_rows = _walkthrough_subscriber_rows(packet_reference["packet_id"])
     provider_rows = _rehearsal_provider_rows(replay)
+    sponsor_trace_steps = sponsor_trace["sponsor_steps"]
+    sponsor_trace_summary = {
+        "trace_id": sponsor_trace["trace_id"],
+        "packet_id": sponsor_trace["packet_id"],
+        "revision_id": sponsor_trace["revision_id"],
+        "lane": sponsor_trace["lane"],
+        "step_count": len(sponsor_trace_steps),
+        "sponsor_order": [step["sponsor"] for step in sponsor_trace_steps],
+        "decision_lock_unchanged": sponsor_trace["decision_lock_before"] == sponsor_trace["decision_lock_after"],
+        "access_evidence_present": sponsor_trace["access_review_evidence"] is not None,
+        "spend_evidence_present": sponsor_trace["spend_review_evidence"] is not None,
+        "all_fallback_used": all(step["fallback_used"] for step in sponsor_trace_steps),
+        "all_non_executing": all(not step["would_execute"] for step in sponsor_trace_steps),
+        "all_non_approving": all(not step["can_approve_access"] for step in sponsor_trace_steps),
+        "all_non_granting": all(not step["can_grant_permissions"] for step in sponsor_trace_steps),
+        "all_non_mutating": all(not step["can_mutate_external_state"] for step in sponsor_trace_steps),
+        "approves_access": sponsor_trace["safety_boundary"]["approves_access"],
+        "approves_spend": sponsor_trace["safety_boundary"]["approves_spend"],
+        "selects_provider": sponsor_trace["safety_boundary"]["selects_provider"],
+        "guarantees_savings": sponsor_trace["safety_boundary"]["guarantees_savings"],
+        "requires_human_review": sponsor_trace["safety_boundary"]["requires_human_review"],
+        "artifact": "examples/generated/support_triage_trial.sponsor_proof_trace.md",
+        "json_artifact": "examples/generated/support_triage_trial.sponsor_proof_trace.json",
+        "steps": [
+            {
+                "sponsor": step["sponsor"],
+                "verb": step["step_verb"],
+                "summary": step["output_summary"],
+                "used_live_key": step["used_live_key"],
+                "fallback_used": step["fallback_used"],
+                "would_execute": step["would_execute"],
+                "can_approve_access": step["can_approve_access"],
+                "can_grant_permissions": step["can_grant_permissions"],
+                "can_mutate_external_state": step["can_mutate_external_state"],
+            }
+            for step in sponsor_trace_steps
+        ],
+    }
     sponsor_roles = [
         {
             "provider": item["provider"],
@@ -846,6 +886,12 @@ def design_partner_walkthrough() -> dict:
         _generated_file_ref("examples/generated/support_triage_trial.packet.json", "Trial packet JSON"),
         _generated_file_ref("examples/generated/support_triage_trial.outcome_memo.md", "Outcome memo Markdown"),
         _generated_file_ref("examples/generated/support_triage_trial.evidence_replay.md", "Sponsor replay Markdown"),
+        _generated_file_ref("examples/generated/support_triage_trial.sponsor_proof_trace.md", "Sponsor Proof Trace Markdown"),
+        _generated_file_ref(
+            "examples/generated/support_triage_trial.sponsor_proof_trace.json",
+            "Sponsor Proof Trace JSON",
+            mime="application/json",
+        ),
         _generated_file_ref("examples/generated/support_triage_trial.pilot_memo.md", "PilotMemo Markdown"),
         _generated_file_ref(
             "examples/generated/support_triage_trial.pilot_memo.json",
@@ -858,7 +904,7 @@ def design_partner_walkthrough() -> dict:
     return {
         "ok": True,
         "title": "Design partner walkthrough",
-        "subtitle": "One trial request becomes one packet, one sponsor replay, one review cycle, and one buyer-carried PilotMemo.",
+        "subtitle": "One trial request becomes one packet, one SponsorProofTrace, one review cycle, and one buyer-carried PilotMemo.",
         "mode": "offline_deterministic",
         "request_path": trial_report["request_path"],
         "safety_anchor": PILOT_MEMO_SAFETY_ANCHOR,
@@ -901,10 +947,19 @@ def design_partner_walkthrough() -> dict:
                 "boundary": "Packet state is hash-pinned; production access stays false.",
             },
             {
+                "id": "sponsor_proof_trace",
+                "label": "Sponsor Proof",
+                "title": "Collect sponsor proof",
+                "summary": "Tavily -> Composio -> OpenClaw -> Nebius produce one locked SponsorProofTrace across access and spend evidence.",
+                "primary_fact": f"{sponsor_trace_summary['step_count']} steps, decision lock unchanged",
+                "artifact": sponsor_trace_summary["artifact"],
+                "boundary": "Sponsor proof is observational; it cannot approve, grant, write, spend, select providers, or mutate production.",
+            },
+            {
                 "id": "sponsor_replay",
                 "label": "Sponsor Replay",
-                "title": "Proof contributors attach evidence",
-                "summary": "Tavily finds, Composio simulates, Nebius narrates, OpenClaw traces.",
+                "title": "Attach sanitized evidence",
+                "summary": "Sanitized Tavily, Composio, Nebius, and OpenClaw outputs attach to the same locked decision.",
                 "primary_fact": f"{replay['summary']['provider_count']} providers, decision locked",
                 "artifact": "examples/generated/support_triage_trial.evidence_replay.md",
                 "boundary": "Sponsors cannot approve, grant, execute, mutate, or reduce proof debt automatically.",
@@ -930,6 +985,7 @@ def design_partner_walkthrough() -> dict:
         ],
         "subscriber_rows": subscriber_rows,
         "sponsor_roles": sponsor_roles,
+        "sponsor_proof_trace": sponsor_trace_summary,
         "provider_rows": provider_rows,
         "reviewer_routing": pilot_memo["reviewer_routing"],
         "blocked_claims": pilot_memo["blocked_claims"],

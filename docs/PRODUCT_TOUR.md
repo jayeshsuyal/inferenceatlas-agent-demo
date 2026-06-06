@@ -23,6 +23,13 @@ InferenceAtlas is the pre-permission review layer. Before an agent gets access, 
 
 The product moment is not an autonomous yes. The product moment is a faster, clearer, safer human review.
 
+## Lane Matrix
+
+| Lane | Scenario fixtures | Generated artifacts |
+| --- | --- | --- |
+| Agent access review | `support_triage_agent` · `read_only_analytics_agent` · `admin_code_fix_bot` | DecisionPacket, access brief, Trust Receipt, Proof Health, Sponsor Proof Trace |
+| AI spend review | `examples/requests/ai_spend_budget_overrun.yml` | spend packet, Finance Evidence Receipt, Procurement Review Memo, Sponsor Proof Trace |
+
 ## Five-Minute Product Trial
 
 Run this path from a clean checkout:
@@ -34,7 +41,7 @@ python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.outcome_memo
 python3 -m agent.proof_health
-python3 -m agent.spend --no-write
+python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write
 python3 -m agent.sponsor_readiness
 python3 -m agent.trial examples/requests/support_triage_trial.yml
 python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
@@ -55,7 +62,7 @@ ia-packet-diff
 ia-receipts
 ia-outcome-memo
 ia-proof-health
-ia-spend
+ia-spend examples/requests/ai_spend_budget_overrun.yml
 ia-sponsor-readiness
 ia-subscribers --json
 ia-downstream-gate --all
@@ -95,7 +102,8 @@ In five minutes, a reviewer should see:
 | `examples/generated/packet_diff.md` | The packet engine relaxes, routes, and blocks across materially different risk levels. |
 | `examples/generated/support_triage_agent.evidence_receipts.md` | Tool scope, missing proof, reviewer routes, and cost/procurement controls attach as receipts without approving access. |
 | `examples/generated/support_triage_agent.outcome_memo.md` | The packet becomes a human decision: what can move, what stays blocked, who owns proof debt, and when to refresh. |
-| `python3 -m agent.spend --no-write` | A budget-overrun question becomes a Finance/Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. |
+| `examples/requests/ai_spend_budget_overrun.yml` | A public role-level spend request fixture for Finance, Procurement, and AI Platform review. |
+| `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write` | A budget-overrun question becomes a Finance/Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. |
 | `python3 -m agent.verify_artifacts` | Regenerates deterministic artifacts into a temp directory and fails if outputs are stale, static assets are invalid, or extra generated files are checked in. |
 | `python3 -m agent.sponsor_readiness` | Shows which sponsor tools are contract-ready for live enrichment and where their output appears without approving access. |
 | `python3 -m agent.trial examples/requests/support_triage_trial.yml` | A role-level request becomes a trial report, DecisionPacket, and Agent Access Decision Brief. |
@@ -121,6 +129,7 @@ This public repo is intentionally a redacted product harness. It includes fixed 
 | Packet Outcome Memo | The selected packet becomes a CTO/security/design-partner decision surface without granting access. |
 | Artifact Integrity Gate | Deterministic proof artifacts must remain byte-equal to the current generator output; static review assets must be present; generated inventory must not contain extras. |
 | Public trial request files | The trial runner derives a report, packet, access brief, outcome memo, sponsor evidence replay, and live evidence rehearsal from the request file. |
+| Public AI spend request file | The spend runner derives a Finance/Procurement review packet, evidence receipt, and procurement memo while preserving non-approval safety defaults. |
 | Public lifecycle checkpoints | The Proof Health report derives packet drift status, stale assumptions, expired reviewer gates, and human refresh action from the existing packet and brief. |
 | Sponsor readiness contracts | The readiness report derives provider value, visible outputs, CTO next steps, and safety boundaries from the adapter contracts. |
 | Conservative safety defaults | The outputs preserve blocked approvals, blocked grants, blocked writes, dry-run sponsor posture, and human approval requirement. |

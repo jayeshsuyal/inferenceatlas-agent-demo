@@ -59,7 +59,7 @@ python3 -m scripts.generate_agent_skills_doc
 
 | Skill | Tier | What it proves | Command | Primary artifacts | Safety boundary |
 | --- | --- | --- | --- | --- | --- |
-| AI Spend Review Packet | `stable` | A budget-overrun question becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. | `python3 -m agent.spend --no-write` | `agent/spend.py`<br>`examples/generated/ai_spend_budget_overrun.spend_packet.json`<br>`examples/generated/ai_spend_budget_overrun.finance_receipt.json`<br>`examples/generated/ai_spend_budget_overrun.procurement_memo.json` | spend review packet only; never approves spend |
+| AI Spend Review Packet | `stable` | A public spend request becomes a Finance and Procurement review packet without approving spend, selecting a provider, or guaranteeing savings. | `python3 -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write` | `agent/spend.py`<br>`examples/requests/ai_spend_budget_overrun.yml`<br>`examples/generated/ai_spend_budget_overrun.spend_packet.json`<br>`examples/generated/ai_spend_budget_overrun.finance_receipt.json`<br>`examples/generated/ai_spend_budget_overrun.procurement_memo.json` | spend review packet only; never approves spend |
 
 ### Sponsor Readiness
 

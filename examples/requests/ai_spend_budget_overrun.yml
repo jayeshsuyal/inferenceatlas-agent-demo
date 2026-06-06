@@ -1,0 +1,73 @@
+schema_version: ai_spend_review_request.v0
+status: public_sample_no_secrets
+purpose: >
+  Example Finance and Procurement request for a team that exhausted its AI
+  budget early and needs evidence before caps, model-class shifts, vendor
+  renegotiation, or provider changes move.
+
+redaction_boundary:
+  do_not_include:
+    - production credentials
+    - live vendor tokens
+    - customer data
+    - private prompts
+    - private v1 source code
+    - account-specific invoices
+    - account-specific contract terms
+  public_repo_posture: role_level_descriptions_only
+
+spend_request:
+  scenario_id: ai_spend_budget_overrun
+  question: >
+    Our team spent the 2026 AI budget in Q1. Should we cap usage, switch model
+    classes, or renegotiate vendor terms?
+  environment: prod
+  requested_decision: spend_review
+  budget_period: 2026_Q1
+  spend_signal: budget_exhausted_early
+  data_classes:
+    - vendor_invoice_evidence
+    - per_team_usage_metrics
+    - contract_terms
+    - budget_owner_attestation
+
+review_options:
+  under_review:
+    - usage cap
+    - model class shift
+    - vendor contract renegotiation
+  blocked_without_human_review:
+    - live spend expansion
+    - provider selection
+    - savings claim
+    - external procurement write
+
+reviewer_routing:
+  required_reviewers:
+    - role: Finance
+      review_area: budget_baseline_invoice_evidence_owner_approval
+    - role: Procurement
+      review_area: contract_terms_vendor_risk_renegotiation_path
+    - role: AI Platform / Engineering
+      review_area: usage_metrics_workload_fit_quality_latency_constraints
+
+safety_defaults:
+  live_spend_approved: false
+  usage_cap_approved: false
+  vendor_switch_approved: false
+  renegotiation_approved: false
+  savings_guaranteed: false
+  provider_winner_selected: false
+  external_writes_enabled: false
+  human_approval_required: true
+
+expected_outputs:
+  artifacts:
+    - AI Spend Review Packet
+    - Finance Evidence Receipt
+    - Procurement Review Memo
+  success_criteria:
+    - finance_and_procurement_review_is_required
+    - requested_data_classes_are_visible
+    - spend_changes_remain_non_approving
+    - provider_and_savings_claims_stay_blocked

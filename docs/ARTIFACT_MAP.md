@@ -17,6 +17,7 @@ Private engine, public proof.
 | Can sponsor evidence attach without changing the decision? | `examples/generated/support_triage_trial.evidence_replay.md` |
 | What is the static visual room? | `examples/generated/review_room.html` |
 | What is the lifecycle/drift signal? | `examples/generated/support_triage_agent.proof_health.md` |
+| What request creates the spend packet? | `examples/requests/ai_spend_budget_overrun.yml` |
 | What should Finance and Procurement review? | `examples/generated/ai_spend_budget_overrun.spend_packet.md` |
 | What is the guided walkthrough? | `docs/REVIEW_ROOM_WALKTHROUGH.md` |
 | What is the design-partner trial output? | `examples/generated/support_triage_trial_report.md` |

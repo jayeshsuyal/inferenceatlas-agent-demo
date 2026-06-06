@@ -30,6 +30,12 @@ Agents can request access faster than security, finance, procurement, and produc
 
 InferenceAtlas creates the pre-permission packet humans and downstream systems need before tools, data, spend, or production access moves.
 
+## Why Now
+
+- [AI spend](examples/generated/ai_spend_budget_overrun.spend_packet.md) is becoming a governance problem: teams need proof before model usage, vendor spend, or savings claims move.
+- [Agent tool access](docs/LIVE_INTEGRATION_CONTRACT.md) is expanding through connectors, sandboxes, and managed-agent systems, which increases blast radius.
+- [Supply-chain incidents](docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md) show why install, publish, CI, and credential-bearing scope need pre-permission review.
+
 ## Who Uses It
 
 - AI platform and CTO teams deciding whether an agent can enter scoped validation.

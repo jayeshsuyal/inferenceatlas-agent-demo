@@ -26,6 +26,11 @@ from agent.mind import init_mind, load_mind, save_mind, step
 from agent.mind.project import MIND_RUNTIME_DIR, project_mind
 from agent.mind.store import load_all_minds
 from agent.packet import build_support_triage_decision_packet
+from agent.packet_detail import (
+    build_ia_packet_detail,
+    ia_packet_detail_to_pretty_json,
+    render_ia_packet_detail_markdown,
+)
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS, build_scenario_packet
@@ -1070,6 +1075,43 @@ def packet_workbench_generate(body: WorkbenchGenerateRequest) -> dict:
     }
 
 
+@app.get("/api/ia-packet")
+def ia_packet_detail(fixture: str = Query(default="mcp_tool_blast_radius")) -> dict:
+    """Return one read-only IA Packet detail surface from a registered public fixture."""
+    try:
+        detail = build_ia_packet_detail(fixture)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    fixture_id = detail["fixture"]["fixture_id"]
+    subfolder = f"ia-packets/{fixture_id}"
+    md = save_output_registered(
+        scope="review",
+        subfolder=subfolder,
+        filename=f"{fixture_id}.ia_packet.md",
+        content=render_ia_packet_detail_markdown(detail),
+        label="IA Packet Markdown",
+        use_timestamp=False,
+    )
+    js = save_output_registered(
+        scope="review",
+        subfolder=subfolder,
+        filename=f"{fixture_id}.ia_packet.json",
+        content=ia_packet_detail_to_pretty_json(detail) + "\n",
+        label="IA Packet JSON",
+        use_timestamp=False,
+    )
+    return {
+        **detail,
+        "output_files": [
+            _file_ref(md["file_id"], md["label"]),
+            _file_ref(js["file_id"], js["label"]),
+        ],
+    }
+
+
 @app.get("/api/examples")
 def examples() -> List[dict]:
     return [
@@ -1839,6 +1881,11 @@ def walkthrough_index() -> FileResponse:
 
 @app.get("/workbench")
 def workbench_index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/packet")
+def packet_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 

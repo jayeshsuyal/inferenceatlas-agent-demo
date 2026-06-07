@@ -11,16 +11,16 @@ bash scripts/review_60.sh
 The launcher runs the no-write judge smoke, starts the local web app, and opens:
 
 ```text
-http://127.0.0.1:8080/workbench?fixture=mcp_tool_blast_radius&autorun=1
+http://127.0.0.1:8080/packet?fixture=mcp_tool_blast_radius&autorun=1
 ```
 
 What the reviewer sees:
 
 1. A public MCP/tool blast-radius fixture.
-2. A generated DecisionPacket with verdict, blocked claims, and missing proof.
+2. A generated IA Packet with verdict, blocked claims, and missing proof.
 3. A Sponsor Proof Trace in locked order: Tavily -> Composio -> OpenClaw -> Nebius.
-4. A local verification hash and reviewer routing.
-5. Export actions for the review brief and verification link.
+4. Downstream consumers across gateways, CI, spend controls, review queues, and observability reading the same packet reference.
+5. Export actions for the IA Packet brief, Markdown, JSON, or Workbench handoff.
 
 Safety contract:
 

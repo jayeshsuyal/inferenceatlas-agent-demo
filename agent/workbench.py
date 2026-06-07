@@ -238,6 +238,35 @@ def _copy_brief(
     )
 
 
+TRIAL_NEXT_HUMAN_ACTION_BY_FIXTURE = {
+    "mcp_tool_blast_radius": (
+        "Route connector allowlist, repository boundary, document policy, browser sandbox, "
+        "and tool-owner approval before any live invocation."
+    ),
+    "miasma_pre_permission_packet": (
+        "Route package provenance, sandbox proof, CI secret-boundary evidence, release-owner approval, "
+        "and credential quarantine proof before any install, publish, workflow, or credential scope moves."
+    ),
+}
+
+
+def _trial_next_human_action(
+    *,
+    fixture: WorkbenchFixture,
+    pilot_memo: dict[str, Any],
+    report: dict[str, Any],
+) -> str:
+    if fixture.fixture_id in TRIAL_NEXT_HUMAN_ACTION_BY_FIXTURE:
+        return TRIAL_NEXT_HUMAN_ACTION_BY_FIXTURE[fixture.fixture_id]
+    action = pilot_memo.get("next_human_action")
+    if isinstance(action, str) and action:
+        return action
+    first_proof = (report.get("proof_debt", {}).get("request_missing_proof") or [{}])[0]
+    item = first_proof.get("item", "scope proof")
+    owner = first_proof.get("owner", "named owner")
+    return f"Route {item} to {owner} before scoped validation moves."
+
+
 def _base_result(
     *,
     fixture: WorkbenchFixture,
@@ -372,6 +401,11 @@ def _trial_result(fixture: WorkbenchFixture) -> dict[str, Any]:
     derived_reviewers = [
         f"{item['owner']}: {item['decision_needed']}" for item in pilot_memo["reviewer_routing"]
     ]
+    next_human_action = _trial_next_human_action(
+        fixture=fixture,
+        pilot_memo=pilot_memo,
+        report=report,
+    )
     result = _base_result(
         fixture=fixture,
         title=f"{fixture.label} packet",
@@ -382,7 +416,7 @@ def _trial_result(fixture: WorkbenchFixture) -> dict[str, Any]:
         blocked_claims=_unique_strings(request_blocked_claims + list(pilot_memo["blocked_claims"])),
         missing_proof=_unique_strings(request_missing_proof + list(pilot_memo["missing_proof"])),
         reviewer_routing=_unique_strings(request_reviewers + derived_reviewers),
-        next_human_action=pilot_memo["next_human_action"],
+        next_human_action=next_human_action,
         requested_systems=report["packet_summary"]["requested_systems"],
         source_artifacts=[fixture.path],
         sponsor_trace=sponsor_trace,
@@ -392,7 +426,9 @@ def _trial_result(fixture: WorkbenchFixture) -> dict[str, Any]:
             "pilot_memo_id": pilot_memo["memo_id"],
         },
     )
-    result["copy_review_brief"] = render_copy_review_brief(pilot_memo)
+    result["copy_review_brief"] = render_copy_review_brief(
+        {**pilot_memo, "next_human_action": next_human_action}
+    )
     return result
 
 

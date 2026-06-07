@@ -30,6 +30,7 @@
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
           <button type="button" class="tab active" data-tab="start">Chat</button>
+          <button type="button" class="tab" data-tab="packet">IA Packet</button>
           <button type="button" class="tab" data-tab="workbench">Workbench</button>
           <button type="button" class="tab" data-tab="walkthrough">Walkthrough</button>
           <button type="button" class="tab" data-tab="review">Access review</button>
@@ -51,6 +52,26 @@
           <h3 class="section-label">Examples</h3>
           <ul class="examples" id="examples-list"></ul>
           <p class="catalog" id="catalog-info"></p>
+        </section>
+
+        <section class="tab-panel" id="panel-packet" hidden>
+          <div class="how-to compact">
+            <h2>IA Packet</h2>
+            <p class="sidebar-hint">One packet, one verdict, one proof trail downstream systems can read before action.</p>
+          </div>
+          <button type="button" class="btn-primary btn-block" id="btn-load-packet">
+            Load IA Packet
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-copy-packet-brief" disabled>
+            Copy IA Packet brief
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-export-packet" disabled>
+            Export IA Packet
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-open-packet-workbench">
+            Open Workbench
+          </button>
+          <p class="status-toast" id="packet-toast" role="status" aria-live="polite"></p>
         </section>
 
         <section class="tab-panel" id="panel-workbench" hidden>
@@ -304,6 +325,41 @@
           </section>
         </div>
 
+        <div id="packet-view" class="walkthrough-workspace packet-workspace" hidden>
+          <header class="walkthrough-header workbench-header">
+            <div>
+              <span class="eyebrow">IA Packet</span>
+              <p class="walkthrough-proof">Private engine, public proof.</p>
+              <h2 id="packet-title">Load an IA Packet</h2>
+              <p id="packet-subtitle" class="walkthrough-subtitle">The packet is the product object downstream systems trust before action.</p>
+            </div>
+            <div class="walkthrough-lock" aria-label="IA Packet safety state">
+              <span>Approves</span>
+              <strong>false</strong>
+              <span>Writes</span>
+              <strong>false</strong>
+              <span>v1 call</span>
+              <strong>false</strong>
+            </div>
+          </header>
+
+          <section class="walkthrough-grid packet-detail-grid">
+            <article class="walkthrough-panel span-2" id="packet-summary-card">
+              <span class="eyebrow">Canonical object</span>
+              <h3>IA Packet</h3>
+              <p class="walkthrough-summary">An IA Packet is the proof object humans and downstream systems review before agent movement.</p>
+              <p class="safety-anchor">IA prepares proof. Humans approve.</p>
+            </article>
+            <article class="walkthrough-panel" id="packet-decision-card"></article>
+            <article class="walkthrough-panel" id="packet-verification-card"></article>
+            <article class="walkthrough-panel span-2" id="packet-proof-card"></article>
+            <article class="walkthrough-panel" id="packet-sponsor-card"></article>
+            <article class="walkthrough-panel span-2" id="packet-downstream-card"></article>
+            <article class="walkthrough-panel" id="packet-reviewer-card"></article>
+            <article class="walkthrough-panel" id="packet-export-card"></article>
+          </section>
+        </div>
+
         <div id="walkthrough-view" class="walkthrough-workspace" hidden>
           <header class="walkthrough-header">
             <div>
@@ -337,6 +393,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=23"></script>
+    <script src="/static/app.js?v=24"></script>
   </body>
 </html>

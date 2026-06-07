@@ -1,0 +1,98 @@
+import json
+import unittest
+from pathlib import Path
+
+from agent.packet_detail import (
+    IA_PACKET_SAFETY_ANCHOR,
+    build_ia_packet_detail,
+    render_ia_packet_detail_markdown,
+)
+from agent.workbench import build_workbench_registry
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+class IAPacketDetailTests(unittest.TestCase):
+    def test_ia_packet_detail_is_canonical_safe_projection_for_every_fixture(self) -> None:
+        registry = build_workbench_registry()
+
+        for fixture in registry["fixtures"]:
+            detail = build_ia_packet_detail(fixture["fixture_id"])
+            decision = detail["decision"]
+            safety = detail["safety_boundary"]
+
+            self.assertEqual(detail["schema_version"], "ia_packet_detail.v0")
+            self.assertEqual(detail["product_object"], "IA Packet")
+            self.assertEqual(detail["safety_anchor"], IA_PACKET_SAFETY_ANCHOR)
+            self.assertFalse(detail["local_verification"]["calls_v1"], msg=fixture["fixture_id"])
+            self.assertTrue(detail["local_verification"]["read_only"], msg=fixture["fixture_id"])
+            self.assertFalse(decision["production_access"], msg=fixture["fixture_id"])
+            self.assertFalse(decision["permission_grants"], msg=fixture["fixture_id"])
+            self.assertFalse(decision["external_writes"], msg=fixture["fixture_id"])
+            self.assertFalse(decision["approval_granted"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["approves_access"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["grants_permissions"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["executes_external_writes"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["mutates_production"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["downstream_can_approve"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["downstream_can_mutate_packet"], msg=fixture["fixture_id"])
+            self.assertFalse(safety["downstream_can_override_verdict"], msg=fixture["fixture_id"])
+            self.assertIn(IA_PACKET_SAFETY_ANCHOR, render_ia_packet_detail_markdown(detail))
+
+    def test_downstream_consumers_read_same_packet_reference_without_override_power(self) -> None:
+        detail = build_ia_packet_detail("mcp_tool_blast_radius")
+        packet_reference = detail["packet_reference"]
+
+        self.assertGreaterEqual(len(detail["downstream_consumers"]), 5)
+        categories = {consumer["subscriber_category"] for consumer in detail["downstream_consumers"]}
+        self.assertEqual(categories, {"ci", "gateway", "observability", "review", "spend"})
+
+        for consumer in detail["downstream_consumers"]:
+            self.assertEqual(consumer["packet_reference"], packet_reference)
+            self.assertEqual(consumer["source_of_truth"], "ia_packet.packet_reference")
+            self.assertFalse(consumer["can_approve_access"])
+            self.assertFalse(consumer["can_grant_permissions"])
+            self.assertFalse(consumer["can_mutate_packet"])
+            self.assertFalse(consumer["can_override_verdict"])
+            self.assertFalse(consumer["executes_external_writes"])
+
+    def test_ia_packet_api_and_static_surface_are_declared(self) -> None:
+        from web.app import ia_packet_detail
+
+        payload = ia_packet_detail(fixture="mcp_tool_blast_radius")
+        html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+        js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
+        manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["product_object"], "IA Packet")
+        self.assertGreaterEqual(len(payload["output_files"]), 2)
+
+        for expected in [
+            'data-tab="packet"',
+            'id="packet-view"',
+            'id="btn-load-packet"',
+            'id="btn-copy-packet-brief"',
+            'id="btn-export-packet"',
+            "IA prepares proof. Humans approve.",
+        ]:
+            self.assertIn(expected, html)
+
+        for expected in [
+            "/api/ia-packet",
+            'window.location.pathname === "/packet"',
+            "renderPacketDetail",
+            "Copy IA Packet link",
+            "Open IA Packet",
+        ]:
+            self.assertIn(expected, js)
+
+        self.assertEqual(manifest["ia_packet_surface"], "/packet?fixture=mcp_tool_blast_radius&autorun=1")
+        self.assertEqual(manifest["ia_packet_api"], "/api/ia-packet?fixture=mcp_tool_blast_radius")
+        self.assertEqual(manifest["review_60_packet_url"], "/packet?fixture=mcp_tool_blast_radius&autorun=1")
+        self.assertIn("IA Packet detail surface", manifest["private_v1_boundary"]["public_proof_surface"])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -13,7 +13,7 @@ usage() {
 Usage: bash scripts/review_60.sh [--port 8080] [--host 127.0.0.1] [--fixture mcp_tool_blast_radius] [--no-open] [--dry-run]
 
 Runs the 60-second public review path:
-  judge smoke -> local web server -> Workbench autorun URL
+  judge smoke -> local web server -> IA Packet autorun URL
 EOF
 }
 
@@ -55,7 +55,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 BASE_URL="http://${HOST}:${PORT}"
-WORKBENCH_URL="${BASE_URL}/workbench?fixture=${FIXTURE}&autorun=1"
+PACKET_URL="${BASE_URL}/packet?fixture=${FIXTURE}&autorun=1"
 
 fail() {
   printf '\nreview_60 failed: %s\n' "$*" >&2
@@ -101,19 +101,21 @@ port_in_use() {
   return 1
 }
 
-wait_for_workbench() {
+wait_for_packet_api() {
   local attempts=40
   local i
   for i in $(seq 1 "$attempts"); do
-    if "$PYTHON_BIN" - "$BASE_URL" <<'PY' >/dev/null 2>&1
+    if "$PYTHON_BIN" - "$BASE_URL" "$FIXTURE" <<'PY' >/dev/null 2>&1
 import json
 import sys
 import urllib.request
+import urllib.parse
 
 base_url = sys.argv[1]
-with urllib.request.urlopen(base_url + "/api/workbench", timeout=1.0) as response:
+fixture = urllib.parse.quote(sys.argv[2])
+with urllib.request.urlopen(base_url + "/api/ia-packet?fixture=" + fixture, timeout=1.0) as response:
     payload = json.loads(response.read().decode("utf-8"))
-if payload.get("mode") != "fixture_only":
+if payload.get("schema_version") != "ia_packet_detail.v0":
     raise SystemExit(1)
 PY
     then
@@ -129,14 +131,14 @@ print_banner() {
   cat <<EOF
 
 [ok] ${status}  (no keys required - dry-run by default - no v1 calls)
-[ok] Workbench autorun: ${WORKBENCH_URL}
+[ok] IA Packet autorun: ${PACKET_URL}
 
 What you will see in 60 seconds:
   1. Agent/tool request structured into a public fixture
-  2. DecisionPacket - verdict, blocked claims, missing proof
+  2. IA Packet - verdict, blocked claims, missing proof
   3. Sponsor Proof Trace - Tavily -> Composio -> OpenClaw -> Nebius
-  4. Verification hash + reviewer routing for Security / Engineering / Legal
-  5. Export artifact - copy review brief or verification link
+  4. Downstream trust - gateways, CI, spend, review, observability
+  5. Export artifact - copy IA Packet brief or open Workbench
 
 Press Ctrl+C when done.
 EOF
@@ -170,7 +172,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-if ! wait_for_workbench; then
+if ! wait_for_packet_api; then
   tail -40 "$SERVER_LOG" >&2 || true
   fail "web server did not become ready at ${BASE_URL}. See ${SERVER_LOG}."
 fi
@@ -178,7 +180,7 @@ fi
 print_banner "Backend ready"
 
 if [ "$OPEN_BROWSER" = "1" ] && command -v open >/dev/null 2>&1; then
-  open "$WORKBENCH_URL" >/dev/null 2>&1 || true
+  open "$PACKET_URL" >/dev/null 2>&1 || true
 fi
 
 wait "$SERVER_PID"

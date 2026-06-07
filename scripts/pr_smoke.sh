@@ -83,6 +83,7 @@ command_json_check /tmp/ia_live_evidence_rehearsal.no_write.json "$PYTHON_BIN" -
 command_json_check /tmp/ia_pilot_memo.no_write.json "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_verify_artifacts.json "$PYTHON_BIN" -m agent.verify_artifacts --json
 
+run bash scripts/review_60.sh --dry-run
 run "$PYTHON_BIN" -m agent.judge --no-write
 run "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy
 run "$PYTHON_BIN" -m agent.contract --all

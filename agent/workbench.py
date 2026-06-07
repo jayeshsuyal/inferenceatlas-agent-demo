@@ -431,7 +431,7 @@ def build_workbench_registry() -> dict[str, Any]:
         "title": "Packet Workbench",
         "subtitle": "Choose a lane, choose a registered fixture, and generate the packet without live keys or writes.",
         "mode": "fixture_only",
-        "default_fixture_id": "support_triage_agent",
+        "default_fixture_id": "mcp_tool_blast_radius",
         "lanes": [lane.to_dict() for lane in WORKBENCH_LANES],
         "fixtures": [fixture.to_dict() for fixture in WORKBENCH_FIXTURES],
         "safety_anchor": WORKBENCH_SAFETY_ANCHOR,

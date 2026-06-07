@@ -9,6 +9,8 @@
   "downstream_gate_api": "/api/downstream-gates/{subscriber}/decision",
   "packet_workbench_surface": "/workbench",
   "packet_workbench_api": "/api/workbench/generate",
+  "review_60_command": "bash scripts/review_60.sh",
+  "review_60_workbench_url": "/workbench?fixture=mcp_tool_blast_radius&autorun=1",
   "subscriber_examples": "examples/subscribers/",
   "subscriber_categories": ["gateway", "ci", "spend", "review", "observability"],
   "readme_headline": "InferenceAtlas — Public Agent-Access Review Harness",
@@ -17,6 +19,7 @@
   "agent_reviewer_instructions": "AGENTS.md",
   "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
   "reviewer_entrypoint": "docs/JUDGE_REVIEW_GUIDE.md",
+  "review_60_path": "docs/REVIEW_60_PATH.md",
   "product_tour": "docs/PRODUCT_TOUR.md",
   "agent_skills": "docs/AGENT_SKILLS.md",
   "product_quality_audit": "docs/PRODUCT_QUALITY_AUDIT.md",
@@ -66,6 +69,7 @@
     "ia-verify-artifacts"
   ],
   "default_run_command": "bash scripts/run.sh",
+  "review_60_default_fixture": "mcp_tool_blast_radius",
   "works_without_keys": true,
   "live_mode_command": "IA_LIVE_MODE=1 python3 -m agent.demo",
   "scenario_artifact_command": "python3 -m agent.scenarios",
@@ -135,6 +139,9 @@
   "ai_spend_finance_receipt_surface": "examples/generated/ai_spend_budget_overrun.finance_receipt.md and examples/generated/ai_spend_budget_overrun.finance_receipt.json",
   "ai_spend_procurement_memo_surface": "examples/generated/ai_spend_budget_overrun.procurement_memo.md and examples/generated/ai_spend_budget_overrun.procurement_memo.json",
   "product_review_path": [
+    "bash scripts/review_60.sh",
+    "/workbench?fixture=mcp_tool_blast_radius&autorun=1",
+    "docs/REVIEW_60_PATH.md",
     "docs/PRODUCT_TOUR.md",
     "docs/AGENT_SKILLS.md",
     "docs/PRODUCT_QUALITY_AUDIT.md",
@@ -187,6 +194,7 @@
     "examples/generated/review_room.html"
   ],
   "five_minute_review_commands": [
+    "bash scripts/review_60.sh",
     "bash scripts/run.sh",
     "bash scripts/pr_smoke.sh",
     "python3 -m agent.judge",
@@ -373,7 +381,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "packet workbench", "agent skills registry", "chat answer contract", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "60-second reviewer path", "packet workbench", "agent skills registry", "chat answer contract", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [

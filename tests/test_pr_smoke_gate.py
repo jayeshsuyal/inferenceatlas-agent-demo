@@ -40,6 +40,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("schemas/pilot_memo.schema.json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy", script)
+        self.assertIn("bash scripts/review_60.sh --dry-run", script)
         self.assertIn("scripts/walkthrough_smoke.py", script)
         self.assertIn("agent.verify_artifacts --json", script)
         self.assertIn("unittest discover -s tests", script)
@@ -84,7 +85,10 @@ class PrSmokeGateTests(unittest.TestCase):
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 
         self.assertEqual(manifest["pr_smoke_command"], "bash scripts/pr_smoke.sh")
+        self.assertEqual(manifest["review_60_command"], "bash scripts/review_60.sh")
         self.assertIn("walkthrough API/static surface", manifest["pr_smoke_scope"])
+        self.assertIn("bash scripts/review_60.sh", manifest["product_review_path"])
+        self.assertIn("bash scripts/review_60.sh", manifest["five_minute_review_commands"])
         self.assertEqual(manifest["verification"]["pr_smoke_gate"], "bash scripts/pr_smoke.sh")
         self.assertIn("bash scripts/pr_smoke.sh", manifest["product_review_path"])
         self.assertIn("bash scripts/pr_smoke.sh", manifest["five_minute_review_commands"])

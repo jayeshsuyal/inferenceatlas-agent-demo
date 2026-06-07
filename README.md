@@ -4,6 +4,8 @@ Private engine, public proof.
 
 Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
 
+![IA Packet surface showing verdict, verification, proof debt, and reviewer routing](docs/assets/ia_packet_surface.png)
+
 ![tests](https://img.shields.io/badge/tests-passing-brightgreen)
 ![CI](https://img.shields.io/badge/CI-smoke%20green-brightgreen)
 ![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
@@ -20,11 +22,7 @@ This public harness does not approve access.
 ```bash
 bash scripts/review_60.sh
 ```
-CLI judge fallback: `bash scripts/run.sh`.
 Opens `/packet?fixture=mcp_tool_blast_radius&autorun=1`: one public fixture becomes one IA Packet with verdict, proof debt, Sponsor Proof Trace, downstream consumers, verification hash, and export-ready review brief. Switch fixtures inside the IA Packet surface to inspect access, spend, admin, MCP, and supply-chain lanes. No keys required, dry-run by default, no v1 calls.
-
-## Judge Fast Path
-`bash scripts/run.sh` stays the CLI-only offline, deterministic, dry-run, no-write fallback.
 
 ## Why It Exists
 
@@ -54,27 +52,22 @@ flowchart LR
   A["Agent asks for tools,<br/>data, spend, or production"] --> P["Evidence enrichment<br/>search / dry-run tools / narration / trace"]
   P --> B["InferenceAtlas<br/>DecisionPacket"]
   B --> C["Verification API<br/>packet id / revision / hash / verdict"]
-  C --> D["Gateways<br/>Composio / Portkey / LiteLLM"]
+  C --> D["MCP / Gateway Controls<br/>Composio / Portkey / LiteLLM"]
   C --> E["CI<br/>GitHub Actions / GitLab"]
-  C --> F["Spend Controls<br/>Finance / Procurement"]
+  C --> F["AI Spend Controls<br/>Finance / Procurement"]
   C --> G["Review Queues<br/>Security / Legal / CTO"]
   C --> H["Observability<br/>Datadog / Honeycomb / audit logs"]
 ```
 
 ## Review Paths
 
-- Packet Workbench / 60-second reviewer path: run `bash scripts/review_60.sh` or read [Review 60 Path](docs/REVIEW_60_PATH.md)
-- IA Packet detail surface: `/packet?fixture=mcp_tool_blast_radius&autorun=1`
-- Product walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
-- Capability map: [Agent Skills](docs/AGENT_SKILLS.md)
-- Fast reviewer guide: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md)
-- AI/coding-agent review: [Agent Reviewer Instructions](AGENTS.md) and [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md)
-- Product-quality guardrail: [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md)
-- Commands after the one-run path: [Command Reference](docs/COMMAND_REFERENCE.md)
-- Artifact map: [Artifact Map](docs/ARTIFACT_MAP.md)
-- Public contract: [Public Conformance Contract](docs/CONTRACT.md) and [Safety Contract](docs/SAFETY_CONTRACT.md)
-- CTO/build handoff: [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), and [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md)
-- Lifecycle signal: [Proof Health](examples/generated/support_triage_agent.proof_health.md)
-- Private boundary map: [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md)
+- Run the Packet Workbench product path: `bash scripts/review_60.sh`
+- Read the walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
+- Inspect the contract: [Public Conformance Contract](docs/CONTRACT.md)
+- Map the capability surface: [Agent Skills](docs/AGENT_SKILLS.md)
+
+Deep references: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Command Reference](docs/COMMAND_REFERENCE.md), [Artifact Map](docs/ARTIFACT_MAP.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md), [Proof Health](examples/generated/support_triage_agent.proof_health.md), [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md), and [Agent Reviewer Instructions](AGENTS.md).
+
+CLI fallback: `bash scripts/run.sh` stays offline, deterministic, dry-run, and no-write.
 
 Private engine, public proof.

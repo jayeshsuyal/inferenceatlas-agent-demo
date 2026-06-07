@@ -81,7 +81,7 @@ Public files to inspect:
 | Design partner trial kit | `docs/DESIGN_PARTNER_TRIAL_KIT.md` |
 | Trial request template | `examples/requests/design_partner_trial.yml` |
 | Support triage trial sample | `examples/requests/support_triage_trial.yml` |
-| Build plan | `BUILD_PLAN_TO_JUNE_12.md` |
+| Build plan | `docs/internal/BUILD_PLAN_TO_JUNE_12.md` |
 | Public conformance contract | `docs/CONTRACT.md` |
 | One-command public harness | `bash scripts/run.sh` |
 | Direct judge harness | `python3 -m agent.judge` |

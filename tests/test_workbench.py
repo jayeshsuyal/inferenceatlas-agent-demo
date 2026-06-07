@@ -22,6 +22,7 @@ class WorkbenchTests(unittest.TestCase):
 
         self.assertEqual(registry["schema_version"], "packet_workbench.v0")
         self.assertEqual(registry["mode"], "fixture_only")
+        self.assertEqual(registry["default_fixture_id"], "mcp_tool_blast_radius")
         self.assertFalse(registry["safety_boundary"]["paste_input_enabled"])
         self.assertFalse(registry["safety_boundary"]["calls_v1"])
 
@@ -109,7 +110,9 @@ class WorkbenchTests(unittest.TestCase):
             "/api/workbench",
             "/api/workbench/generate",
             "renderWorkbenchResult",
+            "workbenchShouldAutorun",
             "copyWorkbenchBrief",
+            "Copy verification link",
             "View verification hash",
             'window.location.pathname === "/workbench"',
         ]:

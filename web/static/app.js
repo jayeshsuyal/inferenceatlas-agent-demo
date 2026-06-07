@@ -1555,10 +1555,34 @@ function selectedWorkbenchFixture() {
   );
 }
 
-function renderWorkbenchFixtureOptions() {
+function workbenchUrlFixtureId() {
+  const params = new URLSearchParams(window.location.search || "");
+  return params.get("fixture") || params.get("scenario") || "";
+}
+
+function workbenchShouldAutorun() {
+  const params = new URLSearchParams(window.location.search || "");
+  return ["1", "true", "yes"].includes((params.get("autorun") || "").toLowerCase());
+}
+
+function findWorkbenchFixture(fixtureId) {
+  return (workbenchRegistry?.fixtures || []).find((fixture) => fixture.fixture_id === fixtureId);
+}
+
+function selectWorkbenchFixture(fixtureId) {
+  const fixture = findWorkbenchFixture(fixtureId);
+  if (!fixture) return false;
+  workbenchLaneSelect.value = fixture.lane_id;
+  renderWorkbenchFixtureOptions(fixture.fixture_id);
+  workbenchFixtureSelect.value = fixture.fixture_id;
+  return true;
+}
+
+function renderWorkbenchFixtureOptions(preferredFixtureId = "") {
   if (!workbenchRegistry || !workbenchLaneSelect || !workbenchFixtureSelect) return;
   const laneId = workbenchLaneSelect.value || workbenchRegistry.lanes?.[0]?.lane_id;
   const fixtures = (workbenchRegistry.fixtures || []).filter((fixture) => fixture.lane_id === laneId);
+  const currentFixtureId = workbenchFixtureSelect.value;
   workbenchFixtureSelect.innerHTML = "";
   fixtures.forEach((fixture) => {
     const option = document.createElement("option");
@@ -1567,7 +1591,10 @@ function renderWorkbenchFixtureOptions() {
     workbenchFixtureSelect.appendChild(option);
   });
   if (fixtures.length) {
-    workbenchFixtureSelect.value = fixtures[0].fixture_id;
+    const selected = fixtures.find((fixture) => fixture.fixture_id === preferredFixtureId)
+      || fixtures.find((fixture) => fixture.fixture_id === currentFixtureId)
+      || fixtures[0];
+    workbenchFixtureSelect.value = selected.fixture_id;
   }
 }
 
@@ -1580,13 +1607,15 @@ function applyWorkbenchRegistry(data) {
     option.textContent = lane.label;
     workbenchLaneSelect.appendChild(option);
   });
-  const defaultFixture = (data.fixtures || []).find(
+  const requestedFixtureId = workbenchUrlFixtureId();
+  const requestedFixture = (data.fixtures || []).find((fixture) => fixture.fixture_id === requestedFixtureId);
+  const defaultFixture = requestedFixture || (data.fixtures || []).find(
     (fixture) => fixture.fixture_id === data.default_fixture_id
   );
   if (defaultFixture) {
     workbenchLaneSelect.value = defaultFixture.lane_id;
   }
-  renderWorkbenchFixtureOptions();
+  renderWorkbenchFixtureOptions(defaultFixture?.fixture_id || "");
   if (defaultFixture) {
     workbenchFixtureSelect.value = defaultFixture.fixture_id;
   }
@@ -1693,7 +1722,12 @@ function renderWorkbenchResult(data) {
   viewHash.className = "btn-ghost";
   viewHash.textContent = "View verification hash";
   viewHash.addEventListener("click", () => setWorkbenchToast(packet.content_hash || "Hash unavailable."));
-  actions.append(copy, viewHash);
+  const copyVerification = document.createElement("button");
+  copyVerification.type = "button";
+  copyVerification.className = "btn-ghost";
+  copyVerification.textContent = "Copy verification link";
+  copyVerification.addEventListener("click", () => copyWorkbenchVerificationLink());
+  actions.append(copy, copyVerification, viewHash);
   workbenchExportCard.appendChild(actions);
   renderArtifactLinks(data.output_files || [], workbenchExportCard);
   btnCopyWorkbenchBrief.disabled = !data.copy_review_brief;
@@ -1751,6 +1785,46 @@ async function copyWorkbenchBrief() {
     textarea.remove();
   }
   setWorkbenchToast(copied ? "Review brief copied." : "Clipboard unavailable. Use export.", !copied);
+}
+
+function workbenchVerificationUrl() {
+  const fixtureId = workbenchResult?.fixture?.fixture_id || workbenchFixtureSelect.value || "mcp_tool_blast_radius";
+  const url = new URL(window.location.href);
+  url.pathname = "/workbench";
+  url.search = "";
+  url.searchParams.set("fixture", fixtureId);
+  url.searchParams.set("autorun", "1");
+  return url.toString();
+}
+
+async function copyWorkbenchVerificationLink() {
+  if (!workbenchResult) {
+    setWorkbenchToast("Generate a packet first.", true);
+    return;
+  }
+  const text = workbenchVerificationUrl();
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch (_) {
+    copied = false;
+  }
+  if (!copied) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {
+      copied = false;
+    }
+    textarea.remove();
+  }
+  setWorkbenchToast(copied ? "Verification link copied." : text, !copied);
 }
 
 async function exportWorkbenchResult() {
@@ -2253,7 +2327,13 @@ function setupTabs() {
         if (!workbenchRegistry) {
           await loadWorkbenchRegistry();
         }
-        if (!workbenchResult) {
+        const requestedFixtureId = workbenchUrlFixtureId();
+        if (requestedFixtureId && selectWorkbenchFixture(requestedFixtureId)) {
+          if (workbenchResult?.fixture?.fixture_id !== requestedFixtureId) {
+            workbenchResult = null;
+          }
+        }
+        if (workbenchShouldAutorun() || !workbenchResult) {
           await generateWorkbench();
         }
       } else if (isWalkthrough) {

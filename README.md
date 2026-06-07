@@ -16,13 +16,15 @@ This repo is the Hack the High Seas public proof surface. It is not a private v1
 
 This public harness does not approve access.
 
-## Judge Fast Path
-
+## 60-Second Review Path
 ```bash
-bash scripts/run.sh
+bash scripts/review_60.sh
 ```
+CLI judge fallback: `bash scripts/run.sh`.
+Opens `/workbench?fixture=mcp_tool_blast_radius&autorun=1`: one public fixture becomes one DecisionPacket, one locked Sponsor Proof Trace, one verification hash, and one export-ready review brief. No keys required, dry-run by default, no v1 calls.
 
-No keys required. The default path is offline, deterministic, dry-run, and no-write.
+## Judge Fast Path
+`bash scripts/run.sh` stays the CLI-only offline, deterministic, dry-run, no-write fallback.
 
 ## Why It Exists
 
@@ -61,7 +63,7 @@ flowchart LR
 
 ## Review Paths
 
-- Packet Workbench: run `python3 -m web`, then open `/workbench`
+- Packet Workbench / 60-second reviewer path: run `bash scripts/review_60.sh` or read [Review 60 Path](docs/REVIEW_60_PATH.md)
 - Product walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
 - Capability map: [Agent Skills](docs/AGENT_SKILLS.md)
 - Fast reviewer guide: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md)

@@ -72,12 +72,15 @@ class IAPacketDetailTests(unittest.TestCase):
         for expected in [
             'data-tab="packet"',
             'id="packet-view"',
+            'id="packet-review-rail"',
             'id="packet-lane-select"',
             'id="packet-fixture-select"',
             'id="btn-load-packet"',
             'id="btn-copy-packet-brief"',
             'id="btn-export-packet"',
             "IA did not approve. The next human action is named above.",
+            "Review in 60 seconds",
+            "Request -> Verdict -> Proof debt -> Downstream trust -> Export",
         ]:
             self.assertIn(expected, html)
 
@@ -89,6 +92,9 @@ class IAPacketDetailTests(unittest.TestCase):
             "loadPacketRegistry",
             "renderPacketFixtureOptions",
             "packetSelectedFixtureId",
+            "setupPacketReviewRail",
+            "markPacketReviewRailLoaded",
+            "data-packet-target",
             "renderPacketDetail",
             "Copy IA Packet link",
             "Open IA Packet",
@@ -117,6 +123,30 @@ class IAPacketDetailTests(unittest.TestCase):
             self.assertEqual(detail["fixture"]["fixture_id"], fixture["fixture_id"])
             self.assertFalse(detail["decision"]["production_access"], msg=fixture["fixture_id"])
             self.assertFalse(detail["local_verification"]["calls_v1"], msg=fixture["fixture_id"])
+
+    def test_packet_review_rail_guides_first_time_reviewer(self) -> None:
+        html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+        css = (ROOT / "web" / "static" / "style.css").read_text(encoding="utf-8")
+        js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+        expected_steps = {
+            "Request": "packet-summary-card",
+            "Verdict": "packet-decision-card",
+            "Proof debt": "packet-proof-card",
+            "Downstream trust": "packet-downstream-card",
+            "Export": "packet-export-card",
+        }
+
+        self.assertIn("Review in 60 seconds", html)
+        self.assertIn("packet-review-rail", html)
+        self.assertIn("packet-review-step", html)
+        self.assertIn(".packet-review-rail", css)
+        self.assertIn(".packet-review-step.ready", css)
+        self.assertIn("scrollIntoView", js)
+
+        for label, target in expected_steps.items():
+            self.assertIn(label, html)
+            self.assertIn(f'data-packet-target="{target}"', html)
 
 
 if __name__ == "__main__":

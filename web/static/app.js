@@ -36,6 +36,7 @@ const packetFixtureSelect = document.getElementById("packet-fixture-select");
 const packetToast = document.getElementById("packet-toast");
 const packetTitle = document.getElementById("packet-title");
 const packetSubtitle = document.getElementById("packet-subtitle");
+const packetReviewSteps = Array.from(document.querySelectorAll("[data-packet-target]"));
 const packetSummaryCard = document.getElementById("packet-summary-card");
 const packetDecisionCard = document.getElementById("packet-decision-card");
 const packetVerificationCard = document.getElementById("packet-verification-card");
@@ -1891,6 +1892,29 @@ function packetShouldAutorun() {
   return ["1", "true", "yes"].includes((params.get("autorun") || "").toLowerCase());
 }
 
+function setupPacketReviewRail() {
+  packetReviewSteps.forEach((button) => {
+    button.addEventListener("click", () => {
+      const target = document.getElementById(button.dataset.packetTarget || "");
+      if (!target) return;
+      packetReviewSteps.forEach((step) => {
+        step.classList.remove("active");
+        step.removeAttribute("aria-current");
+      });
+      button.classList.add("active");
+      button.setAttribute("aria-current", "step");
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
+}
+
+function markPacketReviewRailLoaded() {
+  packetReviewSteps.forEach((button) => {
+    button.classList.add("ready");
+    button.removeAttribute("aria-disabled");
+  });
+}
+
 function findPacketFixture(fixtureId) {
   return (workbenchRegistry?.fixtures || []).find((fixture) => fixture.fixture_id === fixtureId);
 }
@@ -2014,6 +2038,7 @@ function renderPacketDetail(data) {
   if (fixture.fixture_id) {
     applyPacketRegistry(fixture.fixture_id);
   }
+  markPacketReviewRailLoaded();
 
   packetSummaryCard.innerHTML = `
     <span class="eyebrow">Canonical object</span>
@@ -3254,6 +3279,7 @@ btnExportPacket.addEventListener("click", exportPacketResult);
 btnOpenPacketWorkbench.addEventListener("click", () => {
   window.location.href = packetWorkbenchUrl();
 });
+setupPacketReviewRail();
 packetLaneSelect.addEventListener("change", () => {
   renderPacketFixtureOptions();
   packetDetail = null;

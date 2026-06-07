@@ -610,6 +610,59 @@ body {
   margin-bottom: 1rem;
 }
 
+.packet-review-rail {
+  margin-bottom: 1rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(20, 26, 34, 0.72);
+}
+
+.packet-review-rail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.packet-review-rail-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.packet-review-steps {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+
+.packet-review-step {
+  min-height: 3.5rem;
+}
+
+.packet-review-step em {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.packet-review-step.ready span {
+  background: rgba(52, 211, 153, 0.14);
+  color: var(--success);
+}
+
+.packet-review-step.active.ready span,
+.packet-review-step.active span {
+  background: var(--accent);
+  color: var(--bg);
+}
+
 .walk-step {
   display: flex;
   align-items: center;
@@ -2284,6 +2337,15 @@ body {
   }
 
   .walkthrough-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .packet-review-rail-head {
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .packet-review-steps {
     grid-template-columns: 1fr;
   }
 

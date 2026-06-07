@@ -77,7 +77,7 @@ class IAPacketDetailTests(unittest.TestCase):
             'id="btn-load-packet"',
             'id="btn-copy-packet-brief"',
             'id="btn-export-packet"',
-            "IA prepares proof. Humans approve.",
+            "IA did not approve. The next human action is named above.",
         ]:
             self.assertIn(expected, html)
 

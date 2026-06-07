@@ -2020,7 +2020,7 @@ function renderPacketDetail(data) {
     <h3>${escapeHtml(data.product_object || "IA Packet")}</h3>
     <p class="walkthrough-summary">${escapeHtml(data.definition || "")}</p>
     <code class="walkthrough-fact">${escapeHtml(fixture.path || fixture.scenario_name || fixture.fixture_id || "")}</code>
-    <p class="safety-anchor">${escapeHtml(data.safety_anchor || "IA prepares proof. Humans approve.")}</p>
+    <p class="safety-anchor">${escapeHtml(data.safety_anchor || "IA did not approve. The next human action is named above.")}</p>
   `;
 
   packetDecisionCard.innerHTML = `

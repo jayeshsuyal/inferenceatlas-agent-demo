@@ -61,6 +61,7 @@ flowchart LR
 
 ## Review Paths
 
+- Packet Workbench: run `python3 -m web`, then open `/workbench`
 - Product walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
 - Capability map: [Agent Skills](docs/AGENT_SKILLS.md)
 - Fast reviewer guide: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md)

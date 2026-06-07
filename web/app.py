@@ -35,6 +35,12 @@ from agent.subscribers import (
 )
 from agent.sponsor_proof_trace import build_sponsor_proof_trace
 from agent.verification import build_verification_artifact_for_scenario
+from agent.workbench import (
+    build_workbench_registry,
+    build_workbench_result,
+    render_workbench_markdown,
+    workbench_result_to_pretty_json,
+)
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
 from agent.session_metrics import (
@@ -250,6 +256,10 @@ class ConnectorExportRequest(BaseModel):
 class CustomEvidenceRehearsalRequest(BaseModel):
     attachment_ids: List[str] = Field(default_factory=list, max_length=8)
     storage_scope: str = Field(default="review_anonymous", max_length=160)
+
+
+class WorkbenchGenerateRequest(BaseModel):
+    fixture_id: str = Field(..., min_length=1, max_length=120)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -1017,6 +1027,49 @@ def design_partner_walkthrough() -> dict:
     }
 
 
+@app.get("/api/workbench")
+def packet_workbench_registry() -> dict:
+    """Return the fixture-only Packet Workbench lane registry."""
+    return build_workbench_registry()
+
+
+@app.post("/api/workbench/generate")
+def packet_workbench_generate(body: WorkbenchGenerateRequest) -> dict:
+    """Generate a local, read-only Workbench packet result from a registered fixture."""
+    try:
+        result = build_workbench_result(body.fixture_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    fixture_id = result["fixture"]["fixture_id"]
+    subfolder = f"workbench/{fixture_id}"
+    md = save_output_registered(
+        scope="review",
+        subfolder=subfolder,
+        filename=f"{fixture_id}.workbench.md",
+        content=render_workbench_markdown(result),
+        label="Workbench result Markdown",
+        use_timestamp=False,
+    )
+    js = save_output_registered(
+        scope="review",
+        subfolder=subfolder,
+        filename=f"{fixture_id}.workbench.json",
+        content=workbench_result_to_pretty_json(result) + "\n",
+        label="Workbench result JSON",
+        use_timestamp=False,
+    )
+    return {
+        **result,
+        "output_files": [
+            _file_ref(md["file_id"], md["label"]),
+            _file_ref(js["file_id"], js["label"]),
+        ],
+    }
+
+
 @app.get("/api/examples")
 def examples() -> List[dict]:
     return [
@@ -1781,6 +1834,11 @@ def index() -> FileResponse:
 
 @app.get("/walkthrough")
 def walkthrough_index() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/workbench")
+def workbench_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 

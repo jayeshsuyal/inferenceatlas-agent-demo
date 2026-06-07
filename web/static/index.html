@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=14" />
+    <link rel="stylesheet" href="/static/style.css?v=15" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -30,6 +30,7 @@
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
           <button type="button" class="tab active" data-tab="start">Chat</button>
+          <button type="button" class="tab" data-tab="workbench">Workbench</button>
           <button type="button" class="tab" data-tab="walkthrough">Walkthrough</button>
           <button type="button" class="tab" data-tab="review">Access review</button>
           <button type="button" class="tab" data-tab="metrics">Metrics</button>
@@ -50,6 +51,27 @@
           <h3 class="section-label">Examples</h3>
           <ul class="examples" id="examples-list"></ul>
           <p class="catalog" id="catalog-info"></p>
+        </section>
+
+        <section class="tab-panel" id="panel-workbench" hidden>
+          <div class="how-to compact">
+            <h2>Packet Workbench</h2>
+            <p class="sidebar-hint">Choose a lane and registered fixture. IA generates the packet locally; no paste input, no live writes.</p>
+          </div>
+          <label class="workbench-label" for="workbench-lane-select">Lane</label>
+          <select class="workbench-select" id="workbench-lane-select"></select>
+          <label class="workbench-label" for="workbench-fixture-select">Fixture</label>
+          <select class="workbench-select" id="workbench-fixture-select"></select>
+          <button type="button" class="btn-primary btn-block" id="btn-generate-workbench">
+            Generate packet
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-copy-workbench-brief" disabled>
+            Copy review brief
+          </button>
+          <button type="button" class="btn-ghost btn-block" id="btn-export-workbench" disabled>
+            Export workbench result
+          </button>
+          <p class="status-toast" id="workbench-toast" role="status" aria-live="polite"></p>
         </section>
 
         <section class="tab-panel" id="panel-walkthrough" hidden>
@@ -249,6 +271,39 @@
           </div>
         </div>
 
+        <div id="workbench-view" class="walkthrough-workspace workbench-workspace" hidden>
+          <header class="walkthrough-header workbench-header">
+            <div>
+              <span class="eyebrow">Packet Workbench</span>
+              <p class="walkthrough-proof">Private engine, public proof.</p>
+              <h2 id="workbench-title">Choose a lane to generate a packet</h2>
+              <p id="workbench-subtitle" class="walkthrough-subtitle">Fixture-only v0.1: no paste input, no v1 call, no external write.</p>
+            </div>
+            <div class="walkthrough-lock" aria-label="Workbench safety state">
+              <span>Approves</span>
+              <strong>false</strong>
+              <span>Writes</span>
+              <strong>false</strong>
+              <span>v1 call</span>
+              <strong>false</strong>
+            </div>
+          </header>
+
+          <section class="walkthrough-grid workbench-grid">
+            <article class="walkthrough-panel span-2" id="workbench-intake-card">
+              <span class="eyebrow">Input</span>
+              <h3>Registered fixture only</h3>
+              <p class="walkthrough-summary">Select a lane and fixture, then generate the packet.</p>
+              <p class="safety-anchor">IA did not approve. The next human action is named above.</p>
+            </article>
+            <article class="walkthrough-panel" id="workbench-decision-card"></article>
+            <article class="walkthrough-panel" id="workbench-hash-card"></article>
+            <article class="walkthrough-panel span-2" id="workbench-proof-card"></article>
+            <article class="walkthrough-panel" id="workbench-reviewer-card"></article>
+            <article class="walkthrough-panel" id="workbench-export-card"></article>
+          </section>
+        </div>
+
         <div id="walkthrough-view" class="walkthrough-workspace" hidden>
           <header class="walkthrough-header">
             <div>
@@ -282,6 +337,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=22"></script>
+    <script src="/static/app.js?v=23"></script>
   </body>
 </html>

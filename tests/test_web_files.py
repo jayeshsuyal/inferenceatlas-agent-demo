@@ -135,6 +135,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
         self.assertIn("EMPTY_PROOF_TILES", js)
         self.assertIn("clearEmptyProofBoard", js)
+        self.assertIn("currentPacketFixtureForChat", js)
+        self.assertIn("current_fixture: currentPacketFixtureForChat()", js)
         self.assertIn('["LLM", `${health.llm_provider} · ${health.llm_model}`', js)
         self.assertIn(".empty-proof-board", css)
         self.assertIn("grid-template-columns: repeat(4", css)
@@ -160,6 +162,30 @@ class WebFilesTests(unittest.TestCase):
         self.assertFalse(response.answer["safety"]["selects_provider"])
         self.assertFalse(response.answer["safety"]["guarantees_savings"])
         self.assertIn("Finance and Procurement review packet", response.reply)
+
+    def test_chat_api_uses_packet_advisor_from_current_fixture(self) -> None:
+        from web.app import ChatRequest, _execute_chat
+
+        with patch("web.app._chat_validate", return_value=None):
+            response = _execute_chat(
+                ChatRequest(
+                    session_id="packet-advisor-chat-contract",
+                    current_fixture="ai_spend_budget_overrun",
+                    message="Can Portkey allow this spend?",
+                )
+            )
+
+        self.assertIn("Context used", response.reply)
+        self.assertEqual(response.answer["schema_version"], "packet_advisor_answer.v0")
+        self.assertEqual(response.answer["answer_kind"], "decision")
+        self.assertEqual(response.answer["subscriber"], "portkey_model_spend_gate")
+        self.assertEqual(
+            response.answer["packet_reference"]["packet_id"],
+            "ia-spend-review-ai_spend_budget_overrun-v0",
+        )
+        self.assertFalse(response.answer["downstream_gate"]["requested_action_can_proceed"])
+        self.assertIn("Portkey cannot allow this request", response.reply)
+        self.assertIn("does not approve", response.reply.lower())
 
     def test_design_partner_walkthrough_api_is_safe_and_export_ready(self) -> None:
         from web.app import design_partner_walkthrough

@@ -14,6 +14,7 @@ EXPECTED_SCRIPTS = {
     "ia-gate": "agent.gate:main",
     "ia-judge": "agent.judge:main",
     "ia-outcome-memo": "agent.outcome_memo:main",
+    "ia-packet-advisor": "agent.packet_advisor:main",
     "ia-packet-diff": "agent.packet_diff:main",
     "ia-snapshot": "agent.packet_authority:main",
     "ia-proof-health": "agent.proof_health:main",
@@ -89,6 +90,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("pip install -e .", command_reference)
         self.assertIn("ia-judge", command_reference)
         self.assertIn("ia-skills", command_reference)
+        self.assertIn("ia-packet-advisor", command_reference)
         self.assertIn("ia-packet-diff", command_reference)
         self.assertIn("ia-receipts", command_reference)
         self.assertIn("ia-snapshot", command_reference)

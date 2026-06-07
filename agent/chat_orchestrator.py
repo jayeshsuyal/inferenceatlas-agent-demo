@@ -17,6 +17,11 @@ from .chat_answer import (
 from .config import V1_SLOT_FILLER_PROMPT
 from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
 from .github_repo import build_github_chat_context, get_repo_index_status
+from .packet_advisor import (
+    build_packet_advisor_answer,
+    select_fixture_for_question,
+    should_use_packet_advisor,
+)
 from .google_drive_files import build_drive_chat_context, get_drive_index_status
 from .ui_skills import build_skill_context_for_chat, compose_message_with_skills
 from .packet import build_support_triage_decision_packet
@@ -443,6 +448,7 @@ def orchestrate_chat(
     drive_file_ids: List[str],
     file_blocks: List[Tuple[str, str]],
     attach_warnings: List[str],
+    current_fixture: str = "",
 ) -> OrchestratedChat:
     """Plan and assemble a full chat turn."""
     llm_message, skills_used, github_used, github_index, drive_used, drive_index = (
@@ -468,6 +474,13 @@ def orchestrate_chat(
 
     direct_reply, direct_reply_source, direct_answer = _demo_direct_reply(message)
     if direct_reply:
+        use_tools = False
+    elif should_use_packet_advisor(message, current_fixture=current_fixture):
+        fixture = select_fixture_for_question(message, current_fixture)
+        advisor_answer = build_packet_advisor_answer(fixture=fixture, question=message)
+        direct_reply = advisor_answer["rendered_text"]
+        direct_reply_source = "packet_advisor"
+        direct_answer = advisor_answer
         use_tools = False
 
     # Option A: delegate cost questions to v1 E2E copilot when available
@@ -556,6 +569,12 @@ def orchestrate_chat(
                 1,
                 "Product positioning question detected — using deterministic IA control-layer answer",
             )
+        elif direct_reply_source == "packet_advisor":
+            thinking.insert(
+                1,
+                f"Packet Advisor selected — {direct_answer.get('fixture', {}).get('fixture_id', fixture)} "
+                f"→ {direct_answer.get('answer_kind', 'decision')}",
+            )
         elif direct_answer:
             thinking.insert(
                 1,
@@ -609,6 +628,8 @@ def orchestrate_chat(
         manifest.append("InferenceAtlas product positioning")
     elif direct_reply_source == "spend_review":
         manifest.append("ChatAnswer: ai_spend_review")
+    elif direct_reply_source == "packet_advisor":
+        manifest.append("Packet Advisor: shared CLI/Ask IA answer")
     elif direct_reply_source in {"catalog_example", "pricing_example"}:
         manifest.append("Deterministic catalog example")
     elif direct_reply_source == "access_review_example":

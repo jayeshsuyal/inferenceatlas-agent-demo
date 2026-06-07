@@ -62,6 +62,9 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn('IA_LIVE_MODE: ""', workflow)
 
     def test_walkthrough_smoke_script_locks_product_surface(self) -> None:
+        script = (ROOT / "scripts" / "walkthrough_smoke.py").read_text(encoding="utf-8")
+        self.assertIn("sys.path.insert(0, str(ROOT))", script)
+
         result = subprocess.run(
             [sys.executable, "scripts/walkthrough_smoke.py"],
             cwd=ROOT,

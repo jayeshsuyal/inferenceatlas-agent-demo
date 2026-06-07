@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from .scenarios import ROOT_DIR
-from .workbench import build_workbench_result, workbench_result_to_pretty_json
+from .workbench import WORKBENCH_SAFETY_ANCHOR, build_workbench_result, workbench_result_to_pretty_json
 
 
 IA_PACKET_DETAIL_SCHEMA_VERSION = "ia_packet_detail.v0"
-IA_PACKET_SAFETY_ANCHOR = "IA prepares proof. Humans approve."
+IA_PACKET_SAFETY_ANCHOR = WORKBENCH_SAFETY_ANCHOR
 IA_PACKET_DEFINITION = (
     "An IA Packet is the canonical proof object downstream systems trust before an AI agent "
     "receives tools, data, spend, or production access."

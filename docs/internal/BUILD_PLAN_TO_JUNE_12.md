@@ -130,7 +130,7 @@ If a judge or AI reviewer opens this repo early, this is the intended review ord
 12. `examples/generated/review_room.desktop.jpg`
 13. `policy/agent_access.yml`
 14. `agent/adapters/`
-15. `BUILD_PLAN_TO_JUNE_12.md`
+15. `docs/internal/BUILD_PLAN_TO_JUNE_12.md`
 16. `examples/generated/demo_transcript.md`
 17. `examples/generated/support_triage_agent.decision_brief.md`
 18. `examples/generated/support_triage_agent.packet.md`

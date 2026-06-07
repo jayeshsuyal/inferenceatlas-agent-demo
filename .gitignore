@@ -2,6 +2,7 @@
 state/
 examples/mind_runtime/
 .venv/
+.pytest_cache/
 __pycache__/
 *.pyc
 *.egg-info/

@@ -416,7 +416,7 @@
     "docs/AGENT_SKILLS.md",
     "docs/PRODUCT_QUALITY_AUDIT.md",
     "docs/JUDGE_REVIEW_GUIDE.md",
-    "BUILD_PLAN_TO_JUNE_12.md",
+    "docs/internal/BUILD_PLAN_TO_JUNE_12.md",
     "AI_JUDGE_MANIFEST.json",
     "bash scripts/pr_smoke.sh",
     "python3 -m agent.judge",

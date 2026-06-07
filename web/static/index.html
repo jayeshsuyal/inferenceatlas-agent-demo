@@ -59,6 +59,10 @@
             <h2>IA Packet</h2>
             <p class="sidebar-hint">One packet, one verdict, one proof trail downstream systems can read before action.</p>
           </div>
+          <label class="workbench-label" for="packet-lane-select">Lane</label>
+          <select class="workbench-select" id="packet-lane-select"></select>
+          <label class="workbench-label" for="packet-fixture-select">Packet fixture</label>
+          <select class="workbench-select" id="packet-fixture-select"></select>
           <button type="button" class="btn-primary btn-block" id="btn-load-packet">
             Load IA Packet
           </button>
@@ -393,6 +397,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=24"></script>
+    <script src="/static/app.js?v=25"></script>
   </body>
 </html>

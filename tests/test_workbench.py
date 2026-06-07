@@ -98,6 +98,16 @@ class WorkbenchTests(unittest.TestCase):
         self.assertNotIn("analytics validation", action)
         self.assertIn(action, result["copy_review_brief"])
 
+    def test_fixture_titles_do_not_duplicate_packet_suffix(self) -> None:
+        miasma = build_workbench_result("miasma_pre_permission_packet")
+        mcp = build_workbench_result("mcp_tool_blast_radius")
+        spend = build_workbench_result("ai_spend_budget_overrun")
+
+        self.assertEqual(miasma["title"], "Miasma pre-permission packet")
+        self.assertEqual(mcp["title"], "MCP tool blast radius packet")
+        self.assertEqual(spend["title"], "Q1 budget overrun spend packet")
+        self.assertNotIn("packet packet", miasma["title"])
+
     def test_workbench_static_ui_is_reachable(self) -> None:
         html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
         js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")

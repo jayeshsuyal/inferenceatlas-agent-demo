@@ -189,6 +189,12 @@ def _unique_strings(values: list[str], *, limit: int = 12) -> list[str]:
     return output
 
 
+def _title_with_suffix(label: str, suffix: str) -> str:
+    if label.lower().endswith(suffix.lower()):
+        return label
+    return f"{label} {suffix}"
+
+
 def _sponsor_trace_summary(request_path: Path) -> dict[str, Any]:
     trace = build_sponsor_proof_trace(request_path)
     steps = trace["sponsor_steps"]
@@ -360,7 +366,7 @@ def _scenario_result(fixture: WorkbenchFixture) -> dict[str, Any]:
     verification = build_verification_artifact_for_scenario(packet, scenario_name)
     return _base_result(
         fixture=fixture,
-        title=f"{fixture.label} packet",
+        title=_title_with_suffix(fixture.label, "packet"),
         verdict_class=verification["verdict_class"],
         packet_id=verification["packet_id"],
         revision_id=verification["revision_id"],
@@ -408,7 +414,7 @@ def _trial_result(fixture: WorkbenchFixture) -> dict[str, Any]:
     )
     result = _base_result(
         fixture=fixture,
-        title=f"{fixture.label} packet",
+        title=_title_with_suffix(fixture.label, "packet"),
         verdict_class=pilot_memo["verdict_class"],
         packet_id=snapshot["packet_id"],
         revision_id=snapshot["revision_id"],
@@ -442,7 +448,7 @@ def _spend_result(fixture: WorkbenchFixture) -> dict[str, Any]:
     content_hash = packet["content_hash"]
     return _base_result(
         fixture=fixture,
-        title=f"{fixture.label} spend packet",
+        title=_title_with_suffix(fixture.label, "spend packet"),
         verdict_class=packet["decision"]["verdict_class"],
         packet_id=packet["packet_id"],
         revision_id=f"rev_{content_hash.split(':', 1)[1][:16]}",

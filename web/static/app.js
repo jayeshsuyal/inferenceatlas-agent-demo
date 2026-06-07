@@ -3,6 +3,7 @@ const REVIEW_SCOPE_KEY = "ia_review_scope";
 
 const messagesEl = document.getElementById("messages");
 const chatView = document.getElementById("chat-view");
+const packetView = document.getElementById("packet-view");
 const reviewView = document.getElementById("review-view");
 const workbenchView = document.getElementById("workbench-view");
 const walkthroughView = document.getElementById("walkthrough-view");
@@ -26,6 +27,21 @@ const btnGenerateWorkbench = document.getElementById("btn-generate-workbench");
 const btnCopyWorkbenchBrief = document.getElementById("btn-copy-workbench-brief");
 const btnExportWorkbench = document.getElementById("btn-export-workbench");
 const workbenchToast = document.getElementById("workbench-toast");
+const btnLoadPacket = document.getElementById("btn-load-packet");
+const btnCopyPacketBrief = document.getElementById("btn-copy-packet-brief");
+const btnExportPacket = document.getElementById("btn-export-packet");
+const btnOpenPacketWorkbench = document.getElementById("btn-open-packet-workbench");
+const packetToast = document.getElementById("packet-toast");
+const packetTitle = document.getElementById("packet-title");
+const packetSubtitle = document.getElementById("packet-subtitle");
+const packetSummaryCard = document.getElementById("packet-summary-card");
+const packetDecisionCard = document.getElementById("packet-decision-card");
+const packetVerificationCard = document.getElementById("packet-verification-card");
+const packetProofCard = document.getElementById("packet-proof-card");
+const packetSponsorCard = document.getElementById("packet-sponsor-card");
+const packetDownstreamCard = document.getElementById("packet-downstream-card");
+const packetReviewerCard = document.getElementById("packet-reviewer-card");
+const packetExportCard = document.getElementById("packet-export-card");
 const workbenchTitle = document.getElementById("workbench-title");
 const workbenchSubtitle = document.getElementById("workbench-subtitle");
 const workbenchIntakeCard = document.getElementById("workbench-intake-card");
@@ -133,6 +149,7 @@ let skillsLoadError = null;
 let skillsLoaded = false;
 let workbenchRegistry = null;
 let workbenchResult = null;
+let packetDetail = null;
 let walkthroughPayload = null;
 let walkthroughActiveIndex = 0;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
@@ -344,6 +361,10 @@ function setJudgeStep(n) {
 
 function showReviewPanel() {
   document.querySelector('.tab[data-tab="review"]')?.click();
+}
+
+function showPacketPanel() {
+  document.querySelector('.tab[data-tab="packet"]')?.click();
 }
 
 function showWalkthroughPanel() {
@@ -1727,7 +1748,14 @@ function renderWorkbenchResult(data) {
   copyVerification.className = "btn-ghost";
   copyVerification.textContent = "Copy verification link";
   copyVerification.addEventListener("click", () => copyWorkbenchVerificationLink());
-  actions.append(copy, copyVerification, viewHash);
+  const openPacket = document.createElement("button");
+  openPacket.type = "button";
+  openPacket.className = "btn-ghost";
+  openPacket.textContent = "Open IA Packet";
+  openPacket.addEventListener("click", () => {
+    window.location.href = packetDetailUrl(fixture.fixture_id);
+  });
+  actions.append(copy, openPacket, copyVerification, viewHash);
   workbenchExportCard.appendChild(actions);
   renderArtifactLinks(data.output_files || [], workbenchExportCard);
   btnCopyWorkbenchBrief.disabled = !data.copy_review_brief;
@@ -1838,6 +1866,232 @@ async function exportWorkbenchResult() {
     setWorkbenchToast("Workbench result exported.");
   } catch (err) {
     setWorkbenchToast(String(err.message || err), true);
+  }
+}
+
+function setPacketToast(text, isError = false) {
+  if (!packetToast) return;
+  packetToast.textContent = text || "";
+  packetToast.classList.toggle("error", isError);
+}
+
+function packetUrlFixtureId() {
+  const params = new URLSearchParams(window.location.search || "");
+  return params.get("fixture") || params.get("scenario") || "mcp_tool_blast_radius";
+}
+
+function packetShouldAutorun() {
+  const params = new URLSearchParams(window.location.search || "");
+  return ["1", "true", "yes"].includes((params.get("autorun") || "").toLowerCase());
+}
+
+function packetWorkbenchUrl() {
+  const fixtureId = packetDetail?.fixture?.fixture_id || packetUrlFixtureId();
+  const url = new URL(window.location.href);
+  url.pathname = "/workbench";
+  url.search = "";
+  url.searchParams.set("fixture", fixtureId);
+  url.searchParams.set("autorun", "1");
+  return url.toString();
+}
+
+function packetDetailUrl(fixtureId) {
+  const url = new URL(window.location.href);
+  url.pathname = "/packet";
+  url.search = "";
+  url.searchParams.set("fixture", fixtureId || "mcp_tool_blast_radius");
+  url.searchParams.set("autorun", "1");
+  return url.toString();
+}
+
+async function copyTextWithFallback(text) {
+  let copied = false;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    }
+  } catch (_) {
+    copied = false;
+  }
+  if (!copied) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      copied = document.execCommand("copy");
+    } catch (_) {
+      copied = false;
+    }
+    textarea.remove();
+  }
+  return copied;
+}
+
+function renderPacketConsumers(consumers) {
+  const wrap = document.createElement("div");
+  wrap.className = "workbench-proof-grid";
+  (consumers || []).slice(0, 6).forEach((consumer) => {
+    const card = document.createElement("div");
+    card.className = "packet-consumer";
+    card.innerHTML = `
+      <span class="trace-subhead">${escapeHtml(consumer.subscriber_category || "consumer")}</span>
+      <h4>${escapeHtml(consumer.subscriber || "downstream consumer")}</h4>
+      <p>${escapeHtml(consumer.consumer_question || "")}</p>
+      <p class="safety-anchor">${escapeHtml(consumer.subscriber_action || "")}</p>
+    `;
+    wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+function renderPacketDetail(data) {
+  packetDetail = data;
+  const fixture = data.fixture || {};
+  const decision = data.decision || {};
+  const packet = data.packet_reference || {};
+  const local = data.local_verification || {};
+  const trace = data.sponsor_proof_trace || null;
+  packetTitle.textContent = data.title || "IA Packet";
+  packetSubtitle.textContent = data.definition || "Canonical packet detail.";
+
+  packetSummaryCard.innerHTML = `
+    <span class="eyebrow">Canonical object</span>
+    <h3>${escapeHtml(data.product_object || "IA Packet")}</h3>
+    <p class="walkthrough-summary">${escapeHtml(data.definition || "")}</p>
+    <code class="walkthrough-fact">${escapeHtml(fixture.path || fixture.scenario_name || fixture.fixture_id || "")}</code>
+    <p class="safety-anchor">${escapeHtml(data.safety_anchor || "IA prepares proof. Humans approve.")}</p>
+  `;
+
+  packetDecisionCard.innerHTML = `
+    <span class="eyebrow">Decision</span>
+    <h3>${escapeHtml(decision.verdict_class || "review_required")}</h3>
+    <div class="walk-metrics">
+      <div><span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong></div>
+      <div><span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong></div>
+      <div><span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong></div>
+      <div><span>Human review</span><strong>${escapeHtml(String(decision.requires_human_review))}</strong></div>
+    </div>
+    <p class="walkthrough-summary">${escapeHtml(decision.next_human_action || "")}</p>
+  `;
+
+  packetVerificationCard.innerHTML = `
+    <span class="eyebrow">Verification</span>
+    <h3>Packet id / revision / hash</h3>
+    <code class="walkthrough-fact">${escapeHtml(packet.packet_id || "")}</code>
+    <code class="walkthrough-fact">${escapeHtml(packet.revision_id || "")}</code>
+    <code class="walkthrough-fact">${escapeHtml(packet.content_hash || local.content_hash || "")}</code>
+    <p class="safety-anchor">read-only ${escapeHtml(String(local.read_only))} · v1 call ${escapeHtml(String(local.calls_v1))}</p>
+  `;
+
+  packetProofCard.innerHTML = `
+    <span class="eyebrow">Proof debt</span>
+    <h3>Blocked claims and missing proof</h3>
+  `;
+  const proofGrid = document.createElement("div");
+  proofGrid.className = "workbench-proof-grid";
+  const blocked = document.createElement("div");
+  blocked.innerHTML = `<span class="trace-subhead">Blocked claims</span>`;
+  blocked.appendChild(renderMiniList(data.blocked_claims || [], { limit: 5 }));
+  const missing = document.createElement("div");
+  missing.innerHTML = `<span class="trace-subhead">Missing proof</span>`;
+  missing.appendChild(renderMiniList(data.missing_proof || [], { limit: 5 }));
+  proofGrid.append(blocked, missing);
+  packetProofCard.appendChild(proofGrid);
+
+  packetSponsorCard.innerHTML = `
+    <span class="eyebrow">Sponsor Proof Trace</span>
+    <h3>${trace ? escapeHtml(String(trace.step_count)) + " proof steps" : "No live proof step required"}</h3>
+    <p class="walkthrough-summary">${trace ? escapeHtml((trace.sponsor_order || []).join(" -> ")) : "Scenario result remains fixture-backed."}</p>
+    <p class="safety-anchor">Decision lock unchanged ${escapeHtml(String(trace?.decision_lock_unchanged ?? true))}</p>
+  `;
+
+  packetDownstreamCard.innerHTML = `
+    <span class="eyebrow">Downstream trust</span>
+    <h3>${escapeHtml(String((data.downstream_consumers || []).length))} consumer patterns read the same packet</h3>
+    <p class="walkthrough-summary">Gateways, CI, spend controls, review queues, and observability read the packet reference. They cannot approve, mutate, or override it.</p>
+  `;
+  packetDownstreamCard.appendChild(renderPacketConsumers(data.downstream_consumers || []));
+
+  packetReviewerCard.innerHTML = `
+    <span class="eyebrow">Reviewer routing</span>
+    <h3>${escapeHtml(String((data.reviewer_routing || []).length))} owner gates</h3>
+  `;
+  packetReviewerCard.appendChild(renderMiniList(data.reviewer_routing || [], { limit: 6 }));
+
+  packetExportCard.innerHTML = `
+    <span class="eyebrow">Export</span>
+    <h3>${escapeHtml(data.export_label || "Copy IA Packet brief")}</h3>
+    <p class="walkthrough-summary">${escapeHtml(data.workbench_safety_anchor || "")}</p>
+  `;
+  const actions = document.createElement("div");
+  actions.className = "walk-actions";
+  const copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "btn-primary";
+  copy.textContent = "Copy IA Packet brief";
+  copy.addEventListener("click", () => copyPacketBrief());
+  const openWorkbench = document.createElement("button");
+  openWorkbench.type = "button";
+  openWorkbench.className = "btn-ghost";
+  openWorkbench.textContent = "Open Workbench";
+  openWorkbench.addEventListener("click", () => {
+    window.location.href = packetWorkbenchUrl();
+  });
+  const copyLink = document.createElement("button");
+  copyLink.type = "button";
+  copyLink.className = "btn-ghost";
+  copyLink.textContent = "Copy IA Packet link";
+  copyLink.addEventListener("click", async () => {
+    const copied = await copyTextWithFallback(packetDetailUrl(fixture.fixture_id));
+    setPacketToast(copied ? "IA Packet link copied." : packetDetailUrl(fixture.fixture_id), !copied);
+  });
+  actions.append(copy, copyLink, openWorkbench);
+  packetExportCard.appendChild(actions);
+  renderArtifactLinks(data.output_files || [], packetExportCard);
+  btnCopyPacketBrief.disabled = !data.copy_review_brief;
+  btnExportPacket.disabled = !(data.output_files || []).length;
+}
+
+async function loadPacketDetail() {
+  btnLoadPacket.disabled = true;
+  setPacketToast("Loading IA Packet...");
+  try {
+    const fixtureId = packetUrlFixtureId();
+    const res = await fetch(`/api/ia-packet?fixture=${encodeURIComponent(fixtureId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
+    renderPacketDetail(data);
+    setPacketToast("IA Packet loaded.");
+  } catch (err) {
+    setPacketToast(String(err.message || err), true);
+  } finally {
+    btnLoadPacket.disabled = false;
+  }
+}
+
+async function copyPacketBrief() {
+  const text = packetDetail?.copy_review_brief || "";
+  if (!text) {
+    setPacketToast("Load an IA Packet first.", true);
+    return;
+  }
+  const copied = await copyTextWithFallback(text);
+  setPacketToast(copied ? "IA Packet brief copied." : "Clipboard unavailable. Use export.", !copied);
+}
+
+async function exportPacketResult() {
+  const first = (packetDetail?.output_files || [])[0];
+  if (!first?.file_id) {
+    setPacketToast("Load an IA Packet first.", true);
+    return;
+  }
+  try {
+    await downloadFile(first.file_id, first.label || "ia-packet.md");
+    setPacketToast("IA Packet exported.");
+  } catch (err) {
+    setPacketToast(String(err.message || err), true);
   }
 }
 
@@ -2295,6 +2549,7 @@ function setupTabs() {
   const tabs = document.querySelectorAll(".sidebar-tabs .tab");
   const panels = {
     start: document.getElementById("panel-start"),
+    packet: document.getElementById("panel-packet"),
     workbench: document.getElementById("panel-workbench"),
     walkthrough: document.getElementById("panel-walkthrough"),
     review: document.getElementById("panel-review"),
@@ -2312,17 +2567,23 @@ function setupTabs() {
         panel.classList.toggle("active", on);
       });
       const isReview = id === "review";
+      const isPacket = id === "packet";
       const isWorkbench = id === "workbench";
       const isWalkthrough = id === "walkthrough";
       const isMetrics = id === "metrics";
-      chatView.hidden = isReview || isWorkbench || isWalkthrough || isMetrics;
+      chatView.hidden = isReview || isPacket || isWorkbench || isWalkthrough || isMetrics;
       reviewView.hidden = !isReview;
+      packetView.hidden = !isPacket;
       workbenchView.hidden = !isWorkbench;
       walkthroughView.hidden = !isWalkthrough;
       if (isReview) {
         await loadGuide();
         await ensureMindsReady();
         await loadMind();
+      } else if (isPacket) {
+        if (packetShouldAutorun() || !packetDetail) {
+          await loadPacketDetail();
+        }
       } else if (isWorkbench) {
         if (!workbenchRegistry) {
           await loadWorkbenchRegistry();
@@ -2920,6 +3181,12 @@ btnMindStep.addEventListener("click", mindStep);
 btnQueueEvidence.addEventListener("click", queueEvidence);
 btnRunRehearsal.addEventListener("click", runSponsorRehearsal);
 btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
+btnLoadPacket.addEventListener("click", loadPacketDetail);
+btnCopyPacketBrief.addEventListener("click", copyPacketBrief);
+btnExportPacket.addEventListener("click", exportPacketResult);
+btnOpenPacketWorkbench.addEventListener("click", () => {
+  window.location.href = packetWorkbenchUrl();
+});
 workbenchLaneSelect.addEventListener("change", () => {
   renderWorkbenchFixtureOptions();
   workbenchResult = null;
@@ -2948,6 +3215,9 @@ setupTabs();
   loadGuide();
   if (window.location.pathname === "/workbench") {
     showWorkbenchPanel();
+  }
+  if (window.location.pathname === "/packet") {
+    showPacketPanel();
   }
   if (window.location.pathname === "/walkthrough") {
     showWalkthroughPanel();

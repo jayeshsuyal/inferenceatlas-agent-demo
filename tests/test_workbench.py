@@ -88,6 +88,26 @@ class WorkbenchTests(unittest.TestCase):
         self.assertGreaterEqual(len(result["output_files"]), 2)
         self.assertTrue(all(item["file_id"] for item in result["output_files"]))
 
+    def test_mcp_fixture_uses_connector_specific_next_human_action(self) -> None:
+        result = build_workbench_result("mcp_tool_blast_radius")
+        action = result["decision"]["next_human_action"]
+
+        self.assertIn("connector allowlist", action)
+        self.assertIn("browser sandbox", action)
+        self.assertIn("tool-owner approval", action)
+        self.assertNotIn("analytics validation", action)
+        self.assertIn(action, result["copy_review_brief"])
+
+    def test_fixture_titles_do_not_duplicate_packet_suffix(self) -> None:
+        miasma = build_workbench_result("miasma_pre_permission_packet")
+        mcp = build_workbench_result("mcp_tool_blast_radius")
+        spend = build_workbench_result("ai_spend_budget_overrun")
+
+        self.assertEqual(miasma["title"], "Miasma pre-permission packet")
+        self.assertEqual(mcp["title"], "MCP tool blast radius packet")
+        self.assertEqual(spend["title"], "Q1 budget overrun spend packet")
+        self.assertNotIn("packet packet", miasma["title"])
+
     def test_workbench_static_ui_is_reachable(self) -> None:
         html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
         js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
@@ -113,6 +133,7 @@ class WorkbenchTests(unittest.TestCase):
             "workbenchShouldAutorun",
             "copyWorkbenchBrief",
             "Copy verification link",
+            "Open IA Packet",
             "View verification hash",
             'window.location.pathname === "/workbench"',
         ]:

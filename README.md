@@ -21,7 +21,7 @@ This public harness does not approve access.
 bash scripts/review_60.sh
 ```
 CLI judge fallback: `bash scripts/run.sh`.
-Opens `/workbench?fixture=mcp_tool_blast_radius&autorun=1`: one public fixture becomes one DecisionPacket, one locked Sponsor Proof Trace, one verification hash, and one export-ready review brief. No keys required, dry-run by default, no v1 calls.
+Opens `/packet?fixture=mcp_tool_blast_radius&autorun=1`: one public fixture becomes one IA Packet with verdict, proof debt, Sponsor Proof Trace, downstream consumers, verification hash, and export-ready review brief. No keys required, dry-run by default, no v1 calls.
 
 ## Judge Fast Path
 `bash scripts/run.sh` stays the CLI-only offline, deterministic, dry-run, no-write fallback.
@@ -64,6 +64,7 @@ flowchart LR
 ## Review Paths
 
 - Packet Workbench / 60-second reviewer path: run `bash scripts/review_60.sh` or read [Review 60 Path](docs/REVIEW_60_PATH.md)
+- IA Packet detail surface: `/packet?fixture=mcp_tool_blast_radius&autorun=1`
 - Product walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
 - Capability map: [Agent Skills](docs/AGENT_SKILLS.md)
 - Fast reviewer guide: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md)

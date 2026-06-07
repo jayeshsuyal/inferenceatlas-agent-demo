@@ -31,6 +31,8 @@ const btnLoadPacket = document.getElementById("btn-load-packet");
 const btnCopyPacketBrief = document.getElementById("btn-copy-packet-brief");
 const btnExportPacket = document.getElementById("btn-export-packet");
 const btnOpenPacketWorkbench = document.getElementById("btn-open-packet-workbench");
+const packetLaneSelect = document.getElementById("packet-lane-select");
+const packetFixtureSelect = document.getElementById("packet-fixture-select");
 const packetToast = document.getElementById("packet-toast");
 const packetTitle = document.getElementById("packet-title");
 const packetSubtitle = document.getElementById("packet-subtitle");
@@ -1875,6 +1877,10 @@ function setPacketToast(text, isError = false) {
   packetToast.classList.toggle("error", isError);
 }
 
+function packetSelectedFixtureId() {
+  return packetFixtureSelect?.value || packetUrlFixtureId();
+}
+
 function packetUrlFixtureId() {
   const params = new URLSearchParams(window.location.search || "");
   return params.get("fixture") || params.get("scenario") || "mcp_tool_blast_radius";
@@ -1885,8 +1891,58 @@ function packetShouldAutorun() {
   return ["1", "true", "yes"].includes((params.get("autorun") || "").toLowerCase());
 }
 
+function findPacketFixture(fixtureId) {
+  return (workbenchRegistry?.fixtures || []).find((fixture) => fixture.fixture_id === fixtureId);
+}
+
+function renderPacketFixtureOptions(preferredFixtureId = "") {
+  if (!workbenchRegistry || !packetLaneSelect || !packetFixtureSelect) return;
+  const laneId = packetLaneSelect.value || workbenchRegistry.lanes?.[0]?.lane_id;
+  const fixtures = (workbenchRegistry.fixtures || []).filter((fixture) => fixture.lane_id === laneId);
+  const currentFixtureId = packetFixtureSelect.value;
+  packetFixtureSelect.innerHTML = "";
+  fixtures.forEach((fixture) => {
+    const option = document.createElement("option");
+    option.value = fixture.fixture_id;
+    option.textContent = fixture.label;
+    packetFixtureSelect.appendChild(option);
+  });
+  if (fixtures.length) {
+    const selected = fixtures.find((fixture) => fixture.fixture_id === preferredFixtureId)
+      || fixtures.find((fixture) => fixture.fixture_id === currentFixtureId)
+      || fixtures[0];
+    packetFixtureSelect.value = selected.fixture_id;
+  }
+}
+
+function applyPacketRegistry(defaultFixtureId = "") {
+  if (!workbenchRegistry || !packetLaneSelect || !packetFixtureSelect) return;
+  packetLaneSelect.innerHTML = "";
+  (workbenchRegistry.lanes || []).forEach((lane) => {
+    const option = document.createElement("option");
+    option.value = lane.lane_id;
+    option.textContent = lane.label;
+    packetLaneSelect.appendChild(option);
+  });
+  const requestedFixtureId = defaultFixtureId || packetUrlFixtureId();
+  const requestedFixture = findPacketFixture(requestedFixtureId);
+  const defaultFixture = requestedFixture || findPacketFixture(workbenchRegistry.default_fixture_id)
+    || (workbenchRegistry.fixtures || [])[0];
+  if (defaultFixture) {
+    packetLaneSelect.value = defaultFixture.lane_id;
+    renderPacketFixtureOptions(defaultFixture.fixture_id);
+    packetFixtureSelect.value = defaultFixture.fixture_id;
+  }
+}
+
+async function loadPacketRegistry(defaultFixtureId = "") {
+  await loadWorkbenchRegistry();
+  applyPacketRegistry(defaultFixtureId);
+  return workbenchRegistry;
+}
+
 function packetWorkbenchUrl() {
-  const fixtureId = packetDetail?.fixture?.fixture_id || packetUrlFixtureId();
+  const fixtureId = packetDetail?.fixture?.fixture_id || packetSelectedFixtureId();
   const url = new URL(window.location.href);
   url.pathname = "/workbench";
   url.search = "";
@@ -1955,6 +2011,9 @@ function renderPacketDetail(data) {
   const trace = data.sponsor_proof_trace || null;
   packetTitle.textContent = data.title || "IA Packet";
   packetSubtitle.textContent = data.definition || "Canonical packet detail.";
+  if (fixture.fixture_id) {
+    applyPacketRegistry(fixture.fixture_id);
+  }
 
   packetSummaryCard.innerHTML = `
     <span class="eyebrow">Canonical object</span>
@@ -2058,11 +2117,14 @@ async function loadPacketDetail() {
   btnLoadPacket.disabled = true;
   setPacketToast("Loading IA Packet...");
   try {
-    const fixtureId = packetUrlFixtureId();
+    const requestedFixtureId = packetSelectedFixtureId();
+    await loadPacketRegistry(requestedFixtureId);
+    const fixtureId = packetSelectedFixtureId();
     const res = await fetch(`/api/ia-packet?fixture=${encodeURIComponent(fixtureId)}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
     renderPacketDetail(data);
+    window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
     setPacketToast("IA Packet loaded.");
   } catch (err) {
     setPacketToast(String(err.message || err), true);
@@ -2581,6 +2643,11 @@ function setupTabs() {
         await ensureMindsReady();
         await loadMind();
       } else if (isPacket) {
+        if (!workbenchRegistry) {
+          await loadPacketRegistry();
+        } else {
+          applyPacketRegistry(packetDetail?.fixture?.fixture_id || packetUrlFixtureId());
+        }
         if (packetShouldAutorun() || !packetDetail) {
           await loadPacketDetail();
         }
@@ -3186,6 +3253,19 @@ btnCopyPacketBrief.addEventListener("click", copyPacketBrief);
 btnExportPacket.addEventListener("click", exportPacketResult);
 btnOpenPacketWorkbench.addEventListener("click", () => {
   window.location.href = packetWorkbenchUrl();
+});
+packetLaneSelect.addEventListener("change", () => {
+  renderPacketFixtureOptions();
+  packetDetail = null;
+  btnCopyPacketBrief.disabled = true;
+  btnExportPacket.disabled = true;
+  setPacketToast("Lane changed. Load an IA Packet to refresh the product object.");
+});
+packetFixtureSelect.addEventListener("change", () => {
+  packetDetail = null;
+  btnCopyPacketBrief.disabled = true;
+  btnExportPacket.disabled = true;
+  setPacketToast("Fixture changed. Load an IA Packet to refresh the product object.");
 });
 workbenchLaneSelect.addEventListener("change", () => {
   renderWorkbenchFixtureOptions();

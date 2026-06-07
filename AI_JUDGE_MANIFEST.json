@@ -9,6 +9,7 @@
   "downstream_gate_api": "/api/downstream-gates/{subscriber}/decision",
   "ia_packet_surface": "/packet?fixture=mcp_tool_blast_radius&autorun=1",
   "ia_packet_api": "/api/ia-packet?fixture=mcp_tool_blast_radius",
+  "ia_packet_switcher": "all registered Workbench fixtures",
   "packet_workbench_surface": "/workbench",
   "packet_workbench_api": "/api/workbench/generate",
   "review_60_command": "bash scripts/review_60.sh",

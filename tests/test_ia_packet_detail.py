@@ -72,6 +72,8 @@ class IAPacketDetailTests(unittest.TestCase):
         for expected in [
             'data-tab="packet"',
             'id="packet-view"',
+            'id="packet-lane-select"',
+            'id="packet-fixture-select"',
             'id="btn-load-packet"',
             'id="btn-copy-packet-brief"',
             'id="btn-export-packet"',
@@ -82,6 +84,11 @@ class IAPacketDetailTests(unittest.TestCase):
         for expected in [
             "/api/ia-packet",
             'window.location.pathname === "/packet"',
+            "const requestedFixtureId = packetSelectedFixtureId();",
+            "await loadPacketRegistry(requestedFixtureId);",
+            "loadPacketRegistry",
+            "renderPacketFixtureOptions",
+            "packetSelectedFixtureId",
             "renderPacketDetail",
             "Copy IA Packet link",
             "Open IA Packet",
@@ -90,8 +97,26 @@ class IAPacketDetailTests(unittest.TestCase):
 
         self.assertEqual(manifest["ia_packet_surface"], "/packet?fixture=mcp_tool_blast_radius&autorun=1")
         self.assertEqual(manifest["ia_packet_api"], "/api/ia-packet?fixture=mcp_tool_blast_radius")
+        self.assertEqual(manifest["ia_packet_switcher"], "all registered Workbench fixtures")
         self.assertEqual(manifest["review_60_packet_url"], "/packet?fixture=mcp_tool_blast_radius&autorun=1")
         self.assertIn("IA Packet detail surface", manifest["private_v1_boundary"]["public_proof_surface"])
+
+    def test_ia_packet_switcher_covers_every_registered_fixture(self) -> None:
+        registry = build_workbench_registry()
+        html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+        js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
+
+        self.assertGreaterEqual(len(registry["fixtures"]), 6)
+        self.assertIn('id="packet-lane-select"', html)
+        self.assertIn('id="packet-fixture-select"', html)
+        self.assertIn("applyPacketRegistry", js)
+        self.assertIn("findPacketFixture", js)
+
+        for fixture in registry["fixtures"]:
+            detail = build_ia_packet_detail(fixture["fixture_id"])
+            self.assertEqual(detail["fixture"]["fixture_id"], fixture["fixture_id"])
+            self.assertFalse(detail["decision"]["production_access"], msg=fixture["fixture_id"])
+            self.assertFalse(detail["local_verification"]["calls_v1"], msg=fixture["fixture_id"])
 
 
 if __name__ == "__main__":

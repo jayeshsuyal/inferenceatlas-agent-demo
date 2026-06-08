@@ -242,6 +242,23 @@ def _check_sponsors(base_url: str, timeout: float) -> None:
         ],
         prefix="sponsor_run.safety_boundary",
     )
+    record = run_payload["ledger_record"]
+    _require(record["run_id"] == run["run_id"], "sponsor proof run must return durable ledger record")
+    _require(record["packet_reference"] == run["packet_reference"], "ledger record packet reference drifted")
+    _require(record["safety_lock"]["read_only"] is True, "ledger record must stay read-only")
+    _require(record["safety_lock"]["live_calls_made"] is False, "ledger record must not record live calls")
+    _require(record["safety_lock"]["decision_lock_unchanged"] is True, "ledger record must preserve decision lock")
+    _require(record["output_artifacts"]["run_record_json"].endswith(".json"), "ledger record JSON artifact missing")
+
+    fetched = _json_get(base_url, "/api/sponsor-proof-runs/" + urllib.parse.quote(run["run_id"]), timeout=timeout)
+    _require(fetched["run"]["run_id"] == run["run_id"], "sponsor proof run detail did not reload by run_id")
+    ledger = _json_get(base_url, "/api/sponsor-proof-run-ledger", timeout=timeout)["ledger"]
+    _require(ledger["schema_version"] == "sponsor_proof_run_ledger.v0", "sponsor run ledger schema drifted")
+    _require(ledger["read_only"] is True, "sponsor run ledger must be read-only")
+    _require(ledger["record_count"] >= 1, "sponsor run ledger must include created run")
+    _require(any(item["run_id"] == run["run_id"] for item in ledger["runs"]), "created run missing from ledger")
+    _require(ledger["safety_summary"]["no_live_calls"] is True, "ledger must preserve no-live-call summary")
+    _require(ledger["safety_summary"]["no_external_writes"] is True, "ledger must preserve no-write summary")
 
 
 def _check_review_cycle(base_url: str, timeout: float) -> None:

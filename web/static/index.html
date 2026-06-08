@@ -232,14 +232,14 @@
             <div class="github-chips" id="github-chips" hidden aria-label="Attached GitHub repos"></div>
             <div class="drive-chips" id="drive-chips" hidden aria-label="Attached Google Drive files"></div>
             <p class="skill-hints" id="skill-hints" hidden></p>
-            <p class="packet-coach-label">Follow-ups after packet load</p>
+            <p class="packet-coach-label">Ask IA about this packet</p>
             <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
-              <button type="button" data-ask-prompt="Can this move?">Can this move?</button>
-              <button type="button" data-ask-prompt="What proof is missing?">What proof is missing?</button>
-              <button type="button" data-ask-prompt="Who reviews this?">Who reviews?</button>
+              <button type="button" data-ask-prompt="Can this move?">Can it move?</button>
+              <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
+              <button type="button" data-ask-prompt="Who reviews this?">Review route</button>
               <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
             </div>
-            <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Open the IA Packet first; then ask packet-backed follow-ups.</p>
+            <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.</p>
             <div class="github-picker" id="github-picker" hidden>
               <input
                 type="search"
@@ -414,6 +414,24 @@
             <article class="walkthrough-panel span-2" id="packet-downstream-card"></article>
             <article class="walkthrough-panel" id="packet-reviewer-card"></article>
             <article class="walkthrough-panel" id="packet-export-card"></article>
+          </section>
+
+          <section class="packet-inline-coach" id="packet-inline-coach" aria-label="Ask IA packet coach">
+            <div class="packet-inline-coach-head">
+              <span class="eyebrow">Ask IA</span>
+              <h3>Packet-backed decision coach</h3>
+              <p>Ask the packet what can move, what is blocked, who reviews, or how Portkey would read it.</p>
+            </div>
+            <div class="packet-inline-coach-prompts" id="packet-inline-coach-prompts">
+              <button type="button" data-ask-prompt="Can this move?">Can it move?</button>
+              <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
+              <button type="button" data-ask-prompt="Who reviews this?">Review route</button>
+              <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
+            </div>
+            <p class="packet-inline-coach-status" id="packet-inline-coach-status" role="status" aria-live="polite">
+              Load an IA Packet, then ask a packet-backed follow-up. IA stays read-only.
+            </p>
+            <div class="packet-inline-coach-output" id="packet-inline-coach-output"></div>
           </section>
         </div>
 

@@ -6,7 +6,7 @@ This memo packages one packet reference, sponsor proof roles, reviewer routing, 
 
 ## Packet Reference
 
-- memo_id: `ia-pilot-memo-support_triage_trial-0a03b1790baa1f36-public-v0`
+- memo_id: `ia-pilot-memo-support_triage_trial-91a71df3479c999e-public-v0`
 - packet_id: `ia-agent-access-support-triage-v0`
 - revision_id: `rev_88d8eb01dcc88177`
 - content_hash: `sha256:88d8eb01dcc8817774770a07bd4859fdac699eb4dc3f802c059777555a3c235c`

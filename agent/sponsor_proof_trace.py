@@ -277,7 +277,11 @@ def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
         return f"{len(adapter['action_plans'])} dry-run permission plans built; no tool write executed."
     if provider == "openclaw":
         return f"{len(adapter['trace_steps'])} runtime checkpoints traced; blocked/dry-run state preserved."
-    return "Reviewer narration prepared from locked packet fields; verdict and safety state unchanged."
+    return (
+        "Reviewer narration prepared from locked packet fields. IA does not approve this request. "
+        "Human review is required before any access, spend, or production movement. "
+        "Verdict and safety state unchanged."
+    )
 
 
 def _build_step(

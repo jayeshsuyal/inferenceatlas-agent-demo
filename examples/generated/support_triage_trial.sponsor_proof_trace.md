@@ -6,10 +6,10 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 
 ## Trace Identity
 
-- trace_id: `ia-sponsor-proof-trace-support_triage_trial-3563828a1fc4e481-public-v0`
+- trace_id: `ia-sponsor-proof-trace-support_triage_trial-f52b0a4e8f1075b6-public-v0`
 - packet_id: `ia-agent-access-support-triage-v0`
 - revision_id: `rev_965302783cee8688`
-- content_hash: `sha256:3563828a1fc4e4815cceb092a66254a102859cdb2841bce196c09b7324939439`
+- content_hash: `sha256:f52b0a4e8f1075b6c22f18a1859c324d22b03593a4f110d1ff9fa40d392da397`
 - scenario: `support_triage_agent`
 - lane: `both`
 
@@ -40,7 +40,7 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 - tavily searched: 5 evidence candidate slots planned; no proof debt reduced.
 - composio planned: 3 dry-run permission plans built; no tool write executed.
 - openclaw traced: 3 runtime checkpoints traced; blocked/dry-run state preserved.
-- nebius narrated: Reviewer narration prepared from locked packet fields; verdict and safety state unchanged.
+- nebius narrated: Reviewer narration prepared from locked packet fields. IA does not approve this request. Human review is required before any access, spend, or production movement. Verdict and safety state unchanged.
 
 ## Access Evidence
 

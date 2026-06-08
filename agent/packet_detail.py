@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .scenarios import ROOT_DIR
+from .team_lenses import build_team_lenses
 from .verification import PACKET_VERIFICATION_SCHEMA_VERSION
 from .workbench import WORKBENCH_SAFETY_ANCHOR, build_workbench_result, workbench_result_to_pretty_json
 
@@ -67,7 +68,7 @@ def build_ia_packet_detail(fixture_id: str) -> dict[str, Any]:
     downstream_consumers = _downstream_consumers(packet_reference)
     decision = workbench["decision"]
     safety_boundary = workbench["safety_boundary"]
-    return {
+    detail = {
         "schema_version": IA_PACKET_DETAIL_SCHEMA_VERSION,
         "ok": True,
         "product_object": "IA Packet",
@@ -99,6 +100,10 @@ def build_ia_packet_detail(fixture_id: str) -> dict[str, Any]:
         "verification_link_hint": "/packet?fixture={fixture_id}&autorun=1",
         "source_workbench_schema_version": workbench["schema_version"],
     }
+    team_lenses = build_team_lenses(detail)
+    detail["team_lenses_schema_version"] = team_lenses["schema_version"]
+    detail["team_lenses"] = team_lenses
+    return detail
 
 
 def build_ia_packet_verification(fixture_id: str) -> dict[str, Any]:
@@ -198,6 +203,13 @@ def render_ia_packet_detail_markdown(detail: dict[str, Any]) -> str:
         *[
             f"- {item['subscriber']} ({item['subscriber_category']}): {item['subscriber_action']}"
             for item in detail["downstream_consumers"]
+        ],
+        "",
+        "## Team Lenses",
+        "",
+        *[
+            f"- {item['label']}: {item['next_validation']}"
+            for item in detail["team_lenses"]["lenses"]
         ],
         "",
         "## Safety Anchor",

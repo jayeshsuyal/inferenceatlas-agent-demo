@@ -78,6 +78,7 @@ command_json_check /tmp/ia_gate.all.json "$PYTHON_BIN" -m agent.gate --all --jso
 command_json_check /tmp/ia_adapters.all.json "$PYTHON_BIN" -m agent.adapters --all --json
 command_json_check /tmp/ia_sponsor_readiness.no_write.json "$PYTHON_BIN" -m agent.sponsor_readiness --no-write --json
 command_json_check /tmp/ia_sponsor_proof_collector.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --json
+command_json_check /tmp/ia_composio_dry_run.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --composio-dry-run --json
 command_json_check /tmp/ia_sponsor_proof_trace.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_proof_health.no_write.json "$PYTHON_BIN" -m agent.proof_health --no-write --json
 command_json_check /tmp/ia_spend.no_write.json "$PYTHON_BIN" -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write --json

@@ -71,6 +71,14 @@ python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.
 
 The run embeds Tavily source candidates in the SponsorProofTrace/SponsorProofCollector output. Source candidates remain review inputs; they do not approve access or reduce proof debt automatically.
 
+The first Composio slice is a dry-run permission diff, also explicitly opt-in and no-write:
+
+```bash
+python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --composio-dry-run --json
+```
+
+The run embeds a Composio-shaped execute-action preview for GitHub, Slack, and Jira. The preview records allowed validation scope, blocked write actions, and required proof. It does not call Composio `execute`, grant permissions, or mutate connected accounts.
+
 Use this shape for new integration outputs before merging them into the packet:
 
 ```json

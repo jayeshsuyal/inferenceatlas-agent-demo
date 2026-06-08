@@ -166,6 +166,11 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["tavily_live_evidence_json_command"],
             "python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --live-tavily --json",
         )
+        self.assertEqual(manifest["composio_dry_run_diff_module"], "agent/composio_dry_run_diff.py")
+        self.assertEqual(
+            manifest["composio_dry_run_diff_json_command"],
+            "python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --composio-dry-run --json",
+        )
         self.assertEqual(manifest["ai_spend_review_request"], "examples/requests/ai_spend_budget_overrun.yml")
         self.assertEqual(
             manifest["ai_spend_review_command"],

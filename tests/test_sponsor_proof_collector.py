@@ -136,6 +136,42 @@ def test_collector_live_tavily_without_key_keeps_deterministic_fallback() -> Non
     assert all(candidate["source_urls"] == [] for candidate in tavily_proof["evidence_candidates"])
 
 
+def test_collector_composio_dry_run_builds_permission_diff_without_live_calls() -> None:
+    run = build_sponsor_proof_collector_run(DEFAULT_TRIAL_REQUEST, composio_dry_run=True)
+
+    assert run["mode"] == "offline_dry_run"
+    assert run["safety_boundary"]["read_only"] is True
+    assert run["safety_boundary"]["live_calls_made"] is False
+    assert run["safety_boundary"]["approves_access"] is False
+    assert run["safety_boundary"]["grants_permissions"] is False
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["safety_boundary"]["mutates_production"] is False
+    assert run["safety_boundary"]["approves_spend"] is False
+    assert run["safety_boundary"]["selects_provider"] is False
+    assert run["safety_boundary"]["guarantees_savings"] is False
+
+    composio_step = next(step for step in run["collector_steps"] if step["sponsor"] == "composio")
+    assert composio_step["used_live_key"] is False
+    assert composio_step["fallback_used"] is True
+    assert composio_step["would_execute"] is False
+    assert composio_step["can_approve_access"] is False
+    assert composio_step["can_grant_permissions"] is False
+    assert composio_step["can_mutate_external_state"] is False
+
+    composio_proof = run["dry_run_sponsor_proof"]["composio"]
+    assert composio_proof["status"] == "dry_run_permission_diff_built"
+    assert composio_proof["api_call_made"] is False
+    assert composio_proof["composio_execute_allowed"] is False
+    assert composio_proof["permission_diff_summary"]["tool_count"] == 3
+    assert composio_proof["permission_diff_summary"]["blocked_write_count"] == 9
+    assert all(diff["execute_action_preview"]["would_call_composio"] is False for diff in composio_proof["permission_diffs"])
+
+    markdown = render_sponsor_proof_collector_markdown(run)
+    assert "## Dry-Run Proof Collection" in markdown
+    assert "composio status: `dry_run_permission_diff_built`" in markdown
+    assert "api call made: False" in markdown
+
+
 def test_collector_markdown_is_public_safe_and_skim_ready() -> None:
     markdown = render_sponsor_proof_collector_markdown(
         build_sponsor_proof_collector_run(DEFAULT_TRIAL_REQUEST)
@@ -215,6 +251,26 @@ def test_collector_cli_outputs_markdown_and_json() -> None:
     assert payload["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
 
 
+def test_collector_cli_blocks_composio_dry_run_checked_artifact_writes() -> None:
+    proc = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.sponsor_proof_collector",
+            "examples/requests/support_triage_trial.yml",
+            "--composio-dry-run",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert proc.returncode == 2
+    assert "--composio-dry-run require --no-write or a custom --output-dir" in proc.stderr
+
+
 def test_collector_api_creates_and_returns_local_read_only_runs() -> None:
     created = create_sponsor_proof_run(SponsorProofRunRequest())
 
@@ -269,6 +325,22 @@ def test_collector_api_accepts_live_tavily_opt_in_without_key() -> None:
     assert run["safety_boundary"]["executes_external_writes"] is False
     assert run["live_sponsor_proof"]["tavily"]["fallback_reason"] == "tavily_api_key_missing"
     assert created["ledger_record"]["safety_lock"]["live_calls_made"] is False
+    assert created["ledger_record"]["safety_lock"]["decision_lock_unchanged"] is True
+
+
+def test_collector_api_accepts_composio_dry_run_opt_in_without_writes() -> None:
+    created = create_sponsor_proof_run(SponsorProofRunRequest(composio_dry_run=True))
+
+    run = created["run"]
+    assert created["ok"] is True
+    assert created["read_only"] is True
+    assert run["mode"] == "offline_dry_run"
+    assert run["safety_boundary"]["live_calls_made"] is False
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["dry_run_sponsor_proof"]["composio"]["api_call_made"] is False
+    assert run["dry_run_sponsor_proof"]["composio"]["composio_execute_allowed"] is False
+    assert created["ledger_record"]["safety_lock"]["live_calls_made"] is False
+    assert created["ledger_record"]["safety_lock"]["executes_external_writes"] is False
     assert created["ledger_record"]["safety_lock"]["decision_lock_unchanged"] is True
 
 

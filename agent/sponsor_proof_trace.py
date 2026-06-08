@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .adapters import build_adapter_result
+from .composio_dry_run_diff import build_composio_dry_run_diff
 from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet
 from .spend import build_spend_review_bundle
@@ -212,9 +213,12 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
             {"evidence_candidates": adapter["evidence_candidates"]},
         )
     if provider == "composio":
+        output = {"action_plans": adapter["action_plans"]}
+        if adapter.get("dry_run_requested"):
+            output["permission_diffs"] = adapter["permission_diffs"]
         return (
             {"tool_access_plan": packet["tool_access_plan"]},
-            {"action_plans": adapter["action_plans"]},
+            output,
         )
     if provider == "openclaw":
         return (
@@ -264,6 +268,12 @@ def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
             )
         return f"{len(adapter['evidence_candidates'])} evidence candidate slots planned; no proof debt reduced."
     if provider == "composio":
+        if adapter.get("status") == "dry_run_permission_diff_built":
+            summary = adapter["permission_diff_summary"]
+            return (
+                f"{summary['tool_count']} Composio permission diffs built; "
+                f"{summary['blocked_write_count']} write actions remain blocked; no tool write executed."
+            )
         return f"{len(adapter['action_plans'])} dry-run permission plans built; no tool write executed."
     if provider == "openclaw":
         return f"{len(adapter['trace_steps'])} runtime checkpoints traced; blocked/dry-run state preserved."
@@ -308,6 +318,7 @@ def build_sponsor_proof_trace(
     scenario_name: str = DEFAULT_SCENARIO,
     lane: Literal["access_review", "spend_review", "both"] = "both",
     live_tavily: bool = False,
+    composio_dry_run: bool = False,
     tavily_client_factory: ClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build the canonical sponsor proof trace with deterministic fallback steps."""
@@ -331,6 +342,12 @@ def build_sponsor_proof_trace(
                 client_factory=tavily_client_factory,
             )
             if provider == "tavily"
+            else build_composio_dry_run_diff(
+                packet,
+                scenario_name=scenario_name,
+                dry_run_enabled=composio_dry_run,
+            )
+            if provider == "composio" and composio_dry_run
             else build_adapter_result(provider, scenario_name)
         )
         for provider in SPONSOR_ORDER
@@ -364,6 +381,29 @@ def build_sponsor_proof_trace(
         }
         if "live_error" in tavily_adapter:
             live_proof["tavily"]["live_error"] = tavily_adapter["live_error"]
+    dry_run_proof = {}
+    composio_adapter = adapters["composio"]
+    if composio_adapter.get("dry_run_requested"):
+        dry_run_proof["composio"] = {
+            "schema_version": composio_adapter["dry_run_diff_schema_version"],
+            "status": composio_adapter["status"],
+            "dry_run_requested": composio_adapter["dry_run_requested"],
+            "dry_run_enforced": composio_adapter["dry_run_enforced"],
+            "api_call_made": composio_adapter["api_call_made"],
+            "composio_execute_allowed": composio_adapter["composio_execute_allowed"],
+            "used_live_key": composio_adapter["used_live_key"],
+            "fallback_used": composio_adapter["fallback_used"],
+            "fallback_reason": composio_adapter["fallback_reason"],
+            "permission_diff_summary": composio_adapter["permission_diff_summary"],
+            "permission_diffs": composio_adapter["permission_diffs"],
+            "docs_reference": composio_adapter["docs_reference"],
+            "sdk_docs_reference": composio_adapter["sdk_docs_reference"],
+            "safety_impact": composio_adapter["safety_impact"],
+            "human_review_required": composio_adapter["human_review_required"],
+            "can_approve_access": composio_adapter["can_approve_access"],
+            "can_grant_permissions": composio_adapter["can_grant_permissions"],
+            "can_mutate_external_state": composio_adapter["can_mutate_external_state"],
+        }
 
     payload_for_hash = {
         "packet_id": packet["packet_id"],
@@ -382,6 +422,8 @@ def build_sponsor_proof_trace(
     }
     if live_proof:
         payload_for_hash["live_proof"] = live_proof
+    if dry_run_proof:
+        payload_for_hash["dry_run_proof"] = dry_run_proof
     digest = _stable_digest(payload_for_hash)
     trace = SponsorProofTrace(
         trace_id=f"ia-sponsor-proof-trace-{request_path.stem}-{digest[:16]}-public-v0",
@@ -400,6 +442,8 @@ def build_sponsor_proof_trace(
     ).to_dict()
     if live_proof:
         trace["live_proof"] = live_proof
+    if dry_run_proof:
+        trace["dry_run_proof"] = dry_run_proof
     trace["source_artifacts"] = {
         "request": _relative(request_path),
         "packet": f"examples/generated/{request_path.stem}.packet.json",
@@ -497,6 +541,24 @@ def render_sponsor_proof_trace_markdown(trace: dict[str, Any]) -> str:
             lines.append(f"- source candidates: {source_count}")
             lines.append("")
 
+    dry_run_proof = trace.get("dry_run_proof", {})
+    if dry_run_proof:
+        lines.extend(["", "## Dry-Run Proof Collection", ""])
+        for provider, proof in dry_run_proof.items():
+            summary = proof["permission_diff_summary"]
+            lines.extend(
+                [
+                    f"- provider: `{provider}`",
+                    f"- status: `{proof['status']}`",
+                    f"- api call made: {proof['api_call_made']}",
+                    f"- execute allowed: {proof['composio_execute_allowed']}",
+                    f"- blocked writes: {summary['blocked_write_count']}",
+                    f"- required proof items: {summary['required_proof_count']}",
+                    f"- human review required: {proof['human_review_required']}",
+                    "",
+                ]
+            )
+
     access = trace["access_review_evidence"]
     if access:
         lines.extend(
@@ -559,6 +621,7 @@ def write_sponsor_proof_trace_artifacts(
     scenario_name: str = DEFAULT_SCENARIO,
     lane: Literal["access_review", "spend_review", "both"] = "both",
     live_tavily: bool = False,
+    composio_dry_run: bool = False,
 ) -> list[Path]:
     """Write SponsorProofTrace Markdown and JSON artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -567,6 +630,7 @@ def write_sponsor_proof_trace_artifacts(
         scenario_name=scenario_name,
         lane=lane,
         live_tavily=live_tavily,
+        composio_dry_run=composio_dry_run,
     )
     stem = request_path.stem
     trace_md = output_dir / f"{stem}.sponsor_proof_trace.md"
@@ -598,6 +662,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Opt in to read-only Tavily evidence collection; requires --no-write or a custom --output-dir.",
     )
+    parser.add_argument(
+        "--composio-dry-run",
+        action="store_true",
+        help="Opt in to Composio-shaped dry-run permission diff; requires --no-write or a custom --output-dir.",
+    )
     return parser
 
 
@@ -607,14 +676,15 @@ def main(argv: list[str] | None = None) -> int:
     request_path = args.request_path
     if not request_path.is_absolute():
         request_path = ROOT_DIR / request_path
-    if args.live_tavily and not args.no_write and args.output_dir == GENERATED_DIR:
-        print("--live-tavily requires --no-write or a custom --output-dir", file=sys.stderr)
+    if (args.live_tavily or args.composio_dry_run) and not args.no_write and args.output_dir == GENERATED_DIR:
+        print("--live-tavily/--composio-dry-run require --no-write or a custom --output-dir", file=sys.stderr)
         return 2
     trace = build_sponsor_proof_trace(
         request_path,
         scenario_name=args.scenario,
         lane=args.lane,
         live_tavily=args.live_tavily,
+        composio_dry_run=args.composio_dry_run,
     )
     if not args.no_write:
         paths = write_sponsor_proof_trace_artifacts(
@@ -623,6 +693,7 @@ def main(argv: list[str] | None = None) -> int:
             scenario_name=args.scenario,
             lane=args.lane,
             live_tavily=args.live_tavily,
+            composio_dry_run=args.composio_dry_run,
         )
         if not args.json:
             for path in paths:

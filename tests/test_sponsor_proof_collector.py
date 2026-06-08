@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
 from fastapi import HTTPException
 
@@ -103,6 +104,36 @@ def test_collector_invariants_lock_sponsor_order_and_no_mutation() -> None:
     assert safety["selects_provider"] is False
     assert safety["guarantees_savings"] is False
     assert safety["requires_human_review"] is True
+
+
+def test_collector_live_tavily_without_key_keeps_deterministic_fallback() -> None:
+    with patch("agent.tavily_live_evidence.TAVILY_API_KEY", ""):
+        run = build_sponsor_proof_collector_run(DEFAULT_TRIAL_REQUEST, live_tavily=True)
+
+    assert run["mode"] == "offline_dry_run"
+    assert run["safety_boundary"]["read_only"] is True
+    assert run["safety_boundary"]["live_calls_made"] is False
+    assert run["safety_boundary"]["approves_access"] is False
+    assert run["safety_boundary"]["grants_permissions"] is False
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["safety_boundary"]["mutates_production"] is False
+    assert run["safety_boundary"]["approves_spend"] is False
+    assert run["safety_boundary"]["selects_provider"] is False
+    assert run["safety_boundary"]["guarantees_savings"] is False
+
+    tavily_step = next(step for step in run["collector_steps"] if step["sponsor"] == "tavily")
+    assert tavily_step["status"] == "completed_fallback"
+    assert tavily_step["used_live_key"] is False
+    assert tavily_step["fallback_used"] is True
+    assert tavily_step["would_execute"] is False
+    assert tavily_step["can_approve_access"] is False
+
+    tavily_proof = run["live_sponsor_proof"]["tavily"]
+    assert tavily_proof["live_requested"] is True
+    assert tavily_proof["live_call_attempted"] is False
+    assert tavily_proof["fallback_used"] is True
+    assert tavily_proof["fallback_reason"] == "tavily_api_key_missing"
+    assert all(candidate["source_urls"] == [] for candidate in tavily_proof["evidence_candidates"])
 
 
 def test_collector_markdown_is_public_safe_and_skim_ready() -> None:
@@ -224,6 +255,21 @@ def test_collector_api_creates_and_returns_local_read_only_runs() -> None:
     assert post_route.methods == {"POST"}
     assert get_route.methods == {"GET"}
     assert ledger_route.methods == {"GET"}
+
+
+def test_collector_api_accepts_live_tavily_opt_in_without_key() -> None:
+    with patch("agent.tavily_live_evidence.TAVILY_API_KEY", ""):
+        created = create_sponsor_proof_run(SponsorProofRunRequest(live_tavily=True))
+
+    run = created["run"]
+    assert created["ok"] is True
+    assert created["read_only"] is True
+    assert run["mode"] == "offline_dry_run"
+    assert run["safety_boundary"]["live_calls_made"] is False
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["live_sponsor_proof"]["tavily"]["fallback_reason"] == "tavily_api_key_missing"
+    assert created["ledger_record"]["safety_lock"]["live_calls_made"] is False
+    assert created["ledger_record"]["safety_lock"]["decision_lock_unchanged"] is True
 
 
 def test_collector_api_rejects_paths_outside_public_requests() -> None:

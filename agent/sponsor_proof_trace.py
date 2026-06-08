@@ -14,6 +14,7 @@ from .adapters import build_adapter_result
 from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet
 from .spend import build_spend_review_bundle
+from .tavily_live_evidence import ClientFactory, build_tavily_live_evidence
 from .trial import DEFAULT_TRIAL_REQUEST
 
 
@@ -250,6 +251,17 @@ def _rejected_fields(provider: str) -> tuple[str, ...]:
 
 def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
     if provider == "tavily":
+        if adapter.get("status") == "live_evidence_candidates_fetched":
+            source_count = sum(len(item.get("source_urls", [])) for item in adapter["evidence_candidates"])
+            return (
+                f"{source_count} Tavily source candidates fetched across "
+                f"{len(adapter['evidence_candidates'])} proof items; no proof debt reduced."
+            )
+        if adapter.get("live_requested") and adapter.get("fallback_used"):
+            return (
+                f"{len(adapter['evidence_candidates'])} evidence candidate slots planned after Tavily fallback; "
+                "no proof debt reduced."
+            )
         return f"{len(adapter['evidence_candidates'])} evidence candidate slots planned; no proof debt reduced."
     if provider == "composio":
         return f"{len(adapter['action_plans'])} dry-run permission plans built; no tool write executed."
@@ -263,9 +275,12 @@ def _build_step(
     packet: dict[str, Any],
     *,
     scenario_name: str,
+    adapter: dict[str, Any] | None = None,
 ) -> SponsorStep:
-    adapter = build_adapter_result(provider, scenario_name)
+    adapter = adapter or build_adapter_result(provider, scenario_name)
     step_input, step_output = _step_io(provider, adapter, packet)
+    used_live_key = bool(adapter.get("used_live_key", False))
+    fallback_used = bool(adapter.get("fallback_used", not used_live_key))
     return SponsorStep(
         sponsor=provider,
         step_verb=ALLOWED_VERBS_PER_SPONSOR[provider],
@@ -277,8 +292,8 @@ def _build_step(
         redacted_fields=("api_key", "authorization", "secret", "token"),
         duration_ms=0,
         succeeded=True,
-        used_live_key=False,
-        fallback_used=True,
+        used_live_key=used_live_key,
+        fallback_used=fallback_used,
         would_execute=adapter["would_execute"],
         can_approve_access=adapter["can_approve_access"],
         can_grant_permissions=adapter["can_grant_permissions"],
@@ -292,6 +307,8 @@ def build_sponsor_proof_trace(
     *,
     scenario_name: str = DEFAULT_SCENARIO,
     lane: Literal["access_review", "spend_review", "both"] = "both",
+    live_tavily: bool = False,
+    tavily_client_factory: ClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build the canonical sponsor proof trace with deterministic fallback steps."""
     if scenario_name not in SCENARIOS:
@@ -305,9 +322,48 @@ def build_sponsor_proof_trace(
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
     spend_packet = build_spend_review_bundle()["packet"]
     lock = _decision_lock(packet, spend_packet)
-    steps = tuple(_build_step(provider, packet, scenario_name=scenario_name) for provider in SPONSOR_ORDER)
+    adapters = {
+        provider: (
+            build_tavily_live_evidence(
+                packet,
+                scenario_name=scenario_name,
+                live_enabled=live_tavily,
+                client_factory=tavily_client_factory,
+            )
+            if provider == "tavily"
+            else build_adapter_result(provider, scenario_name)
+        )
+        for provider in SPONSOR_ORDER
+    }
+    steps = tuple(
+        _build_step(provider, packet, scenario_name=scenario_name, adapter=adapters[provider])
+        for provider in SPONSOR_ORDER
+    )
     access_block = _access_evidence(packet) if lane in {"access_review", "both"} else None
     spend_block = _spend_evidence(spend_packet) if lane in {"spend_review", "both"} else None
+    fallback_used = {step.sponsor: step.fallback_used for step in steps}
+    live_proof = {}
+    tavily_adapter = adapters["tavily"]
+    if tavily_adapter.get("live_requested"):
+        live_proof["tavily"] = {
+            "schema_version": tavily_adapter["live_evidence_schema_version"],
+            "status": tavily_adapter["status"],
+            "live_requested": tavily_adapter["live_requested"],
+            "live_call_attempted": tavily_adapter["live_call_attempted"],
+            "live_call_count": tavily_adapter["live_call_count"],
+            "used_live_key": tavily_adapter["used_live_key"],
+            "fallback_used": tavily_adapter["fallback_used"],
+            "fallback_reason": tavily_adapter["fallback_reason"],
+            "evidence_candidates": tavily_adapter["evidence_candidates"],
+            "docs_reference": tavily_adapter["docs_reference"],
+            "safety_impact": tavily_adapter["safety_impact"],
+            "human_review_required": tavily_adapter["human_review_required"],
+            "can_approve_access": tavily_adapter["can_approve_access"],
+            "can_grant_permissions": tavily_adapter["can_grant_permissions"],
+            "can_mutate_external_state": tavily_adapter["can_mutate_external_state"],
+        }
+        if "live_error" in tavily_adapter:
+            live_proof["tavily"]["live_error"] = tavily_adapter["live_error"]
 
     payload_for_hash = {
         "packet_id": packet["packet_id"],
@@ -320,10 +376,12 @@ def build_sponsor_proof_trace(
         "spend_review_evidence": asdict(spend_block) if spend_block else None,
         "decision_lock_before": asdict(lock),
         "decision_lock_after": asdict(lock),
-        "fallback_used": {provider: True for provider in SPONSOR_ORDER},
+        "fallback_used": fallback_used,
         "generated_at": SPONSOR_PROOF_TRACE_GENERATED_AT,
         "source_request": _relative(request_path),
     }
+    if live_proof:
+        payload_for_hash["live_proof"] = live_proof
     digest = _stable_digest(payload_for_hash)
     trace = SponsorProofTrace(
         trace_id=f"ia-sponsor-proof-trace-{request_path.stem}-{digest[:16]}-public-v0",
@@ -338,8 +396,10 @@ def build_sponsor_proof_trace(
         spend_review_evidence=spend_block,
         decision_lock_before=lock,
         decision_lock_after=lock,
-        fallback_used={provider: True for provider in SPONSOR_ORDER},
+        fallback_used=fallback_used,
     ).to_dict()
+    if live_proof:
+        trace["live_proof"] = live_proof
     trace["source_artifacts"] = {
         "request": _relative(request_path),
         "packet": f"examples/generated/{request_path.stem}.packet.json",
@@ -419,6 +479,24 @@ def render_sponsor_proof_trace_markdown(trace: dict[str, Any]) -> str:
     for step in trace["sponsor_steps"]:
         lines.append(f"- {step['sponsor']} {step['step_verb']}: {step['output_summary']}")
 
+    live_proof = trace.get("live_proof", {})
+    if live_proof:
+        lines.extend(["", "## Live Proof Collection", ""])
+        for provider, proof in live_proof.items():
+            lines.extend(
+                [
+                    f"- provider: `{provider}`",
+                    f"- status: `{proof['status']}`",
+                    f"- live call attempted: {proof['live_call_attempted']}",
+                    f"- live call count: {proof['live_call_count']}",
+                    f"- fallback used: {proof['fallback_used']}",
+                    f"- human review required: {proof['human_review_required']}",
+                ]
+            )
+            source_count = sum(len(item.get("source_urls", [])) for item in proof["evidence_candidates"])
+            lines.append(f"- source candidates: {source_count}")
+            lines.append("")
+
     access = trace["access_review_evidence"]
     if access:
         lines.extend(
@@ -480,10 +558,16 @@ def write_sponsor_proof_trace_artifacts(
     *,
     scenario_name: str = DEFAULT_SCENARIO,
     lane: Literal["access_review", "spend_review", "both"] = "both",
+    live_tavily: bool = False,
 ) -> list[Path]:
     """Write SponsorProofTrace Markdown and JSON artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    trace = build_sponsor_proof_trace(request_path, scenario_name=scenario_name, lane=lane)
+    trace = build_sponsor_proof_trace(
+        request_path,
+        scenario_name=scenario_name,
+        lane=lane,
+        live_tavily=live_tavily,
+    )
     stem = request_path.stem
     trace_md = output_dir / f"{stem}.sponsor_proof_trace.md"
     trace_json = output_dir / f"{stem}.sponsor_proof_trace.json"
@@ -509,6 +593,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, default=GENERATED_DIR, help="Directory for generated artifacts.")
     parser.add_argument("--scenario", choices=sorted(SCENARIOS), default=DEFAULT_SCENARIO)
     parser.add_argument("--lane", choices=("access_review", "spend_review", "both"), default="both")
+    parser.add_argument(
+        "--live-tavily",
+        action="store_true",
+        help="Opt in to read-only Tavily evidence collection; requires --no-write or a custom --output-dir.",
+    )
     return parser
 
 
@@ -518,13 +607,22 @@ def main(argv: list[str] | None = None) -> int:
     request_path = args.request_path
     if not request_path.is_absolute():
         request_path = ROOT_DIR / request_path
-    trace = build_sponsor_proof_trace(request_path, scenario_name=args.scenario, lane=args.lane)
+    if args.live_tavily and not args.no_write and args.output_dir == GENERATED_DIR:
+        print("--live-tavily requires --no-write or a custom --output-dir", file=sys.stderr)
+        return 2
+    trace = build_sponsor_proof_trace(
+        request_path,
+        scenario_name=args.scenario,
+        lane=args.lane,
+        live_tavily=args.live_tavily,
+    )
     if not args.no_write:
         paths = write_sponsor_proof_trace_artifacts(
             request_path,
             args.output_dir,
             scenario_name=args.scenario,
             lane=args.lane,
+            live_tavily=args.live_tavily,
         )
         if not args.json:
             for path in paths:

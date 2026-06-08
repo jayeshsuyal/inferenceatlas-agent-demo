@@ -13,6 +13,8 @@ AI agents are moving toward tools, data, spend, and production systems faster th
 
 InferenceAtlas is the pre-permission review layer. Before an agent gets access, it produces the proof packet a human approval process needs:
 
+AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
+
 - what the agent is asking to touch
 - what can move into scoped validation
 - what stays blocked

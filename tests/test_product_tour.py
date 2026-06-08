@@ -11,6 +11,10 @@ POSITIONING_SENTENCE = (
     "Every agent demo shows the agent taking action. "
     "InferenceAtlas shows the proof packet before an agent is allowed to act."
 )
+CROSS_FUNCTIONAL_PACKET_SENTENCE = (
+    "AI movement is cross-functional. "
+    "IA turns every team's proof into one packet downstream systems can trust."
+)
 
 
 class ProductTourTests(unittest.TestCase):
@@ -21,6 +25,7 @@ class ProductTourTests(unittest.TestCase):
             "# Product Tour",
             "Status: public product evaluation path",
             POSITIONING_SENTENCE,
+            CROSS_FUNCTIONAL_PACKET_SENTENCE,
             "Private engine, public proof.",
             "Lane Matrix",
             "Agent access review",

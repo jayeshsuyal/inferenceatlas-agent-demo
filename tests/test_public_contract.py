@@ -24,6 +24,10 @@ CONTRACT_LEAD = (
     "private canonical engine. This public contract is the minimum proof surface every "
     "agent-access review implementation can be measured against. Private engine, public proof."
 )
+CROSS_FUNCTIONAL_PACKET_SENTENCE = (
+    "AI movement is cross-functional. "
+    "IA turns every team's proof into one packet downstream systems can trust."
+)
 
 
 class PublicContractTests(unittest.TestCase):
@@ -47,6 +51,7 @@ class PublicContractTests(unittest.TestCase):
             "python3 -m agent.contract --all --generated-dir examples/generated",
             "Public contract: agent_access_public.v0",
             "Private engine, public proof.",
+            CROSS_FUNCTIONAL_PACKET_SENTENCE,
         ]:
             self.assertIn(expected, contract)
 

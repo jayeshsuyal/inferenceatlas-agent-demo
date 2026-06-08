@@ -10,6 +10,26 @@ POSITIONING_SENTENCE = (
     "Every agent demo shows the agent taking action. "
     "InferenceAtlas shows the proof packet before an agent is allowed to act."
 )
+CROSS_FUNCTIONAL_PACKET_SENTENCE = (
+    "AI movement is cross-functional. "
+    "IA turns every team's proof into one packet downstream systems can trust."
+)
+CROSS_FUNCTIONAL_PACKET_SURFACES = [
+    "README.md",
+    "docs/PRODUCT_TOUR.md",
+    "docs/CONTRACT.md",
+]
+CROSS_FUNCTIONAL_OVERCLAIMS = [
+    "autonomously approves",
+    "auto-approves",
+    "approves access",
+    "grants permissions",
+    "dispatches workflow",
+    "assigns tasks",
+    "mutates production",
+    "selects providers",
+    "guarantees savings",
+]
 
 CANONICAL_TEXT_SURFACES = [
     "README.md",
@@ -38,6 +58,29 @@ class PositioningSentenceTests(unittest.TestCase):
 
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["thesis_sentence"], POSITIONING_SENTENCE)
+
+    def test_cross_functional_packet_sentence_is_canonical_and_non_overclaiming(self) -> None:
+        for relative_path in CROSS_FUNCTIONAL_PACKET_SURFACES:
+            text = (ROOT / relative_path).read_text(encoding="utf-8")
+            self.assertEqual(
+                text.count(CROSS_FUNCTIONAL_PACKET_SENTENCE),
+                1,
+                msg=f"cross-functional packet sentence drifted in {relative_path}",
+            )
+            paragraph = next(
+                paragraph
+                for paragraph in text.split("\n\n")
+                if CROSS_FUNCTIONAL_PACKET_SENTENCE in paragraph
+            )
+            for forbidden in CROSS_FUNCTIONAL_OVERCLAIMS:
+                self.assertNotIn(
+                    forbidden,
+                    paragraph.lower(),
+                    msg=f"{relative_path} overclaims near cross-functional packet sentence",
+                )
+
+        manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["cross_functional_packet_sentence"], CROSS_FUNCTIONAL_PACKET_SENTENCE)
 
     def test_positioning_sentence_is_readme_top_fold(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

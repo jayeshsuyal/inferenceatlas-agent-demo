@@ -5,6 +5,7 @@
   "thesis_sentence": "Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.",
   "packet_authority_layer": "InferenceAtlas is the packet authority layer upstream of tools, gateways, spend controls, CI, and human review.",
   "packet_authority_short": "The packet authority layer downstream systems trust before AI moves.",
+  "cross_functional_packet_sentence": "AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.",
   "packet_verification_api": "/api/packets/{scenario_or_packet_id}/verification",
   "downstream_gate_api": "/api/downstream-gates/{subscriber}/decision",
   "portkey_adapter_api": "/api/packets/{fixture}/downstream/portkey",

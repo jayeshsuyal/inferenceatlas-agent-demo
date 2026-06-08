@@ -123,7 +123,8 @@ def test_ask_ia_and_cli_share_packet_advisor_truth() -> None:
     assert ask_answer["safety"] == cli_answer["safety"]
     assert ask_answer["downstream_gate"] == cli_answer["downstream_gate"]
     assert orch.use_tools is False
-    assert "Packet Advisor: shared CLI/Ask IA answer" in orch.context_manifest
+    assert "Packet-backed chat: shared CLI/API truth" in orch.context_manifest
+    assert ask_answer["chat_salience"]["destination_surface"] == "portkey_adapter_preview"
     assert_safe_tone(ask_answer)
 
 

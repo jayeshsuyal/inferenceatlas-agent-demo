@@ -137,6 +137,10 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("clearEmptyProofBoard", js)
         self.assertIn("currentPacketFixtureForChat", js)
         self.assertIn("current_fixture: currentPacketFixtureForChat()", js)
+        self.assertIn('id="packet-coach-quick-chips"', html)
+        self.assertIn("Preview Portkey gate", html)
+        self.assertIn("packetCoachQuickChips", js)
+        self.assertIn(".packet-coach-quick-chips", css)
         self.assertIn('["LLM", `${health.llm_provider} · ${health.llm_model}`', js)
         self.assertIn(".empty-proof-board", css)
         self.assertIn("grid-template-columns: repeat(4", css)
@@ -185,6 +189,16 @@ class WebFilesTests(unittest.TestCase):
         )
         self.assertFalse(response.answer["downstream_gate"]["requested_action_can_proceed"])
         self.assertIn("Portkey cannot allow this request", response.reply)
+        self.assertIn("Top blocker", response.reply)
+        self.assertIn("Preview Portkey gate", response.reply)
+        self.assertIn("Packet-backed", response.reply)
+        self.assertEqual(
+            response.answer["chat_salience"]["destination_surface"],
+            "portkey_adapter_preview",
+        )
+        self.assertFalse(
+            response.answer["chat_salience"]["portkey_adapter_preview"]["portkey_guardrail_response"]["verdict"]
+        )
         self.assertIn("does not approve", response.reply.lower())
 
     def test_design_partner_walkthrough_api_is_safe_and_export_ready(self) -> None:

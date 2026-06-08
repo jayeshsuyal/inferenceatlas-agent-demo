@@ -85,6 +85,7 @@ const slashMenu = document.getElementById("slash-menu");
 const skillsAnchor = document.getElementById("skills-anchor");
 const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
+const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
 const connectorToastEl = document.getElementById("connector-toast");
 const btnGithub = document.getElementById("btn-github");
 const githubChipsEl = document.getElementById("github-chips");
@@ -3274,6 +3275,12 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   if (!slashMenu.hidden) return;
   sendMessage(input.value);
+});
+
+packetCoachQuickChips?.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-ask-prompt]");
+  if (!btn || busy) return;
+  sendMessage(btn.dataset.askPrompt || btn.textContent || "");
 });
 
 btnReset.addEventListener("click", resetChat);

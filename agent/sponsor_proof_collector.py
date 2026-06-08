@@ -124,6 +124,7 @@ def build_sponsor_proof_collector_run(
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
     live_tavily: bool = False,
+    composio_dry_run: bool = False,
 ) -> dict[str, Any]:
     """Build one deterministic sponsor proof collector run.
 
@@ -142,6 +143,7 @@ def build_sponsor_proof_collector_run(
         scenario_name=scenario_name,
         lane=lane,
         live_tavily=live_tavily,
+        composio_dry_run=composio_dry_run,
     )
     packet_snapshot = build_packet_authority_snapshot_for_scenario(
         build_scenario_packet(scenario_name),
@@ -177,6 +179,8 @@ def build_sponsor_proof_collector_run(
     }
     if live_tavily:
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
+    if composio_dry_run:
+        run_hash_input["composio_dry_run"] = trace.get("dry_run_proof", {}).get("composio", {})
     digest = _stable_digest(run_hash_input)
 
     run = {
@@ -234,6 +238,10 @@ def build_sponsor_proof_collector_run(
     if live_tavily:
         run["live_sponsor_proof"] = {
             "tavily": trace.get("live_proof", {}).get("tavily", {}),
+        }
+    if composio_dry_run:
+        run["dry_run_sponsor_proof"] = {
+            "composio": trace.get("dry_run_proof", {}).get("composio", {}),
         }
     return run
 
@@ -299,6 +307,24 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
             ]
         )
 
+    dry_run_proof = run.get("dry_run_sponsor_proof", {})
+    composio_proof = dry_run_proof.get("composio") if dry_run_proof else None
+    if composio_proof:
+        summary = composio_proof["permission_diff_summary"]
+        lines.extend(
+            [
+                "",
+                "## Dry-Run Proof Collection",
+                "",
+                f"- composio status: `{composio_proof['status']}`",
+                f"- api call made: {composio_proof['api_call_made']}",
+                f"- execute allowed: {composio_proof['composio_execute_allowed']}",
+                f"- blocked writes: {summary['blocked_write_count']}",
+                f"- required proof items: {summary['required_proof_count']}",
+                f"- human review required: {composio_proof['human_review_required']}",
+            ]
+        )
+
     lines.extend(
         [
             "",
@@ -342,6 +368,7 @@ def write_sponsor_proof_collector_artifacts(
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
     live_tavily: bool = False,
+    composio_dry_run: bool = False,
 ) -> list[Path]:
     """Write SponsorProofCollector Markdown and JSON artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -354,6 +381,7 @@ def write_sponsor_proof_collector_artifacts(
         question=question,
         subscriber=subscriber,
         live_tavily=live_tavily,
+        composio_dry_run=composio_dry_run,
     )
     stem = request_path.stem
     markdown_path = output_dir / f"{stem}.sponsor_proof_collector.md"
@@ -388,14 +416,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Opt in to read-only Tavily evidence collection; requires --no-write or a custom --output-dir.",
     )
+    parser.add_argument(
+        "--composio-dry-run",
+        action="store_true",
+        help="Opt in to Composio-shaped dry-run permission diff; requires --no-write or a custom --output-dir.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     request_path = _resolve_request_path(args.request_path)
-    if args.live_tavily and not args.no_write and args.output_dir == GENERATED_DIR:
-        print("--live-tavily requires --no-write or a custom --output-dir", file=sys.stderr)
+    if (args.live_tavily or args.composio_dry_run) and not args.no_write and args.output_dir == GENERATED_DIR:
+        print("--live-tavily/--composio-dry-run require --no-write or a custom --output-dir", file=sys.stderr)
         return 2
     try:
         run = build_sponsor_proof_collector_run(
@@ -406,6 +439,7 @@ def main(argv: list[str] | None = None) -> int:
             question=args.question,
             subscriber=args.subscriber,
             live_tavily=args.live_tavily,
+            composio_dry_run=args.composio_dry_run,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
@@ -421,6 +455,7 @@ def main(argv: list[str] | None = None) -> int:
             question=args.question,
             subscriber=args.subscriber,
             live_tavily=args.live_tavily,
+            composio_dry_run=args.composio_dry_run,
         )
         if not args.json:
             for path in paths:

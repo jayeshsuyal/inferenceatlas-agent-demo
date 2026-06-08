@@ -215,6 +215,50 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertIn("tavily", markdown)
         self.assertIn("human review required: True", markdown)
 
+    def test_composio_dry_run_trace_builds_permission_diff_without_execution(self) -> None:
+        trace = build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST, composio_dry_run=True)
+
+        self.assertEqual(trace["decision_lock_before"], trace["decision_lock_after"])
+        self.assertIn("dry_run_proof", trace)
+        composio_proof = trace["dry_run_proof"]["composio"]
+        self.assertEqual(composio_proof["status"], "dry_run_permission_diff_built")
+        self.assertTrue(composio_proof["dry_run_requested"])
+        self.assertTrue(composio_proof["dry_run_enforced"])
+        self.assertFalse(composio_proof["api_call_made"])
+        self.assertFalse(composio_proof["composio_execute_allowed"])
+        self.assertFalse(composio_proof["used_live_key"])
+        self.assertTrue(composio_proof["fallback_used"])
+        self.assertTrue(composio_proof["human_review_required"])
+        self.assertFalse(composio_proof["can_approve_access"])
+        self.assertFalse(composio_proof["can_grant_permissions"])
+        self.assertFalse(composio_proof["can_mutate_external_state"])
+        self.assertEqual(composio_proof["permission_diff_summary"]["tool_count"], 3)
+        self.assertEqual(composio_proof["permission_diff_summary"]["blocked_write_count"], 9)
+        self.assertEqual(composio_proof["permission_diff_summary"]["required_proof_count"], 9)
+        self.assertTrue(all(item["api_call_made"] is False for item in composio_proof["permission_diffs"]))
+        self.assertTrue(all(item["would_execute"] is False for item in composio_proof["permission_diffs"]))
+
+        steps = {step["sponsor"]: step for step in trace["sponsor_steps"]}
+        self.assertFalse(steps["composio"]["used_live_key"])
+        self.assertTrue(steps["composio"]["fallback_used"])
+        self.assertFalse(steps["composio"]["would_execute"])
+        self.assertFalse(steps["composio"]["can_approve_access"])
+        self.assertFalse(steps["composio"]["can_grant_permissions"])
+        self.assertFalse(steps["composio"]["can_mutate_external_state"])
+
+        safety = trace["safety_boundary"]
+        self.assertFalse(safety["approves_access"])
+        self.assertFalse(safety["grants_permissions"])
+        self.assertFalse(safety["executes_external_writes"])
+        self.assertFalse(safety["mutates_production"])
+        self.assertTrue(safety["requires_human_review"])
+
+        markdown = render_sponsor_proof_trace_markdown(trace)
+        self.assertIn("## Dry-Run Proof Collection", markdown)
+        self.assertIn("composio", markdown)
+        self.assertIn("api call made: False", markdown)
+        self.assertIn("execute allowed: False", markdown)
+
 
 if __name__ == "__main__":
     unittest.main()

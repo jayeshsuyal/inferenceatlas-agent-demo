@@ -4,9 +4,11 @@ set -euo pipefail
 PYTHON_BIN="${PYTHON:-python3}"
 
 export NEBIUS_API_KEY=""
+export OPENAI_API_KEY=""
 export TAVILY_API_KEY=""
 export COMPOSIO_API_KEY=""
 export IA_LIVE_MODE=""
+export IA_DISABLE_DOTENV="1"
 
 run() {
   printf '\n==> %s\n' "$*" >&2

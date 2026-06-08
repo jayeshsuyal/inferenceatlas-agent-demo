@@ -8,9 +8,11 @@ BASE_URL="http://${HOST}:${PORT}"
 SERVER_LOG="${TMPDIR:-/tmp}/ia_reviewer_smoke_web_${PORT}.log"
 
 export NEBIUS_API_KEY=""
+export OPENAI_API_KEY=""
 export TAVILY_API_KEY=""
 export COMPOSIO_API_KEY=""
 export IA_LIVE_MODE=""
+export IA_DISABLE_DOTENV="1"
 
 fail() {
   printf 'Reviewer smoke gate failed: %s\n' "$1" >&2

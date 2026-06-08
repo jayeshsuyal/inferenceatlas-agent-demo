@@ -24,9 +24,11 @@ jobs:
       - name: Run public PR smoke gate
         env:
           NEBIUS_API_KEY: ""
+          OPENAI_API_KEY: ""
           TAVILY_API_KEY: ""
           COMPOSIO_API_KEY: ""
           IA_LIVE_MODE: ""
+          IA_DISABLE_DOTENV: "1"
         run: PYTHON=python bash scripts/pr_smoke.sh
 
       - name: Compile Python modules
@@ -81,9 +83,11 @@ jobs:
       - name: Run no-key offline demo
         env:
           NEBIUS_API_KEY: ""
+          OPENAI_API_KEY: ""
           TAVILY_API_KEY: ""
           COMPOSIO_API_KEY: ""
           IA_LIVE_MODE: ""
+          IA_DISABLE_DOTENV: "1"
         run: python -m agent.demo
 
       - name: Regenerate scenario artifacts
@@ -226,14 +230,18 @@ jobs:
       - name: Run unit tests
         env:
           NEBIUS_API_KEY: ""
+          OPENAI_API_KEY: ""
           TAVILY_API_KEY: ""
           COMPOSIO_API_KEY: ""
           IA_LIVE_MODE: ""
+          IA_DISABLE_DOTENV: "1"
         run: python -m unittest discover -s tests
 
       - name: Mind runtime E2E (offline)
         env:
           NEBIUS_API_KEY: ""
+          OPENAI_API_KEY: ""
           TAVILY_API_KEY: ""
           COMPOSIO_API_KEY: ""
+          IA_DISABLE_DOTENV: "1"
         run: python -m agent.mind e2e

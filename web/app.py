@@ -44,6 +44,15 @@ from agent.sponsor_proof_collector import (
     DEFAULT_QUESTION as DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION,
     build_sponsor_proof_collector_run,
 )
+from agent.sponsor_run_ledger import (
+    DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR,
+    build_sponsor_proof_run_record,
+    build_sponsor_proof_run_ledger,
+    list_sponsor_proof_run_records,
+    load_sponsor_proof_run_record,
+    sponsor_proof_run_record_summary,
+    write_sponsor_proof_run_record,
+)
 from agent.sponsor_readiness import build_sponsor_live_readiness
 from agent.verification import build_verification_artifact_for_scenario
 from agent.workbench import (
@@ -140,6 +149,7 @@ _sessions: Dict[str, object] = {}
 _lock = threading.Lock()
 _sponsor_proof_runs: Dict[str, dict] = {}
 _sponsor_proof_runs_lock = threading.Lock()
+SPONSOR_PROOF_RUN_LEDGER_DIR = DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR
 
 
 def _live_deps_available() -> bool:
@@ -604,6 +614,8 @@ def create_sponsor_proof_run(body: SponsorProofRunRequest) -> dict:
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
+    record = write_sponsor_proof_run_record(run, ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR)
+
     with _sponsor_proof_runs_lock:
         _sponsor_proof_runs[run["run_id"]] = run
 
@@ -611,6 +623,7 @@ def create_sponsor_proof_run(body: SponsorProofRunRequest) -> dict:
         "ok": True,
         "read_only": True,
         "run": run,
+        "ledger_record": sponsor_proof_run_record_summary(record),
     }
 
 
@@ -619,12 +632,37 @@ def get_sponsor_proof_run(run_id: str) -> dict:
     """Return a previously created local sponsor proof collector run."""
     with _sponsor_proof_runs_lock:
         run = _sponsor_proof_runs.get(run_id)
+    try:
+        record = load_sponsor_proof_run_record(run_id, ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if run is None:
-        raise HTTPException(status_code=404, detail="unknown sponsor proof run")
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown sponsor proof run")
+        run = record["run"]
+    if record is None:
+        record = sponsor_proof_run_record_summary(
+            build_sponsor_proof_run_record(run, ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR)
+        )
+    else:
+        record = sponsor_proof_run_record_summary(record)
     return {
         "ok": True,
         "read_only": True,
         "run": run,
+        "ledger_record": record,
+    }
+
+
+@app.get("/api/sponsor-proof-run-ledger")
+def sponsor_proof_run_ledger() -> dict:
+    """Return the durable local sponsor proof run ledger."""
+    return {
+        "ok": True,
+        "read_only": True,
+        "ledger": build_sponsor_proof_run_ledger(
+            list_sponsor_proof_run_records(ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR)
+        ),
     }
 
 

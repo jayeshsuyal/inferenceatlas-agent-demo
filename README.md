@@ -16,7 +16,6 @@ Downstream systems do not trust raw agent intent. They trust the IA packet: pack
 AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
-
 This public harness does not approve access.
 
 ## 60-Second Review Path
@@ -50,14 +49,24 @@ InferenceAtlas is the packet authority layer upstream of tools, gateways, spend 
 
 ```mermaid
 flowchart LR
-  A["Agent asks for tools,<br/>data, spend, or production"] --> P["Evidence enrichment<br/>search / dry-run tools / narration / trace"]
-  P --> B["InferenceAtlas<br/>DecisionPacket"]
-  B --> C["Verification API<br/>packet id / revision / hash / verdict"]
-  C --> D["MCP / Gateway Controls<br/>Composio / Portkey / LiteLLM"]
-  C --> E["CI<br/>GitHub Actions / GitLab"]
-  C --> F["AI Spend Controls<br/>Finance / Procurement"]
-  C --> G["Review Queues<br/>Security / Legal / CTO"]
-  C --> H["Observability<br/>Datadog / Honeycomb / audit logs"]
+  A["Agent request<br/>tools / data / spend / production"] --> S["Sponsor proof collection"]
+  S -. "evidence search" .-> T["Tavily"]:::sponsor
+  S -. "dry-run tool planning" .-> C["Composio"]:::sponsor
+  S -. "runtime trace" .-> O["OpenClaw"]:::sponsor
+  S -. "packet narration" .-> N["Nebius"]:::sponsor
+  T --> P["IA Packet"]:::hero
+  C --> P
+  O --> P
+  N --> P
+  P --> V["Verification<br/>packet id / revision / hash / verdict"]
+  V --> PK["Portkey gate export"]
+  V --> CI["CI / deploy gates"]
+  V --> F["Finance / Procurement"]
+  V --> R["Security / Legal / CTO review"]
+  V --> OBS["Observability / audit logs"]
+  classDef hero fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#78350f;
+  classDef sponsor fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
+  classDef default fill:#f1f5f9,stroke:#64748b,color:#0f172a;
 ```
 
 ## Review Paths

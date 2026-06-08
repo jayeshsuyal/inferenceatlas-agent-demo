@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from agent.sponsor_proof_trace import (
     ALLOWED_VERBS_PER_SPONSOR,
@@ -18,6 +19,21 @@ from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+class _FakeTavilyClient:
+    def search(self, **kwargs):
+        return {
+            "query": kwargs["query"],
+            "results": [
+                {
+                    "title": "Evidence source",
+                    "url": "https://example.com/evidence",
+                    "content": "Reviewer-safe evidence candidate.",
+                    "score": 0.9,
+                }
+            ],
+        }
 
 
 class SponsorProofTraceTests(unittest.TestCase):
@@ -154,6 +170,50 @@ class SponsorProofTraceTests(unittest.TestCase):
         payload = json.loads(json_result.stdout)
         self.assertEqual(payload["schema_version"], SPONSOR_PROOF_TRACE_SCHEMA_VERSION)
         self.assertFalse(payload["safety_boundary"]["approves_access"])
+
+    def test_live_tavily_trace_collects_sources_without_moving_decision_lock(self) -> None:
+        with patch("agent.tavily_live_evidence.TAVILY_API_KEY", "unit-test-key"):
+            trace = build_sponsor_proof_trace(
+                DEFAULT_TRIAL_REQUEST,
+                live_tavily=True,
+                tavily_client_factory=lambda _key: _FakeTavilyClient(),
+            )
+
+        self.assertEqual(trace["decision_lock_before"], trace["decision_lock_after"])
+        self.assertIn("live_proof", trace)
+        tavily_proof = trace["live_proof"]["tavily"]
+        self.assertEqual(tavily_proof["status"], "live_evidence_candidates_fetched")
+        self.assertTrue(tavily_proof["live_call_attempted"])
+        self.assertTrue(tavily_proof["used_live_key"])
+        self.assertFalse(tavily_proof["fallback_used"])
+        self.assertTrue(tavily_proof["human_review_required"])
+        self.assertFalse(tavily_proof["can_approve_access"])
+        self.assertFalse(tavily_proof["can_grant_permissions"])
+        self.assertFalse(tavily_proof["can_mutate_external_state"])
+        self.assertTrue(all(item["source_urls"] for item in tavily_proof["evidence_candidates"]))
+        self.assertTrue(all(item["can_reduce_proof_debt"] is False for item in tavily_proof["evidence_candidates"]))
+
+        steps = {step["sponsor"]: step for step in trace["sponsor_steps"]}
+        self.assertTrue(steps["tavily"]["used_live_key"])
+        self.assertFalse(steps["tavily"]["fallback_used"])
+        self.assertFalse(steps["tavily"]["would_execute"])
+        self.assertFalse(steps["tavily"]["can_approve_access"])
+        self.assertTrue(steps["composio"]["fallback_used"])
+        self.assertTrue(steps["openclaw"]["fallback_used"])
+        self.assertTrue(steps["nebius"]["fallback_used"])
+
+        safety = trace["safety_boundary"]
+        self.assertFalse(safety["approves_access"])
+        self.assertFalse(safety["grants_permissions"])
+        self.assertFalse(safety["executes_external_writes"])
+        self.assertFalse(safety["mutates_production"])
+        self.assertFalse(safety["approves_spend"])
+        self.assertTrue(safety["requires_human_review"])
+
+        markdown = render_sponsor_proof_trace_markdown(trace)
+        self.assertIn("## Live Proof Collection", markdown)
+        self.assertIn("tavily", markdown)
+        self.assertIn("human review required: True", markdown)
 
 
 if __name__ == "__main__":

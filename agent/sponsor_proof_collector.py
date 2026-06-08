@@ -90,7 +90,7 @@ def _safety_boundary(trace: dict[str, Any], portkey: dict[str, Any]) -> dict[str
     portkey_invariants = portkey["invariants"]
     return {
         "read_only": True,
-        "live_calls_made": False,
+        "live_calls_made": any(step["used_live_key"] for step in trace["sponsor_steps"]),
         "approves_access": trace_safety["approves_access"],
         "grants_permissions": trace_safety["grants_permissions"],
         "executes_external_writes": trace_safety["executes_external_writes"],
@@ -123,6 +123,7 @@ def build_sponsor_proof_collector_run(
     downstream_fixture: str = DEFAULT_DOWNSTREAM_FIXTURE,
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
+    live_tavily: bool = False,
 ) -> dict[str, Any]:
     """Build one deterministic sponsor proof collector run.
 
@@ -136,7 +137,12 @@ def build_sponsor_proof_collector_run(
         raise ValueError(f"unknown lane: {lane}")
 
     request_path = _resolve_request_path(request_path)
-    trace = build_sponsor_proof_trace(request_path, scenario_name=scenario_name, lane=lane)
+    trace = build_sponsor_proof_trace(
+        request_path,
+        scenario_name=scenario_name,
+        lane=lane,
+        live_tavily=live_tavily,
+    )
     packet_snapshot = build_packet_authority_snapshot_for_scenario(
         build_scenario_packet(scenario_name),
         scenario_name,
@@ -169,14 +175,16 @@ def build_sponsor_proof_collector_run(
         "subscriber": subscriber,
         "downstream_fixture": downstream_fixture,
     }
+    if live_tavily:
+        run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
     digest = _stable_digest(run_hash_input)
 
-    return {
+    run = {
         "schema_version": SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION,
         "run_id": f"ia-sponsor-proof-run-{request_path.stem}-{digest[:16]}-public-v0",
         "content_hash": f"sha256:{digest}",
         "generated_at": SPONSOR_PROOF_COLLECTOR_GENERATED_AT,
-        "mode": "offline_dry_run",
+        "mode": "live_read_only_evidence" if safety["live_calls_made"] else "offline_dry_run",
         "status": "completed",
         "run_type": "agentic_proof_collection",
         "collector_claim": (
@@ -223,6 +231,11 @@ def build_sponsor_proof_collector_run(
             "principle": "Private engine, public proof.",
         },
     }
+    if live_tavily:
+        run["live_sponsor_proof"] = {
+            "tavily": trace.get("live_proof", {}).get("tavily", {}),
+        }
+    return run
 
 
 def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
@@ -268,6 +281,24 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
             )
         )
 
+    live_proof = run.get("live_sponsor_proof", {})
+    tavily_proof = live_proof.get("tavily") if live_proof else None
+    if tavily_proof:
+        source_count = sum(len(item.get("source_urls", [])) for item in tavily_proof["evidence_candidates"])
+        lines.extend(
+            [
+                "",
+                "## Live Proof Collection",
+                "",
+                f"- tavily status: `{tavily_proof['status']}`",
+                f"- live call attempted: {tavily_proof['live_call_attempted']}",
+                f"- live call count: {tavily_proof['live_call_count']}",
+                f"- fallback used: {tavily_proof['fallback_used']}",
+                f"- source candidates: {source_count}",
+                f"- human review required: {tavily_proof['human_review_required']}",
+            ]
+        )
+
     lines.extend(
         [
             "",
@@ -310,6 +341,7 @@ def write_sponsor_proof_collector_artifacts(
     downstream_fixture: str = DEFAULT_DOWNSTREAM_FIXTURE,
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
+    live_tavily: bool = False,
 ) -> list[Path]:
     """Write SponsorProofCollector Markdown and JSON artifacts."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -321,6 +353,7 @@ def write_sponsor_proof_collector_artifacts(
         downstream_fixture=downstream_fixture,
         question=question,
         subscriber=subscriber,
+        live_tavily=live_tavily,
     )
     stem = request_path.stem
     markdown_path = output_dir / f"{stem}.sponsor_proof_collector.md"
@@ -350,12 +383,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--downstream-fixture", default=DEFAULT_DOWNSTREAM_FIXTURE)
     parser.add_argument("--subscriber", default=DEFAULT_SPEND_SUBSCRIBER)
     parser.add_argument("--question", default=DEFAULT_QUESTION)
+    parser.add_argument(
+        "--live-tavily",
+        action="store_true",
+        help="Opt in to read-only Tavily evidence collection; requires --no-write or a custom --output-dir.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     request_path = _resolve_request_path(args.request_path)
+    if args.live_tavily and not args.no_write and args.output_dir == GENERATED_DIR:
+        print("--live-tavily requires --no-write or a custom --output-dir", file=sys.stderr)
+        return 2
     try:
         run = build_sponsor_proof_collector_run(
             request_path,
@@ -364,6 +405,7 @@ def main(argv: list[str] | None = None) -> int:
             downstream_fixture=args.downstream_fixture,
             question=args.question,
             subscriber=args.subscriber,
+            live_tavily=args.live_tavily,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
@@ -378,6 +420,7 @@ def main(argv: list[str] | None = None) -> int:
             downstream_fixture=args.downstream_fixture,
             question=args.question,
             subscriber=args.subscriber,
+            live_tavily=args.live_tavily,
         )
         if not args.json:
             for path in paths:

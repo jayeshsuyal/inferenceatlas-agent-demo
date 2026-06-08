@@ -161,6 +161,11 @@ class CtoHandoffDocsTests(unittest.TestCase):
             manifest["sponsor_proof_trace_command"],
             "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
         )
+        self.assertEqual(manifest["tavily_live_evidence_module"], "agent/tavily_live_evidence.py")
+        self.assertEqual(
+            manifest["tavily_live_evidence_json_command"],
+            "python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --live-tavily --json",
+        )
         self.assertEqual(manifest["ai_spend_review_request"], "examples/requests/ai_spend_budget_overrun.yml")
         self.assertEqual(
             manifest["ai_spend_review_command"],

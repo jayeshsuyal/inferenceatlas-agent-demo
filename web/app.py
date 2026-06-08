@@ -293,6 +293,7 @@ class SponsorProofRunRequest(BaseModel):
     downstream_fixture: str = Field(default="ai_spend_budget_overrun", max_length=120)
     subscriber: str = Field(default="portkey_model_spend_gate", max_length=120)
     question: str = Field(default=DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION, max_length=800)
+    live_tavily: bool = False
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -606,6 +607,7 @@ def create_sponsor_proof_run(body: SponsorProofRunRequest) -> dict:
             downstream_fixture=body.downstream_fixture,
             question=body.question,
             subscriber=body.subscriber,
+            live_tavily=body.live_tavily,
         )
     except FileNotFoundError as exc:
         raise HTTPException(status_code=404, detail=f"request not found: {exc}") from exc

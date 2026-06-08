@@ -63,6 +63,14 @@ The Sponsor Live Readiness report shows the CTO where each sponsor can add live 
 | Composio | Dry-run permission diff for requested actions. | Cannot grant permissions or execute writes by default. |
 | OpenClaw | Runtime trace entries for attempted and blocked steps. | Cannot bypass packet safety state. |
 
+The first live proof slice is Tavily source collection, explicitly opt-in and no-write:
+
+```bash
+python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --live-tavily --json
+```
+
+The run embeds Tavily source candidates in the SponsorProofTrace/SponsorProofCollector output. Source candidates remain review inputs; they do not approve access or reduce proof debt automatically.
+
 Use this shape for new integration outputs before merging them into the packet:
 
 ```json

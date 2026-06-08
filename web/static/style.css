@@ -880,6 +880,43 @@ body {
   margin-top: 0.75rem;
 }
 
+.sponsor-run-card {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  border-radius: 8px;
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.sponsor-run-card strong,
+.sponsor-run-card code {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.sponsor-run-card strong {
+  margin-top: 0.35rem;
+  color: var(--text);
+  font-size: 0.82rem;
+}
+
+.sponsor-run-card code {
+  margin-top: 0.35rem;
+  color: var(--success);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  white-space: normal;
+}
+
+.trace-metrics.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0.5rem;
+}
+
+.trace-metrics.compact div {
+  min-height: 3.2rem;
+}
+
 .trace-subhead {
   display: block;
   margin-top: 1rem;

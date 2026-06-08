@@ -157,6 +157,8 @@ let workbenchRegistry = null;
 let workbenchResult = null;
 let packetDetail = null;
 let walkthroughPayload = null;
+let walkthroughSponsorRun = null;
+let walkthroughSponsorLedgerRecord = null;
 let walkthroughActiveIndex = 0;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
 let selectedSkills = [];
@@ -2579,6 +2581,32 @@ function renderSponsorCard(data) {
   );
   walkthroughSponsorCard.appendChild(traceAction);
 
+  const run = data.sponsor_proof_run || walkthroughSponsorRun;
+  const ledgerRecord = data.sponsor_proof_ledger_record || walkthroughSponsorLedgerRecord;
+  if (run) {
+    const safety = run.safety_boundary || {};
+    const composio = run.dry_run_sponsor_proof?.composio || null;
+    const runCard = document.createElement("article");
+    runCard.className = "sponsor-run-card";
+    runCard.innerHTML = `
+      <span class="trace-subhead">Latest collected run</span>
+      <strong>${escapeHtml(run.run_id || "sponsor proof run")}</strong>
+      <code>mode ${escapeHtml(run.mode || "offline_dry_run")} · ledger ${escapeHtml(ledgerRecord?.run_id ? "recorded" : "pending")}</code>
+      <div class="trace-metrics compact">
+        <div><span>Read only</span><strong>${escapeHtml(String(safety.read_only))}</strong></div>
+        <div><span>Live calls</span><strong>${escapeHtml(String(safety.live_calls_made))}</strong></div>
+        <div><span>Writes</span><strong>${escapeHtml(String(safety.executes_external_writes))}</strong></div>
+        <div><span>Decision lock</span><strong>${escapeHtml(String(run.invariants?.decision_lock_unchanged))}</strong></div>
+      </div>
+      <p class="walkthrough-summary">${escapeHtml(
+        composio
+          ? `${composio.tool_count || 0} Composio tool diffs generated; API call made ${String(composio.api_call_made)}.`
+          : "Sponsor proof run collected without changing the packet decision."
+      )}</p>
+    `;
+    walkthroughSponsorCard.appendChild(runCard);
+  }
+
   const rolesTitle = document.createElement("span");
   rolesTitle.className = "trace-subhead";
   rolesTitle.textContent = "Proof contributors";
@@ -2640,6 +2668,10 @@ function renderExportCard(data) {
 }
 
 function renderWalkthrough(data) {
+  if (walkthroughSponsorRun && !data.sponsor_proof_run) {
+    data.sponsor_proof_run = walkthroughSponsorRun;
+    data.sponsor_proof_ledger_record = walkthroughSponsorLedgerRecord;
+  }
   walkthroughPayload = data;
   walkthroughTitle.textContent = data.title || "Design partner walkthrough";
   walkthroughSubtitle.textContent = data.subtitle || "";
@@ -2712,8 +2744,38 @@ async function collectSponsorProof() {
   if (!walkthroughPayload?.sponsor_proof_trace) {
     await loadWalkthrough({ silent: true });
   }
-  if (!selectWalkthroughStepById("sponsor_proof_trace", "Sponsor Proof Trace selected. Decision lock unchanged.")) {
+  if (!walkthroughPayload?.sponsor_proof_trace) {
     setWalkthroughToast("Sponsor Proof Trace unavailable.", true);
+    return;
+  }
+
+  btnCollectSponsorProof.disabled = true;
+  setWalkthroughToast("Collecting sponsor proof run...");
+  try {
+    const res = await fetch("/api/sponsor-proof-runs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request_path: walkthroughPayload.request_path || "examples/requests/support_triage_trial.yml",
+        composio_dry_run: true,
+        live_tavily: false,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "Sponsor proof run failed");
+    walkthroughSponsorRun = data.run;
+    walkthroughSponsorLedgerRecord = data.ledger_record;
+    walkthroughPayload.sponsor_proof_run = data.run;
+    walkthroughPayload.sponsor_proof_ledger_record = data.ledger_record;
+    renderWalkthrough(walkthroughPayload);
+    selectWalkthroughStepById(
+      "sponsor_proof_trace",
+      `Sponsor proof run ${data.run?.run_id || ""} collected. Decision lock unchanged.`
+    );
+  } catch (err) {
+    setWalkthroughToast(String(err.message || err), true);
+  } finally {
+    btnCollectSponsorProof.disabled = !walkthroughPayload?.sponsor_proof_trace;
   }
 }
 

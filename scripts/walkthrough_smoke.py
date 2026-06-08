@@ -78,8 +78,14 @@ def _assert_static_walkthrough_contract() -> None:
 
     for expected in (
         "collectSponsorProof",
+        "/api/sponsor-proof-runs",
+        "composio_dry_run: true",
+        "live_tavily: false",
+        "sponsor_proof_run",
+        "Latest collected run",
+        "ledger",
         "selectWalkthroughStepById",
-        "Sponsor Proof Trace selected. Decision lock unchanged.",
+        "Decision lock unchanged.",
         "sponsor_proof_trace",
         "renderSponsorCard",
     ):
@@ -92,6 +98,8 @@ def _assert_static_walkthrough_contract() -> None:
         ".trace-metrics",
         ".trace-step-list",
         ".trace-step-row",
+        ".sponsor-run-card",
+        ".trace-metrics.compact",
         "grid-template-columns: repeat(auto-fit",
     ):
         _require(expected in css, f"walkthrough CSS missing {expected}")

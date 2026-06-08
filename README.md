@@ -69,7 +69,7 @@ flowchart LR
 - Inspect the contract: [Public Conformance Contract](docs/CONTRACT.md)
 - Map the capability surface: [Agent Skills](docs/AGENT_SKILLS.md)
 
-Deep references: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Command Reference](docs/COMMAND_REFERENCE.md), [Artifact Map](docs/ARTIFACT_MAP.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md), [Proof Health](examples/generated/support_triage_agent.proof_health.md), [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md), and [Agent Reviewer Instructions](AGENTS.md).
+Deep references: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Demo Recording Script](docs/DEMO_RECORDING_SCRIPT.md), [Command Reference](docs/COMMAND_REFERENCE.md), [Artifact Map](docs/ARTIFACT_MAP.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md), [Proof Health](examples/generated/support_triage_agent.proof_health.md), [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md), and [Agent Reviewer Instructions](AGENTS.md).
 
 CLI fallback: `bash scripts/run.sh` stays offline, deterministic, dry-run, and no-write.
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from agent.packet_detail import (
     IA_PACKET_SAFETY_ANCHOR,
     build_ia_packet_detail,
+    build_ia_packet_verification,
     render_ia_packet_detail_markdown,
 )
 from agent.workbench import build_workbench_registry
@@ -123,6 +124,31 @@ class IAPacketDetailTests(unittest.TestCase):
             self.assertEqual(detail["fixture"]["fixture_id"], fixture["fixture_id"])
             self.assertFalse(detail["decision"]["production_access"], msg=fixture["fixture_id"])
             self.assertFalse(detail["local_verification"]["calls_v1"], msg=fixture["fixture_id"])
+
+    def test_packet_verification_endpoint_resolves_every_public_fixture(self) -> None:
+        from web.app import packet_verification
+
+        registry = build_workbench_registry()
+
+        for fixture in registry["fixtures"]:
+            fixture_id = fixture["fixture_id"]
+            detail = build_ia_packet_detail(fixture_id)
+            packet_id = detail["packet_reference"]["packet_id"]
+            expected = build_ia_packet_verification(fixture_id)
+
+            by_fixture = packet_verification(fixture_id)
+            self.assertTrue(by_fixture["ok"], msg=fixture_id)
+            self.assertTrue(by_fixture["read_only"], msg=fixture_id)
+            self.assertEqual(by_fixture["verification"]["packet_id"], packet_id, msg=fixture_id)
+            self.assertFalse(by_fixture["verification"]["production_access"], msg=fixture_id)
+            self.assertFalse(by_fixture["verification"]["external_writes"], msg=fixture_id)
+            self.assertFalse(by_fixture["verification"]["permission_grants"], msg=fixture_id)
+            self.assertFalse(by_fixture["verification"]["approval_granted"], msg=fixture_id)
+            self.assertFalse(by_fixture["verification"]["private_boundary"]["private_source_exposed"], msg=fixture_id)
+
+            by_packet_id = packet_verification(packet_id)
+            self.assertEqual(by_packet_id["verification"]["packet_id"], expected["packet_id"], msg=fixture_id)
+            self.assertEqual(by_packet_id["verification"]["content_hash"], expected["content_hash"], msg=fixture_id)
 
     def test_packet_review_rail_guides_first_time_reviewer(self) -> None:
         html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")

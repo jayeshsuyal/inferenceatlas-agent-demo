@@ -30,6 +30,7 @@ from agent.packet_detail import (
     build_ia_packet_detail,
     ia_packet_detail_to_pretty_json,
     render_ia_packet_detail_markdown,
+    resolve_ia_packet_verification,
 )
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.portkey_adapter import build_portkey_adapter_payload
@@ -510,6 +511,17 @@ def packet_verification(scenario_or_packet_id: str) -> dict:
                 "read_only": True,
                 "verification": artifact,
             }
+    try:
+        fixture_id, artifact = resolve_ia_packet_verification(scenario_or_packet_id)
+        return {
+            "ok": True,
+            "scenario": fixture_id,
+            "fixture": fixture_id,
+            "read_only": True,
+            "verification": artifact,
+        }
+    except KeyError:
+        pass
     raise HTTPException(status_code=404, detail="unknown scenario or packet_id")
 
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from .scenarios import ROOT_DIR
+from .verification import PACKET_VERIFICATION_SCHEMA_VERSION
 from .workbench import WORKBENCH_SAFETY_ANCHOR, build_workbench_result, workbench_result_to_pretty_json
 
 
@@ -98,6 +99,66 @@ def build_ia_packet_detail(fixture_id: str) -> dict[str, Any]:
         "verification_link_hint": "/packet?fixture={fixture_id}&autorun=1",
         "source_workbench_schema_version": workbench["schema_version"],
     }
+
+
+def build_ia_packet_verification(fixture_id: str) -> dict[str, Any]:
+    """Build the read-only verification shape for a public IA Packet fixture."""
+    detail = build_ia_packet_detail(fixture_id)
+    packet_reference = detail["packet_reference"]
+    decision = detail["decision"]
+    safety_state = {
+        "production_access": bool(decision["production_access"]),
+        "external_writes": bool(decision["external_writes"]),
+        "permission_grants": bool(decision["permission_grants"]),
+        "approval_granted": bool(decision["approval_granted"]),
+        "scoped_validation": bool(decision["requires_human_review"]),
+        "requires_human_approval": bool(decision["requires_human_review"]),
+        "packet_state_mutation": False,
+    }
+    return {
+        "schema_version": PACKET_VERIFICATION_SCHEMA_VERSION,
+        "verification_status": "valid_review_required",
+        "packet_id": packet_reference["packet_id"],
+        "snapshot_id": f"{packet_reference['packet_id']}:{packet_reference['revision_id']}",
+        "revision_id": packet_reference["revision_id"],
+        "content_hash": packet_reference["content_hash"],
+        "verdict_class": decision["verdict_class"],
+        "decision_lock": decision["verdict_class"],
+        "safety_state": safety_state,
+        "production_access": safety_state["production_access"],
+        "external_writes": safety_state["external_writes"],
+        "permission_grants": safety_state["permission_grants"],
+        "approval_granted": safety_state["approval_granted"],
+        "scoped_validation": safety_state["scoped_validation"],
+        "blocked_claims": detail["blocked_claims"],
+        "missing_proof": detail["missing_proof"],
+        "reviewer_owners": detail["reviewer_routing"],
+        "next_human_action": decision["next_human_action"],
+        "safety_invariants": [
+            f"approval_granted={safety_state['approval_granted']}",
+            f"production_access={safety_state['production_access']}",
+            f"external_writes={safety_state['external_writes']}",
+            f"permission_grants={safety_state['permission_grants']}",
+            f"requires_human_approval={safety_state['requires_human_approval']}",
+            "packet_state_mutation=False",
+        ],
+        "private_boundary": {
+            "private_source_exposed": False,
+            "principle": "Private engine, public proof.",
+        },
+    }
+
+
+def resolve_ia_packet_verification(selector: str) -> tuple[str, dict[str, Any]]:
+    """Resolve a Workbench fixture id or IA packet id into verification JSON."""
+    from .workbench import build_workbench_registry
+
+    for fixture in build_workbench_registry()["fixtures"]:
+        fixture_id = fixture["fixture_id"]
+        verification = build_ia_packet_verification(fixture_id)
+        if selector in {fixture_id, verification["packet_id"]}:
+            return fixture_id, verification
+    raise KeyError(f"unknown IA Packet fixture or packet_id: {selector}")
 
 
 def render_ia_packet_detail_markdown(detail: dict[str, Any]) -> str:

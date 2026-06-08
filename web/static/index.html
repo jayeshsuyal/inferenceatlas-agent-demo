@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=18" />
+    <link rel="stylesheet" href="/static/style.css?v=19" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,7 +29,7 @@
 
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
-          <button type="button" class="tab active" data-tab="start">Chat</button>
+          <button type="button" class="tab active" data-tab="start">Start</button>
           <button type="button" class="tab" data-tab="packet">IA Packet</button>
           <button type="button" class="tab" data-tab="workbench">Workbench</button>
           <button type="button" class="tab" data-tab="walkthrough">Walkthrough</button>
@@ -39,19 +39,18 @@
 
         <section class="tab-panel active" id="panel-start">
           <div class="how-to">
-            <h2>Chat</h2>
+            <h2>Start here</h2>
             <ol class="steps">
-              <li><strong>Skills</strong> = access-review proof packs. Click <strong>+</strong> → Skills → pick <strong>/packet</strong>, ask a question, <strong>Send</strong>.</li>
-              <li><strong>GitHub</strong> — sign in, click <strong>GitHub</strong>, search & attach a repo (✓ when indexed).</li>
-              <li><strong>Google Drive</strong> — sign in under Connectors, click <strong>Drive</strong>, pick docs/images/video (indexed like repos).</li>
-              <li>Combine <strong>skills + repo + files</strong> in one message — thinking logs show what was loaded; replies cite <strong>Context used</strong>.</li>
-              <li><strong>Connectors</strong> = OAuth popup per user; credentials stay in <strong>this chat session</strong> only.</li>
-              <li>Cost questions work without skills; use examples or plain chat.</li>
+              <li>Open the 60-second IA Packet.</li>
+              <li>Read the verdict, proof debt, and sponsor trace.</li>
+              <li>Ask one packet-backed follow-up.</li>
             </ol>
           </div>
-          <h3 class="section-label">Examples</h3>
-          <ul class="examples" id="examples-list"></ul>
-          <p class="catalog" id="catalog-info"></p>
+          <details class="after-review-details">
+            <summary>More examples</summary>
+            <ul class="examples" id="examples-list"></ul>
+            <p class="catalog" id="catalog-info"></p>
+          </details>
         </section>
 
         <section class="tab-panel" id="panel-packet" hidden>
@@ -186,27 +185,27 @@
           <div class="messages" id="messages" role="log" aria-live="polite">
             <div class="message assistant welcome">
               <div class="bubble">
-                <p><strong>Welcome.</strong> Compare AI inference costs, or review whether an agent should get tool access.</p>
-                <p><strong>Skills</strong> (click <strong>+</strong>) attach proof about blocked production access — e.g. <strong>/packet</strong> + “What blocks support triage?” then <strong>Send</strong>.</p>
-                <p><strong>Connectors</strong> link Drive, web search, and integrations; set API keys in <code>.env</code> and restart the server.</p>
+                <p class="first-run-eyebrow">Start here</p>
+                <h2>Review one AI request before it gets tools, spend, or production access.</h2>
+                <p>Open the IA Packet, then ask a packet-backed follow-up. IA shows the verdict, missing proof, sponsor trace, and downstream gate before anything moves.</p>
+                <div class="first-run-actions">
+                  <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Start 60-second review</a>
+                  <button type="button" class="btn-ghost first-run-cta" id="btn-start-portkey-preview">Preview Portkey gate</button>
+                </div>
               </div>
             </div>
             <div class="empty-proof-board" id="empty-proof-board" aria-label="Current public proof state">
               <article class="proof-tile">
-                <span>Packet lock</span>
-                <strong>Production false · writes false</strong>
+                <span>1 · Packet</span>
+                <strong>Open the request, verdict, proof debt, and hash.</strong>
               </article>
               <article class="proof-tile">
-                <span>Sponsor proof</span>
-                <strong>Tavily evidence · Composio dry-run</strong>
+                <span>2 · Trace</span>
+                <strong>See sponsor proof without approval or writes.</strong>
               </article>
               <article class="proof-tile">
-                <span>Cost guardrail</span>
-                <strong>Procurement shortlist · no savings guarantee</strong>
-              </article>
-              <article class="proof-tile">
-                <span>Review lane</span>
-                <strong>Scoped validation · humans approve</strong>
+                <span>3 · Gate</span>
+                <strong>Preview what downstream systems can trust.</strong>
               </article>
             </div>
           </div>
@@ -216,6 +215,7 @@
             <div class="github-chips" id="github-chips" hidden aria-label="Attached GitHub repos"></div>
             <div class="drive-chips" id="drive-chips" hidden aria-label="Attached Google Drive files"></div>
             <p class="skill-hints" id="skill-hints" hidden></p>
+            <p class="packet-coach-label">Optional follow-ups after the first packet</p>
             <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
               <button type="button" data-ask-prompt="Can this move?">Can this move?</button>
               <button type="button" data-ask-prompt="What proof is missing?">What proof is missing?</button>
@@ -433,6 +433,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=29"></script>
+    <script src="/static/app.js?v=30"></script>
   </body>
 </html>

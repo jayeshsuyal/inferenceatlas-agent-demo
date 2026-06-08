@@ -87,6 +87,7 @@ const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
 const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
 const packetCoachStatus = document.getElementById("packet-coach-status");
+const btnStartPortkeyPreview = document.getElementById("btn-start-portkey-preview");
 const connectorToastEl = document.getElementById("connector-toast");
 const btnGithub = document.getElementById("btn-github");
 const githubChipsEl = document.getElementById("github-chips");
@@ -112,10 +113,9 @@ const SKILL_HINT_BY_ID = {
 };
 
 const EMPTY_PROOF_TILES = [
-  ["Packet lock", "Production false · writes false"],
-  ["Sponsor proof", "Tavily evidence · Composio dry-run"],
-  ["Cost guardrail", "Procurement shortlist · no savings guarantee"],
-  ["Review lane", "Scoped validation · humans approve"],
+  ["1 · Packet", "Open the request, verdict, proof debt, and hash."],
+  ["2 · Trace", "See sponsor proof without approval or writes."],
+  ["3 · Gate", "Preview what downstream systems can trust."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -3298,6 +3298,11 @@ packetCoachQuickChips?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn || busy) return;
   sendMessage(btn.dataset.askPrompt || btn.textContent || "");
+});
+
+btnStartPortkeyPreview?.addEventListener("click", () => {
+  if (busy) return;
+  sendMessage("Can Portkey allow this spend?");
 });
 
 btnReset.addEventListener("click", resetChat);

@@ -45,6 +45,12 @@ UNSAFE_TRUE_FIELDS = {
     "production_access",
     "would_execute",
 }
+UNSAFE_REHEARSAL_TEXT = (
+    "approved",
+    "looks fine",
+    "should be ok",
+    "should be okay",
+)
 
 
 def _relative(path: Path) -> str:
@@ -78,6 +84,12 @@ def _assert_rehearsal_safe(value: Any, *, source: str, path: str = "$") -> None:
     if isinstance(value, list):
         for index, nested in enumerate(value):
             _assert_rehearsal_safe(nested, source=source, path=f"{path}[{index}]")
+        return
+    if isinstance(value, str):
+        lowered = value.lower()
+        for phrase in UNSAFE_REHEARSAL_TEXT:
+            if phrase in lowered:
+                raise ValueError(f"rehearsal evidence contains unsafe narration phrase {phrase!r} in {source}")
 
 
 def _load_rehearsal_evidence(evidence_dir: Path | None) -> dict[str, dict[str, Any]]:
@@ -178,7 +190,10 @@ def _nebius_replay(memo: dict[str, Any]) -> dict[str, Any]:
     return {
         **_provider_boundary("nebius"),
         "proof_pack_type": "locked_field_narration",
-        "value_added": "Drafts reviewer-facing language while locked fields keep the decision deterministic.",
+        "value_added": (
+            "Drafts reviewer-facing language from locked fields. IA does not approve this request. "
+            "Human review is required before any access, spend, or production movement."
+        ),
         "attachments": [
             {
                 "memo_section": "Decision",

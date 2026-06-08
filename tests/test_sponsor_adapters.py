@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from agent.adapters import ADAPTER_NAMES, build_adapter_result, build_all_adapter_results
+from agent.adapters.core import NEBIUS_FORBIDDEN_NARRATION_PHRASES, NEBIUS_REQUIRED_TONE_ANCHORS
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,6 +60,20 @@ class SponsorAdapterTests(unittest.TestCase):
         self.assertIn("verdict", result["reviewer_narration_contract"]["locked_fields"])
         self.assertTrue(result["reviewer_narration_contract"]["human_review_required"])
         self.assertEqual(result["proof_pack"]["proof_type"], "locked_field_narration")
+
+    def test_nebius_narration_is_packet_grounded_and_non_approving(self) -> None:
+        result = build_adapter_result("nebius", "support_triage_agent")
+        narration = result["narration"]
+        lowered = narration.lower()
+
+        for anchor in NEBIUS_REQUIRED_TONE_ANCHORS:
+            self.assertIn(anchor, narration)
+        for phrase in NEBIUS_FORBIDDEN_NARRATION_PHRASES:
+            self.assertNotIn(phrase, lowered)
+        self.assertIn("Packet verdict:", narration)
+        self.assertIn("Review posture:", narration)
+        self.assertIn("External writes enabled:", narration)
+        self.assertIn("Human approval required:", narration)
 
     def test_openclaw_trace_contract_captures_policy_decisions(self) -> None:
         result = build_adapter_result("openclaw", "support_triage_agent")

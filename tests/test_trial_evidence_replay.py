@@ -73,6 +73,14 @@ class TrialEvidenceReplayTests(unittest.TestCase):
         self.assertTrue(replay["sponsor_replay"]["composio"]["rehearsal_evidence_attached"])
         self.assertIn("source_urls", replay["sponsor_replay"]["tavily"]["attachments"][0])
         self.assertIn("dry_run_operation_id", replay["sponsor_replay"]["composio"]["attachments"][0])
+        nebius_summary = replay["sponsor_replay"]["nebius"]["attachments"][0]["sanitized_reviewer_narration"][0]["summary"]
+        self.assertIn("IA does not approve this request.", nebius_summary)
+        self.assertIn(
+            "Human review is required before any access, spend, or production movement.",
+            nebius_summary,
+        )
+        for forbidden in ("approved", "looks fine", "should be ok", "should be okay"):
+            self.assertNotIn(forbidden, nebius_summary.lower())
 
     def test_replay_markdown_is_skim_ready(self) -> None:
         markdown = render_trial_evidence_replay_markdown(build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST))
@@ -202,6 +210,21 @@ class TrialEvidenceReplayTests(unittest.TestCase):
                     {
                         "provider": "nebius",
                         "narrations": [{"summary": "done", "can_reduce_proof_debt": True}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaises(ValueError):
+                build_trial_evidence_replay(DEFAULT_TRIAL_REQUEST, evidence_dir)
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            evidence_dir = Path(temp_dir)
+            (evidence_dir / "nebius.json").write_text(
+                json.dumps(
+                    {
+                        "provider": "nebius",
+                        "narrations": [{"summary": "Looks fine; production access is approved."}],
                     }
                 ),
                 encoding="utf-8",

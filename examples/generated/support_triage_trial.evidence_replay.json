@@ -325,7 +325,7 @@
       "provider": "nebius",
       "rehearsal_evidence_attached": false,
       "requires_api_key": false,
-      "value_added": "Drafts reviewer-facing language while locked fields keep the decision deterministic.",
+      "value_added": "Drafts reviewer-facing language from locked fields. IA does not approve this request. Human review is required before any access, spend, or production movement.",
       "would_execute": false
     },
     "openclaw": {

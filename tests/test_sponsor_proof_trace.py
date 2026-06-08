@@ -117,6 +117,18 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertFalse(safety["guarantees_savings"])
         self.assertTrue(safety["requires_human_review"])
 
+    def test_nebius_step_summary_stays_packet_grounded_and_non_approving(self) -> None:
+        trace = build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST)
+        nebius_step = next(step for step in trace["sponsor_steps"] if step["sponsor"] == "nebius")
+        summary = nebius_step["output_summary"]
+        lowered = summary.lower()
+
+        self.assertIn("IA does not approve this request.", summary)
+        self.assertIn("Human review is required before any access, spend, or production movement.", summary)
+        self.assertIn("Verdict and safety state unchanged.", summary)
+        for forbidden in ("approved", "looks fine", "should be ok", "should be okay"):
+            self.assertNotIn(forbidden, lowered)
+
     def test_markdown_is_public_safe_and_skim_ready(self) -> None:
         markdown = render_sponsor_proof_trace_markdown(build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST))
 

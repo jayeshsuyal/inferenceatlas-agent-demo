@@ -10,6 +10,16 @@ from agent.scenarios import SCENARIOS, build_scenario_packet
 
 ADAPTER_NAMES = ("composio", "tavily", "nebius", "openclaw")
 ADAPTER_CONTRACT_VERSION = "sponsor_adapter_contract.v0"
+NEBIUS_REQUIRED_TONE_ANCHORS = (
+    "IA does not approve this request.",
+    "Human review is required before any access, spend, or production movement.",
+)
+NEBIUS_FORBIDDEN_NARRATION_PHRASES = (
+    "approved",
+    "looks fine",
+    "should be ok",
+    "should be okay",
+)
 
 
 def _adapter_base(provider: str, scenario_name: str) -> dict[str, Any]:
@@ -111,13 +121,18 @@ def _tavily_result(scenario_name: str) -> dict[str, Any]:
 def _nebius_result(scenario_name: str) -> dict[str, Any]:
     packet = build_scenario_packet(scenario_name)
     result = _adapter_base("nebius", scenario_name)
+    decision = packet["decision"]
+    safety = packet["safety_state"]
     result.update(
         {
             "status": "deterministic_narration_fallback",
             "purpose": "Prepare reviewer-ready narration without letting model output own the verdict.",
             "narration": (
-                f"{scenario_name}: {packet['decision']['verdict']} "
-                f"{packet['decision']['review_posture']}"
+                f"IA does not approve this request. Human review is required before any access, "
+                f"spend, or production movement. Packet verdict: {decision['verdict']}. "
+                f"Review posture: {decision['review_posture']}. "
+                f"External writes enabled: {safety['external_writes_enabled']}. "
+                f"Human approval required: {safety['requires_human_approval']}."
             ),
             "reviewer_narration_contract": {
                 "input_fields": ["decision", "approval_posture", "blocked_claims", "missing_proof", "reviewer_owners"],

@@ -14,7 +14,7 @@
         "decision.external_writes",
         "safety_boundary"
       ],
-      "summary": "The support triage agent can move into scoped validation only after named reviewers inspect the proof debt. Production access, permission grants, and external writes remain blocked."
+      "summary": "IA does not approve this request. Human review is required before any access, spend, or production movement. The support triage agent can move into scoped validation only after named reviewers inspect the proof debt. Production access, permission grants, and external writes remain blocked."
     }
   ]
 }

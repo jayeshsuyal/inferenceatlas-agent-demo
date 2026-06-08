@@ -9,18 +9,28 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from .adapters import ADAPTER_NAMES, build_adapter_result
+from .adapters import build_adapter_result
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS
+from .sponsor_proof_trace import SPONSOR_ORDER
 
 
 SPONSOR_READINESS_SCHEMA_VERSION = "sponsor_live_readiness.v0"
 SPONSOR_READINESS_ID = "ia-sponsor-live-readiness-public-v0"
 DEFAULT_SCENARIO = "support_triage_agent"
+DEFAULT_PUBLIC_DEMO_MODE = {
+    "nebius": "fallback_narration",
+    "tavily": "fallback_evidence_candidates",
+    "composio": "dry_run_permission_diff",
+    "openclaw": "fallback_runtime_trace",
+}
 
 
 PROVIDER_READINESS = {
     "nebius": {
         "env_vars": ["NEBIUS_API_KEY", "NEBIUS_BASE_URL", "NEBIUS_MODEL"],
+        "dry_run_surface": "locked-field narration preview",
+        "fallback_surface": "deterministic reviewer narration",
+        "live_capability": "LLM narration over locked packet fields",
         "live_value": "Reviewer-ready narration over locked packet fields.",
         "visible_outputs": [
             "reviewer summary projection",
@@ -31,6 +41,9 @@ PROVIDER_READINESS = {
     },
     "tavily": {
         "env_vars": ["TAVILY_API_KEY"],
+        "dry_run_surface": "evidence candidate slots",
+        "fallback_surface": "deterministic missing-proof search plan",
+        "live_capability": "source-backed evidence candidate retrieval",
         "live_value": "Source-backed evidence notes with URL and freshness fields.",
         "visible_outputs": [
             "evidence notes",
@@ -41,6 +54,9 @@ PROVIDER_READINESS = {
     },
     "composio": {
         "env_vars": ["COMPOSIO_API_KEY", "COMPOSIO_DRY_RUN"],
+        "dry_run_surface": "permission diff plan",
+        "fallback_surface": "deterministic permission diff plan",
+        "live_capability": "scoped connector planning with dry-run enforcement",
         "live_value": "Dry-run permission diff for GitHub, Slack, and Jira actions.",
         "visible_outputs": [
             "tool-by-tool permission diff",
@@ -51,6 +67,9 @@ PROVIDER_READINESS = {
     },
     "openclaw": {
         "env_vars": ["IA_LIVE_MODE", "AGENT_MAX_STEPS"],
+        "dry_run_surface": "runtime trace plan",
+        "fallback_surface": "deterministic runtime trace plan",
+        "live_capability": "runtime trace capture for attempted agent steps",
         "live_value": "Runtime trace plan for attempted steps, policy decisions, and blocked outcomes.",
         "visible_outputs": [
             "runtime trace steps",
@@ -60,6 +79,16 @@ PROVIDER_READINESS = {
         "next_cto_step": "Record the live agent loop as trace evidence; do not let runtime checks replace pre-permission review.",
     },
 }
+
+READINESS_MATRIX_COLUMNS = [
+    "fallback_available",
+    "dry_run_available",
+    "live_capable",
+    "env_ready_for_live",
+    "live_enabled",
+    "disabled_reason",
+    "default_demo_mode",
+]
 
 
 def _relative(path: Path) -> str:
@@ -87,6 +116,44 @@ def _env_status(env_vars: list[str], *, inspect_env: bool) -> dict[str, Any]:
     }
 
 
+def _env_ready_for_live(env_status: dict[str, Any], *, inspect_env: bool) -> bool:
+    return bool(inspect_env and env_status["configured"] and not env_status["missing_vars"])
+
+
+def _disabled_reason(provider: str, env_status: dict[str, Any], *, inspect_env: bool) -> str:
+    if not inspect_env:
+        return "env_not_inspected_public_default"
+    if provider == "composio" and "COMPOSIO_DRY_RUN" in env_status["missing_vars"]:
+        return "dry_run_flag_missing"
+    if env_status["missing_vars"]:
+        return "missing_env_vars"
+    return "disabled_by_public_demo_policy"
+
+
+def _readiness_matrix_row(provider: str, adapter: dict[str, Any], env_status: dict[str, Any], *, inspect_env: bool) -> dict[str, Any]:
+    readiness = PROVIDER_READINESS[provider]
+    env_ready = _env_ready_for_live(env_status, inspect_env=inspect_env)
+    return {
+        "provider": provider,
+        "fallback_available": True,
+        "fallback_surface": readiness["fallback_surface"],
+        "dry_run_available": True,
+        "dry_run_surface": readiness["dry_run_surface"],
+        "live_capable": True,
+        "live_capability": readiness["live_capability"],
+        "env_ready_for_live": env_ready,
+        "live_enabled": False,
+        "disabled_reason": _disabled_reason(provider, env_status, inspect_env=inspect_env),
+        "default_demo_mode": DEFAULT_PUBLIC_DEMO_MODE[provider],
+        "api_key_required_for_default_path": adapter["requires_api_key"],
+        "would_execute": adapter["would_execute"],
+        "can_approve_access": adapter["can_approve_access"],
+        "can_grant_permissions": adapter["can_grant_permissions"],
+        "can_mutate_external_state": adapter["can_mutate_external_state"],
+        "human_review_required": adapter["human_review_required"],
+    }
+
+
 def build_sponsor_live_readiness(
     scenario_name: str = DEFAULT_SCENARIO,
     *,
@@ -97,9 +164,11 @@ def build_sponsor_live_readiness(
         raise ValueError(f"unknown scenario: {scenario_name}")
 
     providers = []
-    for provider in ADAPTER_NAMES:
+    readiness_matrix = []
+    for provider in SPONSOR_ORDER:
         adapter = build_adapter_result(provider, scenario_name)
         readiness = PROVIDER_READINESS[provider]
+        env_status = _env_status(readiness["env_vars"], inspect_env=inspect_env)
         providers.append(
             {
                 "provider": provider,
@@ -110,7 +179,7 @@ def build_sponsor_live_readiness(
                 "live_value": readiness["live_value"],
                 "visible_outputs": readiness["visible_outputs"],
                 "next_cto_step": readiness["next_cto_step"],
-                "env": _env_status(readiness["env_vars"], inspect_env=inspect_env),
+                "env": env_status,
                 "safety_boundary": {
                     "requires_api_key_in_default_path": adapter["requires_api_key"],
                     "would_execute": adapter["would_execute"],
@@ -123,6 +192,9 @@ def build_sponsor_live_readiness(
                 "cannot_do": adapter["proof_pack"]["cannot_do"],
             }
         )
+        readiness_matrix.append(
+            _readiness_matrix_row(provider, adapter, env_status, inspect_env=inspect_env)
+        )
 
     return {
         "schema_version": SPONSOR_READINESS_SCHEMA_VERSION,
@@ -134,6 +206,7 @@ def build_sponsor_live_readiness(
         "headline": "Sponsor tools enrich proof; they do not approve access.",
         "summary": {
             "provider_count": len(providers),
+            "matrix_columns": READINESS_MATRIX_COLUMNS,
             "all_contracts_ready": all(provider["readiness"] == "contract_ready" for provider in providers),
             "default_path_requires_keys": False,
             "all_non_executing": all(not provider["safety_boundary"]["would_execute"] for provider in providers),
@@ -141,8 +214,14 @@ def build_sponsor_live_readiness(
             "all_non_granting": all(not provider["safety_boundary"]["can_grant_permissions"] for provider in providers),
             "all_non_mutating": all(not provider["safety_boundary"]["can_mutate_external_state"] for provider in providers),
             "human_review_required": all(provider["safety_boundary"]["human_review_required"] for provider in providers),
+            "all_fallback_available": all(row["fallback_available"] for row in readiness_matrix),
+            "all_dry_run_available": all(row["dry_run_available"] for row in readiness_matrix),
+            "all_live_capable": all(row["live_capable"] for row in readiness_matrix),
+            "any_env_ready_for_live": any(row["env_ready_for_live"] for row in readiness_matrix),
+            "any_live_enabled": any(row["live_enabled"] for row in readiness_matrix),
         },
         "providers": providers,
+        "readiness_matrix": readiness_matrix,
         "default_public_boundary": {
             "works_without_keys": True,
             "live_calls_made": False,
@@ -179,6 +258,10 @@ def render_sponsor_live_readiness_markdown(report: dict[str, Any]) -> str:
         f"- all non-granting: {report['summary']['all_non_granting']}",
         f"- all non-mutating: {report['summary']['all_non_mutating']}",
         f"- human review required: {report['summary']['human_review_required']}",
+        f"- all fallback available: {report['summary']['all_fallback_available']}",
+        f"- all dry-run available: {report['summary']['all_dry_run_available']}",
+        f"- all live-capable: {report['summary']['all_live_capable']}",
+        f"- any live enabled: {report['summary']['any_live_enabled']}",
         "",
         "## Provider Readiness",
         "",
@@ -196,6 +279,28 @@ def render_sponsor_live_readiness_markdown(report: dict[str, Any]) -> str:
                 approve=safety["can_approve_access"],
                 grant=safety["can_grant_permissions"],
                 mutate=safety["can_mutate_external_state"],
+            )
+        )
+
+    lines.extend(
+        [
+            "",
+            "## Readiness Matrix",
+            "",
+            "| Provider | Fallback | Dry Run | Live Capable | Live Enabled | Disabled Reason | Demo Mode |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in report["readiness_matrix"]:
+        lines.append(
+            "| {provider} | {fallback} | {dry_run} | {live_capable} | {live_enabled} | {disabled_reason} | {demo_mode} |".format(
+                provider=row["provider"],
+                fallback=row["fallback_available"],
+                dry_run=row["dry_run_available"],
+                live_capable=row["live_capable"],
+                live_enabled=row["live_enabled"],
+                disabled_reason=row["disabled_reason"],
+                demo_mode=row["default_demo_mode"],
             )
         )
 

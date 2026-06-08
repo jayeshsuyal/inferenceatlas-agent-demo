@@ -44,6 +44,7 @@ from agent.sponsor_proof_collector import (
     DEFAULT_QUESTION as DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION,
     build_sponsor_proof_collector_run,
 )
+from agent.sponsor_readiness import build_sponsor_live_readiness
 from agent.verification import build_verification_artifact_for_scenario
 from agent.workbench import (
     build_workbench_registry,
@@ -536,6 +537,38 @@ def portkey_downstream_preview(
         "ok": True,
         "read_only": True,
         "portkey": payload,
+    }
+
+
+@app.get("/api/sponsor-readiness/matrix")
+def sponsor_readiness_matrix(
+    scenario: str = Query("support_triage_agent"),
+    inspect_env: bool = Query(False),
+) -> dict:
+    """Read-only sponsor fallback/dry-run/live-capability matrix."""
+    try:
+        report = build_sponsor_live_readiness(scenario, inspect_env=inspect_env)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "read_only": True,
+        "scenario": report["scenario"],
+        "environment_inspected": report["environment_inspected"],
+        "summary": {
+            "provider_count": report["summary"]["provider_count"],
+            "all_fallback_available": report["summary"]["all_fallback_available"],
+            "all_dry_run_available": report["summary"]["all_dry_run_available"],
+            "all_live_capable": report["summary"]["all_live_capable"],
+            "any_env_ready_for_live": report["summary"]["any_env_ready_for_live"],
+            "any_live_enabled": report["summary"]["any_live_enabled"],
+            "all_non_executing": report["summary"]["all_non_executing"],
+            "all_non_approving": report["summary"]["all_non_approving"],
+            "all_non_granting": report["summary"]["all_non_granting"],
+            "all_non_mutating": report["summary"]["all_non_mutating"],
+        },
+        "matrix": report["readiness_matrix"],
+        "private_boundary": report["private_boundary"],
     }
 
 

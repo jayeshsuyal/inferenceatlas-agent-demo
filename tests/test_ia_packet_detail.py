@@ -80,10 +80,12 @@ class IAPacketDetailTests(unittest.TestCase):
             'id="btn-copy-packet-brief"',
             'id="btn-export-packet"',
             'id="btn-export-portkey-gate"',
+            'id="packet-team-card"',
             "Export Portkey gate",
             "IA did not approve. The next human action is named above.",
             "Review in 60 seconds",
-            "Request -> Packet -> Sponsor proof -> Downstream gate -> Export",
+            "Request -> Packet -> Sponsor proof -> Downstream gate -> Team lenses -> Export",
+            "Team lenses",
         ]:
             self.assertIn(expected, html)
 
@@ -99,6 +101,8 @@ class IAPacketDetailTests(unittest.TestCase):
             "markPacketReviewRailLoaded",
             "data-packet-target",
             "renderPacketDetail",
+            "renderPacketTeamLenses",
+            "Teams reading this packet",
             "Copy IA Packet link",
             "Open IA Packet",
             "packetPortkeyPreviewPath",
@@ -166,6 +170,7 @@ class IAPacketDetailTests(unittest.TestCase):
             "Packet": "packet-decision-card",
             "Sponsor proof": "packet-sponsor-card",
             "Downstream gate": "packet-downstream-card",
+            "Team lenses": "packet-team-card",
             "Export": "packet-export-card",
         }
 
@@ -174,6 +179,8 @@ class IAPacketDetailTests(unittest.TestCase):
         self.assertIn("packet-review-step", html)
         self.assertIn(".packet-review-rail", css)
         self.assertIn(".packet-review-step.ready", css)
+        self.assertIn(".team-lens-list", css)
+        self.assertIn(".team-lens-row", css)
         self.assertIn("scrollIntoView", js)
 
         for label, target in expected_steps.items():

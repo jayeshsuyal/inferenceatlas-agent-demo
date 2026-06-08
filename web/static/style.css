@@ -61,6 +61,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .logo {
@@ -79,6 +80,7 @@ body {
   margin: 0;
   font-size: 0.75rem;
   color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .stack {
@@ -86,6 +88,7 @@ body {
   flex-wrap: wrap;
   gap: 0.4rem;
   flex: 1;
+  min-width: 0;
 }
 
 .pill {
@@ -214,6 +217,7 @@ body {
   color: var(--muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  overflow-wrap: anywhere;
 }
 
 .workbench-label {
@@ -553,6 +557,7 @@ body {
 .main-panel {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -592,13 +597,19 @@ body {
   justify-content: space-between;
   gap: 1rem;
   align-items: flex-start;
+  min-width: 0;
   margin-bottom: 1rem;
+}
+
+.walkthrough-header > div {
+  min-width: 0;
 }
 
 .walkthrough-header h2 {
   margin: 0.2rem 0 0.25rem;
   font-size: 1.25rem;
   letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .eyebrow {
@@ -680,7 +691,7 @@ body {
 }
 
 .packet-review-steps {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-bottom: 0;
 }
 
@@ -1064,6 +1075,90 @@ body {
   line-height: 1.35;
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+.team-lens-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.team-lens-row {
+  min-width: 0;
+  min-height: 11.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.team-lens-row.direct {
+  border-color: rgba(52, 211, 153, 0.28);
+  background: rgba(52, 211, 153, 0.055);
+}
+
+.team-lens-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  margin-bottom: 0.45rem;
+}
+
+.team-lens-head strong {
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.25;
+}
+
+.team-lens-head span {
+  flex: 0 0 auto;
+  padding: 0.16rem 0.4rem;
+  border: 1px solid rgba(61, 156, 245, 0.3);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.team-lens-row.direct .team-lens-head span {
+  border-color: rgba(52, 211, 153, 0.35);
+  color: var(--success);
+}
+
+.team-lens-row p,
+.team-lens-row small,
+.team-lens-meta span {
+  display: block;
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.team-lens-row code {
+  display: block;
+  margin-top: 0.55rem;
+  color: var(--text);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.team-lens-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+  margin-top: 0.45rem;
+}
+
+.team-lens-meta span:last-child {
+  color: var(--success);
+  text-align: right;
 }
 
 .mini-list {
@@ -2927,12 +3022,74 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .team-lens-list {
+    grid-template-columns: 1fr;
+  }
+
+  .team-lens-row {
+    min-height: auto;
+  }
+
   .walkthrough-panel.span-2 {
     grid-column: span 1;
   }
 }
 
 @media (max-width: 520px) {
+  .header {
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+  }
+
+  .brand {
+    flex: 1 1 auto;
+  }
+
+  .logo {
+    flex: 0 0 auto;
+    font-size: 1.2rem;
+  }
+
+  .brand h1 {
+    font-size: 1rem;
+  }
+
+  .tagline {
+    font-size: 0.68rem;
+    line-height: 1.25;
+  }
+
+  .stack {
+    display: none;
+  }
+
+  #btn-reset {
+    flex: 0 0 auto;
+    padding: 0.42rem 0.65rem;
+    white-space: nowrap;
+  }
+
+  .sidebar-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-tabs .tab {
+    width: 100%;
+    padding: 0.45rem 0.35rem;
+    font-size: 0.72rem;
+  }
+
+  .advanced-nav {
+    grid-column: 1 / -1;
+  }
+
+  .walkthrough-header h2 {
+    font-size: 1.08rem;
+    line-height: 1.25;
+    word-break: break-word;
+  }
+
   .empty-proof-board {
     grid-template-columns: 1fr;
   }
@@ -2943,6 +3100,14 @@ body {
 
   .walk-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .team-lens-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .team-lens-meta span:last-child {
+    text-align: left;
   }
 
   .trace-metrics {

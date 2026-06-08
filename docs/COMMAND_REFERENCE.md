@@ -35,6 +35,7 @@ python3 -m agent.verification --all
 python3 -m agent.subscribers --json
 python3 -m agent.downstream_gate --all
 python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json
+python3 -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all
@@ -67,6 +68,7 @@ ia-verify --all
 ia-subscribers --json
 ia-downstream-gate --all
 ia-packet-advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json
+ia-portkey-adapter --fixture ai_spend_budget_overrun --mode dry-run --json
 ia-outcome-memo
 ia-contract --all
 ia-gate --all

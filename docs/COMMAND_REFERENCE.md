@@ -26,6 +26,15 @@ For the full served reviewer smoke inside this gate, install the web extra first
 pip install -e ".[web]"
 ```
 
+## Demo Rehearsal Gate
+
+```bash
+python3 scripts/demo_rehearsal.py
+python3 scripts/demo_rehearsal.py --json
+```
+
+This checks the recording-critical path: no-key review preflight, four Ask IA prompts, Portkey dry-run gate, Sponsor Proof Run safety locks, and artifact integrity. It does not use live keys or enable writes.
+
 ## Full Public Python Commands
 
 ```bash
@@ -57,6 +66,7 @@ python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml
 python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --evidence-dir examples/evidence/support_triage_trial
 python3 -m agent.verify_artifacts
+python3 scripts/demo_rehearsal.py
 python3 -m unittest discover -s tests
 ```
 

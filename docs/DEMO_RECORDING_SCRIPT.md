@@ -11,6 +11,7 @@ Record only after all checks are true:
 
 - `main` is green.
 - `bash scripts/pr_smoke.sh` passes locally.
+- `python3 scripts/demo_rehearsal.py --json` passes locally.
 - The cold-start URL works: `/packet?fixture=mcp_tool_blast_radius&autorun=1`.
 - Ask IA answers the four packet-backed prompts without weird or overclaiming replies.
 - Portkey export shows dry-run, no API call, false guardrail verdict, and credit limit zero.

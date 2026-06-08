@@ -14,6 +14,8 @@ InferenceAtlas is the packet authority layer upstream of tools, gateways, spend 
 
 The packet authority layer downstream systems trust before AI moves.
 
+AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
+
 ```mermaid
 flowchart LR
   A["Agent/team asks for access, spend, data, or production action"] --> B["InferenceAtlas DecisionPacket"]

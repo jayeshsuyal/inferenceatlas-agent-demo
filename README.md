@@ -13,6 +13,7 @@ Every agent demo shows the agent taking action. InferenceAtlas shows the proof p
 
 InferenceAtlas turns an agent's request for tools, data, spend, or production access into a DecisionPacket before anything moves.
 Downstream systems do not trust raw agent intent. They trust the IA packet: packet id, revision, hash, verdict, proof debt, reviewer routing, and blocked claims.
+AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
 
 This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
 

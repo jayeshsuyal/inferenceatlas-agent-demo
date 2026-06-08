@@ -89,7 +89,6 @@ const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
 const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
 const packetCoachStatus = document.getElementById("packet-coach-status");
-const btnStartPortkeyPreview = document.getElementById("btn-start-portkey-preview");
 const connectorToastEl = document.getElementById("connector-toast");
 const btnGithub = document.getElementById("btn-github");
 const githubChipsEl = document.getElementById("github-chips");
@@ -115,9 +114,11 @@ const SKILL_HINT_BY_ID = {
 };
 
 const EMPTY_PROOF_TILES = [
-  ["1 · Packet", "Open the request, verdict, proof debt, and hash."],
-  ["2 · Trace", "See sponsor proof without approval or writes."],
-  ["3 · Gate", "Preview what downstream systems can trust."],
+  ["1 · Request", "Run one registered AI movement request."],
+  ["2 · Packet", "See verdict, proof debt, reviewer owners, and hash."],
+  ["3 · Sponsor proof", "Collect Tavily, Composio, OpenClaw, and Nebius trace."],
+  ["4 · Downstream gate", "Export Portkey dry-run gate JSON."],
+  ["5 · Export", "Copy the review brief for humans."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -174,9 +175,9 @@ let drivePickerKind = "all";
 
 const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
 const FIRST_RUN_HEADING =
-  "Run one AI request. See what gets blocked, who reviews, and what downstream systems can trust before anything moves.";
+  "Before any downstream system acts, review the proof packet it can trust.";
 const FIRST_RUN_BODY =
-  "Start with the IA Packet. It shows verdict, proof debt, sponsor trace, and downstream gates before an agent receives tools, spend, or production access.";
+  "Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, Ask IA follow-up, export.";
 const FIRST_RUN_COACH_STATUS =
   "Open the IA Packet first; then ask packet-backed follow-ups.";
 
@@ -323,7 +324,7 @@ function renderFirstRunWelcome() {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "first-run-eyebrow";
-  eyebrow.textContent = "Start here";
+  eyebrow.textContent = "Packet cockpit";
 
   const heading = document.createElement("h2");
   heading.textContent = FIRST_RUN_HEADING;
@@ -337,19 +338,9 @@ function renderFirstRunWelcome() {
   const packetLink = document.createElement("a");
   packetLink.className = "btn-primary first-run-cta";
   packetLink.href = FIRST_RUN_PACKET_URL;
-  packetLink.textContent = "Start 60-second review";
+  packetLink.textContent = "Run packet cockpit";
 
-  const portkeyButton = document.createElement("button");
-  portkeyButton.type = "button";
-  portkeyButton.className = "btn-ghost first-run-cta";
-  portkeyButton.textContent = "Preview Portkey gate";
-  portkeyButton.addEventListener("click", () => {
-    if (busy) return;
-    unlockPacketCoach();
-    sendMessage("Can Portkey allow this spend?");
-  });
-
-  actions.append(packetLink, portkeyButton);
+  actions.append(packetLink);
   bubble.append(eyebrow, heading, body, actions);
   wrap.appendChild(bubble);
   messagesEl.appendChild(wrap);
@@ -2697,6 +2688,7 @@ function renderSponsorCard(data) {
   if (run) {
     const safety = run.safety_boundary || {};
     const composio = run.dry_run_sponsor_proof?.composio || null;
+    const composioSummary = composio?.permission_diff_summary || {};
     const runCard = document.createElement("article");
     runCard.className = "sponsor-run-card";
     runCard.innerHTML = `
@@ -2711,7 +2703,7 @@ function renderSponsorCard(data) {
       </div>
       <p class="walkthrough-summary">${escapeHtml(
         composio
-          ? `${composio.tool_count || 0} Composio tool diffs generated; API call made ${String(composio.api_call_made)}.`
+          ? `${composioSummary.tool_count || 0} Composio permission diffs generated; ${composioSummary.blocked_write_count || 0} write actions remain blocked; API call made ${String(composio.api_call_made)}.`
           : "Sponsor proof run collected without changing the packet decision."
       )}</p>
     `;
@@ -2944,7 +2936,7 @@ async function loadSessionMetrics() {
 }
 
 function setupTabs() {
-  const tabs = document.querySelectorAll(".sidebar-tabs .tab");
+  const tabs = document.querySelectorAll(".sidebar .tab");
   const panels = {
     start: document.getElementById("panel-start"),
     packet: document.getElementById("panel-packet"),
@@ -2957,6 +2949,12 @@ function setupTabs() {
   tabs.forEach((tab) => {
     tab.addEventListener("click", async () => {
       const id = tab.dataset.tab;
+      const advancedNav = tab.closest(".advanced-nav");
+      if (advancedNav) {
+        advancedNav.open = true;
+      } else {
+        document.querySelector(".advanced-nav")?.removeAttribute("open");
+      }
       tabs.forEach((t) => t.classList.toggle("active", t === tab));
       Object.entries(panels).forEach(([key, panel]) => {
         if (!panel) return;
@@ -3582,12 +3580,6 @@ packetCoachQuickChips?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn || busy) return;
   sendMessage(btn.dataset.askPrompt || btn.textContent || "");
-});
-
-btnStartPortkeyPreview?.addEventListener("click", () => {
-  if (busy) return;
-  unlockPacketCoach();
-  sendMessage("Can Portkey allow this spend?");
 });
 
 btnReset.addEventListener("click", resetChat);

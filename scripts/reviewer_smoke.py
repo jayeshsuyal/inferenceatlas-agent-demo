@@ -83,12 +83,14 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=31", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=32", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=19", timeout=timeout)
 
     for expected in (
-        "Run one AI request. See what gets blocked",
-        "Start 60-second review",
+        "Before any downstream system acts",
+        "Run packet cockpit",
+        "Golden packet cockpit",
+        "Sponsor Run",
         "composer-shell first-run-locked",
         "Open the IA Packet first; then ask packet-backed follow-ups.",
         "Export Portkey gate",
@@ -102,8 +104,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".composer-shell.first-run-locked" in css, "first-run quick-chip lock CSS missing")
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(
-        "grid-template-columns: repeat(3, minmax(0, 1fr));" in css,
-        "narrow first-run proof tiles must stay in one visible row",
+        "grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));" in css,
+        "first-run proof tiles must stay scan-friendly",
     )
     _require(re.search(r"/static/app\.js\?v=\d+", html) is not None, "app.js cache marker missing")
     _require(re.search(r"/static/style\.css\?v=\d+", html) is not None, "style.css cache marker missing")

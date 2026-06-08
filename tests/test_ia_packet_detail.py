@@ -83,7 +83,7 @@ class IAPacketDetailTests(unittest.TestCase):
             "Export Portkey gate",
             "IA did not approve. The next human action is named above.",
             "Review in 60 seconds",
-            "Request -> Verdict -> Proof debt -> Downstream trust -> Export",
+            "Request -> Packet -> Sponsor proof -> Downstream gate -> Export",
         ]:
             self.assertIn(expected, html)
 
@@ -163,9 +163,9 @@ class IAPacketDetailTests(unittest.TestCase):
 
         expected_steps = {
             "Request": "packet-summary-card",
-            "Verdict": "packet-decision-card",
-            "Proof debt": "packet-proof-card",
-            "Downstream trust": "packet-downstream-card",
+            "Packet": "packet-decision-card",
+            "Sponsor proof": "packet-sponsor-card",
+            "Downstream gate": "packet-downstream-card",
             "Export": "packet-export-card",
         }
 

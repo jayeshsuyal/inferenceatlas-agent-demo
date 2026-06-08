@@ -277,6 +277,7 @@
     "agent_skills": "docs/AGENT_SKILLS.md",
     "agent_skills_registry": "agent/skills.py",
     "chat_answer_contract": "agent/chat_answer.py",
+    "chat_salience_surface": "agent/chat_salience.py",
     "packet_advisor": "agent/packet_advisor.py",
     "portkey_adapter": "agent/portkey_adapter.py",
     "product_quality_audit": "docs/PRODUCT_QUALITY_AUDIT.md",
@@ -402,7 +403,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "60-second reviewer path", "IA Packet detail surface", "packet workbench", "agent skills registry", "chat answer contract", "packet advisor", "Portkey dry-run adapter", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "60-second reviewer path", "IA Packet detail surface", "packet workbench", "agent skills registry", "chat answer contract", "chat salience surface", "packet advisor", "Portkey dry-run adapter", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [
@@ -411,6 +412,7 @@
     "docs/LIVE_INTEGRATION_CONTRACT.md",
     "agent/demo.py",
     "agent/chat_answer.py",
+    "agent/chat_salience.py",
     "agent/packet_advisor.py",
     "agent/portkey_adapter.py",
     "agent/skills.py",

@@ -14,6 +14,7 @@ from .chat_answer import (
     build_product_positioning_answer,
     build_spend_review_answer,
 )
+from .chat_salience import build_chat_salience_surface, render_chat_salience_markdown
 from .config import V1_SLOT_FILLER_PROMPT
 from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
 from .github_repo import build_github_chat_context, get_repo_index_status
@@ -478,7 +479,9 @@ def orchestrate_chat(
     elif should_use_packet_advisor(message, current_fixture=current_fixture):
         fixture = select_fixture_for_question(message, current_fixture)
         advisor_answer = build_packet_advisor_answer(fixture=fixture, question=message)
-        direct_reply = advisor_answer["rendered_text"]
+        salience = build_chat_salience_surface(advisor_answer)
+        advisor_answer["chat_salience"] = salience
+        direct_reply = render_chat_salience_markdown(salience)
         direct_reply_source = "packet_advisor"
         direct_answer = advisor_answer
         use_tools = False
@@ -629,7 +632,7 @@ def orchestrate_chat(
     elif direct_reply_source == "spend_review":
         manifest.append("ChatAnswer: ai_spend_review")
     elif direct_reply_source == "packet_advisor":
-        manifest.append("Packet Advisor: shared CLI/Ask IA answer")
+        manifest.append("Packet-backed chat: shared CLI/API truth")
     elif direct_reply_source in {"catalog_example", "pricing_example"}:
         manifest.append("Deterministic catalog example")
     elif direct_reply_source == "access_review_example":

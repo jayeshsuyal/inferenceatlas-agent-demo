@@ -1296,6 +1296,36 @@ body {
   display: none;
 }
 
+.packet-coach-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.45rem 1.25rem 0;
+}
+
+.packet-coach-quick-chips button {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 0.25rem 0.65rem;
+}
+
+.packet-coach-quick-chips button:hover {
+  border-color: rgba(61, 156, 245, 0.55);
+  background: rgba(61, 156, 245, 0.12);
+}
+
+.packet-coach-quick-chips button:focus-visible {
+  outline: 2px solid rgba(61, 156, 245, 0.85);
+  outline-offset: 2px;
+}
+
 .skill-chip {
   display: inline-flex;
   align-items: center;

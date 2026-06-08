@@ -168,6 +168,7 @@ let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
 let walkthroughActiveIndex = 0;
+let runtimeHealth = null;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
 let selectedSkills = [];
 /** @type {Array<{full_name:string, preview?:string, indexing?:boolean}>} */
@@ -2986,8 +2987,27 @@ function renderSponsorCard(data) {
   const ledgerRecord = data.sponsor_proof_ledger_record || walkthroughSponsorLedgerRecord;
   if (run) {
     const safety = run.safety_boundary || {};
+    const tavily = run.live_sponsor_proof?.tavily || null;
+    const tavilyCandidates = Array.isArray(tavily?.evidence_candidates)
+      ? tavily.evidence_candidates
+      : [];
+    const tavilySourceCount = tavilyCandidates.reduce(
+      (total, item) => total + (Array.isArray(item.source_urls) ? item.source_urls.length : 0),
+      0
+    );
     const composio = run.dry_run_sponsor_proof?.composio || null;
     const composioSummary = composio?.permission_diff_summary || {};
+    const sponsorRunSummaries = [];
+    if (tavily) {
+      sponsorRunSummaries.push(
+        `Tavily live evidence ${tavily.live_call_attempted ? "attempted" : "not attempted"}; ${tavily.live_call_count || 0} live calls; ${tavilySourceCount} source URLs; fallback ${String(tavily.fallback_used)}.`
+      );
+    }
+    if (composio) {
+      sponsorRunSummaries.push(
+        `${composioSummary.tool_count || 0} Composio permission diffs generated; ${composioSummary.blocked_write_count || 0} write actions remain blocked; API call made ${String(composio.api_call_made)}.`
+      );
+    }
     const runCard = document.createElement("article");
     runCard.className = "sponsor-run-card";
     runCard.innerHTML = `
@@ -3001,8 +3021,8 @@ function renderSponsorCard(data) {
         <div><span>Decision lock</span><strong>${escapeHtml(String(run.invariants?.decision_lock_unchanged))}</strong></div>
       </div>
       <p class="walkthrough-summary">${escapeHtml(
-        composio
-          ? `${composioSummary.tool_count || 0} Composio permission diffs generated; ${composioSummary.blocked_write_count || 0} write actions remain blocked; API call made ${String(composio.api_call_made)}.`
+        sponsorRunSummaries.length
+          ? sponsorRunSummaries.join(" ")
           : "Sponsor proof run collected without changing the packet decision."
       )}</p>
     `;
@@ -3152,7 +3172,19 @@ async function collectSponsorProof() {
   }
 
   btnCollectSponsorProof.disabled = true;
-  setWalkthroughToast("Collecting sponsor proof run...");
+  if (!runtimeHealth) {
+    try {
+      runtimeHealth = await fetch("/api/health").then((r) => r.json());
+    } catch (_) {
+      runtimeHealth = null;
+    }
+  }
+  const liveTavily = Boolean(runtimeHealth?.tavily);
+  setWalkthroughToast(
+    liveTavily
+      ? "Collecting sponsor proof run with live Tavily evidence..."
+      : "Collecting sponsor proof run..."
+  );
   try {
     const res = await fetch("/api/sponsor-proof-runs", {
       method: "POST",
@@ -3160,7 +3192,7 @@ async function collectSponsorProof() {
       body: JSON.stringify({
         request_path: walkthroughPayload.request_path || "examples/requests/support_triage_trial.yml",
         composio_dry_run: true,
-        live_tavily: false,
+        live_tavily: liveTavily,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -3353,6 +3385,7 @@ async function loadMeta() {
       fetch("/api/health").then((r) => r.json()),
       fetch("/api/examples").then((r) => r.json()),
     ]);
+    runtimeHealth = health;
 
     stackPills.innerHTML = "";
     const v1 = health.inferenceatlas_v1 || {};
@@ -3414,6 +3447,7 @@ async function loadMeta() {
       );
     }
   } catch (_) {
+    runtimeHealth = null;
     catalogInfo.textContent = "Could not reach API.";
   }
 }

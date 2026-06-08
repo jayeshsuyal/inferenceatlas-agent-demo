@@ -22,7 +22,6 @@ from agent.sponsor_proof_trace import SPONSOR_ORDER
 from agent.trial import DEFAULT_TRIAL_REQUEST
 from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 from web.app import (
-    SPONSOR_PROOF_RUN_LEDGER_DIR,
     SponsorProofRunRequest,
     _sponsor_proof_runs,
     app,
@@ -272,34 +271,37 @@ def test_collector_cli_blocks_composio_dry_run_checked_artifact_writes() -> None
 
 
 def test_collector_api_creates_and_returns_local_read_only_runs() -> None:
-    created = create_sponsor_proof_run(SponsorProofRunRequest())
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ledger_dir = Path(tmpdir) / "state" / "sponsor_proof_runs"
+        with patch("web.app.SPONSOR_PROOF_RUN_LEDGER_DIR", ledger_dir):
+            created = create_sponsor_proof_run(SponsorProofRunRequest())
 
-    assert created["ok"] is True
-    assert created["read_only"] is True
-    assert created["run"]["schema_version"] == SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION
-    assert created["run"]["safety_boundary"]["live_calls_made"] is False
-    assert created["run"]["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
-    assert created["ledger_record"]["run_id"] == created["run"]["run_id"]
-    assert created["ledger_record"]["packet_reference"] == created["run"]["packet_reference"]
-    assert created["ledger_record"]["safety_lock"]["read_only"] is True
-    assert created["ledger_record"]["safety_lock"]["decision_lock_unchanged"] is True
+            assert created["ok"] is True
+            assert created["read_only"] is True
+            assert created["run"]["schema_version"] == SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION
+            assert created["run"]["safety_boundary"]["live_calls_made"] is False
+            assert created["run"]["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
+            assert created["ledger_record"]["run_id"] == created["run"]["run_id"]
+            assert created["ledger_record"]["packet_reference"] == created["run"]["packet_reference"]
+            assert created["ledger_record"]["safety_lock"]["read_only"] is True
+            assert created["ledger_record"]["safety_lock"]["decision_lock_unchanged"] is True
 
-    _sponsor_proof_runs.clear()
-    fetched = get_sponsor_proof_run(created["run"]["run_id"])
-    assert fetched["ok"] is True
-    assert fetched["read_only"] is True
-    assert fetched["run"] == created["run"]
-    assert fetched["ledger_record"]["run_id"] == created["run"]["run_id"]
+            _sponsor_proof_runs.clear()
+            fetched = get_sponsor_proof_run(created["run"]["run_id"])
+            assert fetched["ok"] is True
+            assert fetched["read_only"] is True
+            assert fetched["run"] == created["run"]
+            assert fetched["ledger_record"]["run_id"] == created["run"]["run_id"]
 
-    ledger = sponsor_proof_run_ledger()
-    assert ledger["ok"] is True
-    assert ledger["read_only"] is True
-    assert ledger["ledger"]["read_only"] is True
-    assert ledger["ledger"]["record_count"] >= 1
-    assert any(item["run_id"] == created["run"]["run_id"] for item in ledger["ledger"]["runs"])
-    assert ledger["ledger"]["safety_summary"]["no_live_calls"] is True
-    assert ledger["ledger"]["safety_summary"]["no_external_writes"] is True
-    assert str(SPONSOR_PROOF_RUN_LEDGER_DIR).endswith("state/sponsor_proof_runs")
+            ledger = sponsor_proof_run_ledger()
+            assert ledger["ok"] is True
+            assert ledger["read_only"] is True
+            assert ledger["ledger"]["read_only"] is True
+            assert ledger["ledger"]["record_count"] >= 1
+            assert any(item["run_id"] == created["run"]["run_id"] for item in ledger["ledger"]["runs"])
+            assert ledger["ledger"]["safety_summary"]["no_live_calls"] is True
+            assert ledger["ledger"]["safety_summary"]["no_external_writes"] is True
+            assert str(ledger_dir).endswith("state/sponsor_proof_runs")
 
     post_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/sponsor-proof-runs")
     get_route = next(

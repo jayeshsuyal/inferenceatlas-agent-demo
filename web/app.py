@@ -1,6 +1,7 @@
 """FastAPI server for the InferenceAtlas Intelligence Agent."""
 
 import json
+import os
 import threading
 import time
 import uuid
@@ -150,7 +151,9 @@ _sessions: Dict[str, object] = {}
 _lock = threading.Lock()
 _sponsor_proof_runs: Dict[str, dict] = {}
 _sponsor_proof_runs_lock = threading.Lock()
-SPONSOR_PROOF_RUN_LEDGER_DIR = DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR
+SPONSOR_PROOF_RUN_LEDGER_DIR = Path(
+    os.environ.get("IA_SPONSOR_PROOF_RUN_LEDGER_DIR", DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR)
+).expanduser()
 
 
 def _live_deps_available() -> bool:

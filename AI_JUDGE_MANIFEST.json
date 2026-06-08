@@ -158,6 +158,7 @@
   "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
   "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
   "demo_recording_script": "docs/DEMO_RECORDING_SCRIPT.md",
+  "demo_rehearsal_gate_command": "python3 scripts/demo_rehearsal.py --json",
   "proof_health_command": "python3 -m agent.proof_health",
   "proof_health_json_command": "python3 -m agent.proof_health --no-write --json",
   "proof_health_surface": "examples/generated/support_triage_agent.proof_health.md and examples/generated/support_triage_agent.proof_health.json",
@@ -345,6 +346,7 @@
     "review_room_walkthrough": "docs/REVIEW_ROOM_WALKTHROUGH.md",
     "review_room_screenshot": "examples/generated/review_room.desktop.jpg",
     "demo_recording_script": "docs/DEMO_RECORDING_SCRIPT.md",
+    "demo_rehearsal_gate": "scripts/demo_rehearsal.py",
     "agentic_review_expected_output": "docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md",
     "design_partner_brief": "docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "docs/DESIGN_PARTNER_TRIAL_KIT.md",
@@ -406,7 +408,8 @@
     "design_partner_brief": "test -s docs/DESIGN_PARTNER_BRIEF.md",
     "design_partner_trial_kit": "test -s docs/DESIGN_PARTNER_TRIAL_KIT.md && test -s examples/requests/design_partner_trial.yml && test -s examples/requests/support_triage_trial.yml",
     "review_room_walkthrough": "test -s docs/REVIEW_ROOM_WALKTHROUGH.md && test -s examples/generated/review_room.desktop.jpg",
-    "demo_recording_script": "test -s docs/DEMO_RECORDING_SCRIPT.md"
+    "demo_recording_script": "test -s docs/DEMO_RECORDING_SCRIPT.md",
+    "demo_rehearsal_gate": "python3 scripts/demo_rehearsal.py --json"
   },
   "safety": {
     "approves_access": false,
@@ -425,7 +428,7 @@
   },
   "private_v1_boundary": {
     "private_source_exposed": false,
-    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "60-second reviewer path", "IA Packet detail surface", "packet workbench", "agent skills registry", "chat answer contract", "chat salience surface", "packet advisor", "Portkey dry-run adapter", "sponsor proof collector", "sponsor proof run ledger", "sponsor readiness matrix", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "demo recording script", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
+    "public_proof_surface": ["schemas", "examples", "installable CLI", "public contract", "product tour", "60-second reviewer path", "IA Packet detail surface", "packet workbench", "agent skills registry", "chat answer contract", "chat salience surface", "packet advisor", "Portkey dry-run adapter", "sponsor proof collector", "sponsor proof run ledger", "sponsor readiness matrix", "product quality audit", "judge harness", "agentic review expected output", "trust receipt", "packet diff", "evidence receipt ledger", "packet authority snapshot", "packet verification", "downstream gate decisions", "packet outcome memo", "design partner outcome memo", "sponsor evidence replay", "sponsor proof trace", "live evidence rehearsal", "sanitized evidence fixtures", "artifact integrity gate", "review room", "review room walkthrough", "demo recording script", "demo rehearsal gate", "proof health", "AI spend review", "AI spend request fixture", "Miasma pre-permission case study", "MCP tool blast-radius fixture", "Finance evidence receipt", "Procurement review memo", "packet drift", "access speed layer", "design partner brief", "design partner trial kit", "design partner trial runner", "trial request templates", "policy gate", "sponsor proof pack", "sponsor adapters", "sponsor live readiness", "decision brief", "CTO handoff", "tests", "CI", "redacted docs"],
     "principle": "private engine, public proof"
   },
   "builder_handoff_path": [

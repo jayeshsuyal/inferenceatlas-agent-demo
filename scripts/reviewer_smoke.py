@@ -91,7 +91,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=34", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=35", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=21", timeout=timeout)
 
     for expected in (

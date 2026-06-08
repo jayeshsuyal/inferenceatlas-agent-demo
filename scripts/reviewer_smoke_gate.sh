@@ -6,6 +6,7 @@ HOST="${IA_REVIEWER_SMOKE_HOST:-127.0.0.1}"
 PORT="${IA_REVIEWER_SMOKE_PORT:-8097}"
 BASE_URL="http://${HOST}:${PORT}"
 SERVER_LOG="${TMPDIR:-/tmp}/ia_reviewer_smoke_web_${PORT}.log"
+LEDGER_DIR="${TMPDIR:-/tmp}/ia_reviewer_smoke_ledger_${PORT}"
 
 export NEBIUS_API_KEY=""
 export OPENAI_API_KEY=""
@@ -13,6 +14,7 @@ export TAVILY_API_KEY=""
 export COMPOSIO_API_KEY=""
 export IA_LIVE_MODE=""
 export IA_DISABLE_DOTENV="1"
+export IA_SPONSOR_PROOF_RUN_LEDGER_DIR="$LEDGER_DIR"
 
 fail() {
   printf 'Reviewer smoke gate failed: %s\n' "$1" >&2
@@ -74,6 +76,9 @@ PY
 if port_in_use; then
   fail "port ${PORT} is already in use. Set IA_REVIEWER_SMOKE_PORT to a free port."
 fi
+
+rm -rf "$LEDGER_DIR"
+mkdir -p "$LEDGER_DIR"
 
 "$PYTHON_BIN" -m uvicorn web.app:app --host "$HOST" --port "$PORT" >"$SERVER_LOG" 2>&1 &
 SERVER_PID="$!"

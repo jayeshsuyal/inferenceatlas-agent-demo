@@ -83,6 +83,41 @@ class PrSmokeGateTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_reviewer_smoke_script_documents_served_reviewer_journey(self) -> None:
+        script_path = ROOT / "scripts" / "reviewer_smoke.py"
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertTrue(script_path.is_file())
+        self.assertTrue(os.access(script_path, os.X_OK))
+        self.assertIn("Server-backed reviewer smoke", script)
+        self.assertIn("/api/ia-packet?fixture=", script)
+        self.assertIn("/api/workbench/generate", script)
+        self.assertIn("/api/walkthrough", script)
+        self.assertIn("/api/packets/ai_spend_budget_overrun/downstream/portkey?mode=dry-run", script)
+        self.assertIn("/api/chat", script)
+        self.assertIn("/api/sponsor-readiness/matrix", script)
+        self.assertIn("/api/sponsor-proof-runs", script)
+        self.assertIn("/api/mind/init", script)
+        self.assertIn("/api/mind/step", script)
+        self.assertIn("/api/skills", script)
+        self.assertIn("/api/connectors?session_id=", script)
+        self.assertIn("live_calls_made", script)
+        self.assertIn("approves_access", script)
+        self.assertIn("mutates_production", script)
+        self.assertIn("Reviewer smoke passed", script)
+
+        result = subprocess.run(
+            [sys.executable, "scripts/reviewer_smoke.py", "--help"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("--base-url", result.stdout)
+
     def test_manifest_and_review_docs_expose_pr_smoke_gate(self) -> None:
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))
 

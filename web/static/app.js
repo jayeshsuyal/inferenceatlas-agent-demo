@@ -86,6 +86,7 @@ const skillsAnchor = document.getElementById("skills-anchor");
 const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
 const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
+const packetCoachStatus = document.getElementById("packet-coach-status");
 const connectorToastEl = document.getElementById("connector-toast");
 const btnGithub = document.getElementById("btn-github");
 const githubChipsEl = document.getElementById("github-chips");
@@ -172,6 +173,22 @@ function setBusy(loading) {
   input.disabled = loading;
   btnSend.querySelector(".send-label").hidden = loading;
   btnSend.querySelector(".spinner").hidden = !loading;
+  if (packetCoachQuickChips) {
+    packetCoachQuickChips.setAttribute("aria-busy", String(loading));
+    packetCoachQuickChips.dataset.busy = String(loading);
+    packetCoachQuickChips
+      .querySelectorAll("button[data-ask-prompt]")
+      .forEach((button) => {
+        button.disabled = loading;
+        button.setAttribute("aria-disabled", String(loading));
+      });
+  }
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = !loading;
+    packetCoachStatus.textContent = loading
+      ? "Answering... packet-backed quick prompts are paused."
+      : "";
+  }
 }
 
 function escapeHtml(s) {

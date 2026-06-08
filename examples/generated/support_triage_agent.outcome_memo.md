@@ -71,10 +71,10 @@ This memo converts the DecisionPacket into the human decision a CTO, Security le
 
 | Provider | Proof Type | Where It Helps | Authority |
 | --- | --- | --- | --- |
-| composio | permission_diff | Dry-run permission diff for GitHub, Slack, and Jira actions. | proof_contributor_not_approval_authority |
 | tavily | evidence_candidate_plan | Source-backed evidence notes with URL and freshness fields. | proof_contributor_not_approval_authority |
-| nebius | locked_field_narration | Reviewer-ready narration over locked packet fields. | proof_contributor_not_approval_authority |
+| composio | permission_diff | Dry-run permission diff for GitHub, Slack, and Jira actions. | proof_contributor_not_approval_authority |
 | openclaw | runtime_trace_plan | Runtime trace plan for attempted steps, policy decisions, and blocked outcomes. | proof_contributor_not_approval_authority |
+| nebius | locked_field_narration | Reviewer-ready narration over locked packet fields. | proof_contributor_not_approval_authority |
 
 ## Meeting Close
 

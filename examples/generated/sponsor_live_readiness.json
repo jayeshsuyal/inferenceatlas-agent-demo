@@ -18,42 +18,6 @@
   },
   "providers": [
     {
-      "adapter_status": "dry_run_planned",
-      "cannot_do": [
-        "approve access",
-        "grant permissions",
-        "execute writes",
-        "reduce proof debt automatically"
-      ],
-      "env": {
-        "configured": false,
-        "configured_vars": [],
-        "inspected": false,
-        "missing_vars": [],
-        "note": "Environment variables are not inspected in the default public path."
-      },
-      "live_value": "Dry-run permission diff for GitHub, Slack, and Jira actions.",
-      "next_cto_step": "Keep Composio dry-run by default; emit action plans without granting permissions or writing.",
-      "proof_pack_type": "permission_diff",
-      "provider": "composio",
-      "readiness": "contract_ready",
-      "safety_boundary": {
-        "blocked_from_approving_access": true,
-        "can_approve_access": false,
-        "can_grant_permissions": false,
-        "can_mutate_external_state": false,
-        "human_review_required": true,
-        "requires_api_key_in_default_path": false,
-        "would_execute": false
-      },
-      "scenario": "support_triage_agent",
-      "visible_outputs": [
-        "tool-by-tool permission diff",
-        "blocked action list",
-        "required proof per action"
-      ]
-    },
-    {
       "adapter_status": "evidence_candidates_planned",
       "cannot_do": [
         "approve access",
@@ -90,12 +54,12 @@
       ]
     },
     {
-      "adapter_status": "deterministic_narration_fallback",
+      "adapter_status": "dry_run_planned",
       "cannot_do": [
         "approve access",
         "grant permissions",
-        "change verdict",
-        "change safety state"
+        "execute writes",
+        "reduce proof debt automatically"
       ],
       "env": {
         "configured": false,
@@ -104,10 +68,10 @@
         "missing_vars": [],
         "note": "Environment variables are not inspected in the default public path."
       },
-      "live_value": "Reviewer-ready narration over locked packet fields.",
-      "next_cto_step": "Connect Nebius only as a narration layer; keep verdict, blocked claims, and safety state locked.",
-      "proof_pack_type": "locked_field_narration",
-      "provider": "nebius",
+      "live_value": "Dry-run permission diff for GitHub, Slack, and Jira actions.",
+      "next_cto_step": "Keep Composio dry-run by default; emit action plans without granting permissions or writing.",
+      "proof_pack_type": "permission_diff",
+      "provider": "composio",
       "readiness": "contract_ready",
       "safety_boundary": {
         "blocked_from_approving_access": true,
@@ -120,9 +84,9 @@
       },
       "scenario": "support_triage_agent",
       "visible_outputs": [
-        "reviewer summary projection",
-        "demo transcript narration note",
-        "trace step for model narration"
+        "tool-by-tool permission diff",
+        "blocked action list",
+        "required proof per action"
       ]
     },
     {
@@ -160,19 +124,147 @@
         "policy decisions",
         "blocked outcome records"
       ]
+    },
+    {
+      "adapter_status": "deterministic_narration_fallback",
+      "cannot_do": [
+        "approve access",
+        "grant permissions",
+        "change verdict",
+        "change safety state"
+      ],
+      "env": {
+        "configured": false,
+        "configured_vars": [],
+        "inspected": false,
+        "missing_vars": [],
+        "note": "Environment variables are not inspected in the default public path."
+      },
+      "live_value": "Reviewer-ready narration over locked packet fields.",
+      "next_cto_step": "Connect Nebius only as a narration layer; keep verdict, blocked claims, and safety state locked.",
+      "proof_pack_type": "locked_field_narration",
+      "provider": "nebius",
+      "readiness": "contract_ready",
+      "safety_boundary": {
+        "blocked_from_approving_access": true,
+        "can_approve_access": false,
+        "can_grant_permissions": false,
+        "can_mutate_external_state": false,
+        "human_review_required": true,
+        "requires_api_key_in_default_path": false,
+        "would_execute": false
+      },
+      "scenario": "support_triage_agent",
+      "visible_outputs": [
+        "reviewer summary projection",
+        "demo transcript narration note",
+        "trace step for model narration"
+      ]
     }
   ],
   "readiness_id": "ia-sponsor-live-readiness-public-v0",
+  "readiness_matrix": [
+    {
+      "api_key_required_for_default_path": false,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "default_demo_mode": "fallback_evidence_candidates",
+      "disabled_reason": "env_not_inspected_public_default",
+      "dry_run_available": true,
+      "dry_run_surface": "evidence candidate slots",
+      "env_ready_for_live": false,
+      "fallback_available": true,
+      "fallback_surface": "deterministic missing-proof search plan",
+      "human_review_required": true,
+      "live_capability": "source-backed evidence candidate retrieval",
+      "live_capable": true,
+      "live_enabled": false,
+      "provider": "tavily",
+      "would_execute": false
+    },
+    {
+      "api_key_required_for_default_path": false,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "default_demo_mode": "dry_run_permission_diff",
+      "disabled_reason": "env_not_inspected_public_default",
+      "dry_run_available": true,
+      "dry_run_surface": "permission diff plan",
+      "env_ready_for_live": false,
+      "fallback_available": true,
+      "fallback_surface": "deterministic permission diff plan",
+      "human_review_required": true,
+      "live_capability": "scoped connector planning with dry-run enforcement",
+      "live_capable": true,
+      "live_enabled": false,
+      "provider": "composio",
+      "would_execute": false
+    },
+    {
+      "api_key_required_for_default_path": false,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "default_demo_mode": "fallback_runtime_trace",
+      "disabled_reason": "env_not_inspected_public_default",
+      "dry_run_available": true,
+      "dry_run_surface": "runtime trace plan",
+      "env_ready_for_live": false,
+      "fallback_available": true,
+      "fallback_surface": "deterministic runtime trace plan",
+      "human_review_required": true,
+      "live_capability": "runtime trace capture for attempted agent steps",
+      "live_capable": true,
+      "live_enabled": false,
+      "provider": "openclaw",
+      "would_execute": false
+    },
+    {
+      "api_key_required_for_default_path": false,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "default_demo_mode": "fallback_narration",
+      "disabled_reason": "env_not_inspected_public_default",
+      "dry_run_available": true,
+      "dry_run_surface": "locked-field narration preview",
+      "env_ready_for_live": false,
+      "fallback_available": true,
+      "fallback_surface": "deterministic reviewer narration",
+      "human_review_required": true,
+      "live_capability": "LLM narration over locked packet fields",
+      "live_capable": true,
+      "live_enabled": false,
+      "provider": "nebius",
+      "would_execute": false
+    }
+  ],
   "scenario": "support_triage_agent",
   "schema_version": "sponsor_live_readiness.v0",
   "summary": {
     "all_contracts_ready": true,
+    "all_dry_run_available": true,
+    "all_fallback_available": true,
+    "all_live_capable": true,
     "all_non_approving": true,
     "all_non_executing": true,
     "all_non_granting": true,
     "all_non_mutating": true,
+    "any_env_ready_for_live": false,
+    "any_live_enabled": false,
     "default_path_requires_keys": false,
     "human_review_required": true,
+    "matrix_columns": [
+      "fallback_available",
+      "dry_run_available",
+      "live_capable",
+      "env_ready_for_live",
+      "live_enabled",
+      "disabled_reason",
+      "default_demo_mode"
+    ],
     "provider_count": 4
   }
 }

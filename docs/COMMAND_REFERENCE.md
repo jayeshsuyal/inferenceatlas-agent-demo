@@ -41,6 +41,7 @@ python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.sponsor_readiness
+python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml
 python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml
 python3 -m agent.trust
 python3 -m agent.review_room
@@ -74,6 +75,7 @@ ia-contract --all
 ia-gate --all
 ia-adapters --all
 ia-sponsor-readiness
+ia-sponsor-proof-collector examples/requests/support_triage_trial.yml
 ia-sponsor-proof-trace examples/requests/support_triage_trial.yml
 ia-trust
 ia-review-room

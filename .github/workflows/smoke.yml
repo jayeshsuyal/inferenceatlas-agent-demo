@@ -59,6 +59,8 @@ jobs:
           ia-spend examples/requests/ai_spend_budget_overrun.yml --no-write --json >/tmp/installed_spend_review.json
           ia-sponsor-readiness --no-write
           ia-sponsor-readiness --no-write --json >/tmp/installed_sponsor_readiness.json
+          ia-sponsor-proof-collector examples/requests/support_triage_trial.yml --no-write
+          ia-sponsor-proof-collector examples/requests/support_triage_trial.yml --no-write --json >/tmp/installed_sponsor_proof_collector.json
           ia-sponsor-proof-trace examples/requests/support_triage_trial.yml --no-write
           ia-sponsor-proof-trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/installed_sponsor_proof_trace.json
           ia-trial examples/requests/support_triage_trial.yml
@@ -97,6 +99,7 @@ jobs:
           python -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_outcome_memo.cli.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --json >/tmp/trial_evidence_replay.cli.json
           python -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml --no-write --evidence-dir examples/evidence/support_triage_trial --json >/tmp/live_evidence_rehearsal.cli.json
+          python -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_collector.cli.json
           python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_trace.cli.json
           python -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write --json >/tmp/spend_review.cli.json
 
@@ -117,6 +120,8 @@ jobs:
           python -m agent.adapters --all --json >/tmp/sponsor_adapters.all.json
           python -m agent.sponsor_readiness
           python -m agent.sponsor_readiness --no-write --json >/tmp/sponsor_live_readiness.json
+          python -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write
+          python -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_collector.json
           python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write
           python -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json >/tmp/sponsor_proof_trace.json
 
@@ -205,6 +210,9 @@ jobs:
           python -m json.tool /tmp/spend_review.cli.json >/tmp/spend_review.cli.checked.json
           python -m json.tool /tmp/spend_review.json >/tmp/spend_review.checked.json
           python -m json.tool /tmp/installed_sponsor_readiness.json >/tmp/installed_sponsor_readiness.checked.json
+          python -m json.tool /tmp/installed_sponsor_proof_collector.json >/tmp/installed_sponsor_proof_collector.checked.json
+          python -m json.tool /tmp/sponsor_proof_collector.cli.json >/tmp/sponsor_proof_collector.cli.checked.json
+          python -m json.tool /tmp/sponsor_proof_collector.json >/tmp/sponsor_proof_collector.checked.json
           python -m json.tool /tmp/design_partner_trial_report.json >/tmp/design_partner_trial_report.checked.json
           python -m json.tool /tmp/design_partner_outcome_memo.json >/tmp/design_partner_outcome_memo.checked.json
           python -m json.tool /tmp/design_partner_evidence_replay.json >/tmp/design_partner_evidence_replay.checked.json

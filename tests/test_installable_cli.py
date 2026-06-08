@@ -23,6 +23,7 @@ EXPECTED_SCRIPTS = {
     "ia-review-room": "agent.review_room:main",
     "ia-skills": "agent.skills:main",
     "ia-spend": "agent.spend:main",
+    "ia-sponsor-proof-collector": "agent.sponsor_proof_collector:main",
     "ia-sponsor-proof-trace": "agent.sponsor_proof_trace:main",
     "ia-sponsor-readiness": "agent.sponsor_readiness:main",
     "ia-subscribers": "agent.subscribers:main",
@@ -100,6 +101,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-downstream-gate --all", command_reference)
         self.assertIn("ia-proof-health", command_reference)
         self.assertIn("ia-spend examples/requests/ai_spend_budget_overrun.yml", command_reference)
+        self.assertIn("ia-sponsor-proof-collector examples/requests/support_triage_trial.yml", command_reference)
         self.assertIn("ia-sponsor-proof-trace", command_reference)
         self.assertIn("ia-sponsor-readiness", command_reference)
         self.assertIn("ia-review --list", command_reference)
@@ -123,6 +125,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-outcome-memo --no-write", workflow)
         self.assertIn("ia-proof-health --no-write", workflow)
         self.assertIn("ia-spend examples/requests/ai_spend_budget_overrun.yml --no-write", workflow)
+        self.assertIn("ia-sponsor-proof-collector examples/requests/support_triage_trial.yml --no-write", workflow)
         self.assertIn("ia-sponsor-proof-trace examples/requests/support_triage_trial.yml --no-write", workflow)
         self.assertIn("ia-sponsor-readiness --no-write", workflow)
         self.assertIn("ia-trial examples/requests/support_triage_trial.yml", workflow)

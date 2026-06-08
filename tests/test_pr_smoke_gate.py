@@ -124,6 +124,37 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("--base-url", result.stdout)
 
+    def test_reviewer_stress_script_locks_packet_selector_edges(self) -> None:
+        script_path = ROOT / "scripts" / "reviewer_stress_smoke.py"
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertTrue(script_path.is_file())
+        self.assertTrue(os.access(script_path, os.X_OK))
+        self.assertIn("Adversarial reviewer smoke", script)
+        self.assertIn("run_smoke", script)
+        self.assertIn("/api/packets/", script)
+        self.assertIn("/verification", script)
+        self.assertIn("mcp_tool_blast_radius", script)
+        self.assertIn("ai_spend_budget_overrun", script)
+        self.assertIn("miasma_pre_permission_packet", script)
+        self.assertIn("does_not_exist", script)
+        self.assertIn("composio_dry_run", script)
+        self.assertIn("live_tavily", script)
+        self.assertIn("tavily_api_key_missing", script)
+        self.assertIn("Reviewer stress passed", script)
+
+        result = subprocess.run(
+            [sys.executable, "scripts/reviewer_stress_smoke.py", "--help"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertIn("--base-url", result.stdout)
+
     def test_reviewer_smoke_gate_starts_server_without_live_keys(self) -> None:
         script_path = ROOT / "scripts" / "reviewer_smoke_gate.sh"
         script = script_path.read_text(encoding="utf-8")
@@ -139,6 +170,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn('export IA_DISABLE_DOTENV="1"', script)
         self.assertIn("-m uvicorn web.app:app", script)
         self.assertIn("scripts/reviewer_smoke.py --base-url", script)
+        self.assertIn("scripts/reviewer_stress_smoke.py --base-url", script)
         self.assertIn("IA_REVIEWER_SMOKE_PORT", script)
         self.assertIn("Reviewer smoke gate passed", script)
 

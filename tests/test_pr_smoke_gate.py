@@ -37,6 +37,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("agent.evidence_receipts --no-write --json", script)
         self.assertIn("agent.downstream_gate --all --json", script)
         self.assertIn("agent.packet_advisor --fixture ai_spend_budget_overrun", script)
+        self.assertIn("agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run", script)
         self.assertIn("agent.trial_evidence_replay", script)
         self.assertIn("schemas/pilot_memo.schema.json", script)
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --json", script)

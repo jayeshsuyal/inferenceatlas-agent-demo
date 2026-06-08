@@ -284,6 +284,14 @@ class CtoHandoffDocsTests(unittest.TestCase):
             'python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json',
         )
         self.assertEqual(manifest["packet_advisor_surface"], "agent/packet_advisor.py")
+        self.assertEqual(
+            manifest["portkey_adapter_json_command"],
+            "python3 -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json",
+        )
+        self.assertEqual(
+            manifest["portkey_adapter_surface"],
+            "agent/portkey_adapter.py and /api/packets/{fixture}/downstream/portkey",
+        )
         self.assertEqual(manifest["packet_outcome_memo_command"], "python3 -m agent.outcome_memo")
         self.assertEqual(
             manifest["packet_outcome_memo_json_command"],
@@ -308,6 +316,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertIn("agent skills registry", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("chat answer contract", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("packet advisor", manifest["private_v1_boundary"]["public_proof_surface"])
+        self.assertIn("Portkey dry-run adapter", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("evidence receipt ledger", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("downstream gate decisions", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("artifact integrity gate", manifest["private_v1_boundary"]["public_proof_surface"])
@@ -335,6 +344,7 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["primary_artifacts"]["agent_skills_registry"], "agent/skills.py")
         self.assertEqual(manifest["primary_artifacts"]["chat_answer_contract"], "agent/chat_answer.py")
         self.assertEqual(manifest["primary_artifacts"]["packet_advisor"], "agent/packet_advisor.py")
+        self.assertEqual(manifest["primary_artifacts"]["portkey_adapter"], "agent/portkey_adapter.py")
         self.assertEqual(manifest["primary_artifacts"]["review_room_html"], "examples/generated/review_room.html")
         self.assertEqual(
             manifest["primary_artifacts"]["proof_health_markdown"],

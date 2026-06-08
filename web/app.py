@@ -32,6 +32,7 @@ from agent.packet_detail import (
     render_ia_packet_detail_markdown,
 )
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
+from agent.portkey_adapter import build_portkey_adapter_payload
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import SCENARIOS, build_scenario_packet
 from agent.subscribers import (
@@ -501,6 +502,25 @@ def downstream_gate_decision(
         "ok": True,
         "read_only": True,
         "decision": decision,
+    }
+
+
+@app.get("/api/packets/{fixture}/downstream/portkey")
+def portkey_downstream_preview(
+    fixture: str,
+    mode: str = Query("dry-run", pattern="^(ready|dry-run)$"),
+) -> dict:
+    """Read-only Portkey guardrail/policy preview generated from one IA Packet."""
+    try:
+        payload = build_portkey_adapter_payload(fixture=fixture, mode=mode)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"unknown fixture: {fixture}") from exc
+    return {
+        "ok": True,
+        "read_only": True,
+        "portkey": payload,
     }
 
 

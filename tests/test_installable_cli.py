@@ -16,6 +16,7 @@ EXPECTED_SCRIPTS = {
     "ia-outcome-memo": "agent.outcome_memo:main",
     "ia-packet-advisor": "agent.packet_advisor:main",
     "ia-packet-diff": "agent.packet_diff:main",
+    "ia-portkey-adapter": "agent.portkey_adapter:main",
     "ia-snapshot": "agent.packet_authority:main",
     "ia-proof-health": "agent.proof_health:main",
     "ia-review": "agent.review:main",
@@ -92,6 +93,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-skills", command_reference)
         self.assertIn("ia-packet-advisor", command_reference)
         self.assertIn("ia-packet-diff", command_reference)
+        self.assertIn("ia-portkey-adapter", command_reference)
         self.assertIn("ia-receipts", command_reference)
         self.assertIn("ia-snapshot", command_reference)
         self.assertIn("ia-outcome-memo", command_reference)

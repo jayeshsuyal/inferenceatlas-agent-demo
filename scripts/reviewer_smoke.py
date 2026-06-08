@@ -21,6 +21,14 @@ from typing import Any
 DEFAULT_BASE_URL = "http://127.0.0.1:8080"
 DEFAULT_SESSION_ID = "reviewer-smoke-session"
 EXPECTED_SPONSOR_ORDER = ["tavily", "composio", "openclaw", "nebius"]
+EXPECTED_TEAM_LENSES = {
+    "product_exec",
+    "engineering",
+    "security_legal",
+    "finance",
+    "procurement",
+    "ai_platform_ops",
+}
 PACKET_FIXTURES = [
     "mcp_tool_blast_radius",
     "ai_spend_budget_overrun",
@@ -95,17 +103,21 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Ask IA about this packet",
         "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.",
         "Export Portkey gate",
+        "Team lenses",
+        "Show each team what it must review.",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require("renderPacketCoachReply" in js, "Ask IA packet coach renderer missing")
+    _require("renderPacketTeamLenses" in js, "Team Lenses renderer missing")
     _require("Packet-backed decision coach" in js, "Ask IA packet coach title missing")
     _require("reply-section-heading" in js, "packet-backed answer section renderer missing")
     _require("renderReplyLines" in js, "packet-backed answer list renderer missing")
     _require("Portkey dry-run gate JSON exported. No API call made." in js, "Portkey gate export missing")
     _require(".composer-shell.first-run-locked" in css, "first-run quick-chip lock CSS missing")
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
+    _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(
         "grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));" in css,
         "first-run proof tiles must stay scan-friendly",
@@ -134,6 +146,24 @@ def _check_packet(base_url: str, fixture: str, timeout: float) -> dict[str, Any]
     _require(len(data.get("missing_proof", [])) >= 1, f"{fixture} must expose missing proof")
     _require(len(data.get("reviewer_routing", [])) >= 1, f"{fixture} must expose reviewer routing")
     _require(len(data.get("downstream_consumers", [])) >= 5, f"{fixture} must expose downstream consumers")
+    _require(data.get("team_lenses_schema_version") == "team_lenses.v0", f"{fixture} team lens schema drifted")
+    team_lenses = data.get("team_lenses", {})
+    _require(team_lenses.get("schema_version") == "team_lenses.v0", f"{fixture} team lens payload missing")
+    _require(team_lenses.get("packet_reference") == data["packet_reference"], f"{fixture} team lenses must read same packet")
+    _require(
+        {lens["team_id"] for lens in team_lenses.get("lenses", [])} == EXPECTED_TEAM_LENSES,
+        f"{fixture} team lens set drifted",
+    )
+    _require(team_lenses["guardrails"]["read_only"] is True, f"{fixture} team lenses must be read-only")
+    _require(team_lenses["guardrails"]["does_not_approve"] is True, f"{fixture} team lenses must not approve")
+    _require(team_lenses["guardrails"]["state_mutated"] is False, f"{fixture} team lenses must not mutate")
+    for lens in team_lenses["lenses"]:
+        _require(lens["packet_reference"] == data["packet_reference"], f"{fixture} {lens['team_id']} packet drifted")
+        _require(lens["human_confirmation_required"] is True, f"{fixture} {lens['team_id']} must require humans")
+        _require(lens["does_not_approve"] is True, f"{fixture} {lens['team_id']} must not approve")
+        _require(lens["can_dispatch_workflow"] is False, f"{fixture} {lens['team_id']} must not dispatch")
+        _require(lens["can_mutate_packet"] is False, f"{fixture} {lens['team_id']} must not mutate packet")
+        _require(lens["state_mutated"] is False, f"{fixture} {lens['team_id']} mutated state")
     return data
 
 

@@ -89,6 +89,9 @@ const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
 const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
 const packetCoachStatus = document.getElementById("packet-coach-status");
+const packetInlineCoachPrompts = document.getElementById("packet-inline-coach-prompts");
+const packetInlineCoachStatus = document.getElementById("packet-inline-coach-status");
+const packetInlineCoachOutput = document.getElementById("packet-inline-coach-output");
 const connectorToastEl = document.getElementById("connector-toast");
 const btnGithub = document.getElementById("btn-github");
 const githubChipsEl = document.getElementById("github-chips");
@@ -159,6 +162,7 @@ let workbenchRegistry = null;
 let workbenchResult = null;
 let packetDetail = null;
 let packetPortkeyPreview = null;
+let packetInlineCoachBusy = false;
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -179,7 +183,7 @@ const FIRST_RUN_HEADING =
 const FIRST_RUN_BODY =
   "Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, Ask IA follow-up, export.";
 const FIRST_RUN_COACH_STATUS =
-  "Open the IA Packet first; then ask packet-backed follow-ups.";
+  "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.";
 
 function setBusy(loading) {
   busy = loading;
@@ -226,6 +230,22 @@ function unlockPacketCoach() {
     packetCoachStatus.hidden = true;
     packetCoachStatus.textContent = "";
   }
+}
+
+function setPacketInlineCoachBusy(loading) {
+  packetInlineCoachBusy = loading;
+  packetInlineCoachPrompts
+    ?.querySelectorAll("button[data-ask-prompt]")
+    .forEach((button) => {
+      button.disabled = loading;
+      button.setAttribute("aria-disabled", String(loading));
+    });
+}
+
+function setPacketInlineCoachStatus(text, isError = false) {
+  if (!packetInlineCoachStatus) return;
+  packetInlineCoachStatus.textContent = text || "";
+  packetInlineCoachStatus.classList.toggle("error", isError);
 }
 
 function escapeHtml(s) {
@@ -349,6 +369,9 @@ function renderFirstRunWelcome() {
 }
 
 function renderAssistantMarkdown(bubble, text) {
+  if (renderPacketCoachReply(bubble, text)) {
+    return;
+  }
   const parts = String(text).split("\n\n");
   parts.forEach((para) => {
     const trimmed = para.trim();
@@ -387,6 +410,167 @@ function renderAssistantMarkdown(bubble, text) {
     p.textContent = text;
     bubble.appendChild(p);
   }
+}
+
+function parsePacketCoachReply(text) {
+  const raw = String(text || "");
+  if (!raw.includes("Packet-backed chat: shared CLI/API truth")) {
+    return null;
+  }
+  const lines = raw.split("\n").map((line) => line.trim());
+  const reply = {
+    context: "",
+    currentRead: "",
+    topBlocker: "",
+    nextHumanAction: "",
+    proofQuestion: "",
+    inspectLabel: "",
+    inspectPath: "",
+    source: "",
+    safety: "",
+    preview: [],
+  };
+  const contextMatch = raw.match(/^\*\*Context used\*\*\s+—\s+(.+)$/m);
+  if (contextMatch) {
+    reply.context = contextMatch[1].trim();
+  }
+  let section = "";
+  for (const line of lines) {
+    if (!line) continue;
+    if (line === "## Current read") {
+      section = "current";
+      continue;
+    }
+    if (line === "## Portkey preview") {
+      section = "preview";
+      continue;
+    }
+    if (line.startsWith("## ")) {
+      section = "";
+      continue;
+    }
+    const field = line.match(/^\*\*([^*]+):\*\*\s*(.+)$/);
+    if (field) {
+      const key = field[1].trim();
+      const value = field[2].trim();
+      if (key === "Top blocker") reply.topBlocker = value;
+      if (key === "Next human action") reply.nextHumanAction = value;
+      if (key === "One proof question") reply.proofQuestion = value;
+      if (key === "Source") reply.source = value;
+      if (key === "Inspect") {
+        const inspect = value.match(/^(.+?)\s+-\s+`([^`]+)`$/);
+        reply.inspectLabel = inspect ? inspect[1].trim() : value;
+        reply.inspectPath = inspect ? inspect[2].trim() : "";
+      }
+      section = "";
+      continue;
+    }
+    if (section === "current" && !reply.currentRead) {
+      reply.currentRead = line;
+      continue;
+    }
+    if (section === "preview" && line.startsWith("- ")) {
+      reply.preview.push(line.replace(/^-\s+/, ""));
+      continue;
+    }
+    if (line.includes("IA does not approve")) {
+      reply.safety = line;
+    }
+  }
+  return reply.currentRead ? reply : null;
+}
+
+function renderCoachFact(label, value, tone = "") {
+  const item = document.createElement("div");
+  item.className = `coach-fact ${tone}`.trim();
+  const key = document.createElement("span");
+  key.textContent = label;
+  const val = document.createElement("strong");
+  val.textContent = value || "Not available";
+  item.append(key, val);
+  return item;
+}
+
+function renderPacketCoachReply(bubble, text) {
+  const reply = parsePacketCoachReply(text);
+  if (!reply) return false;
+  bubble.classList.add("packet-coach-bubble");
+
+  const card = document.createElement("article");
+  card.className = "packet-coach-answer";
+
+  const head = document.createElement("div");
+  head.className = "coach-answer-head";
+  const label = document.createElement("span");
+  label.className = "coach-answer-label";
+  label.textContent = "Ask IA";
+  const title = document.createElement("h3");
+  title.textContent = "Packet-backed decision coach";
+  const badges = document.createElement("div");
+  badges.className = "coach-answer-badges";
+  ["Read-only", "No approval", "No write"].forEach((value) => {
+    const badge = document.createElement("span");
+    badge.textContent = value;
+    badges.appendChild(badge);
+  });
+  head.append(label, title, badges);
+
+  const read = document.createElement("p");
+  read.className = "coach-current-read";
+  read.textContent = reply.currentRead;
+
+  const facts = document.createElement("div");
+  facts.className = "coach-facts";
+  facts.append(
+    renderCoachFact("Decision", "Blocked", "danger"),
+    renderCoachFact("Movement", "Human review", "warn"),
+    renderCoachFact("Truth source", "IA Packet", "success")
+  );
+
+  const body = document.createElement("div");
+  body.className = "coach-answer-body";
+  body.append(
+    renderCoachFact("Top blocker", reply.topBlocker, "wide"),
+    renderCoachFact("Next human action", reply.nextHumanAction, "wide"),
+    renderCoachFact("One proof question", reply.proofQuestion, "wide")
+  );
+
+  const actions = document.createElement("div");
+  actions.className = "coach-answer-actions";
+  if (reply.inspectLabel) {
+    const inspect = document.createElement("a");
+    inspect.className = "coach-inspect-link";
+    inspect.href = reply.inspectPath || "#";
+    inspect.textContent = reply.inspectLabel;
+    actions.appendChild(inspect);
+  }
+  if (reply.preview.length) {
+    const preview = document.createElement("div");
+    preview.className = "coach-preview";
+    reply.preview.forEach((line) => {
+      const chip = document.createElement("span");
+      chip.textContent = line.replace(/`/g, "");
+      preview.appendChild(chip);
+    });
+    actions.appendChild(preview);
+  }
+
+  const safety = document.createElement("p");
+  safety.className = "coach-safety-anchor";
+  safety.textContent =
+    reply.safety || "IA does not approve this request. Human review is required and unsafe movement stays blocked.";
+
+  const details = document.createElement("details");
+  details.className = "coach-source-details";
+  const summary = document.createElement("summary");
+  summary.textContent = "Packet reference";
+  const source = document.createElement("code");
+  source.textContent = reply.source || reply.context || "Packet-backed chat";
+  details.append(summary, source);
+
+  card.append(head, read, facts, body, actions, safety, details);
+  bubble.appendChild(card);
+  return true;
 }
 
 function renderReplyLines(bubble, lines) {
@@ -2356,12 +2540,74 @@ async function loadPacketDetail() {
     if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
     renderPacketDetail(data);
     unlockPacketCoach();
+    setPacketInlineCoachStatus("Ask a packet-backed follow-up. IA stays read-only and cannot approve or write.");
     window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
     setPacketToast("IA Packet loaded.");
   } catch (err) {
     setPacketToast(String(err.message || err), true);
   } finally {
     btnLoadPacket.disabled = false;
+  }
+}
+
+async function askPacketInlineCoach(prompt) {
+  if (packetInlineCoachBusy) return;
+  const message = String(prompt || "").trim();
+  if (!message) return;
+
+  setPacketInlineCoachBusy(true);
+  setPacketInlineCoachStatus("Answering from the IA Packet...");
+  if (packetInlineCoachOutput) {
+    packetInlineCoachOutput.innerHTML = "";
+    const pending = document.createElement("div");
+    pending.className = "packet-inline-coach-pending";
+    pending.textContent = "Building packet-backed answer...";
+    packetInlineCoachOutput.appendChild(pending);
+  }
+
+  try {
+    if (!packetDetail) {
+      await loadPacketDetail();
+    }
+    const fixtureId = currentPacketFixtureForChat() || packetSelectedFixtureId();
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        session_id: sessionId,
+        current_fixture: fixtureId,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || `Ask IA failed (${res.status})`);
+    if (data.session_id) {
+      sessionId = data.session_id;
+      localStorage.setItem(STORAGE_KEY, sessionId);
+      chatStorageScope = `chat_${sessionId}`;
+    }
+    if (!packetInlineCoachOutput) return;
+    packetInlineCoachOutput.innerHTML = "";
+    const wrap = document.createElement("div");
+    wrap.className = "message assistant packet-inline-coach-message";
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    renderAssistantMarkdown(bubble, data.reply || "");
+    addDownloadButtons(bubble, (data.output_files || []).filter((f) => f.file_id));
+    wrap.appendChild(bubble);
+    packetInlineCoachOutput.appendChild(wrap);
+    setPacketInlineCoachStatus("Packet-backed answer rendered. Decision lock unchanged.");
+  } catch (err) {
+    if (packetInlineCoachOutput) {
+      packetInlineCoachOutput.innerHTML = "";
+      const error = document.createElement("p");
+      error.className = "packet-inline-coach-error";
+      error.textContent = String(err.message || err);
+      packetInlineCoachOutput.appendChild(error);
+    }
+    setPacketInlineCoachStatus("Ask IA could not render this packet answer.", true);
+  } finally {
+    setPacketInlineCoachBusy(false);
   }
 }
 
@@ -2949,6 +3195,7 @@ function setupTabs() {
   tabs.forEach((tab) => {
     tab.addEventListener("click", async () => {
       const id = tab.dataset.tab;
+      document.body.dataset.activeTab = id || "start";
       const advancedNav = tab.closest(".advanced-nav");
       if (advancedNav) {
         advancedNav.open = true;
@@ -3582,6 +3829,12 @@ packetCoachQuickChips?.addEventListener("click", (event) => {
   sendMessage(btn.dataset.askPrompt || btn.textContent || "");
 });
 
+packetInlineCoachPrompts?.addEventListener("click", (event) => {
+  const btn = event.target.closest("button[data-ask-prompt]");
+  if (!btn) return;
+  askPacketInlineCoach(btn.dataset.askPrompt || btn.textContent || "");
+});
+
 btnReset.addEventListener("click", resetChat);
 btnMindInit.addEventListener("click", () => mindInit(false));
 btnMindStep.addEventListener("click", mindStep);
@@ -3633,6 +3886,7 @@ btnLoadWalkthrough.addEventListener("click", () => loadWalkthrough());
 btnCollectSponsorProof.addEventListener("click", collectSponsorProof);
 btnCopyWalkthroughBrief.addEventListener("click", copyWalkthroughBrief);
 
+document.body.dataset.activeTab = "start";
 setupTabs();
 
 (async function initApp() {

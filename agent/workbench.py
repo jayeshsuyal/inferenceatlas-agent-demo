@@ -200,14 +200,31 @@ def _sponsor_trace_summary(request_path: Path) -> dict[str, Any]:
     steps = trace["sponsor_steps"]
     return {
         "trace_id": trace["trace_id"],
+        "packet_id": trace["packet_id"],
         "lane": trace["lane"],
         "step_count": len(steps),
         "sponsor_order": [step["sponsor"] for step in steps],
         "decision_lock_unchanged": trace["decision_lock_before"] == trace["decision_lock_after"],
+        "all_fallback_used": all(step["fallback_used"] for step in steps),
         "all_non_executing": all(not step["would_execute"] for step in steps),
         "all_non_approving": all(not step["can_approve_access"] for step in steps),
         "all_non_granting": all(not step["can_grant_permissions"] for step in steps),
         "all_non_mutating": all(not step["can_mutate_external_state"] for step in steps),
+        "approves_access": trace["safety_boundary"]["approves_access"],
+        "approves_spend": trace["safety_boundary"]["approves_spend"],
+        "selects_provider": trace["safety_boundary"]["selects_provider"],
+        "steps": [
+            {
+                "sponsor": step["sponsor"],
+                "verb": step["step_verb"],
+                "summary": step["output_summary"],
+                "used_live_key": step["used_live_key"],
+                "fallback_used": step["fallback_used"],
+                "would_execute": step["would_execute"],
+                "can_approve_access": step["can_approve_access"],
+            }
+            for step in steps
+        ],
     }
 
 
@@ -398,6 +415,7 @@ def _trial_result(fixture: WorkbenchFixture) -> dict[str, Any]:
     snapshot = build_packet_authority_snapshot_for_scenario(packet, request_path.stem)
     pilot_memo = build_pilot_memo(request_path)
     sponsor_trace = _sponsor_trace_summary(request_path)
+    sponsor_trace["packet_id"] = snapshot["packet_id"]
     request_missing_proof = _stringify_items(report["proof_debt"]["request_missing_proof"])
     request_blocked_claims = _stringify_items(report["proof_debt"]["request_unsupported_claims"])
     request_reviewers = [

@@ -39,6 +39,22 @@ class IAPacketDetailTests(unittest.TestCase):
             self.assertFalse(safety["downstream_can_approve"], msg=fixture["fixture_id"])
             self.assertFalse(safety["downstream_can_mutate_packet"], msg=fixture["fixture_id"])
             self.assertFalse(safety["downstream_can_override_verdict"], msg=fixture["fixture_id"])
+            trace = detail.get("sponsor_proof_trace") or {}
+            if trace:
+                self.assertTrue(trace["trace_id"].startswith("ia-sponsor-proof-trace-"), msg=fixture["fixture_id"])
+                self.assertEqual(trace["packet_id"], detail["packet_reference"]["packet_id"], msg=fixture["fixture_id"])
+                self.assertEqual(trace["sponsor_order"], ["tavily", "composio", "openclaw", "nebius"])
+                self.assertTrue(trace["all_fallback_used"], msg=fixture["fixture_id"])
+                self.assertTrue(trace["all_non_executing"], msg=fixture["fixture_id"])
+                self.assertFalse(trace["approves_access"], msg=fixture["fixture_id"])
+                self.assertFalse(trace["approves_spend"], msg=fixture["fixture_id"])
+                self.assertFalse(trace["selects_provider"], msg=fixture["fixture_id"])
+                self.assertEqual(len(trace["steps"]), 4, msg=fixture["fixture_id"])
+                for step in trace["steps"]:
+                    self.assertFalse(step["used_live_key"], msg=fixture["fixture_id"])
+                    self.assertTrue(step["fallback_used"], msg=fixture["fixture_id"])
+                    self.assertFalse(step["would_execute"], msg=fixture["fixture_id"])
+                    self.assertFalse(step["can_approve_access"], msg=fixture["fixture_id"])
             self.assertIn(IA_PACKET_SAFETY_ANCHOR, render_ia_packet_detail_markdown(detail))
 
     def test_downstream_consumers_read_same_packet_reference_without_override_power(self) -> None:
@@ -182,6 +198,10 @@ class IAPacketDetailTests(unittest.TestCase):
         self.assertIn(".team-lens-list", css)
         self.assertIn(".team-lens-row", css)
         self.assertIn("scrollIntoView", js)
+        self.assertIn("Sponsors collect proof only", js)
+        self.assertIn("Live keys", js)
+        self.assertIn("trace ${escapeHtml(trace.trace_id", js)
+        self.assertIn("packet ${escapeHtml(trace.packet_id", js)
 
         for label, target in expected_steps.items():
             self.assertIn(label, html)

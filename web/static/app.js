@@ -9,6 +9,7 @@ const workbenchView = document.getElementById("workbench-view");
 const walkthroughView = document.getElementById("walkthrough-view");
 const cycleFeed = document.getElementById("cycle-feed");
 const form = document.getElementById("chat-form");
+const composerShell = document.getElementById("composer-shell");
 const input = document.getElementById("message-input");
 const btnSend = document.getElementById("btn-send");
 const btnReset = document.getElementById("btn-reset");
@@ -167,6 +168,14 @@ let selectedDriveFiles = [];
 let driveSearchTimer = null;
 let drivePickerKind = "all";
 
+const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
+const FIRST_RUN_HEADING =
+  "Run one AI request. See what gets blocked, who reviews, and what downstream systems can trust before anything moves.";
+const FIRST_RUN_BODY =
+  "Start with the IA Packet. It shows verdict, proof debt, sponsor trace, and downstream gates before an agent receives tools, spend, or production access.";
+const FIRST_RUN_COACH_STATUS =
+  "Open the IA Packet first; then ask packet-backed follow-ups.";
+
 function setBusy(loading) {
   busy = loading;
   btnSend.disabled = loading;
@@ -184,10 +193,33 @@ function setBusy(loading) {
       });
   }
   if (packetCoachStatus) {
-    packetCoachStatus.hidden = !loading;
-    packetCoachStatus.textContent = loading
-      ? "Answering... packet-backed quick prompts are paused."
-      : "";
+    if (loading) {
+      packetCoachStatus.hidden = false;
+      packetCoachStatus.textContent =
+        "Answering... packet-backed quick prompts are paused.";
+    } else if (composerShell?.classList.contains("first-run-locked")) {
+      packetCoachStatus.hidden = false;
+      packetCoachStatus.textContent = FIRST_RUN_COACH_STATUS;
+    } else {
+      packetCoachStatus.hidden = true;
+      packetCoachStatus.textContent = "";
+    }
+  }
+}
+
+function lockPacketCoach() {
+  composerShell?.classList.add("first-run-locked");
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.textContent = FIRST_RUN_COACH_STATUS;
+  }
+}
+
+function unlockPacketCoach() {
+  composerShell?.classList.remove("first-run-locked");
+  if (packetCoachStatus && !busy) {
+    packetCoachStatus.hidden = true;
+    packetCoachStatus.textContent = "";
   }
 }
 
@@ -264,22 +296,81 @@ function appendMessage(role, text, extraClass = "", outputFiles = []) {
   return wrap;
 }
 
+function renderFirstRunWelcome() {
+  const wrap = document.createElement("div");
+  wrap.className = "message assistant welcome";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  const eyebrow = document.createElement("p");
+  eyebrow.className = "first-run-eyebrow";
+  eyebrow.textContent = "Start here";
+
+  const heading = document.createElement("h2");
+  heading.textContent = FIRST_RUN_HEADING;
+
+  const body = document.createElement("p");
+  body.textContent = FIRST_RUN_BODY;
+
+  const actions = document.createElement("div");
+  actions.className = "first-run-actions";
+
+  const packetLink = document.createElement("a");
+  packetLink.className = "btn-primary first-run-cta";
+  packetLink.href = FIRST_RUN_PACKET_URL;
+  packetLink.textContent = "Start 60-second review";
+
+  const portkeyButton = document.createElement("button");
+  portkeyButton.type = "button";
+  portkeyButton.className = "btn-ghost first-run-cta";
+  portkeyButton.textContent = "Preview Portkey gate";
+  portkeyButton.addEventListener("click", () => {
+    if (busy) return;
+    unlockPacketCoach();
+    sendMessage("Can Portkey allow this spend?");
+  });
+
+  actions.append(packetLink, portkeyButton);
+  bubble.append(eyebrow, heading, body, actions);
+  wrap.appendChild(bubble);
+  messagesEl.appendChild(wrap);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  return wrap;
+}
+
 function renderAssistantMarkdown(bubble, text) {
   const parts = String(text).split("\n\n");
   parts.forEach((para) => {
-    if (!para.trim()) return;
-    if (para.startsWith("**") && para.includes("**")) {
+    const trimmed = para.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith("## ")) {
+      const lines = trimmed.split("\n").map((line) => line.trim()).filter(Boolean);
+      const heading = document.createElement("p");
+      heading.className = "reply-section-heading";
+      heading.textContent = lines.shift().replace(/^##\s+/, "");
+      bubble.appendChild(heading);
+      if (lines.length) {
+        renderReplyLines(bubble, lines);
+      }
+      return;
+    }
+    if (trimmed.startsWith("- ")) {
+      renderReplyLines(bubble, trimmed.split("\n").map((line) => line.trim()).filter(Boolean));
+      return;
+    }
+    if (trimmed.startsWith("**") && trimmed.includes("**")) {
       const h = document.createElement("p");
       h.className = "reply-manifest";
-      const m = para.match(/^\*\*([^*]+)\*\*\s*(.*)$/s);
+      const m = trimmed.match(/^\*\*([^*]+)\*\*\s*(.*)$/s);
       h.innerHTML = m
         ? `<strong>${escapeHtml(m[1])}</strong> ${escapeHtml(m[2] || "")}`
-        : escapeHtml(para);
+        : escapeHtml(trimmed);
       bubble.appendChild(h);
       return;
     }
     const p = document.createElement("p");
-    p.textContent = para.trim();
+    p.textContent = trimmed;
     bubble.appendChild(p);
   });
   if (!bubble.childNodes.length) {
@@ -287,6 +378,27 @@ function renderAssistantMarkdown(bubble, text) {
     p.textContent = text;
     bubble.appendChild(p);
   }
+}
+
+function renderReplyLines(bubble, lines) {
+  let list = null;
+  lines.forEach((line) => {
+    if (line.startsWith("- ")) {
+      if (!list) {
+        list = document.createElement("ul");
+        list.className = "reply-list";
+        bubble.appendChild(list);
+      }
+      const item = document.createElement("li");
+      item.textContent = line.replace(/^-\s+/, "");
+      list.appendChild(item);
+      return;
+    }
+    list = null;
+    const p = document.createElement("p");
+    p.textContent = line;
+    bubble.appendChild(p);
+  });
 }
 
 function appendThinkingMessage() {
@@ -1393,6 +1505,7 @@ async function sendMessage(text) {
   const drive_file_ids = selectedDriveFiles.filter((f) => !f.indexing).map((f) => f.file_id);
   if ((!message && !skill_ids.length && !github_repos.length && !drive_file_ids.length) || busy) return;
 
+  unlockPacketCoach();
   const skillsSnapshot = selectedSkills.slice();
   const githubSnapshot = selectedGithubRepos.filter((r) => !r.indexing).slice();
   const driveSnapshot = selectedDriveFiles.filter((f) => !f.indexing).slice();
@@ -1471,12 +1584,9 @@ async function resetChat() {
   closeGithubPicker();
   closeDrivePicker();
   closeSlashMenu();
+  lockPacketCoach();
   messagesEl.innerHTML = "";
-  appendMessage(
-    "assistant",
-    "Welcome. Compare AI inference costs, explore the catalog, or ask whether an agent should get tool access.\n\nAttach /packet, /gate, etc., ask a review question, then Send. Skills inject real DecisionPacket facts (no catalog tool loop).",
-    "welcome"
-  );
+  renderFirstRunWelcome();
   renderEmptyProofBoard();
 }
 
@@ -2176,6 +2286,7 @@ async function loadPacketDetail() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
     renderPacketDetail(data);
+    unlockPacketCoach();
     window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
     setPacketToast("IA Packet loaded.");
   } catch (err) {
@@ -3302,6 +3413,7 @@ packetCoachQuickChips?.addEventListener("click", (event) => {
 
 btnStartPortkeyPreview?.addEventListener("click", () => {
   if (busy) return;
+  unlockPacketCoach();
   sendMessage("Can Portkey allow this spend?");
 });
 

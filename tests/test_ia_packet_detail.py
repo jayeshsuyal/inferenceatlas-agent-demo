@@ -79,6 +79,8 @@ class IAPacketDetailTests(unittest.TestCase):
             'id="btn-load-packet"',
             'id="btn-copy-packet-brief"',
             'id="btn-export-packet"',
+            'id="btn-export-portkey-gate"',
+            "Export Portkey gate",
             "IA did not approve. The next human action is named above.",
             "Review in 60 seconds",
             "Request -> Verdict -> Proof debt -> Downstream trust -> Export",
@@ -99,6 +101,10 @@ class IAPacketDetailTests(unittest.TestCase):
             "renderPacketDetail",
             "Copy IA Packet link",
             "Open IA Packet",
+            "packetPortkeyPreviewPath",
+            "/downstream/portkey?mode=dry-run",
+            "downloadJsonPayload",
+            "Portkey dry-run gate JSON exported. No API call made.",
         ]:
             self.assertIn(expected, js)
 

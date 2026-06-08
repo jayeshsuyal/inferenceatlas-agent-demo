@@ -29,23 +29,29 @@
 
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
-          <button type="button" class="tab active" data-tab="start">Start</button>
+          <button type="button" class="tab active" data-tab="start">Guided Review</button>
           <button type="button" class="tab" data-tab="packet">IA Packet</button>
-          <button type="button" class="tab" data-tab="workbench">Workbench</button>
-          <button type="button" class="tab" data-tab="walkthrough">Walkthrough</button>
-          <button type="button" class="tab" data-tab="review">Access review</button>
-          <button type="button" class="tab" data-tab="metrics">Metrics</button>
+          <button type="button" class="tab" data-tab="walkthrough">Sponsor Run</button>
+          <details class="advanced-nav">
+            <summary>Advanced</summary>
+            <div class="advanced-tab-list">
+              <button type="button" class="tab advanced-tab" data-tab="workbench">Workbench</button>
+              <button type="button" class="tab advanced-tab" data-tab="review">Access review</button>
+              <button type="button" class="tab advanced-tab" data-tab="metrics">Metrics</button>
+            </div>
+          </details>
         </nav>
 
         <section class="tab-panel active" id="panel-start">
           <div class="how-to">
-            <h2>Start here</h2>
+            <h2>Golden packet cockpit</h2>
+            <p class="sidebar-hint">Downstream systems do not trust raw agent intent. They trust the IA Packet.</p>
             <ol class="steps">
-              <li>Start the 60-second review.</li>
-              <li>Read what IA blocks and who reviews.</li>
-              <li>Use follow-ups after the packet opens.</li>
+              <li>Run the packet.</li>
+              <li>Collect sponsor proof.</li>
+              <li>Preview the downstream gate and export the review artifact.</li>
             </ol>
-            <a class="btn-primary btn-block first-run-start-link" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Start 60-second review</a>
+            <a class="btn-primary btn-block first-run-start-link" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Run packet cockpit</a>
           </div>
           <details class="after-review-details">
             <summary>More examples</summary>
@@ -104,8 +110,8 @@
 
         <section class="tab-panel" id="panel-walkthrough" hidden>
           <div class="how-to compact">
-            <h2>Walkthrough</h2>
-            <p class="sidebar-hint">One request becomes a packet, Sponsor Proof Trace, review cycle, and PilotMemo export.</p>
+            <h2>Sponsor Proof Run</h2>
+            <p class="sidebar-hint">Collect sponsor proof in locked order while the packet decision stays unchanged.</p>
           </div>
           <ol class="judge-steps compact-steps" id="walkthrough-steps-nav"></ol>
           <button type="button" class="btn-primary btn-block" id="btn-load-walkthrough">
@@ -189,27 +195,34 @@
           <div class="messages" id="messages" role="log" aria-live="polite">
             <div class="message assistant welcome">
               <div class="bubble">
-                <p class="first-run-eyebrow">Start here</p>
-                <h2>Run one AI request. See what gets blocked, who reviews, and what downstream systems can trust before anything moves.</h2>
-                <p>Start with the IA Packet. It shows verdict, proof debt, sponsor trace, and downstream gates before an agent receives tools, spend, or production access.</p>
+                <p class="first-run-eyebrow">Packet cockpit</p>
+                <h2>Before any downstream system acts, review the proof packet it can trust.</h2>
+                <p>Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, Ask IA follow-up, export.</p>
                 <div class="first-run-actions">
-                  <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Start 60-second review</a>
-                  <button type="button" class="btn-ghost first-run-cta" id="btn-start-portkey-preview">Preview Portkey gate</button>
+                  <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Run packet cockpit</a>
                 </div>
               </div>
             </div>
             <div class="empty-proof-board" id="empty-proof-board" aria-label="Current public proof state">
               <article class="proof-tile">
-                <span>1 · Packet</span>
-                <strong>Open the request, verdict, proof debt, and hash.</strong>
+                <span>1 · Request</span>
+                <strong>Run one registered AI movement request.</strong>
               </article>
               <article class="proof-tile">
-                <span>2 · Trace</span>
-                <strong>See sponsor proof without approval or writes.</strong>
+                <span>2 · Packet</span>
+                <strong>See verdict, proof debt, reviewer owners, and hash.</strong>
               </article>
               <article class="proof-tile">
-                <span>3 · Gate</span>
-                <strong>Preview what downstream systems can trust.</strong>
+                <span>3 · Sponsor proof</span>
+                <strong>Collect Tavily, Composio, OpenClaw, and Nebius trace.</strong>
+              </article>
+              <article class="proof-tile">
+                <span>4 · Downstream gate</span>
+                <strong>Export Portkey dry-run gate JSON.</strong>
+              </article>
+              <article class="proof-tile">
+                <span>5 · Export</span>
+                <strong>Copy the review brief for humans.</strong>
               </article>
             </div>
           </div>
@@ -361,7 +374,7 @@
           <section class="packet-review-rail" id="packet-review-rail" aria-label="Review in 60 seconds">
             <div class="packet-review-rail-head">
               <span class="eyebrow">Review in 60 seconds</span>
-              <p>Request -> Verdict -> Proof debt -> Downstream trust -> Export</p>
+              <p>Request -> Packet -> Sponsor proof -> Downstream gate -> Export</p>
             </div>
             <div class="walkthrough-strip packet-review-steps">
               <button type="button" class="walk-step packet-review-step active" data-packet-target="packet-summary-card" aria-current="step">
@@ -370,15 +383,15 @@
               </button>
               <button type="button" class="walk-step packet-review-step" data-packet-target="packet-decision-card">
                 <span>2</span>
-                <strong>Verdict<em>human review state</em></strong>
+                <strong>Packet<em>verdict and lock</em></strong>
               </button>
-              <button type="button" class="walk-step packet-review-step" data-packet-target="packet-proof-card">
+              <button type="button" class="walk-step packet-review-step" data-packet-target="packet-sponsor-card">
                 <span>3</span>
-                <strong>Proof debt<em>blocked claims</em></strong>
+                <strong>Sponsor proof<em>read-only trace</em></strong>
               </button>
               <button type="button" class="walk-step packet-review-step" data-packet-target="packet-downstream-card">
                 <span>4</span>
-                <strong>Downstream trust<em>subscribers read</em></strong>
+                <strong>Downstream gate<em>Portkey dry-run</em></strong>
               </button>
               <button type="button" class="walk-step packet-review-step" data-packet-target="packet-export-card">
                 <span>5</span>
@@ -437,6 +450,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=31"></script>
+    <script src="/static/app.js?v=32"></script>
   </body>
 </html>

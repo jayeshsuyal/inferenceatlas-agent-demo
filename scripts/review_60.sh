@@ -137,8 +137,8 @@ What you will see in 60 seconds:
   1. Agent/tool request structured into a public fixture
   2. IA Packet - verdict, blocked claims, missing proof
   3. Sponsor Proof Trace - Tavily -> Composio -> OpenClaw -> Nebius
-  4. Downstream trust - gateways, CI, spend, review, observability
-  5. Export artifact - copy IA Packet brief or open Workbench
+  4. Downstream gate - Portkey dry-run plus subscriber trust references
+  5. Export artifact - copy IA Packet brief or Portkey gate JSON
 
 Press Ctrl+C when done.
 EOF

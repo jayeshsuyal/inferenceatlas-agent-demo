@@ -92,5 +92,6 @@ if ! wait_for_ready; then
 fi
 
 "$PYTHON_BIN" scripts/reviewer_smoke.py --base-url "$BASE_URL"
+"$PYTHON_BIN" scripts/reviewer_stress_smoke.py --base-url "$BASE_URL" --session-id "reviewer-stress-gate"
 
 printf '\nReviewer smoke gate passed at %s.\n' "$BASE_URL"

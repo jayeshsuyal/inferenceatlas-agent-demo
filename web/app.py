@@ -156,6 +156,7 @@ class ChatRequest(BaseModel):
     skill_context_position: str = Field(default="prepend")
     github_repos: List[str] = Field(default_factory=list)
     drive_file_ids: List[str] = Field(default_factory=list)
+    current_fixture: str = Field(default="", max_length=120)
 
 
 class GithubAttachRequest(BaseModel):
@@ -1229,6 +1230,7 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
         drive_file_ids=drive_file_ids,
         file_blocks=file_blocks,
         attach_warnings=file_warnings,
+        current_fixture=body.current_fixture.strip(),
     )
 
     plain = (
@@ -1399,6 +1401,7 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                 drive_file_ids=drive_file_ids,
                 file_blocks=file_blocks,
                 attach_warnings=file_warnings,
+                current_fixture=body.current_fixture.strip(),
             )
 
             for line in orch.thinking_steps:

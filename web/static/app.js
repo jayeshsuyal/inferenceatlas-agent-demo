@@ -1398,6 +1398,7 @@ async function sendMessage(text) {
         skill_context_position: "prepend",
         github_repos,
         drive_file_ids,
+        current_fixture: currentPacketFixtureForChat(),
       }),
     });
 
@@ -1890,6 +1891,14 @@ function packetUrlFixtureId() {
 function packetShouldAutorun() {
   const params = new URLSearchParams(window.location.search || "");
   return ["1", "true", "yes"].includes((params.get("autorun") || "").toLowerCase());
+}
+
+function currentPacketFixtureForChat() {
+  const params = new URLSearchParams(window.location.search || "");
+  const urlFixture = params.get("fixture") || params.get("scenario") || "";
+  if (packetDetail?.fixture?.fixture_id) return packetDetail.fixture.fixture_id;
+  if (window.location.pathname === "/packet" && urlFixture) return urlFixture;
+  return "";
 }
 
 function setupPacketReviewRail() {

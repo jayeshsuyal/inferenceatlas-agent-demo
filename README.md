@@ -62,6 +62,7 @@ flowchart LR
 ## Review Paths
 
 - Run the Packet Workbench product path: `bash scripts/review_60.sh`
+- Ask the packet like a gateway: `python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json`
 - Read the walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
 - Inspect the contract: [Public Conformance Contract](docs/CONTRACT.md)
 - Map the capability surface: [Agent Skills](docs/AGENT_SKILLS.md)

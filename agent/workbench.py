@@ -168,7 +168,7 @@ def _stringify_item(item: Any) -> str:
             or item.get("action")
             or "item"
         )
-        detail = item.get("reason") or item.get("owner") or item.get("unblocks") or item.get("review_area") or ""
+        detail = item.get("reason") or item.get("review_area") or item.get("owner") or item.get("unblocks") or ""
         return str(label) + (f" - {detail}" if detail else "")
     return str(item)
 

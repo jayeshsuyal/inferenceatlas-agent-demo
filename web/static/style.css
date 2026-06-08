@@ -1240,6 +1240,24 @@ body {
   font-size: 0.8rem;
 }
 
+.after-review-details {
+  margin-top: 0.85rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.7rem;
+}
+
+.after-review-details summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.after-review-details[open] summary {
+  color: var(--text);
+  margin-bottom: 0.65rem;
+}
+
 .blocked-note {
   margin: 0 0 0.75rem;
   padding: 0.5rem 0.65rem;
@@ -1294,6 +1312,15 @@ body {
 
 .skill-hints[hidden] {
   display: none;
+}
+
+.packet-coach-label {
+  margin: 0;
+  padding: 0.45rem 1.25rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .packet-coach-quick-chips {
@@ -2243,10 +2270,37 @@ body {
   max-width: min(100%, 920px);
 }
 
+.first-run-eyebrow {
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+}
+
+.message.welcome h2 {
+  margin: 0 0 0.55rem;
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1.18;
+}
+
+.first-run-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+}
+
+.first-run-cta {
+  min-height: 38px;
+  text-decoration: none;
+}
+
 .empty-proof-board {
   width: min(100%, 920px);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
 }
 

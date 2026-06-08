@@ -34,12 +34,16 @@ from agent.packet_detail import (
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.portkey_adapter import build_portkey_adapter_payload
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
-from agent.scenarios import SCENARIOS, build_scenario_packet
+from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
 from agent.subscribers import (
     PACKET_AUTHORITY_SHORT_SENTENCE,
     build_subscriber_examples,
 )
 from agent.sponsor_proof_trace import build_sponsor_proof_trace
+from agent.sponsor_proof_collector import (
+    DEFAULT_QUESTION as DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION,
+    build_sponsor_proof_collector_run,
+)
 from agent.verification import build_verification_artifact_for_scenario
 from agent.workbench import (
     build_workbench_registry,
@@ -133,6 +137,8 @@ app = FastAPI(title="InferenceAtlas Agent", version="1.0.0")
 
 _sessions: Dict[str, object] = {}
 _lock = threading.Lock()
+_sponsor_proof_runs: Dict[str, dict] = {}
+_sponsor_proof_runs_lock = threading.Lock()
 
 
 def _live_deps_available() -> bool:
@@ -267,6 +273,15 @@ class CustomEvidenceRehearsalRequest(BaseModel):
 
 class WorkbenchGenerateRequest(BaseModel):
     fixture_id: str = Field(..., min_length=1, max_length=120)
+
+
+class SponsorProofRunRequest(BaseModel):
+    request_path: str = Field(default="examples/requests/support_triage_trial.yml", max_length=240)
+    scenario_name: str = Field(default="support_triage_agent", min_length=1, max_length=120)
+    lane: str = Field(default="both", max_length=40)
+    downstream_fixture: str = Field(default="ai_spend_budget_overrun", max_length=120)
+    subscriber: str = Field(default="portkey_model_spend_gate", max_length=120)
+    question: str = Field(default=DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION, max_length=800)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -521,6 +536,62 @@ def portkey_downstream_preview(
         "ok": True,
         "read_only": True,
         "portkey": payload,
+    }
+
+
+def _public_request_path(request_path: str) -> Path:
+    candidate = Path(request_path.strip() or "examples/requests/support_triage_trial.yml")
+    full_path = candidate if candidate.is_absolute() else ROOT_DIR / candidate
+    full_path = full_path.resolve()
+    requests_dir = (ROOT_DIR / "examples" / "requests").resolve()
+    if not full_path.is_relative_to(requests_dir):
+        raise ValueError("request_path must stay under examples/requests")
+    if not full_path.is_file():
+        raise FileNotFoundError(request_path)
+    return full_path
+
+
+@app.post("/api/sponsor-proof-runs")
+def create_sponsor_proof_run(body: SponsorProofRunRequest) -> dict:
+    """Create one local, read-only sponsor proof collector run."""
+    try:
+        request_path = _public_request_path(body.request_path)
+        run = build_sponsor_proof_collector_run(
+            request_path,
+            scenario_name=body.scenario_name,
+            lane=body.lane,
+            downstream_fixture=body.downstream_fixture,
+            question=body.question,
+            subscriber=body.subscriber,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"request not found: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    with _sponsor_proof_runs_lock:
+        _sponsor_proof_runs[run["run_id"]] = run
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run,
+    }
+
+
+@app.get("/api/sponsor-proof-runs/{run_id}")
+def get_sponsor_proof_run(run_id: str) -> dict:
+    """Return a previously created local sponsor proof collector run."""
+    with _sponsor_proof_runs_lock:
+        run = _sponsor_proof_runs.get(run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="unknown sponsor proof run")
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run,
     }
 
 

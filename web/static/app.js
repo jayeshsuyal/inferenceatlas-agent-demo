@@ -2510,7 +2510,19 @@ function renderPacketDetail(data) {
     <span class="eyebrow">Sponsor Proof Trace</span>
     <h3>${trace ? escapeHtml(String(trace.step_count)) + " proof steps" : "No live proof step required"}</h3>
     <p class="walkthrough-summary">${trace ? escapeHtml((trace.sponsor_order || []).join(" -> ")) : "Scenario result remains fixture-backed."}</p>
-    <p class="safety-anchor">Decision lock unchanged ${escapeHtml(String(trace?.decision_lock_unchanged ?? true))}</p>
+    ${
+      trace
+        ? `<code class="walkthrough-fact">trace ${escapeHtml(trace.trace_id || "sponsor-proof-trace")}</code>
+           <code class="walkthrough-fact">packet ${escapeHtml(trace.packet_id || packet.packet_id || "")}</code>
+           <div class="trace-metrics compact">
+             <div><span>Decision lock</span><strong>${escapeHtml(String(trace.decision_lock_unchanged))}</strong></div>
+             <div><span>Fallback</span><strong>${escapeHtml(String(trace.all_fallback_used))}</strong></div>
+             <div><span>Live keys</span><strong>${escapeHtml(String((trace.steps || []).some((step) => step.used_live_key)))}</strong></div>
+             <div><span>Writes</span><strong>${escapeHtml(String(!trace.all_non_executing))}</strong></div>
+           </div>`
+        : ""
+    }
+    <p class="safety-anchor">Sponsors collect proof only; approve ${escapeHtml(String(trace?.approves_access ?? false))} · spend ${escapeHtml(String(trace?.approves_spend ?? false))} · provider ${escapeHtml(String(trace?.selects_provider ?? false))}</p>
   `;
 
   packetDownstreamCard.innerHTML = `

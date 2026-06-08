@@ -91,7 +91,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=33", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=34", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=21", timeout=timeout)
 
     for expected in (
@@ -113,6 +113,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require("renderPacketCoachReply" in js, "Ask IA packet coach renderer missing")
     _require("renderPacketTeamLenses" in js, "Team Lenses renderer missing")
+    _require("Sponsors collect proof only" in js, "packet sponsor safety line missing")
+    _require("Live keys" in js, "packet sponsor live-key flag missing")
+    _require("trace ${escapeHtml(trace.trace_id" in js, "packet sponsor trace id missing")
     _require("Packet-backed decision coach" in js, "Ask IA packet coach title missing")
     _require("reply-section-heading" in js, "packet-backed answer section renderer missing")
     _require("renderReplyLines" in js, "packet-backed answer list renderer missing")

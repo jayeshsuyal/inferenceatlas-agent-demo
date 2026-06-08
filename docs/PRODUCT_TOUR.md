@@ -57,7 +57,7 @@ python3 -m unittest discover -s tests
 Or use the installed commands:
 
 ```bash
-pip install -e .
+pip install -e ".[web]"
 ia-judge
 ia-skills
 ia-packet-diff

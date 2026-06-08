@@ -94,6 +94,7 @@ run "$PYTHON_BIN" -m agent.spend examples/requests/ai_spend_budget_overrun.yml -
 run "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write
 run "$PYTHON_BIN" -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write
 run "$PYTHON_BIN" scripts/walkthrough_smoke.py
+run bash scripts/reviewer_smoke_gate.sh
 run "$PYTHON_BIN" -m agent.verify_artifacts
 run "$PYTHON_BIN" -m unittest discover -s tests
 run_secret_shape_guard

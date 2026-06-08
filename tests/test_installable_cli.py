@@ -89,7 +89,7 @@ class InstallableCliTests(unittest.TestCase):
 
         self.assertIn("bash scripts/run.sh", command_reference)
         self.assertIn("bash scripts/pr_smoke.sh", command_reference)
-        self.assertIn("pip install -e .", command_reference)
+        self.assertIn('pip install -e ".[web]"', command_reference)
         self.assertIn("ia-judge", command_reference)
         self.assertIn("ia-skills", command_reference)
         self.assertIn("ia-packet-advisor", command_reference)
@@ -116,7 +116,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-verify", command_reference)
         self.assertIn("ia-verify-artifacts", command_reference)
         self.assertIn("ia-downstream-gate --all", workflow)
-        self.assertIn("python -m pip install -e .", workflow)
+        self.assertIn('python -m pip install -e ".[web]"', workflow)
         self.assertIn("ia-judge --no-write", workflow)
         self.assertIn("ia-skills", workflow)
         self.assertIn("ia-packet-diff --no-write", workflow)

@@ -1318,7 +1318,6 @@ def _chat_validate() -> None:
 
 
 def _execute_chat(body: ChatRequest) -> ChatResponse:
-    _chat_validate()
     message = body.message.strip()
     skill_ids = [s for s in body.skill_ids if s]
     github_repos = [r.strip() for r in body.github_repos if r.strip()]
@@ -1372,8 +1371,10 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
             record_copilot_direct()
             agent.remember_exchange(orch.user_display, reply)
         elif plain:
+            _chat_validate()
             reply = agent.chat(orch.user_message or message)
         else:
+            _chat_validate()
             reply = agent.chat_orchestrated(
                 orch.user_display,
                 orch.llm_message,
@@ -1492,7 +1493,6 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
 
     def event_stream():
         try:
-            _chat_validate()
             message = body.message.strip()
             skill_ids = [s for s in body.skill_ids if s]
             github_repos = [r.strip() for r in body.github_repos if r.strip()]
@@ -1546,8 +1546,10 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                 record_copilot_direct()
                 agent.remember_exchange(orch.user_display, reply)
             elif plain:
+                _chat_validate()
                 reply = agent.chat(orch.user_message or message)
             else:
+                _chat_validate()
                 reply = agent.chat_orchestrated(
                     orch.user_display,
                     orch.llm_message,

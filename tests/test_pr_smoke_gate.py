@@ -29,9 +29,11 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertTrue(os.access(script_path, os.X_OK))
         self.assertIn("set -euo pipefail", script)
         self.assertIn('export NEBIUS_API_KEY=""', script)
+        self.assertIn('export OPENAI_API_KEY=""', script)
         self.assertIn('export TAVILY_API_KEY=""', script)
         self.assertIn('export COMPOSIO_API_KEY=""', script)
         self.assertIn('export IA_LIVE_MODE=""', script)
+        self.assertIn('export IA_DISABLE_DOTENV="1"', script)
         self.assertIn("bash scripts/run.sh --json", script)
         self.assertIn("agent.judge --no-write --json", script)
         self.assertIn("agent.evidence_receipts --no-write --json", script)
@@ -44,6 +46,7 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("agent.pilot_memo examples/requests/support_triage_trial.yml --no-write --copy", script)
         self.assertIn("bash scripts/review_60.sh --dry-run", script)
         self.assertIn("scripts/walkthrough_smoke.py", script)
+        self.assertIn("bash scripts/reviewer_smoke_gate.sh", script)
         self.assertIn("agent.verify_artifacts --json", script)
         self.assertIn("unittest discover -s tests", script)
         self.assertIn("git grep -l -E", script)
@@ -60,9 +63,11 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("Run public PR smoke gate", workflow)
         self.assertIn("PYTHON=python bash scripts/pr_smoke.sh", workflow)
         self.assertIn('NEBIUS_API_KEY: ""', workflow)
+        self.assertIn('OPENAI_API_KEY: ""', workflow)
         self.assertIn('TAVILY_API_KEY: ""', workflow)
         self.assertIn('COMPOSIO_API_KEY: ""', workflow)
         self.assertIn('IA_LIVE_MODE: ""', workflow)
+        self.assertIn('IA_DISABLE_DOTENV: "1"', workflow)
 
     def test_walkthrough_smoke_script_locks_product_surface(self) -> None:
         script = (ROOT / "scripts" / "walkthrough_smoke.py").read_text(encoding="utf-8")
@@ -117,6 +122,27 @@ class PrSmokeGateTests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertIn("--base-url", result.stdout)
+
+    def test_reviewer_smoke_gate_starts_server_without_live_keys(self) -> None:
+        script_path = ROOT / "scripts" / "reviewer_smoke_gate.sh"
+        script = script_path.read_text(encoding="utf-8")
+
+        self.assertTrue(script_path.is_file())
+        self.assertTrue(os.access(script_path, os.X_OK))
+        self.assertIn("set -euo pipefail", script)
+        self.assertIn('export NEBIUS_API_KEY=""', script)
+        self.assertIn('export OPENAI_API_KEY=""', script)
+        self.assertIn('export TAVILY_API_KEY=""', script)
+        self.assertIn('export COMPOSIO_API_KEY=""', script)
+        self.assertIn('export IA_LIVE_MODE=""', script)
+        self.assertIn('export IA_DISABLE_DOTENV="1"', script)
+        self.assertIn("-m uvicorn web.app:app", script)
+        self.assertIn("scripts/reviewer_smoke.py --base-url", script)
+        self.assertIn("IA_REVIEWER_SMOKE_PORT", script)
+        self.assertIn("Reviewer smoke gate passed", script)
+
+        workflow = (ROOT / ".github" / "workflows" / "smoke.yml").read_text(encoding="utf-8")
+        self.assertIn('python -m pip install -e ".[web]"', workflow)
 
     def test_manifest_and_review_docs_expose_pr_smoke_gate(self) -> None:
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))

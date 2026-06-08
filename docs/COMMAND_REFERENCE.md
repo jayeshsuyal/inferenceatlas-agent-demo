@@ -20,6 +20,11 @@ bash scripts/pr_smoke.sh
 ```
 
 This is the local mirror of the public PR smoke gate: schema parsing, JSON command surfaces, walkthrough smoke, artifact integrity, unit tests, and tracked secret-shaped token guard.
+For the full served reviewer smoke inside this gate, install the web extra first:
+
+```bash
+pip install -e ".[web]"
+```
 
 ## Full Public Python Commands
 
@@ -58,7 +63,7 @@ python3 -m unittest discover -s tests
 ## Installed Command Set
 
 ```bash
-pip install -e .
+pip install -e ".[web]"
 ia-judge
 ia-review --list
 ia-skills

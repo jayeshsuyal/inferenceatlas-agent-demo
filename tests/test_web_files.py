@@ -211,7 +211,7 @@ class WebFilesTests(unittest.TestCase):
     def test_chat_api_uses_packet_advisor_from_current_fixture(self) -> None:
         from web.app import ChatRequest, _execute_chat
 
-        with patch("web.app._chat_validate", return_value=None):
+        with patch("web.app._chat_validate", side_effect=AssertionError("Packet Advisor must stay no-key")):
             response = _execute_chat(
                 ChatRequest(
                     session_id="packet-advisor-chat-contract",

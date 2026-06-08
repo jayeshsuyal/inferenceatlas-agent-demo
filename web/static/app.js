@@ -31,6 +31,7 @@ const workbenchToast = document.getElementById("workbench-toast");
 const btnLoadPacket = document.getElementById("btn-load-packet");
 const btnCopyPacketBrief = document.getElementById("btn-copy-packet-brief");
 const btnExportPacket = document.getElementById("btn-export-packet");
+const btnExportPortkeyGate = document.getElementById("btn-export-portkey-gate");
 const btnOpenPacketWorkbench = document.getElementById("btn-open-packet-workbench");
 const packetLaneSelect = document.getElementById("packet-lane-select");
 const packetFixtureSelect = document.getElementById("packet-fixture-select");
@@ -156,6 +157,7 @@ let skillsLoaded = false;
 let workbenchRegistry = null;
 let workbenchResult = null;
 let packetDetail = null;
+let packetPortkeyPreview = null;
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -247,6 +249,20 @@ async function downloadFile(fileId, label) {
   const a = document.createElement("a");
   a.href = url;
   a.download = label.replace(/[^\w.\-]+/g, "_") || "download.txt";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function downloadJsonPayload(payload, label) {
+  const blob = new Blob([`${JSON.stringify(payload, null, 2)}\n`], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (label || "ia-packet-export.json").replace(/[^\w.\-]+/g, "_");
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -2123,6 +2139,15 @@ function packetDetailUrl(fixtureId) {
   return url.toString();
 }
 
+function packetPortkeyPreviewPath(fixtureId) {
+  return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey?mode=dry-run`;
+}
+
+function packetPortkeyExportName(payload) {
+  const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
+  return `${packetId}.portkey_gate.dry_run.json`;
+}
+
 async function copyTextWithFallback(text) {
   let copied = false;
   try {
@@ -2165,8 +2190,57 @@ function renderPacketConsumers(consumers) {
   return wrap;
 }
 
+function renderPacketPortkeyGateCard(payload = null) {
+  const card = document.createElement("div");
+  card.className = "packet-consumer";
+  card.id = "packet-portkey-gate-card";
+
+  if (!payload) {
+    card.innerHTML = `
+      <span class="trace-subhead">gateway dry-run</span>
+      <h4>Portkey gate export</h4>
+      <p>Generate the packet-backed guardrail response and usage-limit policy JSON.</p>
+      <p class="safety-anchor">Dry-run only. Portkey API call made: false.</p>
+    `;
+  } else {
+    const guardrail = payload.portkey_guardrail_response || {};
+    const policy = payload.usage_policy_plan?.request_body || {};
+    const packet = payload.ia_packet_reference || {};
+    card.innerHTML = `
+      <span class="trace-subhead">gateway dry-run</span>
+      <h4>Portkey gate export</h4>
+      <p>Guardrail verdict: ${escapeHtml(String(guardrail.verdict))}; usage credit limit: ${escapeHtml(String(policy.credit_limit ?? 0))}.</p>
+      <code class="walkthrough-fact">${escapeHtml(packet.packet_id || "")}</code>
+      <p class="safety-anchor">mode ${escapeHtml(payload.mode || "dry-run")} · API call made: ${escapeHtml(String(payload.api_call_made))}</p>
+    `;
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "walk-actions";
+  const preview = document.createElement("button");
+  preview.type = "button";
+  preview.className = "btn-ghost";
+  preview.textContent = payload ? "Refresh Portkey preview" : "Preview Portkey gate";
+  preview.addEventListener("click", () => previewPacketPortkeyGate());
+  const exportGate = document.createElement("button");
+  exportGate.type = "button";
+  exportGate.className = "btn-ghost";
+  exportGate.textContent = "Export Portkey gate";
+  exportGate.addEventListener("click", () => exportPacketPortkeyGate());
+  actions.append(preview, exportGate);
+  card.appendChild(actions);
+  return card;
+}
+
+function updatePacketPortkeyGateCard(payload) {
+  const existing = document.getElementById("packet-portkey-gate-card");
+  if (!existing) return;
+  existing.replaceWith(renderPacketPortkeyGateCard(payload));
+}
+
 function renderPacketDetail(data) {
   packetDetail = data;
+  packetPortkeyPreview = null;
   const fixture = data.fixture || {};
   const decision = data.decision || {};
   const packet = data.packet_reference || {};
@@ -2236,6 +2310,7 @@ function renderPacketDetail(data) {
     <p class="walkthrough-summary">Gateways, CI, spend controls, review queues, and observability read the packet reference. They cannot approve, mutate, or override it.</p>
   `;
   packetDownstreamCard.appendChild(renderPacketConsumers(data.downstream_consumers || []));
+  packetDownstreamCard.appendChild(renderPacketPortkeyGateCard());
 
   packetReviewerCard.innerHTML = `
     <span class="eyebrow">Reviewer routing</span>
@@ -2275,6 +2350,7 @@ function renderPacketDetail(data) {
   renderArtifactLinks(data.output_files || [], packetExportCard);
   btnCopyPacketBrief.disabled = !data.copy_review_brief;
   btnExportPacket.disabled = !(data.output_files || []).length;
+  btnExportPortkeyGate.disabled = !fixture.fixture_id;
 }
 
 async function loadPacketDetail() {
@@ -2317,6 +2393,41 @@ async function exportPacketResult() {
   try {
     await downloadFile(first.file_id, first.label || "ia-packet.md");
     setPacketToast("IA Packet exported.");
+  } catch (err) {
+    setPacketToast(String(err.message || err), true);
+  }
+}
+
+async function loadPacketPortkeyPreview() {
+  const fixtureId = packetDetail?.fixture?.fixture_id || packetSelectedFixtureId();
+  if (!fixtureId) {
+    throw new Error("Load an IA Packet first.");
+  }
+  const res = await fetch(packetPortkeyPreviewPath(fixtureId));
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || "Portkey gate preview failed");
+  const payload = data.portkey || data;
+  packetPortkeyPreview = payload;
+  updatePacketPortkeyGateCard(payload);
+  return payload;
+}
+
+async function previewPacketPortkeyGate() {
+  try {
+    setPacketToast("Loading Portkey dry-run gate...");
+    await loadPacketPortkeyPreview();
+    setPacketToast("Portkey dry-run gate ready. No API call made.");
+  } catch (err) {
+    setPacketToast(String(err.message || err), true);
+  }
+}
+
+async function exportPacketPortkeyGate() {
+  try {
+    setPacketToast("Exporting Portkey dry-run gate...");
+    const payload = packetPortkeyPreview || await loadPacketPortkeyPreview();
+    downloadJsonPayload(payload, packetPortkeyExportName(payload));
+    setPacketToast("Portkey dry-run gate JSON exported. No API call made.");
   } catch (err) {
     setPacketToast(String(err.message || err), true);
   }
@@ -3488,6 +3599,7 @@ btnRunUploadedRehearsal.addEventListener("click", runUploadedRehearsal);
 btnLoadPacket.addEventListener("click", loadPacketDetail);
 btnCopyPacketBrief.addEventListener("click", copyPacketBrief);
 btnExportPacket.addEventListener("click", exportPacketResult);
+btnExportPortkeyGate.addEventListener("click", exportPacketPortkeyGate);
 btnOpenPacketWorkbench.addEventListener("click", () => {
   window.location.href = packetWorkbenchUrl();
 });
@@ -3495,14 +3607,18 @@ setupPacketReviewRail();
 packetLaneSelect.addEventListener("change", () => {
   renderPacketFixtureOptions();
   packetDetail = null;
+  packetPortkeyPreview = null;
   btnCopyPacketBrief.disabled = true;
   btnExportPacket.disabled = true;
+  btnExportPortkeyGate.disabled = true;
   setPacketToast("Lane changed. Load an IA Packet to refresh the product object.");
 });
 packetFixtureSelect.addEventListener("change", () => {
   packetDetail = null;
+  packetPortkeyPreview = null;
   btnCopyPacketBrief.disabled = true;
   btnExportPacket.disabled = true;
+  btnExportPortkeyGate.disabled = true;
   setPacketToast("Fixture changed. Load an IA Packet to refresh the product object.");
 });
 workbenchLaneSelect.addEventListener("change", () => {

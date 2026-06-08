@@ -83,7 +83,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=30", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=31", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=19", timeout=timeout)
 
     for expected in (
@@ -91,12 +91,14 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Start 60-second review",
         "composer-shell first-run-locked",
         "Open the IA Packet first; then ask packet-backed follow-ups.",
+        "Export Portkey gate",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require("reply-section-heading" in js, "packet-backed answer section renderer missing")
     _require("renderReplyLines" in js, "packet-backed answer list renderer missing")
+    _require("Portkey dry-run gate JSON exported. No API call made." in js, "Portkey gate export missing")
     _require(".composer-shell.first-run-locked" in css, "first-run quick-chip lock CSS missing")
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(

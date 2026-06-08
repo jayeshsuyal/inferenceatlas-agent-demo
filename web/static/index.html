@@ -41,10 +41,11 @@
           <div class="how-to">
             <h2>Start here</h2>
             <ol class="steps">
-              <li>Open the 60-second IA Packet.</li>
-              <li>Read the verdict, proof debt, and sponsor trace.</li>
-              <li>Ask one packet-backed follow-up.</li>
+              <li>Start the 60-second review.</li>
+              <li>Read what IA blocks and who reviews.</li>
+              <li>Use follow-ups after the packet opens.</li>
             </ol>
+            <a class="btn-primary btn-block first-run-start-link" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Start 60-second review</a>
           </div>
           <details class="after-review-details">
             <summary>More examples</summary>
@@ -186,8 +187,8 @@
             <div class="message assistant welcome">
               <div class="bubble">
                 <p class="first-run-eyebrow">Start here</p>
-                <h2>Review one AI request before it gets tools, spend, or production access.</h2>
-                <p>Open the IA Packet, then ask a packet-backed follow-up. IA shows the verdict, missing proof, sponsor trace, and downstream gate before anything moves.</p>
+                <h2>Run one AI request. See what gets blocked, who reviews, and what downstream systems can trust before anything moves.</h2>
+                <p>Start with the IA Packet. It shows verdict, proof debt, sponsor trace, and downstream gates before an agent receives tools, spend, or production access.</p>
                 <div class="first-run-actions">
                   <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Start 60-second review</a>
                   <button type="button" class="btn-ghost first-run-cta" id="btn-start-portkey-preview">Preview Portkey gate</button>
@@ -209,20 +210,20 @@
               </article>
             </div>
           </div>
-          <div class="composer-shell" id="composer-shell">
+          <div class="composer-shell first-run-locked" id="composer-shell">
             <div class="slash-menu" id="slash-menu" role="listbox" hidden></div>
             <div class="skill-chips" id="skill-chips" hidden aria-label="Attached skills"></div>
             <div class="github-chips" id="github-chips" hidden aria-label="Attached GitHub repos"></div>
             <div class="drive-chips" id="drive-chips" hidden aria-label="Attached Google Drive files"></div>
             <p class="skill-hints" id="skill-hints" hidden></p>
-            <p class="packet-coach-label">Optional follow-ups after the first packet</p>
+            <p class="packet-coach-label">Follow-ups after packet load</p>
             <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
               <button type="button" data-ask-prompt="Can this move?">Can this move?</button>
               <button type="button" data-ask-prompt="What proof is missing?">What proof is missing?</button>
               <button type="button" data-ask-prompt="Who reviews this?">Who reviews?</button>
               <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
             </div>
-            <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite" hidden></p>
+            <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Open the IA Packet first; then ask packet-backed follow-ups.</p>
             <div class="github-picker" id="github-picker" hidden>
               <input
                 type="search"

@@ -197,7 +197,7 @@
               <div class="bubble">
                 <p class="first-run-eyebrow">Packet cockpit</p>
                 <h2>Before any downstream system acts, review the proof packet it can trust.</h2>
-                <p>Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, Ask IA follow-up, export.</p>
+                <p>Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, team lenses, Ask IA follow-up, export.</p>
                 <div class="first-run-actions">
                   <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Run packet cockpit</a>
                 </div>
@@ -221,7 +221,11 @@
                 <strong>Export Portkey dry-run gate JSON.</strong>
               </article>
               <article class="proof-tile">
-                <span>5 · Export</span>
+                <span>5 · Team lenses</span>
+                <strong>Show each team what it must review.</strong>
+              </article>
+              <article class="proof-tile">
+                <span>6 · Export</span>
                 <strong>Copy the review brief for humans.</strong>
               </article>
             </div>
@@ -374,7 +378,7 @@
           <section class="packet-review-rail" id="packet-review-rail" aria-label="Review in 60 seconds">
             <div class="packet-review-rail-head">
               <span class="eyebrow">Review in 60 seconds</span>
-              <p>Request -> Packet -> Sponsor proof -> Downstream gate -> Export</p>
+              <p>Request -> Packet -> Sponsor proof -> Downstream gate -> Team lenses -> Export</p>
             </div>
             <div class="walkthrough-strip packet-review-steps">
               <button type="button" class="walk-step packet-review-step active" data-packet-target="packet-summary-card" aria-current="step">
@@ -393,8 +397,12 @@
                 <span>4</span>
                 <strong>Downstream gate<em>Portkey dry-run</em></strong>
               </button>
-              <button type="button" class="walk-step packet-review-step" data-packet-target="packet-export-card">
+              <button type="button" class="walk-step packet-review-step" data-packet-target="packet-team-card">
                 <span>5</span>
+                <strong>Team lenses<em>human review</em></strong>
+              </button>
+              <button type="button" class="walk-step packet-review-step" data-packet-target="packet-export-card">
+                <span>6</span>
                 <strong>Export<em>copy brief</em></strong>
               </button>
             </div>
@@ -412,6 +420,7 @@
             <article class="walkthrough-panel span-2" id="packet-proof-card"></article>
             <article class="walkthrough-panel" id="packet-sponsor-card"></article>
             <article class="walkthrough-panel span-2" id="packet-downstream-card"></article>
+            <article class="walkthrough-panel span-2" id="packet-team-card"></article>
             <article class="walkthrough-panel" id="packet-reviewer-card"></article>
             <article class="walkthrough-panel" id="packet-export-card"></article>
           </section>

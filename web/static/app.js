@@ -45,6 +45,7 @@ const packetVerificationCard = document.getElementById("packet-verification-card
 const packetProofCard = document.getElementById("packet-proof-card");
 const packetSponsorCard = document.getElementById("packet-sponsor-card");
 const packetDownstreamCard = document.getElementById("packet-downstream-card");
+const packetTeamCard = document.getElementById("packet-team-card");
 const packetReviewerCard = document.getElementById("packet-reviewer-card");
 const packetExportCard = document.getElementById("packet-export-card");
 const workbenchTitle = document.getElementById("workbench-title");
@@ -121,7 +122,8 @@ const EMPTY_PROOF_TILES = [
   ["2 · Packet", "See verdict, proof debt, reviewer owners, and hash."],
   ["3 · Sponsor proof", "Collect Tavily, Composio, OpenClaw, and Nebius trace."],
   ["4 · Downstream gate", "Export Portkey dry-run gate JSON."],
-  ["5 · Export", "Copy the review brief for humans."],
+  ["5 · Team lenses", "Show each team what it must review."],
+  ["6 · Export", "Copy the review brief for humans."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -2365,6 +2367,39 @@ function renderPacketConsumers(consumers) {
   return wrap;
 }
 
+function renderPacketTeamLenses(teamLenses) {
+  const wrap = document.createElement("div");
+  wrap.className = "team-lens-list";
+  const lenses = teamLenses?.lenses || [];
+  lenses.forEach((lens) => {
+    const row = document.createElement("article");
+    row.className = `team-lens-row ${lens.relevance === "direct" ? "direct" : "context"}`;
+    const missingCount = (lens.missing_proof || []).length;
+    const blockedCount = (lens.blocked_claims || []).length;
+    row.innerHTML = `
+      <div class="team-lens-head">
+        <strong>${escapeHtml(lens.label || "Team")}</strong>
+        <span>${escapeHtml(lens.relevance || "context")}</span>
+      </div>
+      <p>${escapeHtml(lens.review_focus || "")}</p>
+      <code>${escapeHtml(lens.next_validation || "Review packet state before scope moves.")}</code>
+      <div class="team-lens-meta">
+        <span>owner: ${escapeHtml(lens.reviewer_owner || "Named human reviewer")}</span>
+        <span>blocked ${escapeHtml(String(blockedCount))} · proof ${escapeHtml(String(missingCount))}</span>
+      </div>
+      <small>${escapeHtml(lens.safety_note || "This lens reads the IA Packet only.")}</small>
+    `;
+    wrap.appendChild(row);
+  });
+  if (!lenses.length) {
+    const empty = document.createElement("p");
+    empty.className = "walkthrough-summary";
+    empty.textContent = "No team lenses are attached to this packet projection yet.";
+    wrap.appendChild(empty);
+  }
+  return wrap;
+}
+
 function renderPacketPortkeyGateCard(payload = null) {
   const card = document.createElement("div");
   card.className = "packet-consumer";
@@ -2486,6 +2521,13 @@ function renderPacketDetail(data) {
   `;
   packetDownstreamCard.appendChild(renderPacketConsumers(data.downstream_consumers || []));
   packetDownstreamCard.appendChild(renderPacketPortkeyGateCard());
+
+  packetTeamCard.innerHTML = `
+    <span class="eyebrow">Cross-functional review</span>
+    <h3>Teams reading this packet</h3>
+    <p class="walkthrough-summary">Every lens reads the same packet reference. Teams get different review focus; none can approve, assign, dispatch, grant, write, or mutate.</p>
+  `;
+  packetTeamCard.appendChild(renderPacketTeamLenses(data.team_lenses));
 
   packetReviewerCard.innerHTML = `
     <span class="eyebrow">Reviewer routing</span>

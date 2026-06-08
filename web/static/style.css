@@ -1321,9 +1321,31 @@ body {
   background: rgba(61, 156, 245, 0.12);
 }
 
+.packet-coach-quick-chips[data-busy="true"] button,
+.packet-coach-quick-chips button:disabled {
+  cursor: wait;
+  opacity: 0.64;
+}
+
+.packet-coach-quick-chips[data-busy="true"] button:hover,
+.packet-coach-quick-chips button:disabled:hover {
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .packet-coach-quick-chips button:focus-visible {
   outline: 2px solid rgba(61, 156, 245, 0.85);
   outline-offset: 2px;
+}
+
+.packet-coach-status {
+  margin: 0.35rem 1.25rem 0;
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.packet-coach-status[hidden] {
+  display: none;
 }
 
 .skill-chip {

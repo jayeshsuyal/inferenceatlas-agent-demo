@@ -1439,6 +1439,9 @@ body {
 .first-run-start-link {
   margin-top: 0.85rem;
   text-decoration: none;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
 }
 
 .blocked-note {
@@ -1506,6 +1509,16 @@ body {
   text-transform: uppercase;
 }
 
+.composer-shell.first-run-locked {
+  padding: 0.7rem 1.25rem;
+}
+
+.composer-shell.first-run-locked .composer-toolbar,
+.composer-shell.first-run-locked .composer,
+.composer-shell.first-run-locked .packet-coach-label {
+  display: none;
+}
+
 .packet-coach-quick-chips {
   display: flex;
   flex-wrap: wrap;
@@ -1515,10 +1528,6 @@ body {
 
 .composer-shell.first-run-locked .packet-coach-quick-chips {
   display: none;
-}
-
-.composer-shell.first-run-locked .packet-coach-label {
-  color: var(--text-muted);
 }
 
 .packet-coach-quick-chips button {
@@ -1560,6 +1569,11 @@ body {
   margin: 0.35rem 1.25rem 0;
   color: var(--text-muted);
   font-size: 0.76rem;
+}
+
+.composer-shell.first-run-locked .packet-coach-status {
+  margin: 0;
+  line-height: 1.4;
 }
 
 .packet-coach-status[hidden] {
@@ -2775,7 +2789,7 @@ body {
 }
 
 .message.welcome .bubble {
-  border-color: rgba(61, 156, 245, 0.2);
+  border-color: rgba(61, 156, 245, 0.34);
   width: min(100%, 920px);
 }
 
@@ -2802,23 +2816,25 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-top: 0.9rem;
+  margin-top: 1rem;
 }
 
 .first-run-cta {
-  min-height: 38px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
 }
 
 .empty-proof-board {
   width: min(100%, 1120px);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 .proof-tile {
-  min-height: 5.35rem;
+  min-height: 6rem;
   padding: 0.85rem;
   border: 1px solid rgba(42, 53, 68, 0.95);
   border-radius: 8px;
@@ -2829,7 +2845,7 @@ body {
 .proof-tile span {
   display: block;
   margin-bottom: 0.5rem;
-  color: var(--muted);
+  color: var(--accent);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.06em;

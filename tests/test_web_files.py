@@ -127,27 +127,25 @@ class WebFilesTests(unittest.TestCase):
         css = (ROOT / "web" / "static" / "style.css").read_text(encoding="utf-8")
 
         self.assertIn('id="empty-proof-board"', html)
-        self.assertIn("Run packet cockpit", html)
+        self.assertIn("Run IA Packet Review", html)
         self.assertIn("<summary>More examples</summary>", html)
-        self.assertIn("Golden packet cockpit", html)
         self.assertIn(
             "Downstream systems do not trust raw agent intent. They trust the IA Packet.",
             html,
         )
         self.assertIn(
-            "Before any downstream system acts, review the proof packet it can trust.",
+            "One AI movement request becomes a packet, proof trace, team review, Ask IA follow-up, and exportable memo. No keys. No writes.",
             html,
         )
-        self.assertIn("Run the packet.", html)
-        self.assertIn("Collect sponsor proof.", html)
-        self.assertIn("Preview the downstream gate and export the review artifact.", html)
+        self.assertIn("<strong>Request:</strong> load one registered AI movement request.", html)
+        self.assertIn("<strong>Packet:</strong> review the verdict, proof debt, owners, and hash.", html)
+        self.assertIn("<strong>Export:</strong> copy the review brief or Portkey dry-run gate.", html)
         self.assertIn('class="composer-shell first-run-locked"', html)
-        self.assertIn("Run one registered AI movement request.", html)
-        self.assertIn("See verdict, proof debt, reviewer owners, and hash.", html)
-        self.assertIn("Collect Tavily, Composio, OpenClaw, and Nebius trace.", html)
-        self.assertIn("Export Portkey dry-run gate JSON.", html)
-        self.assertIn("Show each team what it must review.", html)
-        self.assertIn("Copy the review brief for humans.", html)
+        self.assertIn("Load one registered AI movement request.", html)
+        self.assertIn("See verdict, blocked claims, proof debt, owners, and hash.", html)
+        self.assertIn("Collect sponsor proof and preview the Portkey dry-run gate.", html)
+        self.assertIn("Show each team the same packet through its review lens.", html)
+        self.assertIn("Copy the review brief or export Portkey gate JSON.", html)
         self.assertIn("Ask IA about this packet", html)
         self.assertIn("Ask IA packet coach", html)
         self.assertIn("Packet-backed decision coach", html)
@@ -160,9 +158,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
         self.assertIn("EMPTY_PROOF_TILES", js)
-        self.assertIn('["1 · Request", "Run one registered AI movement request."]', js)
-        self.assertIn('["3 · Sponsor proof", "Collect Tavily, Composio, OpenClaw, and Nebius trace."]', js)
-        self.assertIn('["5 · Team lenses", "Show each team what it must review."]', js)
+        self.assertIn('["1 · Request", "Load one registered AI movement request."]', js)
+        self.assertIn('["3 · Proof Trace", "Collect sponsor proof and preview the Portkey dry-run gate."]', js)
+        self.assertIn('["4 · Team Lenses", "Show each team the same packet through its review lens."]', js)
         self.assertIn("FIRST_RUN_PACKET_URL", js)
         self.assertIn("FIRST_RUN_HEADING", js)
         self.assertIn("renderFirstRunWelcome", js)
@@ -203,6 +201,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('button.setAttribute("aria-disabled", String(loading))', js)
         self.assertIn("Answering... packet-backed quick prompts are paused.", js)
         self.assertIn(".composer-shell.first-run-locked .packet-coach-quick-chips", css)
+        self.assertIn(".composer-shell.first-run-locked .composer-toolbar", css)
+        self.assertIn(".composer-shell.first-run-locked .composer", css)
+        self.assertIn("display: none;", css)
         self.assertIn(".packet-coach-quick-chips", css)
         self.assertIn(".packet-coach-status", css)
         self.assertIn('.packet-coach-quick-chips[data-busy="true"] button', css)
@@ -230,7 +231,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("advancedNav.open = true", js)
         self.assertIn('["LLM", `${health.llm_provider} · ${health.llm_model}`', js)
         self.assertIn(".empty-proof-board", css)
-        self.assertIn("grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));", css)
+        self.assertIn("grid-template-columns: repeat(5, minmax(0, 1fr));", css)
 
     def test_chat_api_surfaces_structured_chat_answer_v0(self) -> None:
         from web.app import ChatRequest, _execute_chat
@@ -366,7 +367,7 @@ class WebFilesTests(unittest.TestCase):
 
         self.assertIn("<title>InferenceAtlas — Packet Authority Review</title>", html)
         self.assertIn("Packet authority for AI access and spend review", html)
-        self.assertIn('data-tab="start">Guided Review</button>', html)
+        self.assertIn('data-tab="start">Start Here</button>', html)
         self.assertIn("<summary>Advanced</summary>", html)
         self.assertIn('data-tab="workbench">Workbench</button>', html)
         self.assertIn('data-tab="walkthrough"', html)

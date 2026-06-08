@@ -118,12 +118,11 @@ const SKILL_HINT_BY_ID = {
 };
 
 const EMPTY_PROOF_TILES = [
-  ["1 · Request", "Run one registered AI movement request."],
-  ["2 · Packet", "See verdict, proof debt, reviewer owners, and hash."],
-  ["3 · Sponsor proof", "Collect Tavily, Composio, OpenClaw, and Nebius trace."],
-  ["4 · Downstream gate", "Export Portkey dry-run gate JSON."],
-  ["5 · Team lenses", "Show each team what it must review."],
-  ["6 · Export", "Copy the review brief for humans."],
+  ["1 · Request", "Load one registered AI movement request."],
+  ["2 · Packet", "See verdict, blocked claims, proof debt, owners, and hash."],
+  ["3 · Proof Trace", "Collect sponsor proof and preview the Portkey dry-run gate."],
+  ["4 · Team Lenses", "Show each team the same packet through its review lens."],
+  ["5 · Export", "Copy the review brief or export Portkey gate JSON."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -181,9 +180,9 @@ let drivePickerKind = "all";
 
 const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
 const FIRST_RUN_HEADING =
-  "Before any downstream system acts, review the proof packet it can trust.";
+  "Run IA Packet Review";
 const FIRST_RUN_BODY =
-  "Run one request through the cockpit: packet, sponsor proof, Portkey dry-run gate, Ask IA follow-up, export.";
+  "One AI movement request becomes a packet, proof trace, team review, Ask IA follow-up, and exportable memo. No keys. No writes.";
 const FIRST_RUN_COACH_STATUS =
   "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.";
 
@@ -346,7 +345,7 @@ function renderFirstRunWelcome() {
 
   const eyebrow = document.createElement("p");
   eyebrow.className = "first-run-eyebrow";
-  eyebrow.textContent = "Packet cockpit";
+  eyebrow.textContent = "Review in 90 seconds";
 
   const heading = document.createElement("h2");
   heading.textContent = FIRST_RUN_HEADING;
@@ -360,7 +359,7 @@ function renderFirstRunWelcome() {
   const packetLink = document.createElement("a");
   packetLink.className = "btn-primary first-run-cta";
   packetLink.href = FIRST_RUN_PACKET_URL;
-  packetLink.textContent = "Run packet cockpit";
+  packetLink.textContent = "Run IA Packet Review";
 
   actions.append(packetLink);
   bubble.append(eyebrow, heading, body, actions);

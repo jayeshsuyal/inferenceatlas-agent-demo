@@ -91,20 +91,22 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=32", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=19", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=33", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=21", timeout=timeout)
 
     for expected in (
-        "Before any downstream system acts",
-        "Run packet cockpit",
-        "Golden packet cockpit",
+        "Review in 90 seconds",
+        "Run IA Packet Review",
+        "One AI movement request becomes a packet, proof trace, team review",
+        "Load one registered AI movement request.",
+        "Collect sponsor proof and preview the Portkey dry-run gate.",
         "Sponsor Run",
         "composer-shell first-run-locked",
         "Ask IA about this packet",
         "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.",
         "Export Portkey gate",
         "Team lenses",
-        "Show each team what it must review.",
+        "Show each team the same packet through its review lens.",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
@@ -116,11 +118,15 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("renderReplyLines" in js, "packet-backed answer list renderer missing")
     _require("Portkey dry-run gate JSON exported. No API call made." in js, "Portkey gate export missing")
     _require(".composer-shell.first-run-locked" in css, "first-run quick-chip lock CSS missing")
+    _require(
+        ".composer-shell.first-run-locked .composer" in css,
+        "first-run chat composer must stay hidden",
+    )
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(
-        "grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));" in css,
-        "first-run proof tiles must stay scan-friendly",
+        "grid-template-columns: repeat(5, minmax(0, 1fr));" in css,
+        "first-run proof rail must stay compressed",
     )
     _require(re.search(r"/static/app\.js\?v=\d+", html) is not None, "app.js cache marker missing")
     _require(re.search(r"/static/style\.css\?v=\d+", html) is not None, "style.css cache marker missing")

@@ -3,7 +3,7 @@
 
 This script proves the safe live-key path:
 
-- Nebius is configured as the LLM provider.
+- Nebius performs live read-only reviewer narration.
 - Tavily performs live read-only evidence collection.
 - Composio remains dry-run/no-execute.
 - Portkey remains dry-run/no-mutation.
@@ -91,7 +91,9 @@ def _assert_health(health: dict[str, Any]) -> None:
     _require(health.get("composio_dry_run") is True, "Composio must remain dry-run by default")
 
 
-def _assert_sponsor_run(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], int]:
+def _assert_sponsor_run(
+    payload: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], int]:
     _require(payload.get("ok") is True, "sponsor proof run API must return ok=true")
     _require(payload.get("read_only") is True, "sponsor proof run API must stay read-only")
     run = payload["run"]
@@ -128,6 +130,19 @@ def _assert_sponsor_run(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[s
     source_count = _tavily_source_count(tavily)
     _require(source_count > 0, "Tavily must return source URLs")
 
+    nebius = run.get("live_sponsor_proof", {}).get("nebius", {})
+    _require(nebius.get("status") == "live_reviewer_narration_built", "Nebius must build live reviewer narration")
+    _require(nebius.get("live_call_attempted") is True, "Nebius live call must be attempted")
+    _require(int(nebius.get("live_call_count", 0)) > 0, "Nebius live call count must be greater than zero")
+    _require(nebius.get("used_live_key") is True, "Nebius must use the live key")
+    _require(nebius.get("fallback_used") is False, "Nebius must not fall back during keyed rehearsal")
+    _require(nebius.get("required_anchors_present") is True, "Nebius narration must preserve required safety anchors")
+    _require(nebius.get("forbidden_phrases_present") == [], "Nebius narration must not include forbidden phrases")
+    _require(
+        bool(nebius.get("structured_narration", {}).get("reviewer_summary")),
+        "Nebius narration must include a reviewer summary",
+    )
+
     composio = run.get("dry_run_sponsor_proof", {}).get("composio", {})
     _require(composio.get("status") == "dry_run_permission_diff_built", "Composio dry-run diff must be built")
     _require(composio.get("api_call_made") is False, "Composio must not make a write API call")
@@ -145,7 +160,7 @@ def _assert_sponsor_run(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[s
     _require(record["safety_lock"]["decision_lock_unchanged"] is True, "ledger record must preserve decision lock")
     _require(record["safety_lock"]["executes_external_writes"] is False, "ledger record must preserve no writes")
 
-    return run, tavily, composio, source_count
+    return run, tavily, composio, nebius, source_count
 
 
 def _assert_portkey_preview(payload: dict[str, Any]) -> dict[str, Any]:
@@ -199,11 +214,12 @@ def run_keyed_rehearsal(
         {
             "request_path": request_path,
             "live_tavily": True,
+            "live_nebius": True,
             "composio_dry_run": True,
         },
         timeout=timeout,
     )
-    run, tavily, composio, tavily_source_count = _assert_sponsor_run(run_payload)
+    run, tavily, composio, nebius, tavily_source_count = _assert_sponsor_run(run_payload)
 
     portkey_payload = _json_get(
         base_url,
@@ -251,6 +267,14 @@ def run_keyed_rehearsal(
             "source_url_count": tavily_source_count,
             "fallback_used": tavily.get("fallback_used"),
         },
+        "nebius": {
+            "status": nebius.get("status"),
+            "live_call_count": nebius.get("live_call_count"),
+            "fallback_used": nebius.get("fallback_used"),
+            "required_anchors_present": nebius.get("required_anchors_present"),
+            "forbidden_phrases_present": nebius.get("forbidden_phrases_present"),
+            "reviewer_summary": nebius.get("structured_narration", {}).get("reviewer_summary"),
+        },
         "composio": {
             "status": composio.get("status"),
             "api_call_made": composio.get("api_call_made"),
@@ -283,6 +307,7 @@ def render_summary(summary: dict[str, Any]) -> str:
     health = summary["health"]
     run = summary["run"]
     tavily = summary["tavily"]
+    nebius = summary["nebius"]
     composio = summary["composio"]
     portkey = summary["portkey"]
     ledger = summary["ledger"]
@@ -292,6 +317,7 @@ def render_summary(summary: dict[str, Any]) -> str:
             "",
             f"- Nebius: {health['llm_provider']} / {health['llm_model']}",
             f"- Tavily: {tavily['status']}; {tavily['live_call_count']} live calls; {tavily['source_url_count']} source URLs; fallback {tavily['fallback_used']}",
+            f"- Nebius narration: {nebius['status']}; {nebius['live_call_count']} live calls; fallback {nebius['fallback_used']}; anchors {nebius['required_anchors_present']}",
             f"- Composio: {composio['status']}; tools {composio['tool_count']}; blocked writes {composio['blocked_write_count']}; api_call_made {composio['api_call_made']}",
             f"- Portkey: {portkey['mode']}; api_call_made {portkey['api_call_made']}; guardrail verdict {portkey['guardrail_verdict']}; credit_limit {portkey['usage_credit_limit']}",
             f"- IA Packet: {run['packet_id']}; decision_lock_unchanged {run['decision_lock_unchanged']}; read_only {run['read_only']}; external_writes {run['executes_external_writes']}",

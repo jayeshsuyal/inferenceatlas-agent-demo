@@ -20,6 +20,7 @@ from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .portkey_adapter import DEFAULT_FIXTURE as DEFAULT_DOWNSTREAM_FIXTURE
 from .portkey_adapter import build_portkey_adapter_payload
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet
+from .nebius_reviewer_narration import ClientFactory as NebiusClientFactory
 from .sponsor_proof_trace import DEFAULT_SCENARIO, SPONSOR_ORDER, build_sponsor_proof_trace
 from .trial import DEFAULT_TRIAL_REQUEST
 from .trial_outcome_memo import build_trial_outcome_memo
@@ -124,7 +125,9 @@ def build_sponsor_proof_collector_run(
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
     live_tavily: bool = False,
+    live_nebius: bool = False,
     composio_dry_run: bool = False,
+    nebius_client_factory: NebiusClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build one deterministic sponsor proof collector run.
 
@@ -143,7 +146,9 @@ def build_sponsor_proof_collector_run(
         scenario_name=scenario_name,
         lane=lane,
         live_tavily=live_tavily,
+        live_nebius=live_nebius,
         composio_dry_run=composio_dry_run,
+        nebius_client_factory=nebius_client_factory,
     )
     packet_snapshot = build_packet_authority_snapshot_for_scenario(
         build_scenario_packet(scenario_name),
@@ -179,6 +184,8 @@ def build_sponsor_proof_collector_run(
     }
     if live_tavily:
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
+    if live_nebius:
+        run_hash_input["live_nebius"] = trace.get("live_proof", {}).get("nebius", {})
     if composio_dry_run:
         run_hash_input["composio_dry_run"] = trace.get("dry_run_proof", {}).get("composio", {})
     digest = _stable_digest(run_hash_input)
@@ -235,10 +242,8 @@ def build_sponsor_proof_collector_run(
             "principle": "Private engine, public proof.",
         },
     }
-    if live_tavily:
-        run["live_sponsor_proof"] = {
-            "tavily": trace.get("live_proof", {}).get("tavily", {}),
-        }
+    if trace.get("live_proof"):
+        run["live_sponsor_proof"] = trace["live_proof"]
     if composio_dry_run:
         run["dry_run_sponsor_proof"] = {
             "composio": trace.get("dry_run_proof", {}).get("composio", {}),
@@ -291,19 +296,37 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
 
     live_proof = run.get("live_sponsor_proof", {})
     tavily_proof = live_proof.get("tavily") if live_proof else None
-    if tavily_proof:
-        source_count = sum(len(item.get("source_urls", [])) for item in tavily_proof["evidence_candidates"])
+    nebius_proof = live_proof.get("nebius") if live_proof else None
+    if tavily_proof or nebius_proof:
         lines.extend(
             [
                 "",
                 "## Live Proof Collection",
                 "",
+            ]
+        )
+    if tavily_proof:
+        source_count = sum(len(item.get("source_urls", [])) for item in tavily_proof["evidence_candidates"])
+        lines.extend(
+            [
                 f"- tavily status: `{tavily_proof['status']}`",
                 f"- live call attempted: {tavily_proof['live_call_attempted']}",
                 f"- live call count: {tavily_proof['live_call_count']}",
                 f"- fallback used: {tavily_proof['fallback_used']}",
                 f"- source candidates: {source_count}",
                 f"- human review required: {tavily_proof['human_review_required']}",
+            ]
+        )
+    if nebius_proof:
+        lines.extend(
+            [
+                f"- nebius status: `{nebius_proof['status']}`",
+                f"- live call attempted: {nebius_proof['live_call_attempted']}",
+                f"- live call count: {nebius_proof['live_call_count']}",
+                f"- fallback used: {nebius_proof['fallback_used']}",
+                f"- required anchors present: {nebius_proof['required_anchors_present']}",
+                f"- forbidden phrases present: {len(nebius_proof['forbidden_phrases_present'])}",
+                f"- human review required: {nebius_proof['human_review_required']}",
             ]
         )
 
@@ -368,6 +391,7 @@ def write_sponsor_proof_collector_artifacts(
     question: str = DEFAULT_QUESTION,
     subscriber: str = DEFAULT_SPEND_SUBSCRIBER,
     live_tavily: bool = False,
+    live_nebius: bool = False,
     composio_dry_run: bool = False,
 ) -> list[Path]:
     """Write SponsorProofCollector Markdown and JSON artifacts."""
@@ -381,6 +405,7 @@ def write_sponsor_proof_collector_artifacts(
         question=question,
         subscriber=subscriber,
         live_tavily=live_tavily,
+        live_nebius=live_nebius,
         composio_dry_run=composio_dry_run,
     )
     stem = request_path.stem
@@ -417,6 +442,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Opt in to read-only Tavily evidence collection; requires --no-write or a custom --output-dir.",
     )
     parser.add_argument(
+        "--live-nebius",
+        action="store_true",
+        help="Opt in to Nebius reviewer narration over locked packet fields; requires --no-write or a custom --output-dir.",
+    )
+    parser.add_argument(
         "--composio-dry-run",
         action="store_true",
         help="Opt in to Composio-shaped dry-run permission diff; requires --no-write or a custom --output-dir.",
@@ -427,8 +457,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     request_path = _resolve_request_path(args.request_path)
-    if (args.live_tavily or args.composio_dry_run) and not args.no_write and args.output_dir == GENERATED_DIR:
-        print("--live-tavily/--composio-dry-run require --no-write or a custom --output-dir", file=sys.stderr)
+    if (args.live_tavily or args.live_nebius or args.composio_dry_run) and not args.no_write and args.output_dir == GENERATED_DIR:
+        print("--live-tavily/--live-nebius/--composio-dry-run require --no-write or a custom --output-dir", file=sys.stderr)
         return 2
     try:
         run = build_sponsor_proof_collector_run(
@@ -439,6 +469,7 @@ def main(argv: list[str] | None = None) -> int:
             question=args.question,
             subscriber=args.subscriber,
             live_tavily=args.live_tavily,
+            live_nebius=args.live_nebius,
             composio_dry_run=args.composio_dry_run,
         )
     except (KeyError, ValueError) as exc:
@@ -455,6 +486,7 @@ def main(argv: list[str] | None = None) -> int:
             question=args.question,
             subscriber=args.subscriber,
             live_tavily=args.live_tavily,
+            live_nebius=args.live_nebius,
             composio_dry_run=args.composio_dry_run,
         )
         if not args.json:

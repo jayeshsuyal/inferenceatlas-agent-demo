@@ -298,6 +298,7 @@ class SponsorProofRunRequest(BaseModel):
     subscriber: str = Field(default="portkey_model_spend_gate", max_length=120)
     question: str = Field(default=DEFAULT_SPONSOR_PROOF_COLLECTOR_QUESTION, max_length=800)
     live_tavily: bool = False
+    live_nebius: bool = False
     composio_dry_run: bool = False
 
 
@@ -624,6 +625,7 @@ def create_sponsor_proof_run(body: SponsorProofRunRequest) -> dict:
             question=body.question,
             subscriber=body.subscriber,
             live_tavily=body.live_tavily,
+            live_nebius=body.live_nebius,
             composio_dry_run=body.composio_dry_run,
         )
     except FileNotFoundError as exc:

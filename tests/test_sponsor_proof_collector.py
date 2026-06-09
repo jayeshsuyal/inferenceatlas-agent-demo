@@ -7,10 +7,12 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from fastapi import HTTPException
 
+from agent.nebius_reviewer_narration import NEBIUS_REQUIRED_SAFETY_ANCHOR
 from agent.portkey_adapter import PORTKEY_ADAPTER_SCHEMA_VERSION
 from agent.sponsor_proof_collector import (
     SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION,
@@ -32,6 +34,26 @@ from web.app import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def _fake_nebius_client() -> SimpleNamespace:
+    content = (
+        "{"
+        '"reviewer_summary":"IA does not approve this request. The packet remains blocked for live movement until proof is reviewed.",'
+        '"decision_lock_sentence":"Human review is required before any access, spend, or production movement. Decision lock unchanged.",'
+        '"next_human_action":"Route the packet to the named owners with proof debt attached.",'
+        f'"safety_anchor":"{NEBIUS_REQUIRED_SAFETY_ANCHOR}"'
+        "}"
+    )
+    return SimpleNamespace(
+        chat=SimpleNamespace(
+            completions=SimpleNamespace(
+                create=lambda **_kwargs: SimpleNamespace(
+                    choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+                )
+            )
+        )
+    )
 
 
 def test_collector_run_wraps_trace_advisor_and_portkey_preview() -> None:
@@ -169,6 +191,45 @@ def test_collector_composio_dry_run_builds_permission_diff_without_live_calls() 
     assert "## Dry-Run Proof Collection" in markdown
     assert "composio status: `dry_run_permission_diff_built`" in markdown
     assert "api call made: False" in markdown
+
+
+def test_collector_live_nebius_builds_structured_narration_without_deciding() -> None:
+    with patch("agent.nebius_reviewer_narration.config.LLM_PROVIDER", "nebius"), patch(
+        "agent.nebius_reviewer_narration.config.LLM_API_KEY", "test-key"
+    ):
+        run = build_sponsor_proof_collector_run(
+            DEFAULT_TRIAL_REQUEST,
+            live_nebius=True,
+            nebius_client_factory=_fake_nebius_client,
+        )
+
+    nebius_step = next(step for step in run["collector_steps"] if step["sponsor"] == "nebius")
+    assert nebius_step["status"] == "completed_live"
+    assert nebius_step["used_live_key"] is True
+    assert nebius_step["fallback_used"] is False
+    assert nebius_step["would_execute"] is False
+    assert nebius_step["can_approve_access"] is False
+    assert nebius_step["can_grant_permissions"] is False
+    assert nebius_step["can_mutate_external_state"] is False
+    assert run["safety_boundary"]["read_only"] is True
+    assert run["safety_boundary"]["live_calls_made"] is True
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["invariants"]["decision_lock_unchanged"] is True
+
+    nebius_proof = run["live_sponsor_proof"]["nebius"]
+    assert nebius_proof["status"] == "live_reviewer_narration_built"
+    assert nebius_proof["live_call_attempted"] is True
+    assert nebius_proof["live_call_count"] == 1
+    assert nebius_proof["used_live_key"] is True
+    assert nebius_proof["fallback_used"] is False
+    assert nebius_proof["required_anchors_present"] is True
+    assert nebius_proof["forbidden_phrases_present"] == []
+    assert NEBIUS_REQUIRED_SAFETY_ANCHOR in nebius_proof["structured_narration"]["safety_anchor"]
+
+    markdown = render_sponsor_proof_collector_markdown(run)
+    assert "nebius status: `live_reviewer_narration_built`" in markdown
+    assert "required anchors present: True" in markdown
+    assert "forbidden phrases present: 0" in markdown
 
 
 def test_collector_markdown_is_public_safe_and_skim_ready() -> None:

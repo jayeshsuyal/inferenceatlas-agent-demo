@@ -91,6 +91,13 @@ body {
   min-width: 0;
 }
 
+body:not([data-active-tab]) .stack,
+body:not([data-active-tab]) #btn-reset,
+body[data-active-tab="start"] .stack,
+body[data-active-tab="start"] #btn-reset {
+  display: none;
+}
+
 .pill {
   font-size: 0.7rem;
   padding: 0.2rem 0.55rem;
@@ -1510,7 +1517,7 @@ body {
 }
 
 .composer-shell.first-run-locked {
-  padding: 0.7rem 1.25rem;
+  display: none;
 }
 
 .composer-shell.first-run-locked .composer-toolbar,
@@ -2827,9 +2834,9 @@ body {
 }
 
 .empty-proof-board {
-  width: min(100%, 1120px);
+  width: min(100%, 920px);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
 }
 

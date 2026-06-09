@@ -134,17 +134,15 @@ class WebFilesTests(unittest.TestCase):
             html,
         )
         self.assertIn(
-            "One AI movement request becomes a packet, proof trace, team review, Ask IA follow-up, and exportable memo. No keys. No writes.",
+            "Open one registered AI movement request. IA shows the packet, proof trace, team lenses, and exportable gate without keys or writes.",
             html,
         )
         self.assertIn("<strong>Request:</strong> load one registered AI movement request.", html)
         self.assertIn("<strong>Packet:</strong> review the verdict, proof debt, owners, and hash.", html)
         self.assertIn("<strong>Export:</strong> copy the review brief or Portkey dry-run gate.", html)
         self.assertIn('class="composer-shell first-run-locked"', html)
-        self.assertIn("Load one registered AI movement request.", html)
-        self.assertIn("See verdict, blocked claims, proof debt, owners, and hash.", html)
-        self.assertIn("Collect sponsor proof and preview the Portkey dry-run gate.", html)
-        self.assertIn("Show each team the same packet through its review lens.", html)
+        self.assertIn("Open one registered AI movement request.", html)
+        self.assertIn("Inspect verdict, proof debt, owners, and hash.", html)
         self.assertIn("Copy the review brief or export Portkey gate JSON.", html)
         self.assertIn("Ask IA about this packet", html)
         self.assertIn("Ask IA packet coach", html)
@@ -158,9 +156,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
         self.assertIn("EMPTY_PROOF_TILES", js)
-        self.assertIn('["1 · Request", "Load one registered AI movement request."]', js)
-        self.assertIn('["3 · Proof Trace", "Collect sponsor proof and preview the Portkey dry-run gate."]', js)
-        self.assertIn('["4 · Team Lenses", "Show each team the same packet through its review lens."]', js)
+        self.assertIn('["1 · Request", "Open one registered AI movement request."]', js)
+        self.assertIn('["2 · Packet", "Inspect verdict, proof debt, owners, and hash."]', js)
+        self.assertIn('["3 · Export", "Copy the review brief or export Portkey gate JSON."]', js)
         self.assertIn("FIRST_RUN_PACKET_URL", js)
         self.assertIn("FIRST_RUN_HEADING", js)
         self.assertIn("renderFirstRunWelcome", js)
@@ -207,6 +205,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn(".composer-shell.first-run-locked .packet-coach-quick-chips", css)
         self.assertIn(".composer-shell.first-run-locked .composer-toolbar", css)
         self.assertIn(".composer-shell.first-run-locked .composer", css)
+        self.assertIn('body[data-active-tab="start"] .stack', css)
+        self.assertIn('body[data-active-tab="start"] #btn-reset', css)
         self.assertIn("display: none;", css)
         self.assertIn(".packet-coach-quick-chips", css)
         self.assertIn(".packet-coach-status", css)
@@ -235,7 +235,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("advancedNav.open = true", js)
         self.assertIn('["LLM", `${health.llm_provider} · ${health.llm_model}`', js)
         self.assertIn(".empty-proof-board", css)
-        self.assertIn("grid-template-columns: repeat(5, minmax(0, 1fr));", css)
+        self.assertIn("grid-template-columns: repeat(3, minmax(0, 1fr));", css)
 
     def test_chat_api_surfaces_structured_chat_answer_v0(self) -> None:
         from web.app import ChatRequest, _execute_chat

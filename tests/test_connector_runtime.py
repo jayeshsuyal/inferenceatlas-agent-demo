@@ -1,6 +1,7 @@
 """Connector runtime — session and demo import."""
 
 import unittest
+from unittest.mock import patch
 
 from agent.connector_oauth import begin_sign_in, demo_sign_in, save_user_api_key
 from agent.connector_runtime import import_connector_content, load_session, save_session
@@ -37,7 +38,8 @@ class ConnectorRuntimeTests(unittest.TestCase):
 
         state = _encode_state(sid, "github", nonce)
         # Without fix, public_connection strips oauth_state → mismatch
-        result = finish_github_callback("fake-code", state)
+        with patch("agent.connector_oauth.GITHUB_CLIENT_SECRET", ""):
+            result = finish_github_callback("fake-code", state)
         self.assertIn("ok", result)
 
     def test_demo_import_github(self) -> None:

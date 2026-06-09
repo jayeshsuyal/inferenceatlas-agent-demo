@@ -20,8 +20,10 @@ from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .portkey_adapter import DEFAULT_FIXTURE as DEFAULT_DOWNSTREAM_FIXTURE
 from .portkey_adapter import build_portkey_adapter_payload
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet
+from .nebius_evidence_synthesis import build_nebius_evidence_synthesis
 from .nebius_reviewer_narration import ClientFactory as NebiusClientFactory
 from .sponsor_proof_trace import DEFAULT_SCENARIO, SPONSOR_ORDER, build_sponsor_proof_trace
+from .tavily_live_evidence import ClientFactory as TavilyClientFactory
 from .trial import DEFAULT_TRIAL_REQUEST
 from .trial_outcome_memo import build_trial_outcome_memo
 
@@ -127,6 +129,7 @@ def build_sponsor_proof_collector_run(
     live_tavily: bool = False,
     live_nebius: bool = False,
     composio_dry_run: bool = False,
+    tavily_client_factory: TavilyClientFactory | None = None,
     nebius_client_factory: NebiusClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build one deterministic sponsor proof collector run.
@@ -141,6 +144,7 @@ def build_sponsor_proof_collector_run(
         raise ValueError(f"unknown lane: {lane}")
 
     request_path = _resolve_request_path(request_path)
+    scenario_packet = build_scenario_packet(scenario_name)
     trace = build_sponsor_proof_trace(
         request_path,
         scenario_name=scenario_name,
@@ -148,10 +152,11 @@ def build_sponsor_proof_collector_run(
         live_tavily=live_tavily,
         live_nebius=live_nebius,
         composio_dry_run=composio_dry_run,
+        tavily_client_factory=tavily_client_factory,
         nebius_client_factory=nebius_client_factory,
     )
     packet_snapshot = build_packet_authority_snapshot_for_scenario(
-        build_scenario_packet(scenario_name),
+        scenario_packet,
         scenario_name,
     )
     advisor = build_packet_advisor_answer(
@@ -162,6 +167,21 @@ def build_sponsor_proof_collector_run(
     portkey = build_portkey_adapter_payload(fixture=downstream_fixture, mode="dry-run")
     outcome_memo = build_trial_outcome_memo(request_path)
     steps = _collector_steps(trace)
+    live_proof = trace.get("live_proof", {})
+    dry_run_proof = trace.get("dry_run_proof", {})
+    openclaw_step = next(
+        (step for step in trace["sponsor_steps"] if step["sponsor"] == "openclaw"),
+        {},
+    )
+    nebius_evidence_synthesis = build_nebius_evidence_synthesis(
+        scenario_packet,
+        tavily_proof=live_proof.get("tavily"),
+        composio_proof=dry_run_proof.get("composio"),
+        openclaw_trace={"trace_steps": [openclaw_step]},
+        portkey_preview=portkey,
+        live_enabled=live_nebius,
+        client_factory=nebius_client_factory,
+    )
     safety = _safety_boundary(trace, portkey)
     invariants = _invariants(trace, steps, portkey)
 
@@ -186,6 +206,7 @@ def build_sponsor_proof_collector_run(
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
     if live_nebius:
         run_hash_input["live_nebius"] = trace.get("live_proof", {}).get("nebius", {})
+        run_hash_input["nebius_evidence_synthesis"] = nebius_evidence_synthesis
     if composio_dry_run:
         run_hash_input["composio_dry_run"] = trace.get("dry_run_proof", {}).get("composio", {})
     digest = _stable_digest(run_hash_input)
@@ -218,6 +239,7 @@ def build_sponsor_proof_collector_run(
         },
         "collector_steps": steps,
         "sponsor_proof_trace": trace,
+        "nebius_evidence_synthesis": nebius_evidence_synthesis,
         "packet_advisor_answer": advisor,
         "downstream_previews": {
             "portkey_model_spend_gate": portkey,
@@ -233,6 +255,7 @@ def build_sponsor_proof_collector_run(
         "source_surfaces": {
             "request": _relative(request_path),
             "sponsor_proof_trace": "agent.sponsor_proof_trace",
+            "nebius_evidence_synthesis": "agent.nebius_evidence_synthesis",
             "packet_advisor": "agent.packet_advisor",
             "portkey_adapter": "agent.portkey_adapter",
             "trial_outcome_memo": "agent.trial_outcome_memo",
@@ -327,6 +350,29 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
                 f"- required anchors present: {nebius_proof['required_anchors_present']}",
                 f"- forbidden phrases present: {len(nebius_proof['forbidden_phrases_present'])}",
                 f"- human review required: {nebius_proof['human_review_required']}",
+            ]
+        )
+
+    evidence_synthesis = run.get("nebius_evidence_synthesis")
+    if evidence_synthesis:
+        synthesis = evidence_synthesis["synthesis"]
+        invariants = evidence_synthesis["invariants"]
+        lines.extend(
+            [
+                "",
+                "## Nebius Evidence Synthesis",
+                "",
+                f"- status: `{evidence_synthesis['status']}`",
+                f"- source index count: {evidence_synthesis['source_index_count']}",
+                f"- live call attempted: {evidence_synthesis['live_call_attempted']}",
+                f"- live call count: {evidence_synthesis['live_call_count']}",
+                f"- fallback used: {evidence_synthesis['fallback_used']}",
+                f"- cited source ids: {', '.join(synthesis['cited_source_ids']) or 'none'}",
+                f"- source ids from Tavily only: {invariants['source_ids_from_tavily_only']}",
+                f"- no new URLs: {invariants['no_new_urls']}",
+                f"- can reduce proof debt: {invariants['can_reduce_proof_debt']}",
+                f"- can approve access: {invariants['can_approve_access']}",
+                f"- safety anchor: {synthesis['safety_anchor']}",
             ]
         )
 

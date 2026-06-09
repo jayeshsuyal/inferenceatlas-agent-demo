@@ -179,6 +179,14 @@ def _live_proof_intelligence(
             "decision_lock_unchanged": True,
             "sponsors_can_approve_or_write": False,
         },
+        "blast_radius": {
+            "max_risk_level": trace["blast_radius"]["summary"]["max_risk_level"],
+            "blocked_action_count": trace["blast_radius"]["summary"]["blocked_action_count"],
+            "write_like_action_count": trace["blast_radius"]["summary"]["write_like_action_count"],
+            "admin_like_action_count": trace["blast_radius"]["summary"]["admin_like_action_count"],
+            "all_write_or_admin_blocked": trace["blast_radius"]["summary"]["all_write_or_admin_blocked"],
+            "would_execute": trace["blast_radius"]["summary"]["would_execute"],
+        },
     }
 
 
@@ -269,6 +277,7 @@ def build_sponsor_proof_collector_run(
         "downstream_fixture": downstream_fixture,
         "sponsor_proof_quality": sponsor_proof_quality,
         "live_proof_intelligence": live_proof_intelligence,
+        "blast_radius": trace["blast_radius"],
     }
     if live_tavily:
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
@@ -307,6 +316,7 @@ def build_sponsor_proof_collector_run(
         },
         "collector_steps": steps,
         "sponsor_proof_trace": trace,
+        "blast_radius": trace["blast_radius"],
         "nebius_evidence_synthesis": nebius_evidence_synthesis,
         "sponsor_proof_quality": sponsor_proof_quality,
         "live_proof_intelligence": live_proof_intelligence,

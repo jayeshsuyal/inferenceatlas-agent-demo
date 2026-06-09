@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from agent.blast_radius import build_packet_blast_radius
 from agent.scenarios import SCENARIOS, build_scenario_packet
 
 
@@ -157,19 +158,49 @@ def _nebius_result(scenario_name: str) -> dict[str, Any]:
     return result
 
 
-def _openclaw_blocked_action_events(packet: dict[str, Any]) -> list[dict[str, Any]]:
+def _openclaw_blocked_action_events(packet: dict[str, Any], *, scenario_name: str) -> list[dict[str, Any]]:
     events = []
-    for tool_name, plan in packet["tool_access_plan"].items():
-        for action in plan["blocked_actions"]:
+    blast_radius = build_packet_blast_radius(packet, scenario_name=scenario_name)
+    for tool in blast_radius["tools"]:
+        for action in tool["blocked_actions"]:
             events.append(
                 {
-                    "tool": tool_name,
-                    "blocked_action": action,
-                    "policy_decision": "blocked_before_execution",
+                    "tool": tool["tool"],
+                    "blocked_action": action["action"],
+                    "action_class": action["action_class"],
+                    "risk_level": action["risk_level"],
+                    "policy_decision": action["policy_decision"],
+                    "blocked_reason": action["blocked_reason"],
                     "would_execute": False,
+                    "can_mutate_external_state": False,
                     "human_review_required": True,
                 }
             )
+    return events
+
+
+def _openclaw_attempted_action_timeline(packet: dict[str, Any], *, scenario_name: str) -> list[dict[str, Any]]:
+    blast_radius = build_packet_blast_radius(packet, scenario_name=scenario_name)
+    events = []
+    order = 1
+    for tool in blast_radius["tools"]:
+        for action in tool["blocked_actions"]:
+            events.append(
+                {
+                    "order": order,
+                    "tool": tool["tool"],
+                    "attempted_action": action["action"],
+                    "action_class": action["action_class"],
+                    "risk_level": action["risk_level"],
+                    "packet_check": "ia_packet_decision_lock",
+                    "policy_decision": action["policy_decision"],
+                    "blocked_reason": action["blocked_reason"],
+                    "would_execute": False,
+                    "packet_mutation_allowed": False,
+                    "human_review_required": True,
+                }
+            )
+            order += 1
     return events
 
 
@@ -216,17 +247,28 @@ def _openclaw_result(scenario_name: str) -> dict[str, Any]:
             "would_execute": False,
         },
     ]
-    blocked_events = _openclaw_blocked_action_events(packet)
+    blocked_events = _openclaw_blocked_action_events(packet, scenario_name=scenario_name)
+    attempted_action_timeline = _openclaw_attempted_action_timeline(packet, scenario_name=scenario_name)
+    blast_radius = build_packet_blast_radius(packet, scenario_name=scenario_name)
     result.update(
         {
             "status": "trace_contract_planned",
             "purpose": "Record runtime steps and blocked/allowed outcomes without bypassing safety state.",
             "trace_steps": trace_steps,
             "trace_timeline": _openclaw_trace_timeline(trace_steps),
+            "attempted_action_timeline": attempted_action_timeline,
             "blocked_action_events": blocked_events,
+            "blast_radius": blast_radius,
             "trace_quality_summary": {
                 "checkpoint_count": len(trace_steps),
                 "blocked_event_count": len(blocked_events),
+                "attempted_action_count": len(attempted_action_timeline),
+                "write_like_blocked_count": blast_radius["summary"]["write_like_action_count"],
+                "admin_like_blocked_count": blast_radius["summary"]["admin_like_action_count"],
+                "high_or_critical_action_count": blast_radius["summary"][
+                    "high_or_critical_action_count"
+                ],
+                "all_attempted_actions_blocked": True,
                 "runtime_write_attempted": False,
                 "human_review_boundary_preserved": True,
             },

@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from .adapters import build_adapter_result
+from .blast_radius import build_packet_blast_radius, build_tool_blast_radius
 
 
 COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION = "composio_dry_run_diff.v0"
@@ -59,14 +60,20 @@ def _permission_review_matrix(
     tool_name: str,
     intent: dict[str, str],
     plan: dict[str, Any],
+    blast_radius: dict[str, Any],
     blocked_actions: list[str],
     required_proof: list[str],
 ) -> dict[str, Any]:
+    blast_summary = blast_radius["summary"]
     return {
         "tool": tool_name,
         "toolkit": intent["toolkit"],
         "candidate_action_slug": intent["candidate_action_slug"],
         "risk_level": _risk_level(blocked_actions),
+        "blast_radius_class": blast_radius["blast_radius_class"],
+        "write_like_action_count": blast_summary["write_like_action_count"],
+        "admin_like_action_count": blast_summary["admin_like_action_count"],
+        "all_write_or_admin_blocked": blast_summary["all_write_or_admin_blocked"],
         "requested_scope": plan["requested"],
         "validation_scope": plan["demo_allowance"],
         "read_like_scope": "read" in plan["demo_allowance"].lower()
@@ -84,6 +91,7 @@ def _permission_review_matrix(
 
 def _permission_diff(tool_name: str, plan: dict[str, Any], packet: dict[str, Any]) -> dict[str, Any]:
     intent = _intent_for_tool(tool_name)
+    blast_radius = build_tool_blast_radius(tool_name, plan)
     blocked_actions = list(plan["blocked_actions"])
     required_proof = list(plan["required_proof"])
     return {
@@ -104,10 +112,12 @@ def _permission_diff(tool_name: str, plan: dict[str, Any], packet: dict[str, Any
             "production_permission_grant": False,
             "external_write_enabled": False,
         },
+        "blast_radius": blast_radius,
         "permission_review_matrix": _permission_review_matrix(
             tool_name=tool_name,
             intent=intent,
             plan=plan,
+            blast_radius=blast_radius,
             blocked_actions=blocked_actions,
             required_proof=required_proof,
         ),
@@ -167,6 +177,8 @@ def build_composio_dry_run_diff(
     ]
     blocked_write_count = sum(len(item["blocked_actions"]) for item in diffs)
     required_proof_count = sum(len(item["required_scopes_or_proof"]) for item in diffs)
+    packet_blast_radius = build_packet_blast_radius(packet, scenario_name=scenario_name)
+    blast_summary = packet_blast_radius["summary"]
     risk_order = {"low": 0, "medium": 1, "high": 2}
     highest_risk = max(
         (item["permission_review_matrix"]["risk_level"] for item in diffs),
@@ -193,6 +205,12 @@ def build_composio_dry_run_diff(
             "blocked_write_count": blocked_write_count,
             "required_proof_count": required_proof_count,
             "write_like_action_count": blocked_write_count,
+            "blast_radius_write_like_action_count": blast_summary["write_like_action_count"],
+            "blast_radius_admin_like_action_count": blast_summary["admin_like_action_count"],
+            "blast_radius_high_or_critical_action_count": blast_summary[
+                "high_or_critical_action_count"
+            ],
+            "all_write_or_admin_blocked": blast_summary["all_write_or_admin_blocked"],
             "highest_risk_level": highest_risk,
             "toolkits": [item["toolkit"] for item in diffs],
             "candidate_action_slugs": [item["candidate_action_slug"] for item in diffs],
@@ -201,6 +219,7 @@ def build_composio_dry_run_diff(
             "api_call_made": False,
             "human_review_required": True,
         },
+        "blast_radius": packet_blast_radius,
         "action_plans": diffs,
         "proof_pack": {
             **fallback["proof_pack"],

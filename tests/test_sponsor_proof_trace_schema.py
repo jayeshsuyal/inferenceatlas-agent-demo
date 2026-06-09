@@ -39,6 +39,7 @@ BASELINE_REQUIRED_FIELDS = {
     "decision_lock_after",
     "fallback_used",
     "proof_quality",
+    "blast_radius",
     "generated_at",
     "source_artifacts",
     "safety_boundary",
@@ -99,6 +100,11 @@ def _assert_standard_invariants(trace: dict) -> None:
     assert trace["proof_quality"]["composio"]["api_call_made"] is False
     assert trace["proof_quality"]["openclaw"]["runtime_write_attempted"] is False
     assert trace["proof_quality"]["nebius"]["can_mutate_packet"] is False
+    assert trace["proof_quality"]["blast_radius"]["schema_version"] == "blast_radius.v0"
+    assert trace["proof_quality"]["blast_radius"]["all_write_or_admin_blocked"] is True
+    assert trace["proof_quality"]["blast_radius"]["would_execute"] is False
+    assert trace["blast_radius"]["summary"]["all_blocked_before_execution"] is True
+    assert trace["blast_radius"]["summary"]["can_approve_access"] is False
 
     for field in LOCKED_FALSE_FIELDS:
         assert trace["decision_lock_before"][field] is False
@@ -150,9 +156,13 @@ def test_schema_file_locks_public_trace_contract() -> None:
     assert schema["properties"]["lane"]["enum"] == ["access_review", "spend_review", "both"]
     assert schema["properties"]["sponsor_steps"]["minItems"] == 4
     assert schema["properties"]["proof_quality"]["$ref"] == "#/$defs/proof_quality"
+    assert schema["properties"]["blast_radius"]["$ref"] == "#/$defs/blast_radius"
     assert schema["$defs"]["proof_quality"]["properties"]["decision_authority"]["properties"][
         "sponsors_can_approve_or_write"
     ]["const"] is False
+    assert "blast_radius" in schema["$defs"]["proof_quality"]["required"]
+    assert schema["$defs"]["blast_radius"]["properties"]["schema_version"]["const"] == "blast_radius.v0"
+    assert schema["$defs"]["blast_radius_summary"]["properties"]["would_execute"]["const"] is False
 
     step_schema = schema["$defs"]["sponsor_step"]["properties"]
     assert step_schema["sponsor"]["enum"] == list(SPONSOR_ORDER)

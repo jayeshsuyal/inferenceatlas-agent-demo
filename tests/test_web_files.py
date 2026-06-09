@@ -389,6 +389,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("selectWalkthroughStepById", js)
         self.assertIn("collectSponsorProof", js)
         self.assertIn("/api/sponsor-proof-runs", js)
+        self.assertIn('traceAction.addEventListener("click", () => collectSponsorProof());', js)
+        self.assertIn('traceAction.setAttribute("aria-label", "Collect non-mutating sponsor proof run");', js)
         self.assertIn("composio_dry_run: true", js)
         self.assertIn("const liveTavily = Boolean(runtimeHealth?.tavily);", js)
         self.assertIn("live_tavily: liveTavily", js)

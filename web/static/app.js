@@ -2978,9 +2978,8 @@ function renderSponsorCard(data) {
   traceAction.type = "button";
   traceAction.className = "btn-primary btn-block trace-action";
   traceAction.textContent = "Collect sponsor proof";
-  traceAction.addEventListener("click", () =>
-    selectWalkthroughStepById("sponsor_proof_trace", "Sponsor Proof Trace selected. Decision lock unchanged.")
-  );
+  traceAction.setAttribute("aria-label", "Collect non-mutating sponsor proof run");
+  traceAction.addEventListener("click", () => collectSponsorProof());
   walkthroughSponsorCard.appendChild(traceAction);
 
   const run = data.sponsor_proof_run || walkthroughSponsorRun;
@@ -3172,6 +3171,9 @@ async function collectSponsorProof() {
   }
 
   btnCollectSponsorProof.disabled = true;
+  document.querySelectorAll(".trace-action").forEach((button) => {
+    button.disabled = true;
+  });
   if (!runtimeHealth) {
     try {
       runtimeHealth = await fetch("/api/health").then((r) => r.json());
@@ -3210,6 +3212,9 @@ async function collectSponsorProof() {
     setWalkthroughToast(String(err.message || err), true);
   } finally {
     btnCollectSponsorProof.disabled = !walkthroughPayload?.sponsor_proof_trace;
+    document.querySelectorAll(".trace-action").forEach((button) => {
+      button.disabled = !walkthroughPayload?.sponsor_proof_trace;
+    });
   }
 }
 

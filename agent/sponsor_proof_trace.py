@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from .adapters import build_adapter_result
+from .blast_radius import build_packet_blast_radius
 from .composio_dry_run_diff import build_composio_dry_run_diff
 from .nebius_reviewer_narration import ClientFactory as NebiusClientFactory
 from .nebius_reviewer_narration import build_nebius_reviewer_narration
@@ -224,6 +225,7 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
         if adapter.get("dry_run_requested"):
             output["permission_diffs"] = adapter["permission_diffs"]
             output["permission_diff_summary"] = adapter["permission_diff_summary"]
+            output["blast_radius"] = adapter["blast_radius"]
         return (
             {"tool_access_plan": packet["tool_access_plan"]},
             output,
@@ -234,7 +236,9 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
             {
                 "trace_steps": adapter["trace_steps"],
                 "trace_timeline": adapter.get("trace_timeline", []),
+                "attempted_action_timeline": adapter.get("attempted_action_timeline", []),
                 "blocked_action_events": adapter.get("blocked_action_events", []),
+                "blast_radius": adapter.get("blast_radius", {}),
                 "trace_quality_summary": adapter.get("trace_quality_summary", {}),
             },
         )
@@ -322,6 +326,15 @@ def _composio_quality(adapter: dict[str, Any]) -> dict[str, Any]:
             "blocked_write_count": summary["blocked_write_count"],
             "required_proof_count": summary["required_proof_count"],
             "write_like_action_count": summary.get("write_like_action_count", summary["blocked_write_count"]),
+            "blast_radius_write_like_action_count": summary.get(
+                "blast_radius_write_like_action_count",
+                summary.get("write_like_action_count", summary["blocked_write_count"]),
+            ),
+            "blast_radius_admin_like_action_count": summary.get(
+                "blast_radius_admin_like_action_count",
+                0,
+            ),
+            "all_write_or_admin_blocked": summary.get("all_write_or_admin_blocked", True),
             "highest_risk_level": summary.get("highest_risk_level", "high" if summary["blocked_write_count"] else "low"),
             "dry_run_only": summary["dry_run_only"],
             "api_call_made": summary["api_call_made"],
@@ -477,6 +490,12 @@ def build_sponsor_proof_trace(
     spend_block = _spend_evidence(spend_packet) if lane in {"spend_review", "both"} else None
     fallback_used = {step.sponsor: step.fallback_used for step in steps}
     proof_quality = _sponsor_proof_quality(adapters)
+    blast_radius = build_packet_blast_radius(packet, scenario_name=scenario_name)
+    proof_quality["blast_radius"] = {
+        **blast_radius["summary"],
+        "tool_count": blast_radius["tool_count"],
+        "schema_version": blast_radius["schema_version"],
+    }
     live_proof = {}
     tavily_adapter = adapters["tavily"]
     if tavily_adapter.get("live_requested"):
@@ -538,6 +557,8 @@ def build_sponsor_proof_trace(
             "fallback_used": composio_adapter["fallback_used"],
             "fallback_reason": composio_adapter["fallback_reason"],
             "permission_diff_summary": composio_adapter["permission_diff_summary"],
+            "blast_radius_summary": composio_adapter["blast_radius"]["summary"],
+            "blast_radius": composio_adapter["blast_radius"],
             "permission_diffs": composio_adapter["permission_diffs"],
             "docs_reference": composio_adapter["docs_reference"],
             "sdk_docs_reference": composio_adapter["sdk_docs_reference"],
@@ -561,6 +582,7 @@ def build_sponsor_proof_trace(
         "decision_lock_after": asdict(lock),
         "fallback_used": fallback_used,
         "proof_quality": proof_quality,
+        "blast_radius": blast_radius,
         "generated_at": SPONSOR_PROOF_TRACE_GENERATED_AT,
         "source_request": _relative(request_path),
     }
@@ -589,6 +611,7 @@ def build_sponsor_proof_trace(
         trace["live_proof"] = live_proof
     if dry_run_proof:
         trace["dry_run_proof"] = dry_run_proof
+    trace["blast_radius"] = blast_radius
     trace["source_artifacts"] = {
         "request": _relative(request_path),
         "packet": f"examples/generated/{request_path.stem}.packet.json",
@@ -680,11 +703,32 @@ def render_sponsor_proof_trace_markdown(trace: dict[str, Any]) -> str:
             f"- Composio highest risk: {quality['composio']['highest_risk_level']}",
             f"- OpenClaw checkpoints: {quality['openclaw']['checkpoint_count']}",
             f"- OpenClaw blocked events: {quality['openclaw']['blocked_event_count']}",
+            f"- OpenClaw attempted actions: {quality['openclaw'].get('attempted_action_count', quality['openclaw']['blocked_event_count'])}",
             f"- Nebius locked fields: {quality['nebius']['locked_field_count']}",
+            f"- blast radius max risk: {quality['blast_radius']['max_risk_level']}",
+            f"- blast radius write/admin blocked: {quality['blast_radius']['all_write_or_admin_blocked']}",
             f"- packet remains authority: {quality['decision_authority']['packet_remains_authority']}",
             f"- sponsors can approve or write: {quality['decision_authority']['sponsors_can_approve_or_write']}",
         ]
     )
+
+    blast_radius = trace.get("blast_radius")
+    if blast_radius:
+        summary = blast_radius["summary"]
+        lines.extend(
+            [
+                "",
+                "## Blast Radius",
+                "",
+                f"- tools reviewed: {blast_radius['tool_count']}",
+                f"- blocked actions: {summary['blocked_action_count']}",
+                f"- write-like actions: {summary['write_like_action_count']}",
+                f"- admin-like actions: {summary['admin_like_action_count']}",
+                f"- max risk level: {summary['max_risk_level']}",
+                f"- all write/admin blocked: {summary['all_write_or_admin_blocked']}",
+                f"- would execute: {summary['would_execute']}",
+            ]
+        )
 
     live_proof = trace.get("live_proof", {})
     if live_proof:

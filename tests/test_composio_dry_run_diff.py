@@ -65,6 +65,10 @@ def test_composio_dry_run_diff_builds_permission_envelope_without_execution() ->
         "blocked_write_count": 9,
         "required_proof_count": 9,
         "write_like_action_count": 9,
+        "blast_radius_write_like_action_count": 5,
+        "blast_radius_admin_like_action_count": 4,
+        "blast_radius_high_or_critical_action_count": 9,
+        "all_write_or_admin_blocked": True,
         "highest_risk_level": "high",
         "toolkits": ["github", "slack", "jira"],
         "candidate_action_slugs": [
@@ -77,6 +81,16 @@ def test_composio_dry_run_diff_builds_permission_envelope_without_execution() ->
         "api_call_made": False,
         "human_review_required": True,
     }
+    blast_radius = payload["blast_radius"]
+    assert blast_radius["schema_version"] == "blast_radius.v0"
+    assert blast_radius["packet_id"] == packet["packet_id"]
+    assert blast_radius["tool_count"] == 3
+    assert blast_radius["summary"]["max_risk_level"] == "critical"
+    assert blast_radius["summary"]["write_like_action_count"] == 5
+    assert blast_radius["summary"]["admin_like_action_count"] == 4
+    assert blast_radius["summary"]["all_write_or_admin_blocked"] is True
+    assert blast_radius["summary"]["would_execute"] is False
+    assert blast_radius["summary"]["can_approve_access"] is False
     for diff in diffs:
         assert diff["decision"] == "dry_run_only"
         assert diff["api_call_made"] is False
@@ -87,10 +101,14 @@ def test_composio_dry_run_diff_builds_permission_envelope_without_execution() ->
         assert diff["human_review_required"] is True
         assert diff["permission_delta"]["production_permission_grant"] is False
         assert diff["permission_delta"]["external_write_enabled"] is False
+        assert diff["blast_radius"]["summary"]["all_blocked_before_execution"] is True
+        assert diff["blast_radius"]["summary"]["would_execute"] is False
         matrix = diff["permission_review_matrix"]
         assert matrix["tool"] == diff["tool"]
         assert matrix["risk_level"] == "high"
-        assert matrix["write_like_action_count"] == len(diff["blocked_actions"])
+        assert matrix["all_write_or_admin_blocked"] is True
+        assert matrix["blocked_action_count"] == len(diff["blocked_actions"])
+        assert matrix["write_like_action_count"] <= len(diff["blocked_actions"])
         assert matrix["required_proof_count"] == len(diff["required_scopes_or_proof"])
         assert matrix["dry_run_only"] is True
         assert matrix["api_call_made"] is False

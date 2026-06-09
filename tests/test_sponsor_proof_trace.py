@@ -66,6 +66,13 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertEqual(trace["proof_quality"]["tavily"]["query_count"], 5)
         self.assertEqual(trace["proof_quality"]["composio"]["blocked_write_count"], 9)
         self.assertEqual(trace["proof_quality"]["openclaw"]["blocked_event_count"], 9)
+        self.assertEqual(trace["proof_quality"]["openclaw"]["attempted_action_count"], 9)
+        self.assertEqual(trace["proof_quality"]["blast_radius"]["write_like_action_count"], 5)
+        self.assertEqual(trace["proof_quality"]["blast_radius"]["admin_like_action_count"], 4)
+        self.assertEqual(trace["proof_quality"]["blast_radius"]["max_risk_level"], "critical")
+        self.assertTrue(trace["proof_quality"]["blast_radius"]["all_write_or_admin_blocked"])
+        self.assertEqual(trace["blast_radius"]["summary"]["blocked_action_count"], 9)
+        self.assertFalse(trace["blast_radius"]["summary"]["would_execute"])
         self.assertEqual(trace["proof_quality"]["nebius"]["locked_field_count"], 4)
         self.assertTrue(trace["proof_quality"]["decision_authority"]["packet_remains_authority"])
         self.assertFalse(trace["proof_quality"]["decision_authority"]["sponsors_can_approve_or_write"])
@@ -150,6 +157,12 @@ class SponsorProofTraceTests(unittest.TestCase):
             "## Sponsor Proof Quality",
             "Composio blocked writes: 9",
             "OpenClaw blocked events: 9",
+            "OpenClaw attempted actions: 9",
+            "## Blast Radius",
+            "write-like actions: 5",
+            "admin-like actions: 4",
+            "max risk level: critical",
+            "all write/admin blocked: True",
             "packet remains authority: True",
             "## Access Evidence",
             "## Spend Evidence",
@@ -261,6 +274,9 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertEqual(composio_proof["permission_diff_summary"]["blocked_write_count"], 9)
         self.assertEqual(composio_proof["permission_diff_summary"]["required_proof_count"], 9)
         self.assertEqual(composio_proof["permission_diff_summary"]["highest_risk_level"], "high")
+        self.assertEqual(composio_proof["blast_radius_summary"]["write_like_action_count"], 5)
+        self.assertEqual(composio_proof["blast_radius_summary"]["admin_like_action_count"], 4)
+        self.assertTrue(composio_proof["blast_radius_summary"]["all_write_or_admin_blocked"])
         self.assertEqual(trace["proof_quality"]["composio"]["highest_risk_level"], "high")
         self.assertFalse(trace["proof_quality"]["composio"]["api_call_made"])
         self.assertTrue(all(item["api_call_made"] is False for item in composio_proof["permission_diffs"]))

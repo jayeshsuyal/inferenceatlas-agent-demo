@@ -34,6 +34,239 @@
       "Procurement/Finance"
     ]
   },
+  "blast_radius": {
+    "downstream_use": {
+      "composio": "permission diff explains blocked tool actions before execute",
+      "openclaw": "runtime trace records attempted vs blocked movement"
+    },
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "scenario_name": "support_triage_agent",
+    "schema_version": "blast_radius.v0",
+    "summary": {
+      "admin_like_action_count": 4,
+      "all_blocked_before_execution": true,
+      "all_write_or_admin_blocked": true,
+      "blocked_action_count": 9,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "high_or_critical_action_count": 9,
+      "human_review_required": true,
+      "max_risk_level": "critical",
+      "would_execute": false,
+      "write_like_action_count": 5
+    },
+    "tool_count": 3,
+    "tools": [
+      {
+        "blast_radius_class": "admin_or_workspace_scope",
+        "blocked_actions": [
+          {
+            "action": "issue edits",
+            "action_class": "write_like",
+            "blocked_reason": "Write-like scope cannot move while external writes and permission grants remain blocked.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "high",
+            "would_execute": false
+          },
+          {
+            "action": "repo configuration changes",
+            "action_class": "admin_like",
+            "blocked_reason": "Admin or workspace-wide scope cannot move without named owner approval and rollback/off-switch proof.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "critical",
+            "would_execute": false
+          },
+          {
+            "action": "workflow dispatch",
+            "action_class": "admin_like",
+            "blocked_reason": "Admin or workspace-wide scope cannot move without named owner approval and rollback/off-switch proof.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "critical",
+            "would_execute": false
+          }
+        ],
+        "requested_scope": "read issues for bug reports and incident context",
+        "required_proof": [
+          "repository allowlist",
+          "permission level",
+          "audit log owner"
+        ],
+        "safety_boundary": {
+          "approves_access": false,
+          "executes_external_writes": false,
+          "grants_permissions": false,
+          "mutates_external_state": false,
+          "read_only": true,
+          "requires_human_review": true
+        },
+        "schema_version": "blast_radius.v0",
+        "summary": {
+          "admin_like_action_count": 2,
+          "all_blocked_before_execution": true,
+          "all_write_or_admin_blocked": true,
+          "blocked_action_count": 3,
+          "high_or_critical_action_count": 3,
+          "human_review_required": true,
+          "sensitive_read_action_count": 0,
+          "would_execute": false,
+          "write_like_action_count": 1
+        },
+        "tool": "github",
+        "validation_scope": "dry-run read-scope plan only"
+      },
+      {
+        "blast_radius_class": "admin_or_workspace_scope",
+        "blocked_actions": [
+          {
+            "action": "posting messages",
+            "action_class": "write_like",
+            "blocked_reason": "Write-like scope cannot move while external writes and permission grants remain blocked.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "high",
+            "would_execute": false
+          },
+          {
+            "action": "DM access",
+            "action_class": "admin_like",
+            "blocked_reason": "Admin or workspace-wide scope cannot move without named owner approval and rollback/off-switch proof.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "critical",
+            "would_execute": false
+          },
+          {
+            "action": "workspace-wide history",
+            "action_class": "admin_like",
+            "blocked_reason": "Admin or workspace-wide scope cannot move without named owner approval and rollback/off-switch proof.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "critical",
+            "would_execute": false
+          }
+        ],
+        "requested_scope": "summarize incident channels",
+        "required_proof": [
+          "channel allowlist",
+          "retention terms",
+          "customer-data boundary"
+        ],
+        "safety_boundary": {
+          "approves_access": false,
+          "executes_external_writes": false,
+          "grants_permissions": false,
+          "mutates_external_state": false,
+          "read_only": true,
+          "requires_human_review": true
+        },
+        "schema_version": "blast_radius.v0",
+        "summary": {
+          "admin_like_action_count": 2,
+          "all_blocked_before_execution": true,
+          "all_write_or_admin_blocked": true,
+          "blocked_action_count": 3,
+          "high_or_critical_action_count": 3,
+          "human_review_required": true,
+          "sensitive_read_action_count": 0,
+          "would_execute": false,
+          "write_like_action_count": 1
+        },
+        "tool": "slack",
+        "validation_scope": "dry-run named-channel summary plan only"
+      },
+      {
+        "blast_radius_class": "write_scope",
+        "blocked_actions": [
+          {
+            "action": "ticket creation",
+            "action_class": "write_like",
+            "blocked_reason": "Write-like scope cannot move while external writes and permission grants remain blocked.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "high",
+            "would_execute": false
+          },
+          {
+            "action": "status changes",
+            "action_class": "write_like",
+            "blocked_reason": "Write-like scope cannot move while external writes and permission grants remain blocked.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "high",
+            "would_execute": false
+          },
+          {
+            "action": "assignment changes",
+            "action_class": "write_like",
+            "blocked_reason": "Write-like scope cannot move while external writes and permission grants remain blocked.",
+            "can_approve_access": false,
+            "can_grant_permissions": false,
+            "can_mutate_external_state": false,
+            "human_review_required": true,
+            "policy_decision": "blocked_before_execution",
+            "risk_level": "high",
+            "would_execute": false
+          }
+        ],
+        "requested_scope": "create draft tickets",
+        "required_proof": [
+          "project scope",
+          "draft-only mode",
+          "rollback/off-switch plan"
+        ],
+        "safety_boundary": {
+          "approves_access": false,
+          "executes_external_writes": false,
+          "grants_permissions": false,
+          "mutates_external_state": false,
+          "read_only": true,
+          "requires_human_review": true
+        },
+        "schema_version": "blast_radius.v0",
+        "summary": {
+          "admin_like_action_count": 0,
+          "all_blocked_before_execution": true,
+          "all_write_or_admin_blocked": true,
+          "blocked_action_count": 3,
+          "high_or_critical_action_count": 3,
+          "human_review_required": true,
+          "sensitive_read_action_count": 0,
+          "would_execute": false,
+          "write_like_action_count": 3
+        },
+        "tool": "jira",
+        "validation_scope": "draft ticket proposal only; no production creation"
+      }
+    ]
+  },
   "blocked_actions": [
     "github: issue edits",
     "github: repo configuration changes",
@@ -45,7 +278,7 @@
     "jira: status changes",
     "jira: assignment changes"
   ],
-  "content_hash": "sha256:ce1b9fbd508078cd40aff387a9c18b81e8fc9ad04b6c780b3cd6be94ec3eb735",
+  "content_hash": "sha256:6e7de66f3aa9a1e7c0ac2e0637acfc42110a1d4bb31376415c44066c302572a6",
   "decision_lock_after": {
     "approval_granted": false,
     "can_sponsor_change_decision": false,
@@ -84,6 +317,22 @@
     "private_source_exposed": false
   },
   "proof_quality": {
+    "blast_radius": {
+      "admin_like_action_count": 4,
+      "all_blocked_before_execution": true,
+      "all_write_or_admin_blocked": true,
+      "blocked_action_count": 9,
+      "can_approve_access": false,
+      "can_grant_permissions": false,
+      "can_mutate_external_state": false,
+      "high_or_critical_action_count": 9,
+      "human_review_required": true,
+      "max_risk_level": "critical",
+      "schema_version": "blast_radius.v0",
+      "tool_count": 3,
+      "would_execute": false,
+      "write_like_action_count": 5
+    },
     "composio": {
       "api_call_made": false,
       "blocked_write_count": 9,
@@ -108,10 +357,15 @@
       "narration_status": "deterministic_narration_fallback"
     },
     "openclaw": {
+      "admin_like_blocked_count": 4,
+      "all_attempted_actions_blocked": true,
+      "attempted_action_count": 9,
       "blocked_event_count": 9,
       "checkpoint_count": 3,
+      "high_or_critical_action_count": 9,
       "human_review_boundary_preserved": true,
-      "runtime_write_attempted": false
+      "runtime_write_attempted": false,
+      "write_like_blocked_count": 5
     },
     "tavily": {
       "can_reduce_proof_debt": false,
@@ -277,7 +531,7 @@
       "fallback_used": true,
       "human_review_required": true,
       "input_hash": "sha256:1d194d41a9e507b2543f99d2a4f3d940e1b5802430fd294563d313142ed3a2ef",
-      "output_hash": "sha256:0eff10c102e1037aa308b47564b7a5ed375a1d7240038a106a71556cfbfe787d",
+      "output_hash": "sha256:40a14b9bb8de4f3dddffed858f6483a44b4d3558511c50d00196b3d8f1b25dc6",
       "output_summary": "3 runtime checkpoints traced; 9 blocked action events preserved.",
       "redacted_fields": [
         "api_key",
@@ -330,5 +584,5 @@
       "would_execute": false
     }
   ],
-  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-ce1b9fbd508078cd-public-v0"
+  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-6e7de66f3aa9a1e7-public-v0"
 }

@@ -6,10 +6,10 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 
 ## Trace Identity
 
-- trace_id: `ia-sponsor-proof-trace-support_triage_trial-ce1b9fbd508078cd-public-v0`
+- trace_id: `ia-sponsor-proof-trace-support_triage_trial-6e7de66f3aa9a1e7-public-v0`
 - packet_id: `ia-agent-access-support-triage-v0`
 - revision_id: `rev_965302783cee8688`
-- content_hash: `sha256:ce1b9fbd508078cd40aff387a9c18b81e8fc9ad04b6c780b3cd6be94ec3eb735`
+- content_hash: `sha256:6e7de66f3aa9a1e7c0ac2e0637acfc42110a1d4bb31376415c44066c302572a6`
 - scenario: `support_triage_agent`
 - lane: `both`
 
@@ -50,9 +50,22 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 - Composio highest risk: high
 - OpenClaw checkpoints: 3
 - OpenClaw blocked events: 9
+- OpenClaw attempted actions: 9
 - Nebius locked fields: 4
+- blast radius max risk: critical
+- blast radius write/admin blocked: True
 - packet remains authority: True
 - sponsors can approve or write: False
+
+## Blast Radius
+
+- tools reviewed: 3
+- blocked actions: 9
+- write-like actions: 5
+- admin-like actions: 4
+- max risk level: critical
+- all write/admin blocked: True
+- would execute: False
 
 ## Access Evidence
 

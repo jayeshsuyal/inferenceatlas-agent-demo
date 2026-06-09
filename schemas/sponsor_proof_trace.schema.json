@@ -20,6 +20,7 @@
     "decision_lock_after",
     "fallback_used",
     "proof_quality",
+    "blast_radius",
     "generated_at",
     "source_artifacts",
     "safety_boundary",
@@ -95,6 +96,9 @@
     },
     "proof_quality": {
       "$ref": "#/$defs/proof_quality"
+    },
+    "blast_radius": {
+      "$ref": "#/$defs/blast_radius"
     },
     "generated_at": {
       "type": "string",
@@ -369,11 +373,17 @@
             "tool_count": { "type": "integer", "minimum": 1 },
             "blocked_write_count": { "type": "integer", "minimum": 0 },
             "required_proof_count": { "type": "integer", "minimum": 0 },
+            "blast_radius_write_like_action_count": { "type": "integer", "minimum": 0 },
+            "blast_radius_admin_like_action_count": { "type": "integer", "minimum": 0 },
+            "blast_radius_high_or_critical_action_count": { "type": "integer", "minimum": 0 },
+            "all_write_or_admin_blocked": { "type": "boolean", "const": true },
             "dry_run_only": { "type": "boolean", "const": true },
             "api_call_made": { "type": "boolean", "const": false },
             "human_review_required": { "type": "boolean", "const": true }
           }
         },
+        "blast_radius_summary": { "$ref": "#/$defs/blast_radius_summary" },
+        "blast_radius": { "$ref": "#/$defs/blast_radius" },
         "permission_diffs": { "type": "array" },
         "docs_reference": { "type": "string", "minLength": 1 },
         "sdk_docs_reference": { "type": "string", "minLength": 1 },
@@ -386,7 +396,7 @@
     },
     "proof_quality": {
       "type": "object",
-      "required": ["tavily", "composio", "openclaw", "nebius", "decision_authority"],
+      "required": ["tavily", "composio", "openclaw", "nebius", "decision_authority", "blast_radius"],
       "properties": {
         "tavily": {
           "type": "object",
@@ -426,6 +436,9 @@
             "blocked_write_count": { "type": "integer", "minimum": 0 },
             "required_proof_count": { "type": "integer", "minimum": 0 },
             "write_like_action_count": { "type": "integer", "minimum": 0 },
+            "blast_radius_write_like_action_count": { "type": "integer", "minimum": 0 },
+            "blast_radius_admin_like_action_count": { "type": "integer", "minimum": 0 },
+            "all_write_or_admin_blocked": { "type": "boolean", "const": true },
             "highest_risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
             "dry_run_only": { "type": "boolean", "const": true },
             "api_call_made": { "type": "boolean", "const": false },
@@ -443,6 +456,11 @@
           "properties": {
             "checkpoint_count": { "type": "integer", "minimum": 0 },
             "blocked_event_count": { "type": "integer", "minimum": 0 },
+            "attempted_action_count": { "type": "integer", "minimum": 0 },
+            "write_like_blocked_count": { "type": "integer", "minimum": 0 },
+            "admin_like_blocked_count": { "type": "integer", "minimum": 0 },
+            "high_or_critical_action_count": { "type": "integer", "minimum": 0 },
+            "all_attempted_actions_blocked": { "type": "boolean", "const": true },
             "runtime_write_attempted": { "type": "boolean", "const": false },
             "human_review_boundary_preserved": { "type": "boolean", "const": true }
           }
@@ -474,7 +492,88 @@
             "sponsors_can_approve_or_write": { "type": "boolean", "const": false },
             "human_review_required": { "type": "boolean", "const": true }
           }
+        },
+        "blast_radius": {
+          "allOf": [
+            { "$ref": "#/$defs/blast_radius_summary" },
+            {
+              "type": "object",
+              "required": ["tool_count", "schema_version"],
+              "properties": {
+                "tool_count": { "type": "integer", "minimum": 0 },
+                "schema_version": { "type": "string", "const": "blast_radius.v0" }
+              }
+            }
+          ]
         }
+      }
+    },
+    "blast_radius_summary": {
+      "type": "object",
+      "required": [
+        "blocked_action_count",
+        "write_like_action_count",
+        "admin_like_action_count",
+        "high_or_critical_action_count",
+        "max_risk_level",
+        "all_blocked_before_execution",
+        "all_write_or_admin_blocked",
+        "would_execute",
+        "human_review_required"
+      ],
+      "properties": {
+        "blocked_action_count": { "type": "integer", "minimum": 0 },
+        "write_like_action_count": { "type": "integer", "minimum": 0 },
+        "admin_like_action_count": { "type": "integer", "minimum": 0 },
+        "high_or_critical_action_count": { "type": "integer", "minimum": 0 },
+        "max_risk_level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "all_blocked_before_execution": { "type": "boolean", "const": true },
+        "all_write_or_admin_blocked": { "type": "boolean", "const": true },
+        "would_execute": { "type": "boolean", "const": false },
+        "can_approve_access": { "type": "boolean", "const": false },
+        "can_grant_permissions": { "type": "boolean", "const": false },
+        "can_mutate_external_state": { "type": "boolean", "const": false },
+        "human_review_required": { "type": "boolean", "const": true }
+      }
+    },
+    "blast_radius": {
+      "type": "object",
+      "required": ["schema_version", "packet_id", "scenario_name", "tool_count", "tools", "summary", "downstream_use"],
+      "properties": {
+        "schema_version": { "type": "string", "const": "blast_radius.v0" },
+        "packet_id": { "type": "string", "minLength": 1 },
+        "scenario_name": { "type": "string", "minLength": 1 },
+        "tool_count": { "type": "integer", "minimum": 0 },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["schema_version", "tool", "blocked_actions", "summary", "safety_boundary"],
+            "properties": {
+              "schema_version": { "type": "string", "const": "blast_radius.v0" },
+              "tool": { "type": "string", "minLength": 1 },
+              "blocked_actions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["action", "action_class", "risk_level", "policy_decision", "would_execute", "human_review_required"],
+                  "properties": {
+                    "action": { "type": "string", "minLength": 1 },
+                    "action_class": { "type": "string", "enum": ["admin_like", "write_like", "sensitive_read", "read_like"] },
+                    "risk_level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+                    "policy_decision": { "type": "string", "const": "blocked_before_execution" },
+                    "would_execute": { "type": "boolean", "const": false },
+                    "human_review_required": { "type": "boolean", "const": true }
+                  }
+                }
+              },
+              "summary": { "$ref": "#/$defs/blast_radius_summary" },
+              "safety_boundary": { "type": "object" }
+            }
+          }
+        },
+        "summary": { "$ref": "#/$defs/blast_radius_summary" },
+        "downstream_use": { "type": "object" }
       }
     },
     "safety_boundary": {

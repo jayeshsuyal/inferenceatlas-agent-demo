@@ -74,6 +74,7 @@ command_json_check /tmp/ia_subscribers.json "$PYTHON_BIN" -m agent.subscribers -
 command_json_check /tmp/ia_downstream_gate.all.json "$PYTHON_BIN" -m agent.downstream_gate --all --json
 command_json_check /tmp/ia_packet_advisor.portkey_spend.json "$PYTHON_BIN" -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json
 command_json_check /tmp/ia_portkey_adapter.dry_run.json "$PYTHON_BIN" -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json
+command_json_check /tmp/ia_portkey_guardrail_proof_loop.json "$PYTHON_BIN" -m agent.portkey_guardrail_proof_loop --fixture ai_spend_budget_overrun --requested-mode model_request --json
 command_json_check /tmp/ia_outcome_memo.no_write.json "$PYTHON_BIN" -m agent.outcome_memo --no-write --json
 command_json_check /tmp/ia_gate.all.json "$PYTHON_BIN" -m agent.gate --all --json
 command_json_check /tmp/ia_adapters.all.json "$PYTHON_BIN" -m agent.adapters --all --json

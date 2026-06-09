@@ -59,6 +59,16 @@ This sends a Portkey-shaped `beforeRequestHook` payload to IA, verifies the pack
 
 For a real Portkey account demo, configure the Portkey BYO Guardrails webhook URL to point at the public IA URL ending in `/api/portkey/guardrail`, set the webhook header to `Authorization: Bearer <same token>`, and pass metadata such as `{"ia_fixture":"ai_spend_budget_overrun","ia_requested_mode":"model_request"}`. Portkey documents webhook metadata and the required boolean `verdict` response here: `https://portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails`.
 
+## Portkey Guardrail Proof Loop
+
+```bash
+python3 -m agent.portkey_guardrail_proof_loop \
+  --fixture ai_spend_budget_overrun \
+  --requested-mode model_request
+```
+
+This renders the read-only proof loop a reviewer expects after a Portkey guardrail call: webhook shape, packet reference, verdict, latency, policy preview, auth boundary, and safety invariants. It writes nothing and makes no Portkey API calls.
+
 ## Optional Max Rehearsal Stress
 
 ```bash
@@ -91,6 +101,7 @@ python3 -m agent.subscribers --json
 python3 -m agent.downstream_gate --all
 python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json
 python3 -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json
+python3 -m agent.portkey_guardrail_proof_loop --fixture ai_spend_budget_overrun --requested-mode model_request --json
 python3 -m agent.outcome_memo
 python3 -m agent.contract --all
 python3 -m agent.gate --all

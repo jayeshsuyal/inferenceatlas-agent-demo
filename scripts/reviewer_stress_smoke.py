@@ -282,11 +282,22 @@ def _check_sponsor_variants(base_url: str, timeout: float) -> None:
 
     ledger = _json_get(base_url, "/api/sponsor-proof-run-ledger", timeout=timeout)["ledger"]
     _require(ledger["read_only"] is True, "sponsor run ledger must be read-only")
-    _require(ledger["safety_summary"]["no_live_calls"] is True, "ledger live-call safety summary drifted")
     _require(ledger["safety_summary"]["no_external_writes"] is True, "ledger write safety summary drifted")
+    _require(
+        ledger["safety_summary"]["all_decision_locks_unchanged"] is True,
+        "ledger decision-lock summary drifted",
+    )
+    created_run_ids = {composio_run["run_id"], tavily_run["run_id"]}
+    created_records = [item for item in ledger["runs"] if item["run_id"] in created_run_ids]
+    _require(len(created_records) == 2, "stress-created sponsor runs missing from ledger")
+    _require(
+        all(item["safety_lock"]["live_calls_made"] is False for item in created_records),
+        "stress-created no-key runs must not record live calls",
+    )
     for run in (composio_payload, tavily_payload):
         record = run["ledger_record"]
         _require(record["safety_lock"]["read_only"] is True, "ledger record must stay read-only")
+        _require(record["safety_lock"]["live_calls_made"] is False, "ledger record live-call lock drifted")
         _require(record["safety_lock"]["decision_lock_unchanged"] is True, "ledger record decision lock drifted")
         _require(record["safety_lock"]["executes_external_writes"] is False, "ledger record write lock drifted")
 

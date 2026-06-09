@@ -144,6 +144,8 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("composio_dry_run", script)
         self.assertIn("live_tavily", script)
         self.assertIn("tavily_api_key_missing", script)
+        self.assertIn("created_records", script)
+        self.assertIn("stress-created no-key runs must not record live calls", script)
         self.assertIn("Reviewer stress passed", script)
 
         result = subprocess.run(

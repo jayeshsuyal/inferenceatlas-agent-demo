@@ -45,6 +45,23 @@ python3 scripts/keyed_sponsor_rehearsal.py --base-url http://127.0.0.1:8080 --js
 
 This requires local sponsor keys. It verifies Nebius returns live read-only reviewer narration, Tavily returns live evidence, Composio remains dry-run/no-execute, Portkey remains dry-run/no-mutation, the IA Packet decision lock stays unchanged, and the local run ledger records the proof run. It prints status and counts only, never secret values.
 
+## Optional Max Rehearsal Stress
+
+```bash
+IA_SPONSOR_PROOF_RUN_LEDGER_DIR="$(mktemp -d)" \
+LLM_PROVIDER=nebius COMPOSIO_DRY_RUN=1 \
+uvicorn web.app:app --host 127.0.0.1 --port 8110
+
+python3 scripts/max_rehearsal_stress.py \
+  --base-url http://127.0.0.1:8110 \
+  --keyed-runs 20 \
+  --concurrency 3 \
+  --json \
+  --output-doc docs/internal/STRESS_TEST_RESULTS_2026_06_09.md
+```
+
+This is the local-only pre-recording stress gate. It repeats keyed live-read sponsor rehearsals, mixes fallback runs, pressures packet/chat/Portkey/ledger APIs, checks adversarial fail-closed inputs, and verifies four zero counters: no writes, no approvals, no packet mutations, and no secret-shaped output.
+
 ## Full Public Python Commands
 
 ```bash

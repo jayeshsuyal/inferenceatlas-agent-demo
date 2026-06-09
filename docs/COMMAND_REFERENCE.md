@@ -45,6 +45,20 @@ python3 scripts/keyed_sponsor_rehearsal.py --base-url http://127.0.0.1:8080 --js
 
 This requires local sponsor keys. It verifies Nebius returns live read-only reviewer narration, Tavily returns live evidence, Composio remains dry-run/no-execute, Portkey remains dry-run/no-mutation, the IA Packet decision lock stays unchanged, and the local run ledger records the proof run. It prints status and counts only, never secret values.
 
+## Optional Portkey BYO Guardrail Probe
+
+```bash
+PORTKEY_GUARDRAIL_TOKEN="local-demo-token" python3 -m web
+PORTKEY_GUARDRAIL_TOKEN="local-demo-token" \
+  python3 scripts/portkey_guardrail_probe.py \
+  --base-url http://127.0.0.1:8080 \
+  --json
+```
+
+This sends a Portkey-shaped `beforeRequestHook` payload to IA, verifies the packet-backed boolean `verdict`, checks the read-only safety boundary, and confirms the local guardrail event was recorded. It does not call Portkey APIs, push policies, transform requests, execute writes, or print the shared token.
+
+For a real Portkey account demo, configure the Portkey BYO Guardrails webhook URL to point at the public IA URL ending in `/api/portkey/guardrail`, set the webhook header to `Authorization: Bearer <same token>`, and pass metadata such as `{"ia_fixture":"ai_spend_budget_overrun","ia_requested_mode":"model_request"}`. Portkey documents webhook metadata and the required boolean `verdict` response here: `https://portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails`.
+
 ## Optional Max Rehearsal Stress
 
 ```bash

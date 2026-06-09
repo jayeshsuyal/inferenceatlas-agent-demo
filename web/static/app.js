@@ -119,8 +119,10 @@ const SKILL_HINT_BY_ID = {
 
 const EMPTY_PROOF_TILES = [
   ["1 · Request", "Open one registered AI movement request."],
-  ["2 · Packet", "Inspect verdict, proof debt, owners, and hash."],
-  ["3 · Export", "Copy the review brief or export Portkey gate JSON."],
+  ["2 · IA Packet", "Inspect verdict, proof debt, owners, and hash."],
+  ["3 · Sponsor Proof", "Collect proof while the decision lock stays unchanged."],
+  ["4 · Portkey Proof Loop", "Show the downstream verdict, packet reference, and no-mutation state."],
+  ["5 · Export", "Copy the review brief or export the gate artifact."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -161,6 +163,7 @@ let workbenchRegistry = null;
 let workbenchResult = null;
 let packetDetail = null;
 let packetPortkeyPreview = null;
+let packetPortkeyProofLoop = null;
 let packetInlineCoachBusy = false;
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
@@ -181,7 +184,7 @@ const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
 const FIRST_RUN_HEADING =
   "Run IA Packet Review";
 const FIRST_RUN_BODY =
-  "Open one registered AI movement request. IA shows the packet, proof trace, team lenses, and exportable gate without keys or writes.";
+  "Open one registered AI movement request. IA shows the packet, sponsor proof, Portkey proof loop, and exportable review artifact without writes.";
 const FIRST_RUN_COACH_STATUS =
   "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.";
 
@@ -2318,6 +2321,10 @@ function packetPortkeyPreviewPath(fixtureId) {
   return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey?mode=dry-run`;
 }
 
+function packetPortkeyProofLoopPath(fixtureId, requestedMode = "model_request") {
+  return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey/proof-loop?requested_mode=${encodeURIComponent(requestedMode)}`;
+}
+
 function packetPortkeyExportName(payload) {
   const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
   return `${packetId}.portkey_gate.dry_run.json`;
@@ -2398,28 +2405,37 @@ function renderPacketTeamLenses(teamLenses) {
   return wrap;
 }
 
-function renderPacketPortkeyGateCard(payload = null) {
+function renderPacketPortkeyGateCard(payload = null, proofLoop = null) {
   const card = document.createElement("div");
   card.className = "packet-consumer";
   card.id = "packet-portkey-gate-card";
+  const proofTruth = proofLoop?.packet_truth || {};
+  const proofCall = proofLoop?.portkey_call || {};
+  const proofInvariants = proofLoop?.invariants || {};
 
   if (!payload) {
     card.innerHTML = `
-      <span class="trace-subhead">gateway dry-run</span>
-      <h4>Portkey gate export</h4>
-      <p>Generate the packet-backed guardrail response and usage-limit policy JSON.</p>
-      <p class="safety-anchor">Dry-run only. Portkey API call made: false.</p>
+      <span class="trace-subhead">downstream proof loop</span>
+      <h4>Portkey asks IA before movement</h4>
+      <p>Show the packet-backed webhook verdict, packet reference, latency, and dry-run policy preview.</p>
+      <p class="safety-anchor">Read-only. Portkey API call made: false. Policy mutation: false.</p>
     `;
   } else {
     const guardrail = payload.portkey_guardrail_response || {};
     const policy = payload.usage_policy_plan?.request_body || {};
     const packet = payload.ia_packet_reference || {};
     card.innerHTML = `
-      <span class="trace-subhead">gateway dry-run</span>
-      <h4>Portkey gate export</h4>
-      <p>Guardrail verdict: ${escapeHtml(String(guardrail.verdict))}; usage credit limit: ${escapeHtml(String(policy.credit_limit ?? 0))}.</p>
+      <span class="trace-subhead">downstream proof loop</span>
+      <h4>Portkey asks IA before movement</h4>
+      <p>Webhook verdict: ${escapeHtml(String(proofTruth.verdict ?? guardrail.verdict))}; server latency: ${escapeHtml(String(proofCall.server_elapsed_ms ?? "preview"))}ms; usage credit limit: ${escapeHtml(String(policy.credit_limit ?? 0))}.</p>
       <code class="walkthrough-fact">${escapeHtml(packet.packet_id || "")}</code>
-      <p class="safety-anchor">mode ${escapeHtml(payload.mode || "dry-run")} · API call made: ${escapeHtml(String(payload.api_call_made))}</p>
+      <div class="portkey-proof-metrics">
+        <div><span>Auth required</span><strong>${escapeHtml(String(proofInvariants.auth_required ?? true))}</strong></div>
+        <div><span>API call</span><strong>${escapeHtml(String(proofInvariants.portkey_api_call_made ?? payload.api_call_made))}</strong></div>
+        <div><span>Policy mutation</span><strong>${escapeHtml(String(proofInvariants.portkey_policy_mutation_allowed ?? false))}</strong></div>
+        <div><span>Packet authority</span><strong>${escapeHtml(String(proofInvariants.packet_remains_authority ?? true))}</strong></div>
+      </div>
+      <p class="safety-anchor">Portkey receives a packet-backed verdict. IA does not push policy, mutate Portkey, or trust raw agent intent.</p>
     `;
   }
 
@@ -2427,8 +2443,8 @@ function renderPacketPortkeyGateCard(payload = null) {
   actions.className = "walk-actions";
   const preview = document.createElement("button");
   preview.type = "button";
-  preview.className = "btn-ghost";
-  preview.textContent = payload ? "Refresh Portkey preview" : "Preview Portkey gate";
+  preview.className = payload ? "btn-ghost" : "btn-primary";
+  preview.textContent = payload ? "Refresh proof loop" : "Show Portkey proof loop";
   preview.addEventListener("click", () => previewPacketPortkeyGate());
   const exportGate = document.createElement("button");
   exportGate.type = "button";
@@ -2443,12 +2459,13 @@ function renderPacketPortkeyGateCard(payload = null) {
 function updatePacketPortkeyGateCard(payload) {
   const existing = document.getElementById("packet-portkey-gate-card");
   if (!existing) return;
-  existing.replaceWith(renderPacketPortkeyGateCard(payload));
+  existing.replaceWith(renderPacketPortkeyGateCard(payload, packetPortkeyProofLoop));
 }
 
 function renderPacketDetail(data) {
   packetDetail = data;
   packetPortkeyPreview = null;
+  packetPortkeyProofLoop = null;
   const fixture = data.fixture || {};
   const decision = data.decision || {};
   const packet = data.packet_reference || {};
@@ -2527,10 +2544,10 @@ function renderPacketDetail(data) {
   packetDownstreamCard.innerHTML = `
     <span class="eyebrow">Downstream trust</span>
     <h3>${escapeHtml(String((data.downstream_consumers || []).length))} consumer patterns read the same packet</h3>
-    <p class="walkthrough-summary">Gateways, CI, spend controls, review queues, and observability read the packet reference. They cannot approve, mutate, or override it.</p>
+    <p class="walkthrough-summary">Gateways, CI, spend controls, review queues, and observability read the packet reference. Portkey can ask IA for a packet-backed verdict before model or spend movement.</p>
   `;
   packetDownstreamCard.appendChild(renderPacketConsumers(data.downstream_consumers || []));
-  packetDownstreamCard.appendChild(renderPacketPortkeyGateCard());
+  packetDownstreamCard.appendChild(renderPacketPortkeyGateCard(null, null));
 
   packetTeamCard.innerHTML = `
     <span class="eyebrow">Cross-functional review</span>
@@ -2594,7 +2611,12 @@ async function loadPacketDetail() {
     unlockPacketCoach();
     setPacketInlineCoachStatus("Ask a packet-backed follow-up. IA stays read-only and cannot approve or write.");
     window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
-    setPacketToast("IA Packet loaded.");
+    try {
+      await loadPacketPortkeyPreview();
+      setPacketToast("IA Packet loaded. Portkey proof loop ready.");
+    } catch (_) {
+      setPacketToast("IA Packet loaded. Portkey proof loop can be previewed next.");
+    }
   } catch (err) {
     setPacketToast(String(err.message || err), true);
   } finally {
@@ -2692,20 +2714,26 @@ async function loadPacketPortkeyPreview() {
   if (!fixtureId) {
     throw new Error("Load an IA Packet first.");
   }
-  const res = await fetch(packetPortkeyPreviewPath(fixtureId));
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || "Portkey gate preview failed");
-  const payload = data.portkey || data;
+  const [previewRes, proofRes] = await Promise.all([
+    fetch(packetPortkeyPreviewPath(fixtureId)),
+    fetch(packetPortkeyProofLoopPath(fixtureId)),
+  ]);
+  const previewData = await previewRes.json().catch(() => ({}));
+  const proofData = await proofRes.json().catch(() => ({}));
+  if (!previewRes.ok) throw new Error(previewData.detail || "Portkey gate preview failed");
+  if (!proofRes.ok) throw new Error(proofData.detail || "Portkey proof loop failed");
+  const payload = previewData.portkey || previewData;
+  packetPortkeyProofLoop = proofData.portkey_guardrail_proof_loop || proofData;
   packetPortkeyPreview = payload;
-  updatePacketPortkeyGateCard(payload);
+  updatePacketPortkeyGateCard(payload, packetPortkeyProofLoop);
   return payload;
 }
 
 async function previewPacketPortkeyGate() {
   try {
-    setPacketToast("Loading Portkey dry-run gate...");
+    setPacketToast("Loading Portkey proof loop...");
     await loadPacketPortkeyPreview();
-    setPacketToast("Portkey dry-run gate ready. No API call made.");
+    setPacketToast("Portkey proof loop ready. No API call made.");
   } catch (err) {
     setPacketToast(String(err.message || err), true);
   }

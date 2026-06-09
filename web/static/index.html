@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=22" />
+    <link rel="stylesheet" href="/static/style.css?v=23" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -49,7 +49,9 @@
             <ol class="steps">
               <li><strong>Request:</strong> load one registered AI movement request.</li>
               <li><strong>Packet:</strong> review the verdict, proof debt, owners, and hash.</li>
-              <li><strong>Export:</strong> copy the review brief or Portkey dry-run gate.</li>
+              <li><strong>Sponsor proof:</strong> collect proof without changing the decision lock.</li>
+              <li><strong>Portkey:</strong> show the downstream verdict and no-mutation state.</li>
+              <li><strong>Export:</strong> copy the review brief or gate artifact.</li>
             </ol>
             <a class="btn-primary btn-block first-run-start-link" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Run IA Packet Review</a>
           </div>
@@ -197,7 +199,7 @@
               <div class="bubble">
                 <p class="first-run-eyebrow">Review in 90 seconds</p>
                 <h2>Run IA Packet Review</h2>
-                <p>Open one registered AI movement request. IA shows the packet, proof trace, team lenses, and exportable gate without keys or writes.</p>
+                <p>Open one registered AI movement request. IA shows the packet, sponsor proof, Portkey proof loop, and exportable review artifact without writes.</p>
                 <div class="first-run-actions">
                   <a class="btn-primary first-run-cta" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Run IA Packet Review</a>
                 </div>
@@ -209,12 +211,20 @@
                 <strong>Open one registered AI movement request.</strong>
               </article>
               <article class="proof-tile">
-                <span>2 · Packet</span>
+                <span>2 · IA Packet</span>
                 <strong>Inspect verdict, proof debt, owners, and hash.</strong>
               </article>
               <article class="proof-tile">
-                <span>3 · Export</span>
-                <strong>Copy the review brief or export Portkey gate JSON.</strong>
+                <span>3 · Sponsor Proof</span>
+                <strong>Collect proof while the decision lock stays unchanged.</strong>
+              </article>
+              <article class="proof-tile">
+                <span>4 · Portkey Proof Loop</span>
+                <strong>Show the downstream verdict, packet reference, and no-mutation state.</strong>
+              </article>
+              <article class="proof-tile">
+                <span>5 · Export</span>
+                <strong>Copy the review brief or export the gate artifact.</strong>
               </article>
             </div>
           </div>
@@ -366,7 +376,7 @@
           <section class="packet-review-rail" id="packet-review-rail" aria-label="Review in 60 seconds">
             <div class="packet-review-rail-head">
               <span class="eyebrow">Review in 60 seconds</span>
-              <p>Request -> Packet -> Sponsor proof -> Downstream gate -> Team lenses -> Export</p>
+              <p>Request -> IA Packet -> Sponsor proof -> Portkey proof loop -> Team lenses -> Export</p>
             </div>
             <div class="walkthrough-strip packet-review-steps">
               <button type="button" class="walk-step packet-review-step active" data-packet-target="packet-summary-card" aria-current="step">
@@ -383,7 +393,7 @@
               </button>
               <button type="button" class="walk-step packet-review-step" data-packet-target="packet-downstream-card">
                 <span>4</span>
-                <strong>Downstream gate<em>Portkey dry-run</em></strong>
+                <strong>Portkey proof loop<em>verdict and no mutation</em></strong>
               </button>
               <button type="button" class="walk-step packet-review-step" data-packet-target="packet-team-card">
                 <span>5</span>
@@ -465,6 +475,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=41"></script>
+    <script src="/static/app.js?v=42"></script>
   </body>
 </html>

@@ -3061,13 +3061,13 @@ body[data-active-tab="start"] #btn-reset {
 .empty-proof-board {
   width: min(100%, 920px);
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.55rem;
 }
 
 .proof-tile {
-  min-height: 6rem;
-  padding: 0.85rem;
+  min-height: 6.2rem;
+  padding: 0.72rem;
   border: 1px solid rgba(42, 53, 68, 0.95);
   border-radius: 8px;
   background: rgba(20, 26, 34, 0.74);
@@ -3076,7 +3076,7 @@ body[data-active-tab="start"] #btn-reset {
 
 .proof-tile span {
   display: block;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.42rem;
   color: var(--accent);
   font-size: 0.68rem;
   font-weight: 700;
@@ -3087,8 +3087,40 @@ body[data-active-tab="start"] #btn-reset {
 .proof-tile strong {
   display: block;
   color: var(--text);
-  font-size: 0.86rem;
+  font-size: 0.76rem;
   line-height: 1.35;
+}
+
+.portkey-proof-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0.65rem 0;
+}
+
+.portkey-proof-metrics div {
+  min-width: 0;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(12, 15, 20, 0.7);
+}
+
+.portkey-proof-metrics span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.portkey-proof-metrics strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--text);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
 }
 
 .bubble p {
@@ -3371,6 +3403,7 @@ body[data-active-tab="start"] #btn-reset {
   }
 
   .trace-metrics.compact,
+  .portkey-proof-metrics,
   .sponsor-proof-loop,
   .sponsor-source-links,
   .sponsor-source-locks {

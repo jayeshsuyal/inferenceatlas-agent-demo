@@ -8,7 +8,7 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from fastapi import FastAPI, File, Form, HTTPException, Query, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -35,6 +35,17 @@ from agent.packet_detail import (
 )
 from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_copy_review_brief
 from agent.portkey_adapter import build_portkey_adapter_payload
+from agent.portkey_guardrail import (
+    PORTKEY_GUARDRAIL_AUTH_ENV,
+    PORTKEY_GUARDRAIL_TOKEN_HEADER,
+    PortkeyGuardrailAuthError,
+    build_portkey_guardrail_event,
+    build_portkey_guardrail_response,
+    list_portkey_guardrail_events,
+    relative_event_path,
+    validate_portkey_guardrail_token,
+    write_portkey_guardrail_event,
+)
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
 from agent.subscribers import (
@@ -565,6 +576,60 @@ def portkey_downstream_preview(
         "ok": True,
         "read_only": True,
         "portkey": payload,
+    }
+
+
+@app.post("/api/portkey/guardrail")
+async def portkey_guardrail_webhook(
+    request: Request,
+    authorization: Optional[str] = Header(default=None),
+    x_ia_portkey_guardrail_token: Optional[str] = Header(default=None, alias=PORTKEY_GUARDRAIL_TOKEN_HEADER),
+) -> dict:
+    """Read-only Portkey BYO Guardrails webhook backed by IA Packet truth."""
+    provided_token = x_ia_portkey_guardrail_token or authorization
+    try:
+        validate_portkey_guardrail_token(
+            provided_token=provided_token,
+            expected_token=os.getenv(PORTKEY_GUARDRAIL_AUTH_ENV),
+        )
+    except PortkeyGuardrailAuthError as exc:
+        reason = str(exc)
+        status = 503 if reason == "portkey_guardrail_token_not_configured" else 401
+        raise HTTPException(status_code=status, detail=reason) from exc
+
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    started = time.perf_counter()
+    response = build_portkey_guardrail_response(body, elapsed_ms=0)
+    elapsed_ms = int((time.perf_counter() - started) * 1000)
+    response["data"]["elapsed_ms"] = elapsed_ms
+
+    event = build_portkey_guardrail_event(
+        body=body if isinstance(body, dict) else {},
+        response=response,
+        elapsed_ms=elapsed_ms,
+    )
+    record_path = write_portkey_guardrail_event(
+        event,
+        ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR,
+    )
+    response["data"]["guardrail_event"] = {
+        "event_id": event["event_id"],
+        "record_path": relative_event_path(record_path),
+    }
+    return response
+
+
+@app.get("/api/portkey/guardrail/events")
+def portkey_guardrail_events() -> dict:
+    """Return local read-only Portkey BYO Guardrails proof events."""
+    return {
+        "ok": True,
+        "read_only": True,
+        "events": list_portkey_guardrail_events(ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR),
     }
 
 

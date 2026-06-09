@@ -118,11 +118,9 @@ const SKILL_HINT_BY_ID = {
 };
 
 const EMPTY_PROOF_TILES = [
-  ["1 · Request", "Load one registered AI movement request."],
-  ["2 · Packet", "See verdict, blocked claims, proof debt, owners, and hash."],
-  ["3 · Proof Trace", "Collect sponsor proof and preview the Portkey dry-run gate."],
-  ["4 · Team Lenses", "Show each team the same packet through its review lens."],
-  ["5 · Export", "Copy the review brief or export Portkey gate JSON."],
+  ["1 · Request", "Open one registered AI movement request."],
+  ["2 · Packet", "Inspect verdict, proof debt, owners, and hash."],
+  ["3 · Export", "Copy the review brief or export Portkey gate JSON."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -183,7 +181,7 @@ const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
 const FIRST_RUN_HEADING =
   "Run IA Packet Review";
 const FIRST_RUN_BODY =
-  "One AI movement request becomes a packet, proof trace, team review, Ask IA follow-up, and exportable memo. No keys. No writes.";
+  "Open one registered AI movement request. IA shows the packet, proof trace, team lenses, and exportable gate without keys or writes.";
 const FIRST_RUN_COACH_STATUS =
   "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.";
 

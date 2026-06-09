@@ -91,22 +91,21 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=37", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=21", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=38", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=22", timeout=timeout)
 
     for expected in (
         "Review in 90 seconds",
         "Run IA Packet Review",
-        "One AI movement request becomes a packet, proof trace, team review",
-        "Load one registered AI movement request.",
-        "Collect sponsor proof and preview the Portkey dry-run gate.",
+        "Open one registered AI movement request. IA shows the packet",
+        "Open one registered AI movement request.",
+        "Inspect verdict, proof debt, owners, and hash.",
         "Sponsor Run",
         "composer-shell first-run-locked",
         "Ask IA about this packet",
         "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.",
         "Export Portkey gate",
         "Team lenses",
-        "Show each team the same packet through its review lens.",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
@@ -128,9 +127,11 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(
-        "grid-template-columns: repeat(5, minmax(0, 1fr));" in css,
+        "grid-template-columns: repeat(3, minmax(0, 1fr));" in css,
         "first-run proof rail must stay compressed",
     )
+    _require('body[data-active-tab="start"] .stack' in css, "start tab must hide status pill cluster")
+    _require('body[data-active-tab="start"] #btn-reset' in css, "start tab must hide reset button")
     _require(re.search(r"/static/app\.js\?v=\d+", html) is not None, "app.js cache marker missing")
     _require(re.search(r"/static/style\.css\?v=\d+", html) is not None, "style.css cache marker missing")
 
@@ -302,8 +303,12 @@ def _check_sponsors(base_url: str, timeout: float) -> None:
     _require(ledger["schema_version"] == "sponsor_proof_run_ledger.v0", "sponsor run ledger schema drifted")
     _require(ledger["read_only"] is True, "sponsor run ledger must be read-only")
     _require(ledger["record_count"] >= 1, "sponsor run ledger must include created run")
-    _require(any(item["run_id"] == run["run_id"] for item in ledger["runs"]), "created run missing from ledger")
-    _require(ledger["safety_summary"]["no_live_calls"] is True, "ledger must preserve no-live-call summary")
+    created_runs = [item for item in ledger["runs"] if item["run_id"] == run["run_id"]]
+    _require(created_runs, "created run missing from ledger")
+    _require(
+        all(item["safety_lock"]["live_calls_made"] is False for item in created_runs),
+        "created smoke run must preserve no-live-call safety lock",
+    )
     _require(ledger["safety_summary"]["no_external_writes"] is True, "ledger must preserve no-write summary")
 
 

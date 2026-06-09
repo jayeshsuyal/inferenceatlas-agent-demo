@@ -12,6 +12,8 @@ from typing import Any, Literal
 
 from .adapters import build_adapter_result
 from .composio_dry_run_diff import build_composio_dry_run_diff
+from .nebius_reviewer_narration import ClientFactory as NebiusClientFactory
+from .nebius_reviewer_narration import build_nebius_reviewer_narration
 from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet
 from .spend import build_spend_review_bundle
@@ -231,7 +233,11 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
             "approval_posture": packet["approval_posture"],
             "safety_state": packet["safety_state"],
         },
-        {"narration": adapter["narration"], "locked_fields": adapter["reviewer_narration_contract"]["locked_fields"]},
+        {
+            "narration": adapter["narration"],
+            "structured_narration": adapter.get("structured_narration", {}),
+            "locked_fields": adapter["reviewer_narration_contract"]["locked_fields"],
+        },
     )
 
 
@@ -277,6 +283,12 @@ def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
         return f"{len(adapter['action_plans'])} dry-run permission plans built; no tool write executed."
     if provider == "openclaw":
         return f"{len(adapter['trace_steps'])} runtime checkpoints traced; blocked/dry-run state preserved."
+    if adapter.get("status") == "live_reviewer_narration_built":
+        return (
+            "Nebius reviewer narration built from locked packet fields. IA does not approve this request. "
+            "Human review is required before any access, spend, or production movement. "
+            "Decision lock unchanged."
+        )
     return (
         "Reviewer narration prepared from locked packet fields. IA does not approve this request. "
         "Human review is required before any access, spend, or production movement. "
@@ -322,8 +334,10 @@ def build_sponsor_proof_trace(
     scenario_name: str = DEFAULT_SCENARIO,
     lane: Literal["access_review", "spend_review", "both"] = "both",
     live_tavily: bool = False,
+    live_nebius: bool = False,
     composio_dry_run: bool = False,
     tavily_client_factory: ClientFactory | None = None,
+    nebius_client_factory: NebiusClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build the canonical sponsor proof trace with deterministic fallback steps."""
     if scenario_name not in SCENARIOS:
@@ -346,6 +360,13 @@ def build_sponsor_proof_trace(
                 client_factory=tavily_client_factory,
             )
             if provider == "tavily"
+            else build_nebius_reviewer_narration(
+                packet,
+                scenario_name=scenario_name,
+                live_enabled=live_nebius,
+                client_factory=nebius_client_factory,
+            )
+            if provider == "nebius"
             else build_composio_dry_run_diff(
                 packet,
                 scenario_name=scenario_name,
@@ -385,6 +406,29 @@ def build_sponsor_proof_trace(
         }
         if "live_error" in tavily_adapter:
             live_proof["tavily"]["live_error"] = tavily_adapter["live_error"]
+    nebius_adapter = adapters["nebius"]
+    if nebius_adapter.get("live_requested"):
+        live_proof["nebius"] = {
+            "schema_version": nebius_adapter["schema_version"],
+            "status": nebius_adapter["status"],
+            "live_requested": nebius_adapter["live_requested"],
+            "live_call_attempted": nebius_adapter["live_call_attempted"],
+            "live_call_count": nebius_adapter["live_call_count"],
+            "used_live_key": nebius_adapter["used_live_key"],
+            "fallback_used": nebius_adapter["fallback_used"],
+            "fallback_reason": nebius_adapter["fallback_reason"],
+            "structured_narration": nebius_adapter["structured_narration"],
+            "required_anchors_present": nebius_adapter["required_anchors_present"],
+            "forbidden_phrases_present": nebius_adapter["forbidden_phrases_present"],
+            "docs_reference": nebius_adapter["docs_reference"],
+            "safety_impact": nebius_adapter["safety_impact"],
+            "human_review_required": nebius_adapter["human_review_required"],
+            "can_approve_access": nebius_adapter["can_approve_access"],
+            "can_grant_permissions": nebius_adapter["can_grant_permissions"],
+            "can_mutate_external_state": nebius_adapter["can_mutate_external_state"],
+        }
+        if nebius_adapter.get("fallback_detail"):
+            live_proof["nebius"]["fallback_detail"] = nebius_adapter["fallback_detail"]
     dry_run_proof = {}
     composio_adapter = adapters["composio"]
     if composio_adapter.get("dry_run_requested"):
@@ -541,8 +585,12 @@ def render_sponsor_proof_trace_markdown(trace: dict[str, Any]) -> str:
                     f"- human review required: {proof['human_review_required']}",
                 ]
             )
-            source_count = sum(len(item.get("source_urls", [])) for item in proof["evidence_candidates"])
-            lines.append(f"- source candidates: {source_count}")
+            if provider == "tavily":
+                source_count = sum(len(item.get("source_urls", [])) for item in proof["evidence_candidates"])
+                lines.append(f"- source candidates: {source_count}")
+            if provider == "nebius":
+                lines.append(f"- required anchors present: {proof['required_anchors_present']}")
+                lines.append(f"- forbidden phrases present: {len(proof['forbidden_phrases_present'])}")
             lines.append("")
 
     dry_run_proof = trace.get("dry_run_proof", {})

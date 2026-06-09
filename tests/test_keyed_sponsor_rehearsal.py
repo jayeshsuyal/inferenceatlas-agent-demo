@@ -63,6 +63,19 @@ def _fake_run() -> dict:
                     {"source_urls": ["https://example.com/a", "https://example.com/b"]},
                     {"source_urls": ["https://example.com/c"]},
                 ],
+            },
+            "nebius": {
+                "status": "live_reviewer_narration_built",
+                "live_call_attempted": True,
+                "live_call_count": 1,
+                "used_live_key": True,
+                "fallback_used": False,
+                "required_anchors_present": True,
+                "forbidden_phrases_present": [],
+                "structured_narration": {
+                    "reviewer_summary": "Packet verdict keeps production access blocked for reviewer proof.",
+                    "next_human_action": "Security/Legal owner must review the named proof debt.",
+                },
             }
         },
         "dry_run_sponsor_proof": {
@@ -142,6 +155,7 @@ class KeyedSponsorRehearsalTests(unittest.TestCase):
         def fake_post(base_url: str, path: str, payload: dict, *, timeout: float) -> dict:
             self.assertEqual(path, "/api/sponsor-proof-runs")
             self.assertIs(payload["live_tavily"], True)
+            self.assertIs(payload["live_nebius"], True)
             self.assertIs(payload["composio_dry_run"], True)
             return {"ok": True, "read_only": True, "run": run, "ledger_record": record}
 
@@ -151,6 +165,8 @@ class KeyedSponsorRehearsalTests(unittest.TestCase):
         self.assertEqual(summary["status"], "passed")
         self.assertEqual(summary["health"]["llm_provider"], "nebius")
         self.assertEqual(summary["tavily"]["source_url_count"], 3)
+        self.assertEqual(summary["nebius"]["status"], "live_reviewer_narration_built")
+        self.assertIs(summary["nebius"]["fallback_used"], False)
         self.assertIs(summary["composio"]["api_call_made"], False)
         self.assertIs(summary["portkey"]["api_call_made"], False)
         self.assertIs(summary["run"]["decision_lock_unchanged"], True)
@@ -185,6 +201,7 @@ class KeyedSponsorRehearsalTests(unittest.TestCase):
         self.assertIn("/api/sponsor-proof-runs", script)
         self.assertIn("/api/sponsor-proof-run-ledger", script)
         self.assertIn("live_tavily", script)
+        self.assertIn("live_nebius", script)
         self.assertIn("composio_dry_run", script)
         self.assertIn("secrets_printed", script)
         self.assertIn("api_call_made", script)

@@ -2996,6 +2996,7 @@ function renderSponsorCard(data) {
     );
     const composio = run.dry_run_sponsor_proof?.composio || null;
     const composioSummary = composio?.permission_diff_summary || {};
+    const nebius = run.live_sponsor_proof?.nebius || null;
     const sponsorRunSummaries = [];
     if (tavily) {
       sponsorRunSummaries.push(
@@ -3005,6 +3006,11 @@ function renderSponsorCard(data) {
     if (composio) {
       sponsorRunSummaries.push(
         `${composioSummary.tool_count || 0} Composio permission diffs generated; ${composioSummary.blocked_write_count || 0} write actions remain blocked; API call made ${String(composio.api_call_made)}.`
+      );
+    }
+    if (nebius) {
+      sponsorRunSummaries.push(
+        `Nebius reviewer narration ${nebius.live_call_attempted ? "attempted" : "not attempted"}; ${nebius.live_call_count || 0} live calls; fallback ${String(nebius.fallback_used)}; anchors ${String(nebius.required_anchors_present)}.`
       );
     }
     const runCard = document.createElement("article");
@@ -3182,9 +3188,10 @@ async function collectSponsorProof() {
     }
   }
   const liveTavily = Boolean(runtimeHealth?.tavily);
+  const liveNebius = runtimeHealth?.llm_provider === "nebius";
   setWalkthroughToast(
-    liveTavily
-      ? "Collecting sponsor proof run with live Tavily evidence..."
+    liveTavily || liveNebius
+      ? `Collecting sponsor proof run with${liveTavily ? " live Tavily evidence" : ""}${liveNebius ? " Nebius narration" : ""}...`
       : "Collecting sponsor proof run..."
   );
   try {
@@ -3195,6 +3202,7 @@ async function collectSponsorProof() {
         request_path: walkthroughPayload.request_path || "examples/requests/support_triage_trial.yml",
         composio_dry_run: true,
         live_tavily: liveTavily,
+        live_nebius: liveNebius,
       }),
     });
     const data = await res.json().catch(() => ({}));

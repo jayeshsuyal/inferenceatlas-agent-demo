@@ -100,7 +100,7 @@ class IAPacketDetailTests(unittest.TestCase):
             "Export Portkey gate",
             "IA did not approve. The next human action is named above.",
             "Review in 60 seconds",
-            "Request -> Packet -> Sponsor proof -> Downstream gate -> Team lenses -> Export",
+            "Request -> IA Packet -> Sponsor proof -> Portkey proof loop -> Team lenses -> Export",
             "Team lenses",
         ]:
             self.assertIn(expected, html)
@@ -185,7 +185,7 @@ class IAPacketDetailTests(unittest.TestCase):
             "Request": "packet-summary-card",
             "Packet": "packet-decision-card",
             "Sponsor proof": "packet-sponsor-card",
-            "Downstream gate": "packet-downstream-card",
+            "Portkey proof loop": "packet-downstream-card",
             "Team lenses": "packet-team-card",
             "Export": "packet-export-card",
         }

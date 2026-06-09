@@ -72,6 +72,9 @@
     "composio_blast_radius": {
       "$ref": "#/$defs/composio_blast_radius"
     },
+    "openclaw_runtime_trace": {
+      "$ref": "#/$defs/openclaw_runtime_trace"
+    },
     "node_counts": {
       "type": "object",
       "required": ["packet", "proof", "edge"],
@@ -287,6 +290,47 @@
         },
         "docs_reference": { "type": "string", "minLength": 1 },
         "sdk_docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" }
+      }
+    },
+    "openclaw_runtime_trace": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "provider",
+        "mode",
+        "status",
+        "api_call_made",
+        "fallback_used",
+        "checkpoint_count",
+        "attempted_action_count",
+        "blocked_event_count",
+        "write_like_blocked_count",
+        "admin_like_blocked_count",
+        "high_or_critical_action_count",
+        "all_attempted_actions_blocked",
+        "runtime_write_attempted",
+        "human_review_boundary_preserved",
+        "would_execute",
+        "safety_impact"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "sponsor_adapter_contract.v0" },
+        "provider": { "type": "string", "const": "openclaw" },
+        "mode": { "type": "string", "const": "deterministic_fallback" },
+        "status": { "type": "string", "const": "trace_contract_planned" },
+        "api_call_made": { "type": "boolean", "const": false },
+        "fallback_used": { "type": "boolean", "const": true },
+        "checkpoint_count": { "type": "integer", "minimum": 0 },
+        "attempted_action_count": { "type": "integer", "minimum": 0 },
+        "blocked_event_count": { "type": "integer", "minimum": 0 },
+        "write_like_blocked_count": { "type": "integer", "minimum": 0 },
+        "admin_like_blocked_count": { "type": "integer", "minimum": 0 },
+        "high_or_critical_action_count": { "type": "integer", "minimum": 0 },
+        "all_attempted_actions_blocked": { "type": "boolean", "const": true },
+        "runtime_write_attempted": { "type": "boolean", "const": false },
+        "human_review_boundary_preserved": { "type": "boolean", "const": true },
+        "would_execute": { "type": "boolean", "const": false },
         "safety_impact": { "type": "string", "const": "none" }
       }
     },

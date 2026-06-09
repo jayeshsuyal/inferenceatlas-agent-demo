@@ -14,6 +14,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from .adapters.core import ADAPTER_CONTRACT_VERSION, build_adapter_result
 from .composio_dry_run_diff import (
     COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION,
     build_composio_dry_run_diff,
@@ -233,6 +234,29 @@ def _composio_proof_node(
     )
 
 
+def _sponsor_proof_node(
+    *,
+    provider: Provider,
+    node_id: str,
+    field: str,
+    label: str,
+    summary: str,
+    source_refs: list[str],
+    next_human_action: str,
+) -> ProofNode:
+    return ProofNode(
+        node_id=node_id,
+        label=label,
+        provider=provider,
+        mode="deterministic_fallback",
+        attached_packet_field=field,
+        summary=summary,
+        source_refs=tuple(source_refs),
+        next_human_action=next_human_action,
+        fallback_used=True,
+    )
+
+
 def _packet_only_nodes(packet: dict[str, Any], *, next_human_action: str) -> tuple[ProofNode, ...]:
     decision = packet.get("decision", {})
     posture = packet.get("approval_posture", {})
@@ -409,6 +433,134 @@ def _composio_blast_radius_nodes(
     return tuple(nodes), tuple(edges), _composio_blast_radius_summary(composio_diff)
 
 
+def _openclaw_runtime_trace_summary(openclaw: dict[str, Any]) -> dict[str, Any]:
+    quality = openclaw["trace_quality_summary"]
+    return {
+        "schema_version": ADAPTER_CONTRACT_VERSION,
+        "provider": "openclaw",
+        "mode": "deterministic_fallback",
+        "status": openclaw["status"],
+        "api_call_made": False,
+        "fallback_used": True,
+        "checkpoint_count": int(quality["checkpoint_count"]),
+        "attempted_action_count": int(quality["attempted_action_count"]),
+        "blocked_event_count": int(quality["blocked_event_count"]),
+        "write_like_blocked_count": int(quality["write_like_blocked_count"]),
+        "admin_like_blocked_count": int(quality["admin_like_blocked_count"]),
+        "high_or_critical_action_count": int(quality["high_or_critical_action_count"]),
+        "all_attempted_actions_blocked": bool(quality["all_attempted_actions_blocked"]),
+        "runtime_write_attempted": bool(quality["runtime_write_attempted"]),
+        "human_review_boundary_preserved": bool(quality["human_review_boundary_preserved"]),
+        "would_execute": bool(openclaw["would_execute"]),
+        "safety_impact": openclaw["safety_impact"],
+    }
+
+
+def _openclaw_runtime_trace_nodes(
+    *,
+    scenario_name: str,
+    next_human_action: str,
+) -> tuple[tuple[ProofNode, ...], tuple[ProofEdge, ...], dict[str, Any]]:
+    openclaw = build_adapter_result("openclaw", scenario_name)
+    nodes: list[ProofNode] = []
+    edges: list[ProofEdge] = []
+    checkpoint_nodes: dict[str, ProofNode] = {}
+    attempted_nodes: dict[tuple[str, str], ProofNode] = {}
+
+    for checkpoint in openclaw["trace_timeline"]:
+        checkpoint_name = checkpoint["checkpoint"]
+        checkpoint_node = _sponsor_proof_node(
+            provider="openclaw",
+            node_id=f"proof:openclaw:checkpoint:{checkpoint['order']}:{_slug(checkpoint_name)}",
+            field="runtime_trace",
+            label=f"OpenClaw checkpoint: {checkpoint_name}",
+            summary=(
+                f"{checkpoint['outcome']} observed `{checkpoint['packet_field_observed']}`; "
+                f"policy_decision={checkpoint['policy_decision']}; would_execute={checkpoint['would_execute']}."
+            ),
+            source_refs=[
+                f"openclaw.trace_timeline[{checkpoint['order'] - 1}]",
+                f"openclaw.trace_steps.{checkpoint_name}",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(checkpoint_node)
+        checkpoint_nodes[checkpoint_name] = checkpoint_node
+
+    policy_checkpoint = checkpoint_nodes.get("plan_tool_actions") or checkpoint_nodes.get("evaluate_policy_gate")
+    for attempted in openclaw["attempted_action_timeline"]:
+        tool = attempted["tool"]
+        action = attempted["attempted_action"]
+        attempted_node = _sponsor_proof_node(
+            provider="openclaw",
+            node_id=(
+                f"proof:openclaw:attempted_action:{attempted['order']}:"
+                f"{_slug(tool)}:{_slug(action)}"
+            ),
+            field="runtime_trace",
+            label=f"OpenClaw attempted action: {tool}",
+            summary=(
+                f"{action} checked by {attempted['packet_check']} and "
+                f"{attempted['policy_decision']} ({attempted['risk_level']}/{attempted['action_class']}). "
+                f"would_execute={attempted['would_execute']}."
+            ),
+            source_refs=[
+                f"openclaw.attempted_action_timeline[{attempted['order'] - 1}]",
+                f"tool_access_plan.{tool}.blocked_actions",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(attempted_node)
+        attempted_nodes[(tool, action)] = attempted_node
+        if policy_checkpoint:
+            edges.append(
+                ProofEdge(
+                    edge_id=(
+                        f"edge:{attempted_node.node_id}:to:"
+                        f"{policy_checkpoint.node_id}:observed_by_downstream"
+                    ),
+                    edge_type="observed_by_downstream",
+                    from_node_id=attempted_node.node_id,
+                    to_node_id=policy_checkpoint.node_id,
+                    packet_field="runtime_trace",
+                )
+            )
+
+    for index, event in enumerate(openclaw["blocked_action_events"], start=1):
+        tool = event["tool"]
+        action = event["blocked_action"]
+        blocked_node = _sponsor_proof_node(
+            provider="openclaw",
+            node_id=f"proof:openclaw:blocked_event:{index}:{_slug(tool)}:{_slug(action)}",
+            field="runtime_trace",
+            label=f"OpenClaw blocked event: {tool}",
+            summary=(
+                f"{action} is {event['policy_decision']} "
+                f"({event['risk_level']}/{event['action_class']}). "
+                f"{event['blocked_reason']}"
+            ),
+            source_refs=[
+                f"openclaw.blocked_action_events[{index - 1}]",
+                f"tool_access_plan.{tool}.blocked_actions",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(blocked_node)
+        attempted_node = attempted_nodes.get((tool, action))
+        if attempted_node:
+            edges.append(
+                ProofEdge(
+                    edge_id=f"edge:{blocked_node.node_id}:to:{attempted_node.node_id}:blocks_action",
+                    edge_type="blocks_action",
+                    from_node_id=blocked_node.node_id,
+                    to_node_id=attempted_node.node_id,
+                    packet_field="runtime_trace",
+                )
+            )
+
+    return tuple(nodes), tuple(edges), _openclaw_runtime_trace_summary(openclaw)
+
+
 def _edge_for_node(packet_node_id: str, node: ProofNode) -> ProofEdge:
     edge_type: EdgeType = "attaches_to_packet_field"
     if node.attached_packet_field == "blocked_claims":
@@ -446,6 +598,7 @@ def build_proof_graph(
     *,
     scenario_name: str = DEFAULT_SCENARIO,
     include_composio_blast_radius: bool = False,
+    include_openclaw_runtime_trace: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph from one DecisionPacket."""
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
@@ -466,15 +619,23 @@ def build_proof_graph(
     composio_nodes: tuple[ProofNode, ...] = ()
     composio_edges: tuple[ProofEdge, ...] = ()
     composio_summary: dict[str, Any] | None = None
+    openclaw_nodes: tuple[ProofNode, ...] = ()
+    openclaw_edges: tuple[ProofEdge, ...] = ()
+    openclaw_summary: dict[str, Any] | None = None
     if include_composio_blast_radius:
         composio_nodes, composio_edges, composio_summary = _composio_blast_radius_nodes(
             packet,
             scenario_name=scenario_name,
             next_human_action=next_action,
         )
-    proof_nodes = (*packet_proof_nodes, *composio_nodes)
+    if include_openclaw_runtime_trace:
+        openclaw_nodes, openclaw_edges, openclaw_summary = _openclaw_runtime_trace_nodes(
+            scenario_name=scenario_name,
+            next_human_action=next_action,
+        )
+    proof_nodes = (*packet_proof_nodes, *composio_nodes, *openclaw_nodes)
     packet_edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
-    edges = (*packet_edges, *composio_edges)
+    edges = (*packet_edges, *composio_edges, *openclaw_edges)
     base_payload = {
         "schema_version": PROOF_GRAPH_SCHEMA_VERSION,
         "scenario_name": scenario_name,
@@ -485,6 +646,8 @@ def build_proof_graph(
     }
     if composio_summary:
         base_payload["composio_blast_radius"] = composio_summary
+    if openclaw_summary:
+        base_payload["openclaw_runtime_trace"] = openclaw_summary
     digest = stable_sha256(base_payload)
     return {
         **base_payload,
@@ -523,6 +686,7 @@ def build_proof_graph_for_scenario(
     scenario_name: str = DEFAULT_SCENARIO,
     *,
     include_composio_blast_radius: bool = False,
+    include_openclaw_runtime_trace: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph for a registered public access scenario."""
     if scenario_name not in SCENARIOS:
@@ -531,6 +695,7 @@ def build_proof_graph_for_scenario(
         build_scenario_packet(scenario_name),
         scenario_name=scenario_name,
         include_composio_blast_radius=include_composio_blast_radius,
+        include_openclaw_runtime_trace=include_openclaw_runtime_trace,
     )
 
 
@@ -591,6 +756,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Attach Composio dry-run blast-radius proof nodes without live calls or execute.",
     )
+    parser.add_argument(
+        "--include-openclaw-runtime-trace",
+        action="store_true",
+        help="Attach OpenClaw runtime trace proof nodes without live calls or execute.",
+    )
     parser.add_argument("--json", action="store_true", help="Print the graph as JSON.")
     return parser
 
@@ -601,6 +771,7 @@ def main(argv: list[str] | None = None) -> int:
         graph = build_proof_graph_for_scenario(
             args.scenario,
             include_composio_blast_radius=args.include_composio_blast_radius,
+            include_openclaw_runtime_trace=args.include_openclaw_runtime_trace,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -47,7 +48,7 @@ def _json_get(base_url: str, path: str, *, timeout: float) -> dict[str, Any]:
     try:
         with urllib.request.urlopen(_url(base_url, path), timeout=timeout) as response:
             raw = response.read().decode("utf-8")
-    except urllib.error.URLError as exc:
+    except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
         raise RehearsalFailure(f"GET {path} failed: {exc}") from exc
     try:
         return json.loads(raw)
@@ -66,7 +67,7 @@ def _json_post(base_url: str, path: str, payload: dict[str, Any], *, timeout: fl
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             raw = response.read().decode("utf-8")
-    except urllib.error.URLError as exc:
+    except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
         raise RehearsalFailure(f"POST {path} failed: {exc}") from exc
     try:
         return json.loads(raw)

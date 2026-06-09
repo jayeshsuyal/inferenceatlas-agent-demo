@@ -45,7 +45,7 @@
     "jira: status changes",
     "jira: assignment changes"
   ],
-  "content_hash": "sha256:e92fbffcba99b95db27b47138bd8a3dfd995f9c22464030763bb3962b779af3b",
+  "content_hash": "sha256:ce1b9fbd508078cd40aff387a9c18b81e8fc9ad04b6c780b3cd6be94ec3eb735",
   "decision_lock_after": {
     "approval_granted": false,
     "can_sponsor_change_decision": false,
@@ -116,41 +116,49 @@
     "tavily": {
       "can_reduce_proof_debt": false,
       "cannot_grant_access": true,
+      "domain_diversity_score": 0.0,
       "freshness_labels": [
         "not_fetched_in_offline_mode"
       ],
       "human_review_required": true,
       "query_count": 5,
+      "query_variant_count": 10,
       "source_domain_count": 0,
       "source_domains": [],
       "source_url_count": 0,
       "sources_per_query": [
         {
           "query": "GitHub repository allowlist and permission level policy evidence",
+          "query_variant_count": 2,
           "source_count": 0,
           "unique_source_count": 0
         },
         {
           "query": "Slack channel allowlist, retention policy, and customer-data boundary policy evidence",
+          "query_variant_count": 2,
           "source_count": 0,
           "unique_source_count": 0
         },
         {
           "query": "Jira project scope, draft-only mode, and rollback/off-switch plan policy evidence",
+          "query_variant_count": 2,
           "source_count": 0,
           "unique_source_count": 0
         },
         {
           "query": "Support escalation workflow and human handoff owner policy evidence",
+          "query_variant_count": 2,
           "source_count": 0,
           "unique_source_count": 0
         },
         {
           "query": "Audit log shape for tool calls, evidence intake, and reviewer decisions policy evidence",
+          "query_variant_count": 2,
           "source_count": 0,
           "unique_source_count": 0
         }
       ],
+      "trust_tier_counts": {},
       "unique_source_url_count": 0
     }
   },
@@ -206,7 +214,7 @@
       "fallback_used": true,
       "human_review_required": true,
       "input_hash": "sha256:bf1541d00a7549dbe0898009c57e1617f2546fe9a29fc2ae0e212c258ac08e0c",
-      "output_hash": "sha256:f8cce02d677d3ed737392c8a19de804e8d13f8d54050083e7eef7147c32ad0d2",
+      "output_hash": "sha256:32918235e009dad345a9657b05d250dbe32b578063a5fa60ecad6664db56c366",
       "output_summary": "5 evidence candidate slots planned; no proof debt reduced.",
       "redacted_fields": [
         "api_key",
@@ -322,5 +330,5 @@
       "would_execute": false
     }
   ],
-  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-e92fbffcba99b95d-public-v0"
+  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-ce1b9fbd508078cd-public-v0"
 }

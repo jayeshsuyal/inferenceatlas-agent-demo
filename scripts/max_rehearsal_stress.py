@@ -21,6 +21,7 @@ import json
 import math
 from pathlib import Path
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -100,7 +101,7 @@ def _json_request(
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", errors="replace")
         status = exc.code
-    except urllib.error.URLError as exc:
+    except (TimeoutError, socket.timeout, urllib.error.URLError) as exc:
         raise StressFailure(f"{method} {path} failed: {exc}") from exc
     elapsed_ms = (time.perf_counter() - started) * 1000
 

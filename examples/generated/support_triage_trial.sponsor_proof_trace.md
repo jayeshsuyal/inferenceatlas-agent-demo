@@ -6,10 +6,10 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 
 ## Trace Identity
 
-- trace_id: `ia-sponsor-proof-trace-support_triage_trial-e92fbffcba99b95d-public-v0`
+- trace_id: `ia-sponsor-proof-trace-support_triage_trial-ce1b9fbd508078cd-public-v0`
 - packet_id: `ia-agent-access-support-triage-v0`
 - revision_id: `rev_965302783cee8688`
-- content_hash: `sha256:e92fbffcba99b95db27b47138bd8a3dfd995f9c22464030763bb3962b779af3b`
+- content_hash: `sha256:ce1b9fbd508078cd40aff387a9c18b81e8fc9ad04b6c780b3cd6be94ec3eb735`
 - scenario: `support_triage_agent`
 - lane: `both`
 

@@ -17,6 +17,7 @@ from .config import TAVILY_API_KEY
 TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION = "tavily_live_evidence.v0"
 TAVILY_DOCS_URL = "https://docs.tavily.com/documentation/api-reference/endpoint/search"
 DEFAULT_TAVILY_MAX_RESULTS = 2
+DEFAULT_QUERY_VARIANTS_PER_CANDIDATE = 2
 
 ClientFactory = Callable[[str], Any]
 
@@ -28,10 +29,44 @@ def _sanitize_error(exc: Exception) -> dict[str, str]:
     }
 
 
-def _source_from_result(result: dict[str, Any]) -> dict[str, Any]:
+def _trust_tier(domain: str) -> str:
+    if domain.endswith(".gov") or domain.endswith(".mil"):
+        return "public_authority"
+    if domain.endswith(".edu"):
+        return "academic"
+    if domain in {
+        "anthropic.com",
+        "composio.dev",
+        "docs.composio.dev",
+        "docs.tavily.com",
+        "github.com",
+        "openai.com",
+        "portkey.ai",
+        "docs.portkey.ai",
+        "tavily.com",
+    }:
+        return "platform_or_vendor"
+    if domain in {
+        "axios.com",
+        "bloomberg.com",
+        "reuters.com",
+        "techcrunch.com",
+        "theverge.com",
+        "wired.com",
+    }:
+        return "recognized_media"
+    return "unknown_public_source"
+
+
+def _source_from_result(result: dict[str, Any], *, query: str) -> dict[str, Any]:
+    url = str(result.get("url") or "")
+    domain = _domain(url)
     return {
         "title": str(result.get("title") or "Untitled")[:180],
-        "url": str(result.get("url") or ""),
+        "url": url,
+        "domain": domain,
+        "trust_tier": _trust_tier(domain),
+        "query": query,
         "content_snippet": str(result.get("content") or "")[:500],
         "score": result.get("score"),
     }
@@ -46,10 +81,18 @@ def _source_quality(candidate: dict[str, Any]) -> dict[str, Any]:
     source_urls = [str(url) for url in candidate.get("source_urls", []) if url]
     unique_urls = list(dict.fromkeys(source_urls))
     domains = list(dict.fromkeys(_domain(url) for url in unique_urls if _domain(url)))
+    trust_tiers = [
+        _trust_tier(domain)
+        for domain in domains
+    ]
     return {
         "source_count": len(source_urls),
         "unique_source_count": len(unique_urls),
         "source_domains": domains,
+        "source_domain_count": len(domains),
+        "trust_tiers": trust_tiers,
+        "trust_tier_counts": {tier: trust_tiers.count(tier) for tier in sorted(set(trust_tiers))},
+        "diversity_score": min(len(domains), 5) / 5,
         "freshness": candidate.get("freshness", "not_fetched_in_offline_mode"),
         "search_mode": candidate.get("search_mode", "planned_search_extract_or_crawl"),
         "human_review_required": True,
@@ -64,10 +107,21 @@ def _with_source_quality(candidates: list[dict[str, Any]]) -> list[dict[str, Any
 
 def _query_plan_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     owners = [candidate.get("reviewer_owner") for candidate in candidates if candidate.get("reviewer_owner")]
+    total_searches = sum(len(candidate.get("query_variants", [candidate["query"]])) for candidate in candidates)
     return {
         "query_count": len(candidates),
+        "query_variant_count": total_searches,
+        "total_planned_searches": total_searches,
+        "query_strategy": "packet_missing_proof_multi_query",
         "reviewer_owners": list(dict.fromkeys(owners)),
         "planned_queries": [candidate["query"] for candidate in candidates],
+        "planned_query_variants": [
+            {
+                "query": candidate["query"],
+                "variants": candidate.get("query_variants", [candidate["query"]]),
+            }
+            for candidate in candidates
+        ],
         "search_depth": "basic",
         "include_raw_content": False,
         "human_review_required": True,
@@ -83,15 +137,20 @@ def _source_quality_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     ]
     unique_urls = list(dict.fromkeys(source_urls))
     domains = list(dict.fromkeys(_domain(url) for url in unique_urls if _domain(url)))
+    trust_tiers = [_trust_tier(domain) for domain in domains]
     return {
         "query_count": len(candidates),
+        "query_variant_count": sum(len(candidate.get("query_variants", [candidate["query"]])) for candidate in candidates),
         "source_url_count": len(source_urls),
         "unique_source_url_count": len(unique_urls),
         "source_domain_count": len(domains),
         "source_domains": domains,
+        "trust_tier_counts": {tier: trust_tiers.count(tier) for tier in sorted(set(trust_tiers))},
+        "domain_diversity_score": min(len(domains), 5) / 5,
         "sources_per_query": [
             {
                 "query": candidate["query"],
+                "query_variant_count": len(candidate.get("query_variants", [candidate["query"]])),
                 "source_count": len(candidate.get("source_urls", [])),
                 "unique_source_count": candidate.get("source_quality", {}).get(
                     "unique_source_count",
@@ -112,9 +171,36 @@ def _source_quality_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _query_variants(candidate: dict[str, Any], *, max_variants: int) -> list[str]:
+    base = str(candidate["query"])
+    owner = str(candidate.get("reviewer_owner") or "").strip()
+    unblocks = str(candidate.get("unblocks") or "").strip()
+    variants = [base]
+    if owner:
+        variants.append(f"{owner} {base}")
+    if unblocks:
+        variants.append(f"{unblocks} evidence")
+    return list(dict.fromkeys(variants))[: max(1, min(max_variants, 3))]
+
+
+def _with_query_variants(candidates: list[dict[str, Any]], *, max_variants: int) -> list[dict[str, Any]]:
+    return [
+        {
+            **candidate,
+            "query_variants": _query_variants(candidate, max_variants=max_variants),
+        }
+        for candidate in candidates
+    ]
+
+
 def _fallback_payload(scenario_name: str, *, live_requested: bool, reason: str) -> dict[str, Any]:
     fallback = build_adapter_result("tavily", scenario_name)
-    candidates = _with_source_quality(fallback["evidence_candidates"])
+    candidates = _with_source_quality(
+        _with_query_variants(
+            fallback["evidence_candidates"],
+            max_variants=DEFAULT_QUERY_VARIANTS_PER_CANDIDATE,
+        )
+    )
     fallback.update(
         {
             "live_evidence_schema_version": TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
@@ -140,6 +226,7 @@ def build_tavily_live_evidence(
     live_enabled: bool = False,
     api_key: str | None = None,
     max_results: int = DEFAULT_TAVILY_MAX_RESULTS,
+    query_variants_per_candidate: int = DEFAULT_QUERY_VARIANTS_PER_CANDIDATE,
     client_factory: ClientFactory | None = None,
 ) -> dict[str, Any]:
     """Build Tavily evidence candidates, with deterministic fallback by default.
@@ -174,29 +261,40 @@ def build_tavily_live_evidence(
 
         enriched_candidates = []
         live_call_count = 0
-        for candidate in fallback["evidence_candidates"]:
-            query = candidate["query"]
-            response = client.search(
-                query=query,
-                max_results=max(1, min(int(max_results), 5)),
-                search_depth="basic",
-                include_answer=False,
-                include_raw_content=False,
-                auto_parameters=False,
-            )
-            live_call_count += 1
-            sources = [
-                _source_from_result(item)
-                for item in (response or {}).get("results", [])
-                if isinstance(item, dict) and item.get("url")
-            ]
+        for candidate in _with_query_variants(
+            fallback["evidence_candidates"],
+            max_variants=query_variants_per_candidate,
+        ):
+            sources = []
+            for query in candidate["query_variants"]:
+                response = client.search(
+                    query=query,
+                    max_results=max(1, min(int(max_results), 5)),
+                    search_depth="basic",
+                    include_answer=False,
+                    include_raw_content=False,
+                    auto_parameters=False,
+                )
+                live_call_count += 1
+                sources.extend(
+                    _source_from_result(item, query=query)
+                    for item in (response or {}).get("results", [])
+                    if isinstance(item, dict) and item.get("url")
+                )
+            unique_sources = []
+            seen_urls = set()
+            for source in sources:
+                if source["url"] in seen_urls:
+                    continue
+                seen_urls.add(source["url"])
+                unique_sources.append(source)
             enriched_candidates.append(
                 {
                     **candidate,
-                    "source_urls": [source["url"] for source in sources],
-                    "source_notes": sources,
+                    "source_urls": [source["url"] for source in unique_sources],
+                    "source_notes": unique_sources,
                     "freshness": "fetched_at_runtime",
-                    "search_mode": "tavily_search_basic",
+                    "search_mode": "tavily_search_basic_multi_query",
                     "human_review_required": True,
                     "can_reduce_proof_debt": False,
                     "cannot_grant_access": True,
@@ -237,7 +335,12 @@ def build_tavily_live_evidence(
         }
         return live_payload
     except Exception as exc:  # pragma: no cover - exact SDK failures vary.
-        candidates = _with_source_quality(fallback["evidence_candidates"])
+        candidates = _with_source_quality(
+            _with_query_variants(
+                fallback["evidence_candidates"],
+                max_variants=query_variants_per_candidate,
+            )
+        )
         fallback.update(
             {
                 "live_evidence_schema_version": TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,

@@ -88,6 +88,12 @@ def _fake_dual_nebius_client() -> SimpleNamespace:
         '"source_findings":[{"source_id":"tavily:1","finding":"The source is relevant context for the named reviewer.","limitation":"Human review is required before this can affect proof debt."}],'
         '"remaining_proof_gaps":"Owner approval, audit logs, and scoped validation evidence remain missing.",'
         '"next_human_action":"Route the source candidate to the named owners with proof debt attached.",'
+        '"persona_summaries":['
+        f'{{"persona":"CFO","focus":"spend exposure","summary":"CFO should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Finance with proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"Security","focus":"data boundary","summary":"Security should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Security with proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"CTO","focus":"engineering controls","summary":"CTO should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Engineering with proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"Legal","focus":"policy boundary","summary":"Legal should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Legal with proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}}'
+        '],'
         f'"safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}"'
         "}"
     )
@@ -132,6 +138,8 @@ def test_collector_run_wraps_trace_advisor_and_portkey_preview() -> None:
     }
     assert run["sponsor_proof_quality"]["decision_authority"]["packet_remains_authority"] is True
     assert run["sponsor_proof_quality"]["decision_authority"]["sponsors_can_approve_or_write"] is False
+    assert run["live_proof_intelligence"]["authority"]["packet_remains_authority"] is True
+    assert run["live_proof_intelligence"]["authority"]["sponsors_can_approve_or_write"] is False
 
     portkey = run["downstream_previews"]["portkey_model_spend_gate"]
     assert portkey["schema_version"] == PORTKEY_ADAPTER_SCHEMA_VERSION
@@ -206,6 +214,7 @@ def test_collector_live_tavily_without_key_keeps_deterministic_fallback() -> Non
     assert tavily_proof["live_call_attempted"] is False
     assert tavily_proof["fallback_used"] is True
     assert tavily_proof["fallback_reason"] == "tavily_api_key_missing"
+    assert run["live_proof_intelligence"]["tavily"]["query_variant_count"] == 10
     assert run["sponsor_proof_quality"]["tavily"]["source_url_count"] == 0
     assert run["sponsor_proof_quality"]["tavily"]["can_reduce_proof_debt"] is False
     assert all(candidate["source_urls"] == [] for candidate in tavily_proof["evidence_candidates"])
@@ -312,8 +321,11 @@ def test_collector_builds_nebius_evidence_synthesis_from_tavily_sources() -> Non
     assert synthesis["fallback_used"] is False
     assert synthesis["source_index_count"] > 0
     assert synthesis["role_brief_count"] == len(run["sponsor_proof_trace"]["access_review_evidence"]["reviewer_owners"])
+    assert synthesis["persona_count"] == 4
+    assert [item["persona"] for item in synthesis["persona_summaries"]] == ["CFO", "Security", "CTO", "Legal"]
     source_ids = {source["source_id"] for source in synthesis["source_index"]}
     assert set(synthesis["role_specific_briefs"][0]["source_ids"]).issubset(source_ids)
+    assert set(synthesis["persona_summaries"][0]["cited_source_ids"]).issubset(source_ids)
     assert synthesis["synthesis"]["cited_source_ids"] == ["tavily:1"]
     assert synthesis["synthesis"]["source_findings"][0]["source_id"] == "tavily:1"
     assert synthesis["synthesis"]["safety_anchor"] == NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
@@ -323,8 +335,12 @@ def test_collector_builds_nebius_evidence_synthesis_from_tavily_sources() -> Non
     assert synthesis["invariants"]["can_approve_access"] is False
     assert synthesis["invariants"]["can_mutate_packet"] is False
     assert synthesis["invariants"]["role_briefs_source_bound"] is True
+    assert synthesis["invariants"]["persona_summaries_source_bound"] is True
     assert run["sponsor_proof_quality"]["nebius"]["role_brief_count"] == synthesis["role_brief_count"]
+    assert run["sponsor_proof_quality"]["nebius"]["persona_count"] == 4
     assert run["sponsor_proof_quality"]["nebius"]["source_index_count"] == synthesis["source_index_count"]
+    assert run["live_proof_intelligence"]["nebius"]["personas"] == ["CFO", "Security", "CTO", "Legal"]
+    assert run["live_proof_intelligence"]["nebius"]["source_bound"] is True
     assert run["invariants"]["decision_lock_unchanged"] is True
     assert run["safety_boundary"]["executes_external_writes"] is False
     assert run["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
@@ -350,8 +366,10 @@ def test_collector_markdown_is_public_safe_and_skim_ready() -> None:
         "| 3 | openclaw | traced | completed_fallback | False | True | False | False |",
         "| 4 | nebius | narrated | completed_fallback | False | True | False | False |",
         "## Sponsor Proof Quality",
+        "## Live Proof Intelligence",
         "Composio blocked writes: 9",
         "OpenClaw blocked events: 9",
+        "Nebius personas: 4",
         "packet remains authority: True",
         "Portkey API call made: False",
         "Portkey guardrail verdict: False",

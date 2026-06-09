@@ -26,8 +26,10 @@ NEBIUS_EVIDENCE_SYNTHESIS_KEYS = (
     "source_findings",
     "remaining_proof_gaps",
     "next_human_action",
+    "persona_summaries",
     "safety_anchor",
 )
+NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS = ("CFO", "Security", "CTO", "Legal")
 NEBIUS_EVIDENCE_SYNTHESIS_FORBIDDEN_PHRASES = (
     "safe to proceed",
     "permission granted",
@@ -141,8 +143,54 @@ def _fallback_synthesis(packet: dict[str, Any], source_index: list[dict[str, Any
         "remaining_proof_gaps": "; ".join(gaps)
         or "Named reviewers must inspect the packet proof debt before any movement.",
         "next_human_action": _next_human_action(packet),
+        "persona_summaries": _fallback_persona_summaries(packet, source_index),
         "safety_anchor": NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR,
     }
+
+
+def _persona_sources(persona: str, source_index: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    owner_matches = {
+        "CFO": ("Procurement/Finance", "Finance"),
+        "Security": ("Security/Legal",),
+        "CTO": ("Engineering", "Support Ops"),
+        "Legal": ("Security/Legal", "Procurement/Finance"),
+    }[persona]
+    matches = [
+        source for source in source_index if source.get("reviewer_owner") in owner_matches
+    ]
+    return (matches or source_index)[:2]
+
+
+def _fallback_persona_summaries(packet: dict[str, Any], source_index: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    next_action = _next_human_action(packet)
+    focus = {
+        "CFO": "spend exposure, budget ownership, vendor or tool-cost review",
+        "Security": "data boundary, policy evidence, and approval gates",
+        "CTO": "engineering blast radius, rollback, auditability, and runtime controls",
+        "Legal": "retention, policy boundary, vendor terms, and human approval posture",
+    }
+    summaries = []
+    for persona in NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS:
+        sources = _persona_sources(persona, source_index)
+        source_ids = [source["source_id"] for source in sources]
+        source_phrase = f"{len(source_ids)} source candidate(s)" if source_ids else "no source candidates yet"
+        summaries.append(
+            {
+                "persona": persona,
+                "focus": focus[persona],
+                "summary": (
+                    f"{persona} should review {source_phrase} for {focus[persona]}; "
+                    "the IA Packet remains locked and does not approve movement."
+                ),
+                "cited_source_ids": source_ids,
+                "next_human_action": next_action,
+                "safety_anchor": NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR,
+                "human_review_required": True,
+                "can_approve_access": False,
+                "can_reduce_proof_debt": False,
+            }
+        )
+    return summaries
 
 
 def _role_specific_briefs(packet: dict[str, Any], source_index: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -194,6 +242,7 @@ def _base_payload(
 ) -> dict[str, Any]:
     synthesis = _fallback_synthesis(packet, source_index)
     role_briefs = _role_specific_briefs(packet, source_index)
+    persona_summaries = synthesis["persona_summaries"]
     return {
         "schema_version": NEBIUS_EVIDENCE_SYNTHESIS_SCHEMA_VERSION,
         "contract_version": ADAPTER_CONTRACT_VERSION,
@@ -210,6 +259,8 @@ def _base_payload(
         "synthesis": synthesis,
         "role_specific_briefs": role_briefs,
         "role_brief_count": len(role_briefs),
+        "persona_summaries": persona_summaries,
+        "persona_count": len(persona_summaries),
         "required_anchors_present": True,
         "forbidden_phrases_present": [],
         "docs_reference": "docs/LIVE_INTEGRATION_CONTRACT.md#nebius",
@@ -224,6 +275,7 @@ def _base_payload(
             "can_mutate_packet": False,
             "decision_lock_unchanged": True,
             "role_briefs_source_bound": True,
+            "persona_summaries_source_bound": True,
             "human_review_required": True,
         },
     }
@@ -257,9 +309,14 @@ def _prompt(
         "You may only cite source IDs present in source_index. Do not write URLs. Do not invent sources. "
         "Do not approve access, grant permissions, reduce proof debt, change verdicts, or say the request is safe.\n\n"
         "Return minified JSON only with exactly these keys: reviewer_summary, cited_source_ids, source_findings, "
-        "remaining_proof_gaps, next_human_action, safety_anchor.\n"
+        "remaining_proof_gaps, next_human_action, persona_summaries, safety_anchor.\n"
         "cited_source_ids must be an array of 1 to 3 source_id strings from source_index only. "
         "source_findings must be an array of at most 3 objects with exactly source_id, finding, limitation. "
+        "persona_summaries must be an array with exactly four objects for CFO, Security, CTO, and Legal. "
+        "Each persona object must have exactly persona, focus, summary, cited_source_ids, next_human_action, "
+        "safety_anchor, human_review_required, can_approve_access, can_reduce_proof_debt. "
+        "Persona cited_source_ids must use source IDs from source_index only, not URLs. "
+        "human_review_required must be true; can_approve_access and can_reduce_proof_debt must be false. "
         f"safety_anchor must be exactly: {NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR!r}\n"
         "Each finding must explain relevance, not proof completion. Every limitation must say human review is required.\n\n"
         f"Locked packet fields:\n{json.dumps(packet_payload, sort_keys=True)}\n\n"
@@ -354,8 +411,77 @@ def _validate_synthesis(parsed: dict[str, Any], source_index: list[dict[str, Any
         "source_findings": clean_findings,
         "remaining_proof_gaps": _clean_string(parsed["remaining_proof_gaps"]),
         "next_human_action": _clean_string(parsed["next_human_action"]),
+        "persona_summaries": _validate_persona_summaries(parsed["persona_summaries"], source_index),
         "safety_anchor": parsed["safety_anchor"],
     }
+
+
+def _validate_persona_summaries(value: Any, source_index: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        raise ValueError("Nebius synthesis persona_summaries must be an array")
+    if len(value) != len(NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS):
+        raise ValueError("Nebius synthesis persona_summaries must include CFO, Security, CTO, and Legal")
+    allowed_ids = {source["source_id"] for source in source_index}
+    cleaned = []
+    seen_personas = set()
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("Nebius synthesis persona_summaries entries must be objects")
+        unexpected = [
+            key
+            for key in item
+            if key
+            not in {
+                "persona",
+                "focus",
+                "summary",
+                "cited_source_ids",
+                "next_human_action",
+                "safety_anchor",
+                "human_review_required",
+                "can_approve_access",
+                "can_reduce_proof_debt",
+            }
+        ]
+        if unexpected:
+            raise ValueError(f"Nebius synthesis persona summary contained unexpected key: {unexpected[0]}")
+        persona = str(item.get("persona") or "")
+        if persona not in NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS:
+            raise ValueError(f"Nebius synthesis contained unknown persona: {persona}")
+        if persona in seen_personas:
+            raise ValueError(f"Nebius synthesis repeated persona: {persona}")
+        seen_personas.add(persona)
+        cited_ids = item.get("cited_source_ids")
+        if not isinstance(cited_ids, list) or not all(isinstance(source_id, str) for source_id in cited_ids):
+            raise ValueError("Nebius synthesis persona cited_source_ids must be a string array")
+        invalid_ids = [source_id for source_id in cited_ids if source_id not in allowed_ids]
+        if invalid_ids:
+            raise ValueError(f"Nebius synthesis persona cited unknown source id: {invalid_ids[0]}")
+        if item.get("safety_anchor") != NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR:
+            raise ValueError("Nebius synthesis persona missed required safety anchor")
+        if item.get("human_review_required") is not True:
+            raise ValueError("Nebius synthesis persona must require human review")
+        if item.get("can_approve_access") is not False:
+            raise ValueError("Nebius synthesis persona cannot approve access")
+        if item.get("can_reduce_proof_debt") is not False:
+            raise ValueError("Nebius synthesis persona cannot reduce proof debt")
+        cleaned.append(
+            {
+                "persona": persona,
+                "focus": _clean_string(item.get("focus"), max_len=220),
+                "summary": _clean_string(item.get("summary"), max_len=420),
+                "cited_source_ids": cited_ids,
+                "next_human_action": _clean_string(item.get("next_human_action"), max_len=320),
+                "safety_anchor": item["safety_anchor"],
+                "human_review_required": True,
+                "can_approve_access": False,
+                "can_reduce_proof_debt": False,
+            }
+        )
+    missing = [persona for persona in NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS if persona not in seen_personas]
+    if missing:
+        raise ValueError(f"Nebius synthesis missing persona: {missing[0]}")
+    return sorted(cleaned, key=lambda item: NEBIUS_EVIDENCE_SYNTHESIS_PERSONAS.index(item["persona"]))
 
 
 def build_nebius_evidence_synthesis(
@@ -420,6 +546,8 @@ def build_nebius_evidence_synthesis(
             "fallback_used": False,
             "fallback_reason": "",
             "synthesis": synthesis,
+            "persona_summaries": synthesis["persona_summaries"],
+            "persona_count": len(synthesis["persona_summaries"]),
             "required_anchors_present": True,
             "forbidden_phrases_present": [],
         }

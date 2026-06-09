@@ -189,6 +189,18 @@ class KeyedSponsorRehearsalTests(unittest.TestCase):
                 }
             )
 
+    def test_json_post_reports_socket_timeout_as_rehearsal_failure(self) -> None:
+        module = _load_module()
+
+        with patch.object(module.urllib.request, "urlopen", side_effect=module.socket.timeout("timed out")):
+            with self.assertRaisesRegex(module.RehearsalFailure, r"POST /api/sponsor-proof-runs failed"):
+                module._json_post(
+                    "http://unit.test",
+                    "/api/sponsor-proof-runs",
+                    {"live_tavily": True},
+                    timeout=0.01,
+                )
+
     def test_keyed_rehearsal_script_is_executable_and_secret_safe(self) -> None:
         script = SCRIPT_PATH.read_text(encoding="utf-8")
         manifest = json.loads((ROOT / "AI_JUDGE_MANIFEST.json").read_text(encoding="utf-8"))

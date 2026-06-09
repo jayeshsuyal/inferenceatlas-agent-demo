@@ -216,6 +216,13 @@ class MaxRehearsalStressTests(unittest.TestCase):
         self.assertEqual(report["ledger_contamination"]["no_live_call_with_external_write"], True)
         self.assertIn("Stress Test Run", module.render_markdown(report))
 
+    def test_json_request_reports_socket_timeout_as_stress_failure(self) -> None:
+        module = _load_module()
+
+        with patch.object(module.urllib.request, "urlopen", side_effect=module.socket.timeout("timed out")):
+            with self.assertRaisesRegex(module.StressFailure, r"GET /api/health failed"):
+                module._json_request("http://unit.test", "/api/health", timeout=0.01)
+
     def test_script_is_executable_documented_and_helpful(self) -> None:
         script = SCRIPT_PATH.read_text(encoding="utf-8")
         command_reference = (ROOT / "docs" / "COMMAND_REFERENCE.md").read_text(encoding="utf-8")

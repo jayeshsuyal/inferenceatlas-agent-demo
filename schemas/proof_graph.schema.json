@@ -1,0 +1,291 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jayeshsuyal/inferenceatlas-agent-demo/schemas/proof_graph.schema.json",
+  "title": "InferenceAtlas ProofGraph",
+  "description": "Public contract for packet-bound proof provenance. Live and fallback proof can attach to this graph, but graph nodes cannot approve, mutate, write, or change the IA Packet verdict.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "graph_id",
+    "graph_revision_id",
+    "content_hash",
+    "generated_by",
+    "mode",
+    "scenario_name",
+    "packet_reference",
+    "packet_node",
+    "proof_nodes",
+    "proof_edges",
+    "node_counts",
+    "invariants",
+    "safety_boundary",
+    "private_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "proof_graph.v0"
+    },
+    "graph_id": {
+      "type": "string",
+      "pattern": "^ia-proof-graph-.+-[0-9a-f]{16}-public-v0$"
+    },
+    "graph_revision_id": {
+      "type": "string",
+      "pattern": "^pgr_[0-9a-f]{16}$"
+    },
+    "content_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "generated_by": {
+      "type": "string",
+      "const": "inferenceatlas-agent-demo"
+    },
+    "mode": {
+      "type": "string",
+      "const": "offline_deterministic"
+    },
+    "scenario_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "packet_reference": {
+      "$ref": "#/$defs/packet_reference"
+    },
+    "packet_node": {
+      "$ref": "#/$defs/packet_node"
+    },
+    "proof_nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/proof_node"
+      }
+    },
+    "proof_edges": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/proof_edge"
+      }
+    },
+    "node_counts": {
+      "type": "object",
+      "required": ["packet", "proof", "edge"],
+      "properties": {
+        "packet": { "type": "integer", "const": 1 },
+        "proof": { "type": "integer", "minimum": 1 },
+        "edge": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "invariants": {
+      "$ref": "#/$defs/invariants"
+    },
+    "safety_boundary": {
+      "$ref": "#/$defs/safety_boundary"
+    },
+    "private_boundary": {
+      "$ref": "#/$defs/private_boundary"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "packet_reference": {
+      "type": "object",
+      "required": ["packet_id", "revision_id", "content_hash"],
+      "properties": {
+        "packet_id": { "type": "string", "minLength": 1 },
+        "revision_id": { "type": "string", "pattern": "^rev_[0-9a-f]{16}$" },
+        "content_hash": { "$ref": "#/$defs/hash" }
+      }
+    },
+    "packet_node": {
+      "type": "object",
+      "required": [
+        "node_id",
+        "node_type",
+        "packet_id",
+        "revision_id",
+        "content_hash",
+        "decision_lock",
+        "verdict",
+        "review_posture",
+        "next_human_action",
+        "safety_state"
+      ],
+      "properties": {
+        "node_id": { "type": "string", "pattern": "^packet:.+$" },
+        "node_type": { "type": "string", "const": "packet" },
+        "packet_id": { "type": "string", "minLength": 1 },
+        "revision_id": { "type": "string", "pattern": "^rev_[0-9a-f]{16}$" },
+        "content_hash": { "$ref": "#/$defs/hash" },
+        "decision_lock": {
+          "type": "string",
+          "enum": ["approval_granted", "read_only_validation", "scoped_validation_only", "blocked"]
+        },
+        "verdict": { "type": "string", "minLength": 1 },
+        "review_posture": { "type": "string", "minLength": 1 },
+        "next_human_action": { "type": "string", "minLength": 1 },
+        "safety_state": {
+          "type": "object",
+          "required": [
+            "approval_granted",
+            "external_writes_enabled",
+            "packet_state_mutation",
+            "requires_human_approval"
+          ],
+          "properties": {
+            "approval_granted": { "type": "boolean", "const": false },
+            "external_writes_enabled": { "type": "boolean", "const": false },
+            "packet_state_mutation": { "type": "boolean", "const": false },
+            "requires_human_approval": { "type": "boolean", "const": true }
+          }
+        }
+      }
+    },
+    "proof_node": {
+      "type": "object",
+      "required": [
+        "node_id",
+        "node_type",
+        "label",
+        "provider",
+        "mode",
+        "api_call_made",
+        "fallback_used",
+        "external_write_made",
+        "can_change_packet_verdict",
+        "attached_packet_field",
+        "human_review_required",
+        "next_human_action",
+        "summary",
+        "source_refs"
+      ],
+      "properties": {
+        "node_id": { "type": "string", "minLength": 1 },
+        "node_type": { "type": "string", "const": "proof" },
+        "label": { "type": "string", "minLength": 1 },
+        "provider": {
+          "type": "string",
+          "enum": ["ia_packet", "tavily", "composio", "openclaw", "nebius", "portkey"]
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["deterministic_packet_authority", "deterministic_fallback", "live_when_configured"]
+        },
+        "api_call_made": { "type": "boolean" },
+        "fallback_used": { "type": "boolean" },
+        "external_write_made": { "type": "boolean", "const": false },
+        "can_change_packet_verdict": { "type": "boolean", "const": false },
+        "attached_packet_field": {
+          "type": "string",
+          "enum": [
+            "decision_lock",
+            "blocked_claims",
+            "missing_proof",
+            "reviewer_routing",
+            "next_human_action",
+            "safety_invariants",
+            "tool_scope",
+            "source_candidates",
+            "claim_ledger",
+            "runtime_trace",
+            "downstream_verdict"
+          ]
+        },
+        "human_review_required": { "type": "boolean", "const": true },
+        "next_human_action": { "type": "string", "minLength": 1 },
+        "summary": { "type": "string" },
+        "source_refs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "proof_edge": {
+      "type": "object",
+      "required": [
+        "edge_id",
+        "edge_type",
+        "from_node_id",
+        "to_node_id",
+        "packet_field",
+        "human_review_required",
+        "can_change_packet_verdict"
+      ],
+      "properties": {
+        "edge_id": { "type": "string", "minLength": 1 },
+        "edge_type": {
+          "type": "string",
+          "enum": [
+            "attaches_to_packet_field",
+            "supports_review",
+            "blocks_action",
+            "requires_human_owner",
+            "observed_by_downstream"
+          ]
+        },
+        "from_node_id": { "type": "string", "minLength": 1 },
+        "to_node_id": { "type": "string", "minLength": 1 },
+        "packet_field": { "type": "string", "minLength": 1 },
+        "human_review_required": { "type": "boolean", "const": true },
+        "can_change_packet_verdict": { "type": "boolean", "const": false }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "required": [
+        "packet_remains_authority",
+        "graph_can_approve",
+        "graph_can_mutate_packet",
+        "graph_can_execute_external_write",
+        "graph_can_change_verdict",
+        "all_nodes_require_human_review",
+        "all_nodes_non_mutating",
+        "all_edges_non_mutating"
+      ],
+      "properties": {
+        "packet_remains_authority": { "type": "boolean", "const": true },
+        "graph_can_approve": { "type": "boolean", "const": false },
+        "graph_can_mutate_packet": { "type": "boolean", "const": false },
+        "graph_can_execute_external_write": { "type": "boolean", "const": false },
+        "graph_can_change_verdict": { "type": "boolean", "const": false },
+        "all_nodes_require_human_review": { "type": "boolean", "const": true },
+        "all_nodes_non_mutating": { "type": "boolean", "const": true },
+        "all_edges_non_mutating": { "type": "boolean", "const": true }
+      }
+    },
+    "safety_boundary": {
+      "type": "object",
+      "required": [
+        "approves_access",
+        "grants_permissions",
+        "executes_external_writes",
+        "mutates_packet",
+        "mutates_production",
+        "changes_verdict",
+        "requires_human_review"
+      ],
+      "properties": {
+        "approves_access": { "type": "boolean", "const": false },
+        "grants_permissions": { "type": "boolean", "const": false },
+        "executes_external_writes": { "type": "boolean", "const": false },
+        "mutates_packet": { "type": "boolean", "const": false },
+        "mutates_production": { "type": "boolean", "const": false },
+        "changes_verdict": { "type": "boolean", "const": false },
+        "requires_human_review": { "type": "boolean", "const": true }
+      }
+    },
+    "private_boundary": {
+      "type": "object",
+      "required": ["private_source_exposed", "principle"],
+      "properties": {
+        "private_source_exposed": { "type": "boolean", "const": false },
+        "principle": { "type": "string", "const": "Private engine, public proof." }
+      }
+    }
+  }
+}

@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from agent.composio_dry_run_diff import COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION
 from agent.proof_graph import (
     PACKET_ONLY_PROOF_FIELDS,
     PROOF_GRAPH_SCHEMA_VERSION,
@@ -104,6 +105,14 @@ def test_proof_graph_schema_file_locks_contract() -> None:
     assert schema["$defs"]["proof_node"]["properties"]["external_write_made"]["const"] is False
     assert schema["$defs"]["proof_node"]["properties"]["can_change_packet_verdict"]["const"] is False
     assert schema["$defs"]["proof_node"]["properties"]["human_review_required"]["const"] is True
+    assert schema["properties"]["composio_blast_radius"]["$ref"] == (
+        "#/$defs/composio_blast_radius"
+    )
+    assert schema["$defs"]["composio_blast_radius"]["properties"]["schema_version"]["const"] == (
+        COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION
+    )
+    assert schema["$defs"]["composio_blast_radius"]["properties"]["api_call_made"]["const"] is False
+    assert schema["$defs"]["composio_blast_radius"]["properties"]["would_execute"]["const"] is False
     assert schema["$defs"]["invariants"]["properties"]["packet_remains_authority"]["const"] is True
     assert schema["$defs"]["invariants"]["properties"]["graph_can_change_verdict"]["const"] is False
     assert schema["$defs"]["safety_boundary"]["properties"]["executes_external_writes"]["const"] is False
@@ -120,6 +129,108 @@ def test_packet_only_proof_graph_is_deterministic_and_packet_backed() -> None:
     _assert_graph_boundary(first)
     assert first["scenario_name"] == "support_triage_agent"
     assert first["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert "composio_blast_radius" not in first
+
+
+def test_composio_blast_radius_graph_layer_is_opt_in_and_non_mutating() -> None:
+    graph = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_composio_blast_radius=True,
+    )
+
+    assert graph["scenario_name"] == "support_triage_agent"
+    assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["invariants"] == {
+        "packet_remains_authority": True,
+        "graph_can_approve": False,
+        "graph_can_mutate_packet": False,
+        "graph_can_execute_external_write": False,
+        "graph_can_change_verdict": False,
+        "all_nodes_require_human_review": True,
+        "all_nodes_non_mutating": True,
+        "all_edges_non_mutating": True,
+    }
+
+    composio_summary = graph["composio_blast_radius"]
+    assert composio_summary["schema_version"] == COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION
+    assert composio_summary["provider"] == "composio"
+    assert composio_summary["mode"] == "deterministic_fallback"
+    assert composio_summary["dry_run_enforced"] is True
+    assert composio_summary["api_call_made"] is False
+    assert composio_summary["composio_execute_allowed"] is False
+    assert composio_summary["fallback_used"] is True
+    assert composio_summary["tool_count"] == 3
+    assert composio_summary["blocked_action_count"] == 9
+    assert composio_summary["write_like_action_count"] == 5
+    assert composio_summary["admin_like_action_count"] == 4
+    assert composio_summary["required_proof_count"] == 9
+    assert composio_summary["max_risk_level"] == "critical"
+    assert composio_summary["all_blocked_before_execution"] is True
+    assert composio_summary["all_write_or_admin_blocked"] is True
+    assert composio_summary["would_execute"] is False
+    assert composio_summary["candidate_action_slugs"] == [
+        "GITHUB_LIST_ISSUES",
+        "SLACK_FETCH_CONVERSATION_HISTORY",
+        "JIRA_CREATE_ISSUE",
+    ]
+
+    composio_nodes = [node for node in graph["proof_nodes"] if node["provider"] == "composio"]
+    assert len(composio_nodes) == (
+        composio_summary["tool_count"]
+        + composio_summary["blocked_action_count"]
+        + composio_summary["required_proof_count"]
+    )
+    assert graph["node_counts"] == {
+        "packet": 1,
+        "proof": len(PACKET_ONLY_PROOF_FIELDS) + len(composio_nodes),
+        "edge": len(graph["proof_edges"]),
+    }
+
+    tool_nodes = {
+        node["node_id"]: node
+        for node in composio_nodes
+        if node["node_id"].startswith("proof:composio:tool_scope:")
+    }
+    assert set(tool_nodes) == {
+        "proof:composio:tool_scope:github",
+        "proof:composio:tool_scope:slack",
+        "proof:composio:tool_scope:jira",
+    }
+    for node in composio_nodes:
+        assert node["mode"] == "deterministic_fallback"
+        assert node["api_call_made"] is False
+        assert node["fallback_used"] is True
+        assert node["external_write_made"] is False
+        assert node["can_change_packet_verdict"] is False
+        assert node["human_review_required"] is True
+        assert node["attached_packet_field"] in {"tool_scope", "missing_proof"}
+
+    composio_node_ids = {node["node_id"] for node in composio_nodes}
+    packet_node_id = graph["packet_node"]["node_id"]
+    composio_packet_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"] in composio_node_ids and edge["to_node_id"] == packet_node_id
+    ]
+    blocked_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"].startswith("proof:composio:blocked_action:")
+        and edge["edge_type"] == "blocks_action"
+    ]
+    required_proof_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"].startswith("proof:composio:required_proof:")
+        and edge["edge_type"] == "requires_human_owner"
+    ]
+
+    assert len(composio_packet_edges) == len(composio_nodes)
+    assert len(blocked_edges) == composio_summary["blocked_action_count"]
+    assert len(required_proof_edges) == composio_summary["required_proof_count"]
+    for edge in graph["proof_edges"]:
+        assert edge["human_review_required"] is True
+        assert edge["can_change_packet_verdict"] is False
 
 
 def test_proof_graph_covers_public_access_scenarios_without_keys() -> None:
@@ -151,6 +262,31 @@ def test_proof_graph_cli_is_machine_readable() -> None:
     _assert_graph_boundary(payload)
     assert payload["scenario_name"] == "admin_code_fix_bot"
     assert payload["packet_node"]["decision_lock"] == "blocked"
+
+
+def test_proof_graph_cli_can_include_composio_blast_radius_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-composio-blast-radius",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["composio_blast_radius"]["provider"] == "composio"
+    assert payload["composio_blast_radius"]["api_call_made"] is False
+    assert payload["composio_blast_radius"]["would_execute"] is False
+    assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "composio"}
 
 
 def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:

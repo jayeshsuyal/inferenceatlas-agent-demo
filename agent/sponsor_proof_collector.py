@@ -127,7 +127,11 @@ def _collector_proof_quality(
         **quality["nebius"],
         "source_index_count": nebius_evidence_synthesis["source_index_count"],
         "role_brief_count": nebius_evidence_synthesis["role_brief_count"],
+        "persona_count": nebius_evidence_synthesis.get("persona_count", 0),
         "role_briefs_source_bound": nebius_evidence_synthesis["invariants"]["role_briefs_source_bound"],
+        "persona_summaries_source_bound": nebius_evidence_synthesis["invariants"][
+            "persona_summaries_source_bound"
+        ],
     }
     quality["collector_boundary"] = {
         "quality_claim": "Sponsor tools deepen proof context but cannot change packet authority.",
@@ -136,6 +140,46 @@ def _collector_proof_quality(
         "downstream_preview_only": True,
     }
     return quality
+
+
+def _live_proof_intelligence(
+    trace: dict[str, Any],
+    nebius_evidence_synthesis: dict[str, Any],
+) -> dict[str, Any]:
+    tavily = trace.get("live_proof", {}).get("tavily") or {}
+    tavily_quality = tavily.get("source_quality_summary") or trace["proof_quality"]["tavily"]
+    personas = nebius_evidence_synthesis.get("persona_summaries", [])
+    return {
+        "status": "ready",
+        "tavily": {
+            "query_strategy": (tavily.get("query_plan_summary") or {}).get(
+                "query_strategy",
+                "packet_missing_proof_multi_query",
+            ),
+            "query_count": tavily_quality["query_count"],
+            "query_variant_count": tavily_quality.get("query_variant_count", tavily_quality["query_count"]),
+            "source_url_count": tavily_quality["source_url_count"],
+            "unique_source_url_count": tavily_quality["unique_source_url_count"],
+            "source_domain_count": tavily_quality["source_domain_count"],
+            "domain_diversity_score": tavily_quality.get("domain_diversity_score", 0),
+            "trust_tier_counts": tavily_quality.get("trust_tier_counts", {}),
+            "human_review_required": True,
+            "can_reduce_proof_debt": False,
+        },
+        "nebius": {
+            "persona_count": len(personas),
+            "personas": [persona["persona"] for persona in personas],
+            "source_index_count": nebius_evidence_synthesis["source_index_count"],
+            "source_bound": nebius_evidence_synthesis["invariants"]["persona_summaries_source_bound"],
+            "human_review_required": True,
+            "can_change_verdict": False,
+        },
+        "authority": {
+            "packet_remains_authority": True,
+            "decision_lock_unchanged": True,
+            "sponsors_can_approve_or_write": False,
+        },
+    }
 
 
 def build_sponsor_proof_collector_run(
@@ -205,6 +249,7 @@ def build_sponsor_proof_collector_run(
     safety = _safety_boundary(trace, portkey)
     invariants = _invariants(trace, steps, portkey)
     sponsor_proof_quality = _collector_proof_quality(trace, nebius_evidence_synthesis)
+    live_proof_intelligence = _live_proof_intelligence(trace, nebius_evidence_synthesis)
 
     run_hash_input = {
         "schema_version": SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION,
@@ -223,6 +268,7 @@ def build_sponsor_proof_collector_run(
         "subscriber": subscriber,
         "downstream_fixture": downstream_fixture,
         "sponsor_proof_quality": sponsor_proof_quality,
+        "live_proof_intelligence": live_proof_intelligence,
     }
     if live_tavily:
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
@@ -263,6 +309,7 @@ def build_sponsor_proof_collector_run(
         "sponsor_proof_trace": trace,
         "nebius_evidence_synthesis": nebius_evidence_synthesis,
         "sponsor_proof_quality": sponsor_proof_quality,
+        "live_proof_intelligence": live_proof_intelligence,
         "packet_advisor_answer": advisor,
         "downstream_previews": {
             "portkey_model_spend_gate": portkey,
@@ -353,9 +400,25 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
             f"- OpenClaw checkpoints: {quality['openclaw']['checkpoint_count']}",
             f"- OpenClaw blocked events: {quality['openclaw']['blocked_event_count']}",
             f"- Nebius role briefs: {quality['nebius']['role_brief_count']}",
+            f"- Nebius personas: {quality['nebius']['persona_count']}",
             f"- Nebius source index count: {quality['nebius']['source_index_count']}",
             f"- packet remains authority: {quality['decision_authority']['packet_remains_authority']}",
             f"- all non-mutating: {quality['collector_boundary']['all_non_mutating']}",
+        ]
+    )
+
+    intelligence = run["live_proof_intelligence"]
+    lines.extend(
+        [
+            "",
+            "## Live Proof Intelligence",
+            "",
+            f"- Tavily query strategy: `{intelligence['tavily']['query_strategy']}`",
+            f"- Tavily query variants: {intelligence['tavily']['query_variant_count']}",
+            f"- Tavily domain diversity score: {intelligence['tavily']['domain_diversity_score']}",
+            f"- Nebius personas: {', '.join(intelligence['nebius']['personas']) or 'none'}",
+            f"- Nebius source-bound personas: {intelligence['nebius']['source_bound']}",
+            f"- packet remains authority: {intelligence['authority']['packet_remains_authority']}",
         ]
     )
 

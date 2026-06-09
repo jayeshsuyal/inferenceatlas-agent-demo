@@ -51,6 +51,14 @@ def _fake_client(content: str):
 
 
 def _valid_synthesis_content() -> str:
+    personas = (
+        '['
+        f'{{"persona":"CFO","focus":"spend exposure","summary":"CFO should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Finance with packet proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"Security","focus":"data boundary","summary":"Security should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Security with packet proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"CTO","focus":"engineering controls","summary":"CTO should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Engineering with packet proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}},'
+        f'{{"persona":"Legal","focus":"policy boundary","summary":"Legal should review source candidates; IA does not approve movement.","cited_source_ids":["tavily:1"],"next_human_action":"Route the source candidate to Legal with packet proof debt attached.","safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}","human_review_required":true,"can_approve_access":false,"can_reduce_proof_debt":false}}'
+        ']'
+    )
     return (
         "{"
         '"reviewer_summary":"IA collected Tavily source candidates for reviewer inspection while the packet decision remains locked.",'
@@ -58,6 +66,7 @@ def _valid_synthesis_content() -> str:
         '"source_findings":[{"source_id":"tavily:1","finding":"The source is relevant context for the named Security reviewer.","limitation":"Human review is required before this can affect proof debt."}],'
         '"remaining_proof_gaps":"Internal policy evidence, owner approval, and audit logs remain missing.",'
         '"next_human_action":"Route the source candidate to Security/Legal with the packet proof debt attached.",'
+        f'"persona_summaries":{personas},'
         f'"safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}"'
         "}"
     )
@@ -80,6 +89,11 @@ def test_evidence_synthesis_fallback_indexes_tavily_sources_without_deciding() -
     assert payload["role_specific_briefs"][0]["source_ids"] == ["tavily:1"]
     assert all(brief["human_review_required"] is True for brief in payload["role_specific_briefs"])
     assert all(brief["can_reduce_proof_debt"] is False for brief in payload["role_specific_briefs"])
+    assert payload["persona_count"] == 4
+    assert [item["persona"] for item in payload["persona_summaries"]] == ["CFO", "Security", "CTO", "Legal"]
+    assert all(set(item["cited_source_ids"]).issubset({"tavily:1"}) for item in payload["persona_summaries"])
+    assert all(item["can_approve_access"] is False for item in payload["persona_summaries"])
+    assert all(item["can_reduce_proof_debt"] is False for item in payload["persona_summaries"])
     assert payload["synthesis"]["cited_source_ids"] == ["tavily:1"]
     assert payload["synthesis"]["safety_anchor"] == NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
     assert payload["invariants"]["source_ids_from_tavily_only"] is True
@@ -90,6 +104,7 @@ def test_evidence_synthesis_fallback_indexes_tavily_sources_without_deciding() -
     assert payload["invariants"]["can_grant_permissions"] is False
     assert payload["invariants"]["can_mutate_packet"] is False
     assert payload["invariants"]["role_briefs_source_bound"] is True
+    assert payload["invariants"]["persona_summaries_source_bound"] is True
     assert payload["invariants"]["human_review_required"] is True
 
 
@@ -116,6 +131,9 @@ def test_live_evidence_synthesis_cites_only_existing_tavily_source_ids() -> None
     assert payload["synthesis"]["source_findings"][0]["source_id"] == "tavily:1"
     assert payload["role_brief_count"] == len(packet["reviewer_owners"])
     assert payload["role_specific_briefs"][0]["source_ids"] == ["tavily:1"]
+    assert payload["persona_count"] == 4
+    assert payload["persona_summaries"][0]["persona"] == "CFO"
+    assert payload["persona_summaries"][0]["cited_source_ids"] == ["tavily:1"]
     assert payload["required_anchors_present"] is True
     assert payload["forbidden_phrases_present"] == []
     assert payload["invariants"]["no_new_urls"] is True

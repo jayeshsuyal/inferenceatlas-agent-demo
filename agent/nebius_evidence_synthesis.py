@@ -145,6 +145,46 @@ def _fallback_synthesis(packet: dict[str, Any], source_index: list[dict[str, Any
     }
 
 
+def _role_specific_briefs(packet: dict[str, Any], source_index: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    briefs = []
+    for owner in packet.get("reviewer_owners", [])[:4]:
+        if not isinstance(owner, dict):
+            continue
+        reviewer_owner = _first_text(owner.get("owner") or "Named reviewer")
+        review_area = _first_text(owner.get("review_area") or owner.get("area") or "packet proof debt")
+        matching_sources = [
+            source for source in source_index if source.get("reviewer_owner") == reviewer_owner
+        ]
+        if not matching_sources:
+            matching_sources = source_index[:2]
+        source_ids = [source["source_id"] for source in matching_sources[:2]]
+        source_phrase = (
+            f"{len(source_ids)} source candidate(s)"
+            if source_ids
+            else "no source candidates yet"
+        )
+        briefs.append(
+            {
+                "reviewer_owner": reviewer_owner,
+                "review_area": review_area,
+                "source_ids": source_ids,
+                "brief": (
+                    f"{reviewer_owner} should inspect {source_phrase} against {review_area}; "
+                    "the packet decision and proof debt remain locked until human review."
+                ),
+                "remaining_question": (
+                    f"What evidence would let {reviewer_owner} reduce the named proof debt without changing "
+                    "the packet verdict?"
+                ),
+                "next_human_action": _next_human_action(packet),
+                "safety_anchor": NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR,
+                "human_review_required": True,
+                "can_reduce_proof_debt": False,
+            }
+        )
+    return briefs
+
+
 def _base_payload(
     packet: dict[str, Any],
     source_index: list[dict[str, Any]],
@@ -153,6 +193,7 @@ def _base_payload(
     fallback_reason: str,
 ) -> dict[str, Any]:
     synthesis = _fallback_synthesis(packet, source_index)
+    role_briefs = _role_specific_briefs(packet, source_index)
     return {
         "schema_version": NEBIUS_EVIDENCE_SYNTHESIS_SCHEMA_VERSION,
         "contract_version": ADAPTER_CONTRACT_VERSION,
@@ -167,6 +208,8 @@ def _base_payload(
         "source_index": source_index,
         "source_index_count": len(source_index),
         "synthesis": synthesis,
+        "role_specific_briefs": role_briefs,
+        "role_brief_count": len(role_briefs),
         "required_anchors_present": True,
         "forbidden_phrases_present": [],
         "docs_reference": "docs/LIVE_INTEGRATION_CONTRACT.md#nebius",
@@ -180,6 +223,7 @@ def _base_payload(
             "can_grant_permissions": False,
             "can_mutate_packet": False,
             "decision_lock_unchanged": True,
+            "role_briefs_source_bound": True,
             "human_review_required": True,
         },
     }

@@ -124,6 +124,14 @@ def test_collector_run_wraps_trace_advisor_and_portkey_preview() -> None:
     assert run["packet_advisor_answer"]["schema_version"] == "packet_advisor_answer.v0"
     assert run["packet_advisor_answer"]["subscriber"] == "portkey_model_spend_gate"
     assert run["packet_advisor_answer"]["downstream_gate"]["requested_action_can_proceed"] is False
+    assert run["sponsor_proof_quality"]["collector_boundary"] == {
+        "quality_claim": "Sponsor tools deepen proof context but cannot change packet authority.",
+        "all_non_mutating": True,
+        "all_non_approving": True,
+        "downstream_preview_only": True,
+    }
+    assert run["sponsor_proof_quality"]["decision_authority"]["packet_remains_authority"] is True
+    assert run["sponsor_proof_quality"]["decision_authority"]["sponsors_can_approve_or_write"] is False
 
     portkey = run["downstream_previews"]["portkey_model_spend_gate"]
     assert portkey["schema_version"] == PORTKEY_ADAPTER_SCHEMA_VERSION
@@ -198,6 +206,8 @@ def test_collector_live_tavily_without_key_keeps_deterministic_fallback() -> Non
     assert tavily_proof["live_call_attempted"] is False
     assert tavily_proof["fallback_used"] is True
     assert tavily_proof["fallback_reason"] == "tavily_api_key_missing"
+    assert run["sponsor_proof_quality"]["tavily"]["source_url_count"] == 0
+    assert run["sponsor_proof_quality"]["tavily"]["can_reduce_proof_debt"] is False
     assert all(candidate["source_urls"] == [] for candidate in tavily_proof["evidence_candidates"])
 
 
@@ -229,6 +239,8 @@ def test_collector_composio_dry_run_builds_permission_diff_without_live_calls() 
     assert composio_proof["composio_execute_allowed"] is False
     assert composio_proof["permission_diff_summary"]["tool_count"] == 3
     assert composio_proof["permission_diff_summary"]["blocked_write_count"] == 9
+    assert composio_proof["permission_diff_summary"]["highest_risk_level"] == "high"
+    assert run["sponsor_proof_quality"]["composio"]["highest_risk_level"] == "high"
     assert all(diff["execute_action_preview"]["would_call_composio"] is False for diff in composio_proof["permission_diffs"])
 
     markdown = render_sponsor_proof_collector_markdown(run)
@@ -299,6 +311,9 @@ def test_collector_builds_nebius_evidence_synthesis_from_tavily_sources() -> Non
     assert synthesis["live_call_count"] == 1
     assert synthesis["fallback_used"] is False
     assert synthesis["source_index_count"] > 0
+    assert synthesis["role_brief_count"] == len(run["sponsor_proof_trace"]["access_review_evidence"]["reviewer_owners"])
+    source_ids = {source["source_id"] for source in synthesis["source_index"]}
+    assert set(synthesis["role_specific_briefs"][0]["source_ids"]).issubset(source_ids)
     assert synthesis["synthesis"]["cited_source_ids"] == ["tavily:1"]
     assert synthesis["synthesis"]["source_findings"][0]["source_id"] == "tavily:1"
     assert synthesis["synthesis"]["safety_anchor"] == NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
@@ -307,6 +322,9 @@ def test_collector_builds_nebius_evidence_synthesis_from_tavily_sources() -> Non
     assert synthesis["invariants"]["can_reduce_proof_debt"] is False
     assert synthesis["invariants"]["can_approve_access"] is False
     assert synthesis["invariants"]["can_mutate_packet"] is False
+    assert synthesis["invariants"]["role_briefs_source_bound"] is True
+    assert run["sponsor_proof_quality"]["nebius"]["role_brief_count"] == synthesis["role_brief_count"]
+    assert run["sponsor_proof_quality"]["nebius"]["source_index_count"] == synthesis["source_index_count"]
     assert run["invariants"]["decision_lock_unchanged"] is True
     assert run["safety_boundary"]["executes_external_writes"] is False
     assert run["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
@@ -331,6 +349,10 @@ def test_collector_markdown_is_public_safe_and_skim_ready() -> None:
         "| 2 | composio | planned | completed_fallback | False | True | False | False |",
         "| 3 | openclaw | traced | completed_fallback | False | True | False | False |",
         "| 4 | nebius | narrated | completed_fallback | False | True | False | False |",
+        "## Sponsor Proof Quality",
+        "Composio blocked writes: 9",
+        "OpenClaw blocked events: 9",
+        "packet remains authority: True",
         "Portkey API call made: False",
         "Portkey guardrail verdict: False",
         "requires human review: True",

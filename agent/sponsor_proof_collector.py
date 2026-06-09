@@ -118,6 +118,26 @@ def _invariants(trace: dict[str, Any], steps: list[dict[str, Any]], portkey: dic
     }
 
 
+def _collector_proof_quality(
+    trace: dict[str, Any],
+    nebius_evidence_synthesis: dict[str, Any],
+) -> dict[str, Any]:
+    quality = _public_dict(trace["proof_quality"])
+    quality["nebius"] = {
+        **quality["nebius"],
+        "source_index_count": nebius_evidence_synthesis["source_index_count"],
+        "role_brief_count": nebius_evidence_synthesis["role_brief_count"],
+        "role_briefs_source_bound": nebius_evidence_synthesis["invariants"]["role_briefs_source_bound"],
+    }
+    quality["collector_boundary"] = {
+        "quality_claim": "Sponsor tools deepen proof context but cannot change packet authority.",
+        "all_non_mutating": True,
+        "all_non_approving": True,
+        "downstream_preview_only": True,
+    }
+    return quality
+
+
 def build_sponsor_proof_collector_run(
     request_path: Path = DEFAULT_TRIAL_REQUEST,
     *,
@@ -184,6 +204,7 @@ def build_sponsor_proof_collector_run(
     )
     safety = _safety_boundary(trace, portkey)
     invariants = _invariants(trace, steps, portkey)
+    sponsor_proof_quality = _collector_proof_quality(trace, nebius_evidence_synthesis)
 
     run_hash_input = {
         "schema_version": SPONSOR_PROOF_COLLECTOR_SCHEMA_VERSION,
@@ -201,6 +222,7 @@ def build_sponsor_proof_collector_run(
         "question": question,
         "subscriber": subscriber,
         "downstream_fixture": downstream_fixture,
+        "sponsor_proof_quality": sponsor_proof_quality,
     }
     if live_tavily:
         run_hash_input["live_tavily"] = trace.get("live_proof", {}).get("tavily", {})
@@ -240,6 +262,7 @@ def build_sponsor_proof_collector_run(
         "collector_steps": steps,
         "sponsor_proof_trace": trace,
         "nebius_evidence_synthesis": nebius_evidence_synthesis,
+        "sponsor_proof_quality": sponsor_proof_quality,
         "packet_advisor_answer": advisor,
         "downstream_previews": {
             "portkey_model_spend_gate": portkey,
@@ -316,6 +339,25 @@ def render_sponsor_proof_collector_markdown(run: dict[str, Any]) -> str:
                 approve=step["can_approve_access"],
             )
         )
+
+    quality = run["sponsor_proof_quality"]
+    lines.extend(
+        [
+            "",
+            "## Sponsor Proof Quality",
+            "",
+            f"- Tavily queries planned: {quality['tavily']['query_count']}",
+            f"- Tavily source URLs: {quality['tavily']['source_url_count']}",
+            f"- Composio blocked writes: {quality['composio']['blocked_write_count']}",
+            f"- Composio highest risk: {quality['composio']['highest_risk_level']}",
+            f"- OpenClaw checkpoints: {quality['openclaw']['checkpoint_count']}",
+            f"- OpenClaw blocked events: {quality['openclaw']['blocked_event_count']}",
+            f"- Nebius role briefs: {quality['nebius']['role_brief_count']}",
+            f"- Nebius source index count: {quality['nebius']['source_index_count']}",
+            f"- packet remains authority: {quality['decision_authority']['packet_remains_authority']}",
+            f"- all non-mutating: {quality['collector_boundary']['all_non_mutating']}",
+        ]
+    )
 
     live_proof = run.get("live_sponsor_proof", {})
     tavily_proof = live_proof.get("tavily") if live_proof else None

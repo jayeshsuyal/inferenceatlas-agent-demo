@@ -7,6 +7,7 @@ IA Packet.
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
 from typing import Any, Callable
 
 from .adapters import build_adapter_result
@@ -36,8 +37,84 @@ def _source_from_result(result: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _domain(url: str) -> str:
+    parsed = urlparse(url)
+    return parsed.netloc.lower()
+
+
+def _source_quality(candidate: dict[str, Any]) -> dict[str, Any]:
+    source_urls = [str(url) for url in candidate.get("source_urls", []) if url]
+    unique_urls = list(dict.fromkeys(source_urls))
+    domains = list(dict.fromkeys(_domain(url) for url in unique_urls if _domain(url)))
+    return {
+        "source_count": len(source_urls),
+        "unique_source_count": len(unique_urls),
+        "source_domains": domains,
+        "freshness": candidate.get("freshness", "not_fetched_in_offline_mode"),
+        "search_mode": candidate.get("search_mode", "planned_search_extract_or_crawl"),
+        "human_review_required": True,
+        "can_reduce_proof_debt": False,
+        "cannot_grant_access": True,
+    }
+
+
+def _with_source_quality(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [{**candidate, "source_quality": _source_quality(candidate)} for candidate in candidates]
+
+
+def _query_plan_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    owners = [candidate.get("reviewer_owner") for candidate in candidates if candidate.get("reviewer_owner")]
+    return {
+        "query_count": len(candidates),
+        "reviewer_owners": list(dict.fromkeys(owners)),
+        "planned_queries": [candidate["query"] for candidate in candidates],
+        "search_depth": "basic",
+        "include_raw_content": False,
+        "human_review_required": True,
+    }
+
+
+def _source_quality_summary(candidates: list[dict[str, Any]]) -> dict[str, Any]:
+    source_urls = [
+        str(url)
+        for candidate in candidates
+        for url in candidate.get("source_urls", [])
+        if url
+    ]
+    unique_urls = list(dict.fromkeys(source_urls))
+    domains = list(dict.fromkeys(_domain(url) for url in unique_urls if _domain(url)))
+    return {
+        "query_count": len(candidates),
+        "source_url_count": len(source_urls),
+        "unique_source_url_count": len(unique_urls),
+        "source_domain_count": len(domains),
+        "source_domains": domains,
+        "sources_per_query": [
+            {
+                "query": candidate["query"],
+                "source_count": len(candidate.get("source_urls", [])),
+                "unique_source_count": candidate.get("source_quality", {}).get(
+                    "unique_source_count",
+                    len(set(candidate.get("source_urls", []))),
+                ),
+            }
+            for candidate in candidates
+        ],
+        "freshness_labels": list(
+            dict.fromkeys(
+                candidate.get("freshness", "not_fetched_in_offline_mode")
+                for candidate in candidates
+            )
+        ),
+        "human_review_required": True,
+        "can_reduce_proof_debt": False,
+        "cannot_grant_access": True,
+    }
+
+
 def _fallback_payload(scenario_name: str, *, live_requested: bool, reason: str) -> dict[str, Any]:
     fallback = build_adapter_result("tavily", scenario_name)
+    candidates = _with_source_quality(fallback["evidence_candidates"])
     fallback.update(
         {
             "live_evidence_schema_version": TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
@@ -48,6 +125,9 @@ def _fallback_payload(scenario_name: str, *, live_requested: bool, reason: str) 
             "fallback_used": True,
             "fallback_reason": reason,
             "docs_reference": TAVILY_DOCS_URL,
+            "evidence_candidates": candidates,
+            "query_plan_summary": _query_plan_summary(candidates),
+            "source_quality_summary": _source_quality_summary(candidates),
         }
     )
     return fallback
@@ -122,6 +202,7 @@ def build_tavily_live_evidence(
                     "cannot_grant_access": True,
                 }
             )
+        enriched_candidates = _with_source_quality(enriched_candidates)
 
         live_payload = {
             **fallback,
@@ -137,6 +218,8 @@ def build_tavily_live_evidence(
             "fallback_used": False,
             "fallback_reason": "",
             "evidence_candidates": enriched_candidates,
+            "query_plan_summary": _query_plan_summary(enriched_candidates),
+            "source_quality_summary": _source_quality_summary(enriched_candidates),
             "proof_pack": {
                 **fallback["proof_pack"],
                 "proof_type": "live_evidence_candidates",
@@ -154,6 +237,7 @@ def build_tavily_live_evidence(
         }
         return live_payload
     except Exception as exc:  # pragma: no cover - exact SDK failures vary.
+        candidates = _with_source_quality(fallback["evidence_candidates"])
         fallback.update(
             {
                 "live_evidence_schema_version": TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
@@ -165,6 +249,9 @@ def build_tavily_live_evidence(
                 "fallback_reason": "tavily_live_error",
                 "live_error": _sanitize_error(exc),
                 "docs_reference": TAVILY_DOCS_URL,
+                "evidence_candidates": candidates,
+                "query_plan_summary": _query_plan_summary(candidates),
+                "source_quality_summary": _source_quality_summary(candidates),
             }
         )
         return fallback

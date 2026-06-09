@@ -157,33 +157,79 @@ def _nebius_result(scenario_name: str) -> dict[str, Any]:
     return result
 
 
+def _openclaw_blocked_action_events(packet: dict[str, Any]) -> list[dict[str, Any]]:
+    events = []
+    for tool_name, plan in packet["tool_access_plan"].items():
+        for action in plan["blocked_actions"]:
+            events.append(
+                {
+                    "tool": tool_name,
+                    "blocked_action": action,
+                    "policy_decision": "blocked_before_execution",
+                    "would_execute": False,
+                    "human_review_required": True,
+                }
+            )
+    return events
+
+
+def _openclaw_trace_timeline(trace_steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    field_by_step = {
+        "load_packet": "packet_id",
+        "evaluate_policy_gate": "safety_state",
+        "plan_tool_actions": "tool_access_plan",
+    }
+    return [
+        {
+            "order": index,
+            "checkpoint": step["step"],
+            "outcome": step["outcome"],
+            "policy_decision": step["policy_decision"],
+            "packet_field_observed": field_by_step.get(step["step"], "packet"),
+            "would_execute": False,
+            "human_review_required": True,
+        }
+        for index, step in enumerate(trace_steps, start=1)
+    ]
+
+
 def _openclaw_result(scenario_name: str) -> dict[str, Any]:
     packet = build_scenario_packet(scenario_name)
     result = _adapter_base("openclaw", scenario_name)
+    trace_steps = [
+        {
+            "step": "load_packet",
+            "outcome": "packet_loaded",
+            "policy_decision": "inspect_only",
+            "would_execute": False,
+        },
+        {
+            "step": "evaluate_policy_gate",
+            "outcome": "policy_gate_required_before_access",
+            "policy_decision": "gate_before_access",
+            "would_execute": False,
+        },
+        {
+            "step": "plan_tool_actions",
+            "outcome": "dry_run_only" if packet["safety_state"]["composio_dry_run"] else "blocked",
+            "policy_decision": "dry_run_only",
+            "would_execute": False,
+        },
+    ]
+    blocked_events = _openclaw_blocked_action_events(packet)
     result.update(
         {
             "status": "trace_contract_planned",
             "purpose": "Record runtime steps and blocked/allowed outcomes without bypassing safety state.",
-            "trace_steps": [
-                {
-                    "step": "load_packet",
-                    "outcome": "packet_loaded",
-                    "policy_decision": "inspect_only",
-                    "would_execute": False,
-                },
-                {
-                    "step": "evaluate_policy_gate",
-                    "outcome": "policy_gate_required_before_access",
-                    "policy_decision": "gate_before_access",
-                    "would_execute": False,
-                },
-                {
-                    "step": "plan_tool_actions",
-                    "outcome": "dry_run_only" if packet["safety_state"]["composio_dry_run"] else "blocked",
-                    "policy_decision": "dry_run_only",
-                    "would_execute": False,
-                },
-            ],
+            "trace_steps": trace_steps,
+            "trace_timeline": _openclaw_trace_timeline(trace_steps),
+            "blocked_action_events": blocked_events,
+            "trace_quality_summary": {
+                "checkpoint_count": len(trace_steps),
+                "blocked_event_count": len(blocked_events),
+                "runtime_write_attempted": False,
+                "human_review_boundary_preserved": True,
+            },
             "runtime_trace_contract": {
                 "records": ["step", "outcome", "policy_decision", "would_execute"],
                 "must_preserve": ["blocked attempts", "human approval boundary", "dry-run state"],

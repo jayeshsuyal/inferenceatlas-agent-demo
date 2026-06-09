@@ -82,6 +82,12 @@ class SponsorAdapterTests(unittest.TestCase):
         self.assertTrue(result["trace_steps"])
         self.assertTrue(all(step["would_execute"] is False for step in result["trace_steps"]))
         self.assertTrue(all("policy_decision" in step for step in result["trace_steps"]))
+        self.assertEqual(result["trace_quality_summary"]["checkpoint_count"], 3)
+        self.assertEqual(result["trace_quality_summary"]["blocked_event_count"], 9)
+        self.assertFalse(result["trace_quality_summary"]["runtime_write_attempted"])
+        self.assertTrue(result["trace_quality_summary"]["human_review_boundary_preserved"])
+        self.assertTrue(all(event["would_execute"] is False for event in result["blocked_action_events"]))
+        self.assertTrue(all(item["human_review_required"] is True for item in result["trace_timeline"]))
         self.assertIn("blocked attempts", result["runtime_trace_contract"]["must_preserve"])
         self.assertEqual(result["proof_pack"]["proof_type"], "runtime_trace_plan")
 

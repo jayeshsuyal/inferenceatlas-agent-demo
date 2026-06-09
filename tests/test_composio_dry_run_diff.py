@@ -64,6 +64,15 @@ def test_composio_dry_run_diff_builds_permission_envelope_without_execution() ->
         "tool_count": 3,
         "blocked_write_count": 9,
         "required_proof_count": 9,
+        "write_like_action_count": 9,
+        "highest_risk_level": "high",
+        "toolkits": ["github", "slack", "jira"],
+        "candidate_action_slugs": [
+            "GITHUB_LIST_ISSUES",
+            "SLACK_FETCH_CONVERSATION_HISTORY",
+            "JIRA_CREATE_ISSUE",
+        ],
+        "execute_preview_count": 3,
         "dry_run_only": True,
         "api_call_made": False,
         "human_review_required": True,
@@ -78,6 +87,14 @@ def test_composio_dry_run_diff_builds_permission_envelope_without_execution() ->
         assert diff["human_review_required"] is True
         assert diff["permission_delta"]["production_permission_grant"] is False
         assert diff["permission_delta"]["external_write_enabled"] is False
+        matrix = diff["permission_review_matrix"]
+        assert matrix["tool"] == diff["tool"]
+        assert matrix["risk_level"] == "high"
+        assert matrix["write_like_action_count"] == len(diff["blocked_actions"])
+        assert matrix["required_proof_count"] == len(diff["required_scopes_or_proof"])
+        assert matrix["dry_run_only"] is True
+        assert matrix["api_call_made"] is False
+        assert matrix["can_execute"] is False
         preview = diff["execute_action_preview"]
         assert preview["docs_reference"] == COMPOSIO_EXECUTE_ACTION_DOCS_URL
         assert preview["would_call_composio"] is False

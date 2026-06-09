@@ -46,6 +46,42 @@ def _intent_for_tool(tool_name: str) -> dict[str, str]:
     )
 
 
+def _risk_level(blocked_actions: list[str]) -> str:
+    if len(blocked_actions) >= 3:
+        return "high"
+    if blocked_actions:
+        return "medium"
+    return "low"
+
+
+def _permission_review_matrix(
+    *,
+    tool_name: str,
+    intent: dict[str, str],
+    plan: dict[str, Any],
+    blocked_actions: list[str],
+    required_proof: list[str],
+) -> dict[str, Any]:
+    return {
+        "tool": tool_name,
+        "toolkit": intent["toolkit"],
+        "candidate_action_slug": intent["candidate_action_slug"],
+        "risk_level": _risk_level(blocked_actions),
+        "requested_scope": plan["requested"],
+        "validation_scope": plan["demo_allowance"],
+        "read_like_scope": "read" in plan["demo_allowance"].lower()
+        or "read" in intent["candidate_action_intent"].lower(),
+        "write_like_action_count": len(blocked_actions),
+        "blocked_action_count": len(blocked_actions),
+        "required_proof_count": len(required_proof),
+        "required_human_owner": "named reviewer owner",
+        "dry_run_only": True,
+        "api_call_made": False,
+        "can_execute": False,
+        "human_review_required": True,
+    }
+
+
 def _permission_diff(tool_name: str, plan: dict[str, Any], packet: dict[str, Any]) -> dict[str, Any]:
     intent = _intent_for_tool(tool_name)
     blocked_actions = list(plan["blocked_actions"])
@@ -68,6 +104,13 @@ def _permission_diff(tool_name: str, plan: dict[str, Any], packet: dict[str, Any
             "production_permission_grant": False,
             "external_write_enabled": False,
         },
+        "permission_review_matrix": _permission_review_matrix(
+            tool_name=tool_name,
+            intent=intent,
+            plan=plan,
+            blocked_actions=blocked_actions,
+            required_proof=required_proof,
+        ),
         "execute_action_preview": {
             "docs_reference": COMPOSIO_EXECUTE_ACTION_DOCS_URL,
             "method": "POST",
@@ -124,6 +167,12 @@ def build_composio_dry_run_diff(
     ]
     blocked_write_count = sum(len(item["blocked_actions"]) for item in diffs)
     required_proof_count = sum(len(item["required_scopes_or_proof"]) for item in diffs)
+    risk_order = {"low": 0, "medium": 1, "high": 2}
+    highest_risk = max(
+        (item["permission_review_matrix"]["risk_level"] for item in diffs),
+        key=lambda risk: risk_order[risk],
+        default="low",
+    )
     payload = {
         **fallback,
         "dry_run_diff_schema_version": COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION,
@@ -143,6 +192,11 @@ def build_composio_dry_run_diff(
             "tool_count": len(diffs),
             "blocked_write_count": blocked_write_count,
             "required_proof_count": required_proof_count,
+            "write_like_action_count": blocked_write_count,
+            "highest_risk_level": highest_risk,
+            "toolkits": [item["toolkit"] for item in diffs],
+            "candidate_action_slugs": [item["candidate_action_slug"] for item in diffs],
+            "execute_preview_count": len(diffs),
             "dry_run_only": True,
             "api_call_made": False,
             "human_review_required": True,

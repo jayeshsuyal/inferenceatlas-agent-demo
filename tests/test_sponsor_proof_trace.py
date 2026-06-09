@@ -63,6 +63,12 @@ class SponsorProofTraceTests(unittest.TestCase):
         )
         self.assertIn("source_artifacts", trace)
         self.assertEqual(trace["source_artifacts"]["request"], "examples/requests/support_triage_trial.yml")
+        self.assertEqual(trace["proof_quality"]["tavily"]["query_count"], 5)
+        self.assertEqual(trace["proof_quality"]["composio"]["blocked_write_count"], 9)
+        self.assertEqual(trace["proof_quality"]["openclaw"]["blocked_event_count"], 9)
+        self.assertEqual(trace["proof_quality"]["nebius"]["locked_field_count"], 4)
+        self.assertTrue(trace["proof_quality"]["decision_authority"]["packet_remains_authority"])
+        self.assertFalse(trace["proof_quality"]["decision_authority"]["sponsors_can_approve_or_write"])
 
     def test_access_only_lane_keeps_spend_block_optional(self) -> None:
         trace = build_sponsor_proof_trace(DEFAULT_TRIAL_REQUEST, lane="access_review")
@@ -141,6 +147,10 @@ class SponsorProofTraceTests(unittest.TestCase):
             "| 2 | composio | planned | False | True | False | False |",
             "| 3 | openclaw | traced | False | True | False | False |",
             "| 4 | nebius | narrated | False | True | False | False |",
+            "## Sponsor Proof Quality",
+            "Composio blocked writes: 9",
+            "OpenClaw blocked events: 9",
+            "packet remains authority: True",
             "## Access Evidence",
             "## Spend Evidence",
             "approves spend: False",
@@ -203,6 +213,9 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertFalse(tavily_proof["can_grant_permissions"])
         self.assertFalse(tavily_proof["can_mutate_external_state"])
         self.assertTrue(all(item["source_urls"] for item in tavily_proof["evidence_candidates"]))
+        self.assertEqual(tavily_proof["source_quality_summary"]["source_url_count"], len(tavily_proof["evidence_candidates"]))
+        self.assertEqual(trace["proof_quality"]["tavily"]["source_url_count"], len(tavily_proof["evidence_candidates"]))
+        self.assertTrue(trace["proof_quality"]["tavily"]["human_review_required"])
         self.assertTrue(all(item["can_reduce_proof_debt"] is False for item in tavily_proof["evidence_candidates"]))
 
         steps = {step["sponsor"]: step for step in trace["sponsor_steps"]}
@@ -247,6 +260,9 @@ class SponsorProofTraceTests(unittest.TestCase):
         self.assertEqual(composio_proof["permission_diff_summary"]["tool_count"], 3)
         self.assertEqual(composio_proof["permission_diff_summary"]["blocked_write_count"], 9)
         self.assertEqual(composio_proof["permission_diff_summary"]["required_proof_count"], 9)
+        self.assertEqual(composio_proof["permission_diff_summary"]["highest_risk_level"], "high")
+        self.assertEqual(trace["proof_quality"]["composio"]["highest_risk_level"], "high")
+        self.assertFalse(trace["proof_quality"]["composio"]["api_call_made"])
         self.assertTrue(all(item["api_call_made"] is False for item in composio_proof["permission_diffs"]))
         self.assertTrue(all(item["would_execute"] is False for item in composio_proof["permission_diffs"]))
 

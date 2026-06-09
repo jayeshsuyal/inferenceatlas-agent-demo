@@ -1,18 +1,23 @@
 """ProofGraph v0 for packet-authority proof provenance.
 
-The ProofGraph is the shared object sponsor proof attaches to. In this first
-slice it is intentionally packet-only: no live calls, no sponsor-specific
-nodes, no approval, no writes, and no packet mutation.
+The ProofGraph is the shared object sponsor proof attaches to. The default
+graph stays packet-only; sponsor layers can be included explicitly when they
+are non-mutating projections of already-built proof contracts.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from .composio_dry_run_diff import (
+    COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION,
+    build_composio_dry_run_diff,
+)
 from .packet_authority import (
     build_packet_authority_snapshot_for_scenario,
     derive_decision_lock,
@@ -71,6 +76,11 @@ def _stringify_items(items: Any, *, limit: int = 6) -> list[str]:
     if not isinstance(items, (list, tuple)):
         return []
     return [_stringify_item(item) for item in list(items)[:limit]]
+
+
+def _slug(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_")
+    return slug[:72] or "item"
 
 
 def _packet_safety(packet: dict[str, Any]) -> dict[str, bool]:
@@ -201,6 +211,28 @@ def _proof_node(
     )
 
 
+def _composio_proof_node(
+    *,
+    node_id: str,
+    field: str,
+    label: str,
+    summary: str,
+    source_refs: list[str],
+    next_human_action: str,
+) -> ProofNode:
+    return ProofNode(
+        node_id=node_id,
+        label=label,
+        provider="composio",
+        mode="deterministic_fallback",
+        attached_packet_field=field,
+        summary=summary,
+        source_refs=tuple(source_refs),
+        next_human_action=next_human_action,
+        fallback_used=True,
+    )
+
+
 def _packet_only_nodes(packet: dict[str, Any], *, next_human_action: str) -> tuple[ProofNode, ...]:
     decision = packet.get("decision", {})
     posture = packet.get("approval_posture", {})
@@ -258,6 +290,125 @@ def _packet_only_nodes(packet: dict[str, Any], *, next_human_action: str) -> tup
     )
 
 
+def _composio_blast_radius_summary(composio_diff: dict[str, Any]) -> dict[str, Any]:
+    summary = composio_diff["permission_diff_summary"]
+    blast_summary = composio_diff["blast_radius"]["summary"]
+    return {
+        "schema_version": COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION,
+        "provider": "composio",
+        "mode": "deterministic_fallback",
+        "dry_run_enforced": bool(composio_diff["dry_run_enforced"]),
+        "api_call_made": bool(composio_diff["api_call_made"]),
+        "composio_execute_allowed": bool(composio_diff["composio_execute_allowed"]),
+        "fallback_used": bool(composio_diff["fallback_used"]),
+        "tool_count": int(summary["tool_count"]),
+        "blocked_action_count": int(blast_summary["blocked_action_count"]),
+        "write_like_action_count": int(blast_summary["write_like_action_count"]),
+        "admin_like_action_count": int(blast_summary["admin_like_action_count"]),
+        "high_or_critical_action_count": int(blast_summary["high_or_critical_action_count"]),
+        "required_proof_count": int(summary["required_proof_count"]),
+        "max_risk_level": blast_summary["max_risk_level"],
+        "all_blocked_before_execution": bool(blast_summary["all_blocked_before_execution"]),
+        "all_write_or_admin_blocked": bool(blast_summary["all_write_or_admin_blocked"]),
+        "would_execute": bool(blast_summary["would_execute"]),
+        "candidate_action_slugs": list(summary["candidate_action_slugs"]),
+        "docs_reference": composio_diff["docs_reference"],
+        "sdk_docs_reference": composio_diff["sdk_docs_reference"],
+        "safety_impact": composio_diff["safety_impact"],
+    }
+
+
+def _composio_blast_radius_nodes(
+    packet: dict[str, Any],
+    *,
+    scenario_name: str,
+    next_human_action: str,
+) -> tuple[tuple[ProofNode, ...], tuple[ProofEdge, ...], dict[str, Any]]:
+    composio_diff = build_composio_dry_run_diff(
+        packet,
+        scenario_name=scenario_name,
+        dry_run_enabled=True,
+    )
+    nodes: list[ProofNode] = []
+    edges: list[ProofEdge] = []
+
+    for diff in composio_diff["permission_diffs"]:
+        tool = diff["tool"]
+        tool_slug = _slug(tool)
+        matrix = diff["permission_review_matrix"]
+        tool_node = _composio_proof_node(
+            node_id=f"proof:composio:tool_scope:{tool_slug}",
+            field="tool_scope",
+            label=f"Composio tool scope: {tool}",
+            summary=(
+                f"{diff['candidate_action_slug']} stays dry-run. "
+                f"{matrix['blocked_action_count']} blocked actions; "
+                f"risk={matrix['blast_radius_class']}."
+            ),
+            source_refs=[
+                f"tool_access_plan.{tool}",
+                f"composio.permission_diffs.{tool}.execute_action_preview",
+                f"composio.permission_diffs.{tool}.permission_review_matrix",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(tool_node)
+
+        for index, action in enumerate(diff["blast_radius"]["blocked_actions"], start=1):
+            action_slug = _slug(action["action"])
+            action_node = _composio_proof_node(
+                node_id=f"proof:composio:blocked_action:{tool_slug}:{index}:{action_slug}",
+                field="tool_scope",
+                label=f"Blocked {tool} action",
+                summary=(
+                    f"{action['action']} is {action['policy_decision']} "
+                    f"({action['risk_level']}/{action['action_class']}). "
+                    f"{action['blocked_reason']}"
+                ),
+                source_refs=[
+                    f"tool_access_plan.{tool}.blocked_actions[{index - 1}]",
+                    f"composio.permission_diffs.{tool}.blast_radius.blocked_actions[{index - 1}]",
+                ],
+                next_human_action=next_human_action,
+            )
+            nodes.append(action_node)
+            edges.append(
+                ProofEdge(
+                    edge_id=f"edge:{action_node.node_id}:to:{tool_node.node_id}:blocks_action",
+                    edge_type="blocks_action",
+                    from_node_id=action_node.node_id,
+                    to_node_id=tool_node.node_id,
+                    packet_field="tool_scope",
+                )
+            )
+
+        for index, proof in enumerate(diff["required_scopes_or_proof"], start=1):
+            proof_slug = _slug(proof)
+            proof_node = _composio_proof_node(
+                node_id=f"proof:composio:required_proof:{tool_slug}:{index}:{proof_slug}",
+                field="missing_proof",
+                label=f"Required proof for {tool}",
+                summary=proof,
+                source_refs=[
+                    f"tool_access_plan.{tool}.required_proof[{index - 1}]",
+                    f"composio.permission_diffs.{tool}.required_scopes_or_proof[{index - 1}]",
+                ],
+                next_human_action=next_human_action,
+            )
+            nodes.append(proof_node)
+            edges.append(
+                ProofEdge(
+                    edge_id=f"edge:{proof_node.node_id}:to:{tool_node.node_id}:requires_human_owner",
+                    edge_type="requires_human_owner",
+                    from_node_id=proof_node.node_id,
+                    to_node_id=tool_node.node_id,
+                    packet_field="missing_proof",
+                )
+            )
+
+    return tuple(nodes), tuple(edges), _composio_blast_radius_summary(composio_diff)
+
+
 def _edge_for_node(packet_node_id: str, node: ProofNode) -> ProofEdge:
     edge_type: EdgeType = "attaches_to_packet_field"
     if node.attached_packet_field == "blocked_claims":
@@ -290,8 +441,13 @@ def _graph_invariants(nodes: tuple[ProofNode, ...], edges: tuple[ProofEdge, ...]
     }
 
 
-def build_proof_graph(packet: dict[str, Any], *, scenario_name: str = DEFAULT_SCENARIO) -> dict[str, Any]:
-    """Build a packet-only ProofGraph from one DecisionPacket."""
+def build_proof_graph(
+    packet: dict[str, Any],
+    *,
+    scenario_name: str = DEFAULT_SCENARIO,
+    include_composio_blast_radius: bool = False,
+) -> dict[str, Any]:
+    """Build a ProofGraph from one DecisionPacket."""
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
     next_action = _next_human_action(packet)
     decision = packet.get("decision", {})
@@ -306,8 +462,19 @@ def build_proof_graph(packet: dict[str, Any], *, scenario_name: str = DEFAULT_SC
         next_human_action=next_action,
         safety_state=_packet_safety(packet),
     )
-    proof_nodes = _packet_only_nodes(packet, next_human_action=next_action)
-    edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
+    packet_proof_nodes = _packet_only_nodes(packet, next_human_action=next_action)
+    composio_nodes: tuple[ProofNode, ...] = ()
+    composio_edges: tuple[ProofEdge, ...] = ()
+    composio_summary: dict[str, Any] | None = None
+    if include_composio_blast_radius:
+        composio_nodes, composio_edges, composio_summary = _composio_blast_radius_nodes(
+            packet,
+            scenario_name=scenario_name,
+            next_human_action=next_action,
+        )
+    proof_nodes = (*packet_proof_nodes, *composio_nodes)
+    packet_edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
+    edges = (*packet_edges, *composio_edges)
     base_payload = {
         "schema_version": PROOF_GRAPH_SCHEMA_VERSION,
         "scenario_name": scenario_name,
@@ -316,6 +483,8 @@ def build_proof_graph(packet: dict[str, Any], *, scenario_name: str = DEFAULT_SC
         "proof_edges": [edge.to_dict() for edge in edges],
         "invariants": _graph_invariants(proof_nodes, edges),
     }
+    if composio_summary:
+        base_payload["composio_blast_radius"] = composio_summary
     digest = stable_sha256(base_payload)
     return {
         **base_payload,
@@ -350,11 +519,19 @@ def build_proof_graph(packet: dict[str, Any], *, scenario_name: str = DEFAULT_SC
     }
 
 
-def build_proof_graph_for_scenario(scenario_name: str = DEFAULT_SCENARIO) -> dict[str, Any]:
+def build_proof_graph_for_scenario(
+    scenario_name: str = DEFAULT_SCENARIO,
+    *,
+    include_composio_blast_radius: bool = False,
+) -> dict[str, Any]:
     """Build a ProofGraph for a registered public access scenario."""
     if scenario_name not in SCENARIOS:
         raise ValueError(f"unknown scenario: {scenario_name}")
-    return build_proof_graph(build_scenario_packet(scenario_name), scenario_name=scenario_name)
+    return build_proof_graph(
+        build_scenario_packet(scenario_name),
+        scenario_name=scenario_name,
+        include_composio_blast_radius=include_composio_blast_radius,
+    )
 
 
 def proof_graph_to_pretty_json(graph: dict[str, Any]) -> str:
@@ -406,9 +583,14 @@ def render_proof_graph_markdown(graph: dict[str, Any]) -> str:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m agent.proof_graph",
-        description="Build the packet-only ProofGraph v0 contract.",
+        description="Build the ProofGraph v0 contract.",
     )
     parser.add_argument("scenario", nargs="?", default=DEFAULT_SCENARIO, choices=sorted(SCENARIOS))
+    parser.add_argument(
+        "--include-composio-blast-radius",
+        action="store_true",
+        help="Attach Composio dry-run blast-radius proof nodes without live calls or execute.",
+    )
     parser.add_argument("--json", action="store_true", help="Print the graph as JSON.")
     return parser
 
@@ -416,7 +598,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        graph = build_proof_graph_for_scenario(args.scenario)
+        graph = build_proof_graph_for_scenario(
+            args.scenario,
+            include_composio_blast_radius=args.include_composio_blast_radius,
+        )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)
         return 2

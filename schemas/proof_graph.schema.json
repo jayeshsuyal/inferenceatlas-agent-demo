@@ -69,6 +69,9 @@
         "$ref": "#/$defs/proof_edge"
       }
     },
+    "composio_blast_radius": {
+      "$ref": "#/$defs/composio_blast_radius"
+    },
     "node_counts": {
       "type": "object",
       "required": ["packet", "proof", "edge"],
@@ -233,6 +236,58 @@
         "packet_field": { "type": "string", "minLength": 1 },
         "human_review_required": { "type": "boolean", "const": true },
         "can_change_packet_verdict": { "type": "boolean", "const": false }
+      }
+    },
+    "composio_blast_radius": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "provider",
+        "mode",
+        "dry_run_enforced",
+        "api_call_made",
+        "composio_execute_allowed",
+        "fallback_used",
+        "tool_count",
+        "blocked_action_count",
+        "write_like_action_count",
+        "admin_like_action_count",
+        "high_or_critical_action_count",
+        "required_proof_count",
+        "max_risk_level",
+        "all_blocked_before_execution",
+        "all_write_or_admin_blocked",
+        "would_execute",
+        "candidate_action_slugs",
+        "docs_reference",
+        "sdk_docs_reference",
+        "safety_impact"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "composio_dry_run_diff.v0" },
+        "provider": { "type": "string", "const": "composio" },
+        "mode": { "type": "string", "const": "deterministic_fallback" },
+        "dry_run_enforced": { "type": "boolean", "const": true },
+        "api_call_made": { "type": "boolean", "const": false },
+        "composio_execute_allowed": { "type": "boolean", "const": false },
+        "fallback_used": { "type": "boolean", "const": true },
+        "tool_count": { "type": "integer", "minimum": 0 },
+        "blocked_action_count": { "type": "integer", "minimum": 0 },
+        "write_like_action_count": { "type": "integer", "minimum": 0 },
+        "admin_like_action_count": { "type": "integer", "minimum": 0 },
+        "high_or_critical_action_count": { "type": "integer", "minimum": 0 },
+        "required_proof_count": { "type": "integer", "minimum": 0 },
+        "max_risk_level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "all_blocked_before_execution": { "type": "boolean", "const": true },
+        "all_write_or_admin_blocked": { "type": "boolean", "const": true },
+        "would_execute": { "type": "boolean", "const": false },
+        "candidate_action_slugs": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "docs_reference": { "type": "string", "minLength": 1 },
+        "sdk_docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" }
       }
     },
     "invariants": {

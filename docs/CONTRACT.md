@@ -239,6 +239,9 @@ Sponsor adapters may enrich the public review surface, but they cannot own the a
 | Nebius | Narration or summary projections. | It must not own verdicts, safety state, or blocked claims. |
 | OpenClaw | Trace steps with blocked/allowed outcomes. | It must not hide blocked attempts or mutate production state. |
 
+The public SponsorProofTrace standard lives at `schemas/sponsor_proof_trace.schema.json`, with a generated example at `examples/generated/support_triage_trial.sponsor_proof_trace.json`.
+A conforming trace must preserve the locked sponsor order, keep `decision_lock_before` equal to `decision_lock_after`, and keep every sponsor non-authoritative: no approvals, grants, writes, spend approval, provider selection, or production mutation.
+
 ## Sponsor Live Readiness
 
 A conforming public readiness report must show whether sponsor integrations are contract-ready for live enrichment without requiring keys in the default path.

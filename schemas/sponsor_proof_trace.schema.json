@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jayeshsuyal/inferenceatlas-agent-demo/schemas/sponsor_proof_trace.schema.json",
+  "title": "InferenceAtlas SponsorProofTrace",
+  "description": "Public standard for sponsor proof collection runs. Sponsors may contribute evidence, dry-run diffs, traces, or narration, but they cannot approve, grant, write, spend, mutate, or change the IA Packet decision lock.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "trace_id",
+    "content_hash",
+    "packet_id",
+    "revision_id",
+    "scenario_name",
+    "lane",
+    "sponsor_steps",
+    "blocked_actions",
+    "access_review_evidence",
+    "spend_review_evidence",
+    "decision_lock_before",
+    "decision_lock_after",
+    "fallback_used",
+    "generated_at",
+    "source_artifacts",
+    "safety_boundary",
+    "private_boundary"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "sponsor_proof_trace.v0"
+    },
+    "trace_id": {
+      "type": "string",
+      "pattern": "^ia-sponsor-proof-trace-.+-[0-9a-f]{16}-public-v0$"
+    },
+    "content_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "packet_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision_id": {
+      "type": "string",
+      "pattern": "^rev_[0-9a-f]{16}$"
+    },
+    "scenario_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lane": {
+      "type": "string",
+      "enum": ["access_review", "spend_review", "both"]
+    },
+    "sponsor_steps": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "$ref": "#/$defs/sponsor_step"
+      }
+    },
+    "blocked_actions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "access_review_evidence": {
+      "anyOf": [
+        { "$ref": "#/$defs/access_review_evidence" },
+        { "type": "null" }
+      ]
+    },
+    "spend_review_evidence": {
+      "anyOf": [
+        { "$ref": "#/$defs/spend_review_evidence" },
+        { "type": "null" }
+      ]
+    },
+    "decision_lock_before": {
+      "$ref": "#/$defs/decision_lock"
+    },
+    "decision_lock_after": {
+      "$ref": "#/$defs/decision_lock"
+    },
+    "fallback_used": {
+      "type": "object",
+      "required": ["tavily", "composio", "openclaw", "nebius"],
+      "properties": {
+        "tavily": { "type": "boolean" },
+        "composio": { "type": "boolean" },
+        "openclaw": { "type": "boolean" },
+        "nebius": { "type": "boolean" }
+      }
+    },
+    "generated_at": {
+      "type": "string",
+      "const": "2026-06-05T00:00:00Z"
+    },
+    "live_proof": {
+      "type": "object",
+      "properties": {
+        "tavily": { "$ref": "#/$defs/tavily_live_proof" },
+        "nebius": { "$ref": "#/$defs/nebius_live_proof" }
+      }
+    },
+    "dry_run_proof": {
+      "type": "object",
+      "properties": {
+        "composio": { "$ref": "#/$defs/composio_dry_run_proof" }
+      }
+    },
+    "source_artifacts": {
+      "type": "object",
+      "required": ["request", "packet", "sponsor_readiness", "sponsor_evidence_replay", "spend_packet"],
+      "properties": {
+        "request": { "type": "string", "pattern": "^examples/requests/.+\\.yml$" },
+        "packet": { "type": "string", "pattern": "^examples/generated/.+\\.packet\\.json$" },
+        "sponsor_readiness": { "type": "string", "const": "examples/generated/sponsor_live_readiness.json" },
+        "sponsor_evidence_replay": { "type": "string", "pattern": "^examples/generated/.+\\.evidence_replay\\.json$" },
+        "spend_packet": { "type": "string", "const": "examples/generated/ai_spend_budget_overrun.spend_packet.json" }
+      }
+    },
+    "safety_boundary": {
+      "$ref": "#/$defs/safety_boundary"
+    },
+    "private_boundary": {
+      "$ref": "#/$defs/private_boundary"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "sponsor_step": {
+      "type": "object",
+      "required": [
+        "sponsor",
+        "step_verb",
+        "input_hash",
+        "output_hash",
+        "output_summary",
+        "accepted_fields",
+        "rejected_fields",
+        "redacted_fields",
+        "duration_ms",
+        "succeeded",
+        "used_live_key",
+        "fallback_used",
+        "would_execute",
+        "can_approve_access",
+        "can_grant_permissions",
+        "can_mutate_external_state",
+        "human_review_required"
+      ],
+      "properties": {
+        "sponsor": { "type": "string", "enum": ["tavily", "composio", "openclaw", "nebius"] },
+        "step_verb": { "type": "string", "enum": ["searched", "planned", "traced", "narrated"] },
+        "input_hash": { "$ref": "#/$defs/hash" },
+        "output_hash": { "$ref": "#/$defs/hash" },
+        "output_summary": { "type": "string", "minLength": 1 },
+        "accepted_fields": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "rejected_fields": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "redacted_fields": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "succeeded": { "type": "boolean" },
+        "used_live_key": { "type": "boolean" },
+        "fallback_used": { "type": "boolean" },
+        "would_execute": { "type": "boolean", "const": false },
+        "can_approve_access": { "type": "boolean", "const": false },
+        "can_grant_permissions": { "type": "boolean", "const": false },
+        "can_mutate_external_state": { "type": "boolean", "const": false },
+        "human_review_required": { "type": "boolean", "const": true }
+      }
+    },
+    "decision_lock": {
+      "type": "object",
+      "required": [
+        "verdict",
+        "review_posture",
+        "production_access",
+        "permission_grants",
+        "external_writes",
+        "approval_granted",
+        "spend_approved",
+        "provider_winner_selected",
+        "savings_guaranteed",
+        "can_sponsor_change_decision"
+      ],
+      "properties": {
+        "verdict": { "type": "string", "minLength": 1 },
+        "review_posture": { "type": "string", "minLength": 1 },
+        "production_access": { "type": "boolean", "const": false },
+        "permission_grants": { "type": "boolean", "const": false },
+        "external_writes": { "type": "boolean", "const": false },
+        "approval_granted": { "type": "boolean", "const": false },
+        "spend_approved": { "type": "boolean", "const": false },
+        "provider_winner_selected": { "type": "boolean", "const": false },
+        "savings_guaranteed": { "type": "boolean", "const": false },
+        "can_sponsor_change_decision": { "type": "boolean", "const": false }
+      }
+    },
+    "access_review_evidence": {
+      "type": "object",
+      "required": [
+        "packet_id",
+        "requested_tools",
+        "blocked_actions",
+        "missing_proof",
+        "reviewer_owners",
+        "production_access",
+        "permission_grants",
+        "external_writes"
+      ],
+      "properties": {
+        "packet_id": { "type": "string", "minLength": 1 },
+        "requested_tools": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "blocked_actions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "missing_proof": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "reviewer_owners": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "production_access": { "type": "boolean", "const": false },
+        "permission_grants": { "type": "boolean", "const": false },
+        "external_writes": { "type": "boolean", "const": false }
+      }
+    },
+    "spend_review_evidence": {
+      "type": "object",
+      "required": [
+        "packet_id",
+        "requested_budget",
+        "invoice_evidence_refs",
+        "blocked_dollar_claims",
+        "finance_owner",
+        "procurement_owner",
+        "approves_spend",
+        "selects_provider",
+        "guarantees_savings"
+      ],
+      "properties": {
+        "packet_id": { "type": "string", "minLength": 1 },
+        "requested_budget": { "type": ["string", "null"] },
+        "invoice_evidence_refs": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "blocked_dollar_claims": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+        "finance_owner": { "type": ["string", "null"] },
+        "procurement_owner": { "type": ["string", "null"] },
+        "approves_spend": { "type": "boolean", "const": false },
+        "selects_provider": { "type": "boolean", "const": false },
+        "guarantees_savings": { "type": "boolean", "const": false }
+      }
+    },
+    "tavily_live_proof": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "status",
+        "live_requested",
+        "live_call_attempted",
+        "live_call_count",
+        "used_live_key",
+        "fallback_used",
+        "fallback_reason",
+        "evidence_candidates",
+        "docs_reference",
+        "safety_impact",
+        "human_review_required",
+        "can_approve_access",
+        "can_grant_permissions",
+        "can_mutate_external_state"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "tavily_live_evidence.v0" },
+        "status": { "type": "string", "minLength": 1 },
+        "live_requested": { "type": "boolean", "const": true },
+        "live_call_attempted": { "type": "boolean" },
+        "live_call_count": { "type": "integer", "minimum": 0 },
+        "used_live_key": { "type": "boolean" },
+        "fallback_used": { "type": "boolean" },
+        "fallback_reason": { "type": "string" },
+        "evidence_candidates": { "type": "array" },
+        "docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" },
+        "human_review_required": { "type": "boolean", "const": true },
+        "can_approve_access": { "type": "boolean", "const": false },
+        "can_grant_permissions": { "type": "boolean", "const": false },
+        "can_mutate_external_state": { "type": "boolean", "const": false }
+      }
+    },
+    "nebius_live_proof": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "status",
+        "live_requested",
+        "live_call_attempted",
+        "live_call_count",
+        "used_live_key",
+        "fallback_used",
+        "fallback_reason",
+        "structured_narration",
+        "required_anchors_present",
+        "forbidden_phrases_present",
+        "docs_reference",
+        "safety_impact",
+        "human_review_required",
+        "can_approve_access",
+        "can_grant_permissions",
+        "can_mutate_external_state"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "nebius_reviewer_narration.v0" },
+        "status": { "type": "string", "minLength": 1 },
+        "live_requested": { "type": "boolean", "const": true },
+        "live_call_attempted": { "type": "boolean" },
+        "live_call_count": { "type": "integer", "minimum": 0 },
+        "used_live_key": { "type": "boolean" },
+        "fallback_used": { "type": "boolean" },
+        "fallback_reason": { "type": "string" },
+        "structured_narration": { "type": "object" },
+        "required_anchors_present": { "type": "boolean", "const": true },
+        "forbidden_phrases_present": { "type": "array" },
+        "docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" },
+        "human_review_required": { "type": "boolean", "const": true },
+        "can_approve_access": { "type": "boolean", "const": false },
+        "can_grant_permissions": { "type": "boolean", "const": false },
+        "can_mutate_external_state": { "type": "boolean", "const": false }
+      }
+    },
+    "composio_dry_run_proof": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "status",
+        "dry_run_requested",
+        "dry_run_enforced",
+        "api_call_made",
+        "composio_execute_allowed",
+        "used_live_key",
+        "fallback_used",
+        "fallback_reason",
+        "permission_diff_summary",
+        "permission_diffs",
+        "docs_reference",
+        "sdk_docs_reference",
+        "safety_impact",
+        "human_review_required",
+        "can_approve_access",
+        "can_grant_permissions",
+        "can_mutate_external_state"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "composio_dry_run_diff.v0" },
+        "status": { "type": "string", "const": "dry_run_permission_diff_built" },
+        "dry_run_requested": { "type": "boolean", "const": true },
+        "dry_run_enforced": { "type": "boolean", "const": true },
+        "api_call_made": { "type": "boolean", "const": false },
+        "composio_execute_allowed": { "type": "boolean", "const": false },
+        "used_live_key": { "type": "boolean", "const": false },
+        "fallback_used": { "type": "boolean", "const": true },
+        "fallback_reason": { "type": "string", "const": "local_dry_run_contract" },
+        "permission_diff_summary": {
+          "type": "object",
+          "required": ["tool_count", "blocked_write_count", "required_proof_count", "dry_run_only", "api_call_made", "human_review_required"],
+          "properties": {
+            "tool_count": { "type": "integer", "minimum": 1 },
+            "blocked_write_count": { "type": "integer", "minimum": 0 },
+            "required_proof_count": { "type": "integer", "minimum": 0 },
+            "dry_run_only": { "type": "boolean", "const": true },
+            "api_call_made": { "type": "boolean", "const": false },
+            "human_review_required": { "type": "boolean", "const": true }
+          }
+        },
+        "permission_diffs": { "type": "array" },
+        "docs_reference": { "type": "string", "minLength": 1 },
+        "sdk_docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" },
+        "human_review_required": { "type": "boolean", "const": true },
+        "can_approve_access": { "type": "boolean", "const": false },
+        "can_grant_permissions": { "type": "boolean", "const": false },
+        "can_mutate_external_state": { "type": "boolean", "const": false }
+      }
+    },
+    "safety_boundary": {
+      "type": "object",
+      "required": [
+        "approves_access",
+        "grants_permissions",
+        "executes_external_writes",
+        "mutates_production",
+        "approves_spend",
+        "selects_provider",
+        "guarantees_savings",
+        "requires_human_review"
+      ],
+      "properties": {
+        "approves_access": { "type": "boolean", "const": false },
+        "grants_permissions": { "type": "boolean", "const": false },
+        "executes_external_writes": { "type": "boolean", "const": false },
+        "mutates_production": { "type": "boolean", "const": false },
+        "approves_spend": { "type": "boolean", "const": false },
+        "selects_provider": { "type": "boolean", "const": false },
+        "guarantees_savings": { "type": "boolean", "const": false },
+        "requires_human_review": { "type": "boolean", "const": true }
+      }
+    },
+    "private_boundary": {
+      "type": "object",
+      "required": ["private_source_exposed", "principle"],
+      "properties": {
+        "private_source_exposed": { "type": "boolean", "const": false },
+        "principle": { "type": "string", "const": "Private engine, public proof." }
+      }
+    }
+  }
+}

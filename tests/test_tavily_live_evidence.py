@@ -47,7 +47,11 @@ def test_tavily_live_evidence_falls_back_without_key() -> None:
     assert payload["fallback_used"] is True
     assert payload["fallback_reason"] == "tavily_api_key_missing"
     assert payload["docs_reference"] == TAVILY_DOCS_URL
+    assert payload["query_plan_summary"]["query_count"] == len(packet["missing_proof"])
+    assert payload["source_quality_summary"]["source_url_count"] == 0
+    assert payload["source_quality_summary"]["can_reduce_proof_debt"] is False
     assert all(candidate["source_urls"] == [] for candidate in payload["evidence_candidates"])
+    assert all(candidate["source_quality"]["source_count"] == 0 for candidate in payload["evidence_candidates"])
     assert all(candidate["can_reduce_proof_debt"] is False for candidate in payload["evidence_candidates"])
     assert all(candidate["cannot_grant_access"] is True for candidate in payload["evidence_candidates"])
 
@@ -78,8 +82,13 @@ def test_tavily_live_evidence_collects_sources_without_reducing_proof_debt() -> 
     assert payload["human_review_required"] is True
     assert payload["safety_impact"] == "none"
     assert "mutate external systems" in payload["proof_pack"]["cannot_do"]
+    assert payload["query_plan_summary"]["query_count"] == len(packet["missing_proof"])
+    assert payload["source_quality_summary"]["source_url_count"] == len(packet["missing_proof"])
+    assert payload["source_quality_summary"]["unique_source_url_count"] == 1
+    assert payload["source_quality_summary"]["source_domains"] == ["example.com"]
     assert all(candidate["source_urls"] for candidate in payload["evidence_candidates"])
     assert all(candidate["source_notes"] for candidate in payload["evidence_candidates"])
+    assert all(candidate["source_quality"]["source_count"] == 1 for candidate in payload["evidence_candidates"])
     assert all(candidate["can_reduce_proof_debt"] is False for candidate in payload["evidence_candidates"])
     assert all(candidate["cannot_grant_access"] is True for candidate in payload["evidence_candidates"])
 

@@ -75,6 +75,11 @@ def test_evidence_synthesis_fallback_indexes_tavily_sources_without_deciding() -
     assert payload["source_index_count"] == 1
     assert payload["source_index"][0]["source_id"] == "tavily:1"
     assert payload["source_index"][0]["url"] == "https://example.com/security-policy"
+    assert payload["role_brief_count"] == len(packet["reviewer_owners"])
+    assert payload["role_specific_briefs"][0]["reviewer_owner"] == "Security/Legal"
+    assert payload["role_specific_briefs"][0]["source_ids"] == ["tavily:1"]
+    assert all(brief["human_review_required"] is True for brief in payload["role_specific_briefs"])
+    assert all(brief["can_reduce_proof_debt"] is False for brief in payload["role_specific_briefs"])
     assert payload["synthesis"]["cited_source_ids"] == ["tavily:1"]
     assert payload["synthesis"]["safety_anchor"] == NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
     assert payload["invariants"]["source_ids_from_tavily_only"] is True
@@ -84,6 +89,7 @@ def test_evidence_synthesis_fallback_indexes_tavily_sources_without_deciding() -
     assert payload["invariants"]["can_approve_access"] is False
     assert payload["invariants"]["can_grant_permissions"] is False
     assert payload["invariants"]["can_mutate_packet"] is False
+    assert payload["invariants"]["role_briefs_source_bound"] is True
     assert payload["invariants"]["human_review_required"] is True
 
 
@@ -108,6 +114,8 @@ def test_live_evidence_synthesis_cites_only_existing_tavily_source_ids() -> None
     assert payload["fallback_used"] is False
     assert payload["synthesis"]["cited_source_ids"] == ["tavily:1"]
     assert payload["synthesis"]["source_findings"][0]["source_id"] == "tavily:1"
+    assert payload["role_brief_count"] == len(packet["reviewer_owners"])
+    assert payload["role_specific_briefs"][0]["source_ids"] == ["tavily:1"]
     assert payload["required_anchors_present"] is True
     assert payload["forbidden_phrases_present"] == []
     assert payload["invariants"]["no_new_urls"] is True

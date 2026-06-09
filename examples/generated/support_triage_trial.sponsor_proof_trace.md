@@ -6,10 +6,10 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 
 ## Trace Identity
 
-- trace_id: `ia-sponsor-proof-trace-support_triage_trial-a772a9ecf7f014ba-public-v0`
+- trace_id: `ia-sponsor-proof-trace-support_triage_trial-e92fbffcba99b95d-public-v0`
 - packet_id: `ia-agent-access-support-triage-v0`
 - revision_id: `rev_965302783cee8688`
-- content_hash: `sha256:a772a9ecf7f014ba958c044608335bfc61c9927c2eea62db990aa5dee3b834d4`
+- content_hash: `sha256:e92fbffcba99b95db27b47138bd8a3dfd995f9c22464030763bb3962b779af3b`
 - scenario: `support_triage_agent`
 - lane: `both`
 
@@ -39,8 +39,20 @@ Sponsor tools collect proof in locked order. They do not approve, grant, write, 
 
 - tavily searched: 5 evidence candidate slots planned; no proof debt reduced.
 - composio planned: 3 dry-run permission plans built; no tool write executed.
-- openclaw traced: 3 runtime checkpoints traced; blocked/dry-run state preserved.
+- openclaw traced: 3 runtime checkpoints traced; 9 blocked action events preserved.
 - nebius narrated: Reviewer narration prepared from locked packet fields. IA does not approve this request. Human review is required before any access, spend, or production movement. Verdict and safety state unchanged.
+
+## Sponsor Proof Quality
+
+- Tavily queries planned: 5
+- Tavily source URLs: 0
+- Composio blocked writes: 9
+- Composio highest risk: high
+- OpenClaw checkpoints: 3
+- OpenClaw blocked events: 9
+- Nebius locked fields: 4
+- packet remains authority: True
+- sponsors can approve or write: False
 
 ## Access Evidence
 

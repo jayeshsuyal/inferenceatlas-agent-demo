@@ -38,6 +38,7 @@ BASELINE_REQUIRED_FIELDS = {
     "decision_lock_before",
     "decision_lock_after",
     "fallback_used",
+    "proof_quality",
     "generated_at",
     "source_artifacts",
     "safety_boundary",
@@ -89,6 +90,15 @@ def _assert_standard_invariants(trace: dict) -> None:
     assert tuple(step["sponsor"] for step in trace["sponsor_steps"]) == SPONSOR_ORDER
     assert trace["decision_lock_before"] == trace["decision_lock_after"]
     assert set(trace["fallback_used"]) == set(SPONSOR_ORDER)
+    assert trace["proof_quality"]["decision_authority"] == {
+        "packet_remains_authority": True,
+        "sponsors_can_approve_or_write": False,
+        "human_review_required": True,
+    }
+    assert trace["proof_quality"]["tavily"]["can_reduce_proof_debt"] is False
+    assert trace["proof_quality"]["composio"]["api_call_made"] is False
+    assert trace["proof_quality"]["openclaw"]["runtime_write_attempted"] is False
+    assert trace["proof_quality"]["nebius"]["can_mutate_packet"] is False
 
     for field in LOCKED_FALSE_FIELDS:
         assert trace["decision_lock_before"][field] is False
@@ -139,6 +149,10 @@ def test_schema_file_locks_public_trace_contract() -> None:
     assert set(schema["required"]) == BASELINE_REQUIRED_FIELDS
     assert schema["properties"]["lane"]["enum"] == ["access_review", "spend_review", "both"]
     assert schema["properties"]["sponsor_steps"]["minItems"] == 4
+    assert schema["properties"]["proof_quality"]["$ref"] == "#/$defs/proof_quality"
+    assert schema["$defs"]["proof_quality"]["properties"]["decision_authority"]["properties"][
+        "sponsors_can_approve_or_write"
+    ]["const"] is False
 
     step_schema = schema["$defs"]["sponsor_step"]["properties"]
     assert step_schema["sponsor"]["enum"] == list(SPONSOR_ORDER)

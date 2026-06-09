@@ -19,6 +19,7 @@
     "decision_lock_before",
     "decision_lock_after",
     "fallback_used",
+    "proof_quality",
     "generated_at",
     "source_artifacts",
     "safety_boundary",
@@ -91,6 +92,9 @@
         "openclaw": { "type": "boolean" },
         "nebius": { "type": "boolean" }
       }
+    },
+    "proof_quality": {
+      "$ref": "#/$defs/proof_quality"
     },
     "generated_at": {
       "type": "string",
@@ -378,6 +382,99 @@
         "can_approve_access": { "type": "boolean", "const": false },
         "can_grant_permissions": { "type": "boolean", "const": false },
         "can_mutate_external_state": { "type": "boolean", "const": false }
+      }
+    },
+    "proof_quality": {
+      "type": "object",
+      "required": ["tavily", "composio", "openclaw", "nebius", "decision_authority"],
+      "properties": {
+        "tavily": {
+          "type": "object",
+          "required": [
+            "query_count",
+            "source_url_count",
+            "unique_source_url_count",
+            "human_review_required",
+            "can_reduce_proof_debt",
+            "cannot_grant_access"
+          ],
+          "properties": {
+            "query_count": { "type": "integer", "minimum": 0 },
+            "source_url_count": { "type": "integer", "minimum": 0 },
+            "unique_source_url_count": { "type": "integer", "minimum": 0 },
+            "source_domain_count": { "type": "integer", "minimum": 0 },
+            "source_domains": { "type": "array", "items": { "type": "string" } },
+            "human_review_required": { "type": "boolean", "const": true },
+            "can_reduce_proof_debt": { "type": "boolean", "const": false },
+            "cannot_grant_access": { "type": "boolean", "const": true }
+          }
+        },
+        "composio": {
+          "type": "object",
+          "required": [
+            "tool_count",
+            "blocked_write_count",
+            "required_proof_count",
+            "write_like_action_count",
+            "highest_risk_level",
+            "dry_run_only",
+            "api_call_made",
+            "human_review_required"
+          ],
+          "properties": {
+            "tool_count": { "type": "integer", "minimum": 0 },
+            "blocked_write_count": { "type": "integer", "minimum": 0 },
+            "required_proof_count": { "type": "integer", "minimum": 0 },
+            "write_like_action_count": { "type": "integer", "minimum": 0 },
+            "highest_risk_level": { "type": "string", "enum": ["low", "medium", "high"] },
+            "dry_run_only": { "type": "boolean", "const": true },
+            "api_call_made": { "type": "boolean", "const": false },
+            "human_review_required": { "type": "boolean", "const": true }
+          }
+        },
+        "openclaw": {
+          "type": "object",
+          "required": [
+            "checkpoint_count",
+            "blocked_event_count",
+            "runtime_write_attempted",
+            "human_review_boundary_preserved"
+          ],
+          "properties": {
+            "checkpoint_count": { "type": "integer", "minimum": 0 },
+            "blocked_event_count": { "type": "integer", "minimum": 0 },
+            "runtime_write_attempted": { "type": "boolean", "const": false },
+            "human_review_boundary_preserved": { "type": "boolean", "const": true }
+          }
+        },
+        "nebius": {
+          "type": "object",
+          "required": [
+            "narration_status",
+            "locked_field_count",
+            "forbidden_phrase_count",
+            "human_review_required",
+            "can_change_verdict",
+            "can_mutate_packet"
+          ],
+          "properties": {
+            "narration_status": { "type": "string", "minLength": 1 },
+            "locked_field_count": { "type": "integer", "minimum": 0 },
+            "forbidden_phrase_count": { "type": "integer", "minimum": 0 },
+            "human_review_required": { "type": "boolean", "const": true },
+            "can_change_verdict": { "type": "boolean", "const": false },
+            "can_mutate_packet": { "type": "boolean", "const": false }
+          }
+        },
+        "decision_authority": {
+          "type": "object",
+          "required": ["packet_remains_authority", "sponsors_can_approve_or_write", "human_review_required"],
+          "properties": {
+            "packet_remains_authority": { "type": "boolean", "const": true },
+            "sponsors_can_approve_or_write": { "type": "boolean", "const": false },
+            "human_review_required": { "type": "boolean", "const": true }
+          }
+        }
       }
     },
     "safety_boundary": {

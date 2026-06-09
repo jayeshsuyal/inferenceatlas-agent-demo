@@ -45,7 +45,7 @@
     "jira: status changes",
     "jira: assignment changes"
   ],
-  "content_hash": "sha256:a772a9ecf7f014ba958c044608335bfc61c9927c2eea62db990aa5dee3b834d4",
+  "content_hash": "sha256:e92fbffcba99b95db27b47138bd8a3dfd995f9c22464030763bb3962b779af3b",
   "decision_lock_after": {
     "approval_granted": false,
     "can_sponsor_change_decision": false,
@@ -82,6 +82,77 @@
   "private_boundary": {
     "principle": "Private engine, public proof.",
     "private_source_exposed": false
+  },
+  "proof_quality": {
+    "composio": {
+      "api_call_made": false,
+      "blocked_write_count": 9,
+      "dry_run_only": true,
+      "highest_risk_level": "high",
+      "human_review_required": true,
+      "required_proof_count": 9,
+      "tool_count": 3,
+      "write_like_action_count": 9
+    },
+    "decision_authority": {
+      "human_review_required": true,
+      "packet_remains_authority": true,
+      "sponsors_can_approve_or_write": false
+    },
+    "nebius": {
+      "can_change_verdict": false,
+      "can_mutate_packet": false,
+      "forbidden_phrase_count": 0,
+      "human_review_required": true,
+      "locked_field_count": 4,
+      "narration_status": "deterministic_narration_fallback"
+    },
+    "openclaw": {
+      "blocked_event_count": 9,
+      "checkpoint_count": 3,
+      "human_review_boundary_preserved": true,
+      "runtime_write_attempted": false
+    },
+    "tavily": {
+      "can_reduce_proof_debt": false,
+      "cannot_grant_access": true,
+      "freshness_labels": [
+        "not_fetched_in_offline_mode"
+      ],
+      "human_review_required": true,
+      "query_count": 5,
+      "source_domain_count": 0,
+      "source_domains": [],
+      "source_url_count": 0,
+      "sources_per_query": [
+        {
+          "query": "GitHub repository allowlist and permission level policy evidence",
+          "source_count": 0,
+          "unique_source_count": 0
+        },
+        {
+          "query": "Slack channel allowlist, retention policy, and customer-data boundary policy evidence",
+          "source_count": 0,
+          "unique_source_count": 0
+        },
+        {
+          "query": "Jira project scope, draft-only mode, and rollback/off-switch plan policy evidence",
+          "source_count": 0,
+          "unique_source_count": 0
+        },
+        {
+          "query": "Support escalation workflow and human handoff owner policy evidence",
+          "source_count": 0,
+          "unique_source_count": 0
+        },
+        {
+          "query": "Audit log shape for tool calls, evidence intake, and reviewer decisions policy evidence",
+          "source_count": 0,
+          "unique_source_count": 0
+        }
+      ],
+      "unique_source_url_count": 0
+    }
   },
   "revision_id": "rev_965302783cee8688",
   "safety_boundary": {
@@ -135,7 +206,7 @@
       "fallback_used": true,
       "human_review_required": true,
       "input_hash": "sha256:bf1541d00a7549dbe0898009c57e1617f2546fe9a29fc2ae0e212c258ac08e0c",
-      "output_hash": "sha256:97b4765dd27c4d147a944ef6e7f3e76b14195648121bbbd4cb5c73d018cd95df",
+      "output_hash": "sha256:f8cce02d677d3ed737392c8a19de804e8d13f8d54050083e7eef7147c32ad0d2",
       "output_summary": "5 evidence candidate slots planned; no proof debt reduced.",
       "redacted_fields": [
         "api_key",
@@ -198,8 +269,8 @@
       "fallback_used": true,
       "human_review_required": true,
       "input_hash": "sha256:1d194d41a9e507b2543f99d2a4f3d940e1b5802430fd294563d313142ed3a2ef",
-      "output_hash": "sha256:9e323d6e9c19bf6d9918f55284bf64cb31db40bf7459d677d0aaa235b289707b",
-      "output_summary": "3 runtime checkpoints traced; blocked/dry-run state preserved.",
+      "output_hash": "sha256:0eff10c102e1037aa308b47564b7a5ed375a1d7240038a106a71556cfbfe787d",
+      "output_summary": "3 runtime checkpoints traced; 9 blocked action events preserved.",
       "redacted_fields": [
         "api_key",
         "authorization",
@@ -251,5 +322,5 @@
       "would_execute": false
     }
   ],
-  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-a772a9ecf7f014ba-public-v0"
+  "trace_id": "ia-sponsor-proof-trace-support_triage_trial-e92fbffcba99b95d-public-v0"
 }

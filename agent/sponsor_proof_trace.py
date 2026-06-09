@@ -118,6 +118,7 @@ class SponsorProofTrace:
     decision_lock_before: DecisionLock
     decision_lock_after: DecisionLock
     fallback_used: dict[str, bool]
+    proof_quality: dict[str, Any]
     generated_at: str = SPONSOR_PROOF_TRACE_GENERATED_AT
     schema_version: str = SPONSOR_PROOF_TRACE_SCHEMA_VERSION
 
@@ -212,12 +213,17 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
     if provider == "tavily":
         return (
             {"missing_proof": packet["missing_proof"], "blocked_claims": packet["blocked_claims"]},
-            {"evidence_candidates": adapter["evidence_candidates"]},
+            {
+                "evidence_candidates": adapter["evidence_candidates"],
+                "query_plan_summary": adapter.get("query_plan_summary", {}),
+                "source_quality_summary": adapter.get("source_quality_summary", {}),
+            },
         )
     if provider == "composio":
         output = {"action_plans": adapter["action_plans"]}
         if adapter.get("dry_run_requested"):
             output["permission_diffs"] = adapter["permission_diffs"]
+            output["permission_diff_summary"] = adapter["permission_diff_summary"]
         return (
             {"tool_access_plan": packet["tool_access_plan"]},
             output,
@@ -225,7 +231,12 @@ def _step_io(provider: str, adapter: dict[str, Any], packet: dict[str, Any]) -> 
     if provider == "openclaw":
         return (
             {"packet_id": packet["packet_id"], "safety_state": packet["safety_state"]},
-            {"trace_steps": adapter["trace_steps"]},
+            {
+                "trace_steps": adapter["trace_steps"],
+                "trace_timeline": adapter.get("trace_timeline", []),
+                "blocked_action_events": adapter.get("blocked_action_events", []),
+                "trace_quality_summary": adapter.get("trace_quality_summary", {}),
+            },
         )
     return (
         {
@@ -262,7 +273,10 @@ def _rejected_fields(provider: str) -> tuple[str, ...]:
 def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
     if provider == "tavily":
         if adapter.get("status") == "live_evidence_candidates_fetched":
-            source_count = sum(len(item.get("source_urls", [])) for item in adapter["evidence_candidates"])
+            source_count = adapter.get("source_quality_summary", {}).get(
+                "source_url_count",
+                sum(len(item.get("source_urls", [])) for item in adapter["evidence_candidates"]),
+            )
             return (
                 f"{source_count} Tavily source candidates fetched across "
                 f"{len(adapter['evidence_candidates'])} proof items; no proof debt reduced."
@@ -282,7 +296,11 @@ def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
             )
         return f"{len(adapter['action_plans'])} dry-run permission plans built; no tool write executed."
     if provider == "openclaw":
-        return f"{len(adapter['trace_steps'])} runtime checkpoints traced; blocked/dry-run state preserved."
+        quality = adapter.get("trace_quality_summary", {})
+        return (
+            f"{quality.get('checkpoint_count', len(adapter['trace_steps']))} runtime checkpoints traced; "
+            f"{quality.get('blocked_event_count', 0)} blocked action events preserved."
+        )
     if adapter.get("status") == "live_reviewer_narration_built":
         return (
             "Nebius reviewer narration built from locked packet fields. IA does not approve this request. "
@@ -294,6 +312,80 @@ def _output_summary(provider: str, adapter: dict[str, Any]) -> str:
         "Human review is required before any access, spend, or production movement. "
         "Verdict and safety state unchanged."
     )
+
+
+def _composio_quality(adapter: dict[str, Any]) -> dict[str, Any]:
+    summary = adapter.get("permission_diff_summary")
+    if summary:
+        return {
+            "tool_count": summary["tool_count"],
+            "blocked_write_count": summary["blocked_write_count"],
+            "required_proof_count": summary["required_proof_count"],
+            "write_like_action_count": summary.get("write_like_action_count", summary["blocked_write_count"]),
+            "highest_risk_level": summary.get("highest_risk_level", "high" if summary["blocked_write_count"] else "low"),
+            "dry_run_only": summary["dry_run_only"],
+            "api_call_made": summary["api_call_made"],
+            "human_review_required": summary["human_review_required"],
+        }
+    action_plans = adapter.get("action_plans", [])
+    blocked_write_count = sum(len(plan.get("blocked_actions", [])) for plan in action_plans)
+    required_proof_count = sum(len(plan.get("required_scopes_or_proof", [])) for plan in action_plans)
+    return {
+        "tool_count": len(action_plans),
+        "blocked_write_count": blocked_write_count,
+        "required_proof_count": required_proof_count,
+        "write_like_action_count": blocked_write_count,
+        "highest_risk_level": "high" if blocked_write_count else "low",
+        "dry_run_only": True,
+        "api_call_made": False,
+        "human_review_required": True,
+    }
+
+
+def _sponsor_proof_quality(adapters: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    tavily = adapters["tavily"]
+    composio = adapters["composio"]
+    openclaw = adapters["openclaw"]
+    nebius = adapters["nebius"]
+    nebius_contract = nebius.get("reviewer_narration_contract", {})
+    return {
+        "tavily": tavily.get(
+            "source_quality_summary",
+            {
+                "query_count": len(tavily.get("evidence_candidates", [])),
+                "source_url_count": 0,
+                "unique_source_url_count": 0,
+                "source_domain_count": 0,
+                "source_domains": [],
+                "human_review_required": True,
+                "can_reduce_proof_debt": False,
+                "cannot_grant_access": True,
+            },
+        ),
+        "composio": _composio_quality(composio),
+        "openclaw": openclaw.get(
+            "trace_quality_summary",
+            {
+                "checkpoint_count": len(openclaw.get("trace_steps", [])),
+                "blocked_event_count": len(openclaw.get("blocked_action_events", [])),
+                "runtime_write_attempted": False,
+                "human_review_boundary_preserved": True,
+            },
+        ),
+        "nebius": {
+            "narration_status": nebius["status"],
+            "locked_field_count": len(nebius_contract.get("locked_fields", [])),
+            "forbidden_phrase_count": len(nebius.get("forbidden_phrases_present", [])),
+            "human_review_required": nebius["human_review_required"],
+            "can_change_verdict": False,
+            "can_mutate_packet": False,
+        },
+        "decision_authority": {
+            "packet_remains_authority": True,
+            "sponsors_can_approve_or_write": False,
+            "human_review_required": True,
+        },
+    }
 
 
 def _build_step(
@@ -384,6 +476,7 @@ def build_sponsor_proof_trace(
     access_block = _access_evidence(packet) if lane in {"access_review", "both"} else None
     spend_block = _spend_evidence(spend_packet) if lane in {"spend_review", "both"} else None
     fallback_used = {step.sponsor: step.fallback_used for step in steps}
+    proof_quality = _sponsor_proof_quality(adapters)
     live_proof = {}
     tavily_adapter = adapters["tavily"]
     if tavily_adapter.get("live_requested"):
@@ -397,6 +490,8 @@ def build_sponsor_proof_trace(
             "fallback_used": tavily_adapter["fallback_used"],
             "fallback_reason": tavily_adapter["fallback_reason"],
             "evidence_candidates": tavily_adapter["evidence_candidates"],
+            "query_plan_summary": tavily_adapter["query_plan_summary"],
+            "source_quality_summary": tavily_adapter["source_quality_summary"],
             "docs_reference": tavily_adapter["docs_reference"],
             "safety_impact": tavily_adapter["safety_impact"],
             "human_review_required": tavily_adapter["human_review_required"],
@@ -465,6 +560,7 @@ def build_sponsor_proof_trace(
         "decision_lock_before": asdict(lock),
         "decision_lock_after": asdict(lock),
         "fallback_used": fallback_used,
+        "proof_quality": proof_quality,
         "generated_at": SPONSOR_PROOF_TRACE_GENERATED_AT,
         "source_request": _relative(request_path),
     }
@@ -487,6 +583,7 @@ def build_sponsor_proof_trace(
         decision_lock_before=lock,
         decision_lock_after=lock,
         fallback_used=fallback_used,
+        proof_quality=proof_quality,
     ).to_dict()
     if live_proof:
         trace["live_proof"] = live_proof
@@ -570,6 +667,24 @@ def render_sponsor_proof_trace_markdown(trace: dict[str, Any]) -> str:
     lines.extend(["", "## Step Summaries", ""])
     for step in trace["sponsor_steps"]:
         lines.append(f"- {step['sponsor']} {step['step_verb']}: {step['output_summary']}")
+
+    quality = trace["proof_quality"]
+    lines.extend(
+        [
+            "",
+            "## Sponsor Proof Quality",
+            "",
+            f"- Tavily queries planned: {quality['tavily']['query_count']}",
+            f"- Tavily source URLs: {quality['tavily']['source_url_count']}",
+            f"- Composio blocked writes: {quality['composio']['blocked_write_count']}",
+            f"- Composio highest risk: {quality['composio']['highest_risk_level']}",
+            f"- OpenClaw checkpoints: {quality['openclaw']['checkpoint_count']}",
+            f"- OpenClaw blocked events: {quality['openclaw']['blocked_event_count']}",
+            f"- Nebius locked fields: {quality['nebius']['locked_field_count']}",
+            f"- packet remains authority: {quality['decision_authority']['packet_remains_authority']}",
+            f"- sponsors can approve or write: {quality['decision_authority']['sponsors_can_approve_or_write']}",
+        ]
+    )
 
     live_proof = trace.get("live_proof", {})
     if live_proof:

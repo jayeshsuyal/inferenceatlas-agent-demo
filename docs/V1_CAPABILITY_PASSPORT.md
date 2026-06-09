@@ -52,6 +52,7 @@ The public output is a DecisionPacket plus an Agent Access Decision Brief. The p
 | Packet lifecycle health | `python3 -m agent.proof_health` and `examples/generated/support_triage_agent.proof_health.md` | Packet Drift, stale assumptions, expired reviewer gates, and the next human health check are visible before access expands. | Private lifecycle automation, customer-specific refresh cadence, and production review state. |
 | Public policy gate | `policy/agent_access.yml` and `python3 -m agent.gate --all` | A policy-as-code gate blocks critical/admin/prod-write access and allows lower-risk validation only with visible gates. | Private policy compiler, customer-specific policies, reviewer queue state, and production enforcement integrations. |
 | Sponsor adapter contracts | `agent/adapters/` and `python3 -m agent.adapters --all` | Nebius, Tavily, Composio, and OpenClaw enter as dry-run/evidence/narration/trace contracts that cannot approve access or execute writes. | Live keys, private account state, live sponsor traces, and production adapter implementations. |
+| Sponsor Proof Trace standard | `schemas/sponsor_proof_trace.schema.json` and `examples/generated/support_triage_trial.sponsor_proof_trace.json` | Sponsor proof has a stable machine-readable contract across fallback, live evidence, narration, dry-run permission diff, and trace contributions. | Live account state, private execution traces, and production adapter internals. |
 | Tool access planning | `tool_access_plan` in generated packet JSON and Markdown | Dry-run allowances are separated from blocked write actions for GitHub, Slack, and Jira. | Live Composio account state, private workspace configuration, and production tool grants. |
 | Artifact projection | Markdown, JSON, and trace artifacts under `examples/generated/` | The same packet can be projected into multiple review surfaces without changing the underlying safety state. | Private UI projections, durable document rendering, and production surface handoff code. |
 | Approval and evidence boundary | `docs/SAFETY_CONTRACT.md` and packet safety fields | Evidence review is separated from approval; new evidence cannot silently grant access. | Private evidence intake UI, reviewer queue, audit trail, and production review state. |
@@ -93,6 +94,8 @@ Public files to inspect:
 | Review Room screenshot | `examples/generated/review_room.desktop.jpg` |
 | Public policy gate | `policy/agent_access.yml` |
 | Sponsor adapters | `agent/adapters/` |
+| Sponsor Proof Trace schema | `schemas/sponsor_proof_trace.schema.json` |
+| Sponsor Proof Trace JSON | `examples/generated/support_triage_trial.sponsor_proof_trace.json` |
 | Safety contract | `docs/SAFETY_CONTRACT.md` |
 | CTO handoff | `docs/CTO_HANDOFF.md` |
 | Architecture | `docs/ARCHITECTURE.md` |

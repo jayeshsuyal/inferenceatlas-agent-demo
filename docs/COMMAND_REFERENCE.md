@@ -43,7 +43,7 @@ python3 scripts/keyed_sponsor_rehearsal.py --base-url http://127.0.0.1:8080
 python3 scripts/keyed_sponsor_rehearsal.py --base-url http://127.0.0.1:8080 --json
 ```
 
-This requires local sponsor keys. It verifies Nebius is configured, Tavily returns live evidence, Composio remains dry-run/no-execute, Portkey remains dry-run/no-mutation, the IA Packet decision lock stays unchanged, and the local run ledger records the proof run. It prints status and counts only, never secret values.
+This requires local sponsor keys. It verifies Nebius returns live read-only reviewer narration, Tavily returns live evidence, Composio remains dry-run/no-execute, Portkey remains dry-run/no-mutation, the IA Packet decision lock stays unchanged, and the local run ledger records the proof run. It prints status and counts only, never secret values.
 
 ## Full Public Python Commands
 

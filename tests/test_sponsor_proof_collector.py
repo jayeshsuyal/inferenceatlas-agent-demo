@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
+from agent.nebius_evidence_synthesis import NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
 from agent.nebius_reviewer_narration import NEBIUS_REQUIRED_SAFETY_ANCHOR
 from agent.portkey_adapter import PORTKEY_ADAPTER_SCHEMA_VERSION
 from agent.sponsor_proof_collector import (
@@ -54,6 +55,49 @@ def _fake_nebius_client() -> SimpleNamespace:
             )
         )
     )
+
+
+class _FakeTavilyClient:
+    def search(self, **kwargs):
+        return {
+            "query": kwargs["query"],
+            "results": [
+                {
+                    "title": "Reviewer evidence source",
+                    "url": f"https://example.com/{len(kwargs['query'])}",
+                    "content": "Evidence candidate for reviewer inspection.",
+                    "score": 0.88,
+                }
+            ],
+        }
+
+
+def _fake_dual_nebius_client() -> SimpleNamespace:
+    narration = (
+        "{"
+        '"reviewer_summary":"IA does not approve this request. The packet remains blocked for live movement until proof is reviewed.",'
+        '"decision_lock_sentence":"Human review is required before any access, spend, or production movement. Decision lock unchanged.",'
+        '"next_human_action":"Route the packet to the named owners with proof debt attached.",'
+        f'"safety_anchor":"{NEBIUS_REQUIRED_SAFETY_ANCHOR}"'
+        "}"
+    )
+    synthesis = (
+        "{"
+        '"reviewer_summary":"IA collected Tavily source candidates for reviewer inspection while the packet decision remains locked.",'
+        '"cited_source_ids":["tavily:1"],'
+        '"source_findings":[{"source_id":"tavily:1","finding":"The source is relevant context for the named reviewer.","limitation":"Human review is required before this can affect proof debt."}],'
+        '"remaining_proof_gaps":"Owner approval, audit logs, and scoped validation evidence remain missing.",'
+        '"next_human_action":"Route the source candidate to the named owners with proof debt attached.",'
+        f'"safety_anchor":"{NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR}"'
+        "}"
+    )
+
+    def create(**kwargs):
+        prompt = kwargs["messages"][-1]["content"]
+        content = synthesis if "source_index" in prompt else narration
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=content))])
+
+    return SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
 
 
 def test_collector_run_wraps_trace_advisor_and_portkey_preview() -> None:
@@ -230,6 +274,48 @@ def test_collector_live_nebius_builds_structured_narration_without_deciding() ->
     assert "nebius status: `live_reviewer_narration_built`" in markdown
     assert "required anchors present: True" in markdown
     assert "forbidden phrases present: 0" in markdown
+
+
+def test_collector_builds_nebius_evidence_synthesis_from_tavily_sources() -> None:
+    with patch("agent.tavily_live_evidence.TAVILY_API_KEY", "unit-test-key"), patch(
+        "agent.nebius_reviewer_narration.config.LLM_PROVIDER", "nebius"
+    ), patch("agent.nebius_reviewer_narration.config.LLM_API_KEY", "test-key"), patch(
+        "agent.nebius_evidence_synthesis.config.LLM_PROVIDER", "nebius"
+    ), patch(
+        "agent.nebius_evidence_synthesis.config.LLM_API_KEY", "test-key"
+    ):
+        run = build_sponsor_proof_collector_run(
+            DEFAULT_TRIAL_REQUEST,
+            live_tavily=True,
+            live_nebius=True,
+            composio_dry_run=True,
+            tavily_client_factory=lambda _key: _FakeTavilyClient(),
+            nebius_client_factory=_fake_dual_nebius_client,
+        )
+
+    synthesis = run["nebius_evidence_synthesis"]
+    assert synthesis["status"] == "live_evidence_synthesis_built"
+    assert synthesis["live_call_attempted"] is True
+    assert synthesis["live_call_count"] == 1
+    assert synthesis["fallback_used"] is False
+    assert synthesis["source_index_count"] > 0
+    assert synthesis["synthesis"]["cited_source_ids"] == ["tavily:1"]
+    assert synthesis["synthesis"]["source_findings"][0]["source_id"] == "tavily:1"
+    assert synthesis["synthesis"]["safety_anchor"] == NEBIUS_EVIDENCE_SYNTHESIS_SAFETY_ANCHOR
+    assert synthesis["invariants"]["source_ids_from_tavily_only"] is True
+    assert synthesis["invariants"]["no_new_urls"] is True
+    assert synthesis["invariants"]["can_reduce_proof_debt"] is False
+    assert synthesis["invariants"]["can_approve_access"] is False
+    assert synthesis["invariants"]["can_mutate_packet"] is False
+    assert run["invariants"]["decision_lock_unchanged"] is True
+    assert run["safety_boundary"]["executes_external_writes"] is False
+    assert run["downstream_previews"]["portkey_model_spend_gate"]["api_call_made"] is False
+
+    markdown = render_sponsor_proof_collector_markdown(run)
+    assert "## Nebius Evidence Synthesis" in markdown
+    assert "status: `live_evidence_synthesis_built`" in markdown
+    assert "source ids from Tavily only: True" in markdown
+    assert "can reduce proof debt: False" in markdown
 
 
 def test_collector_markdown_is_public_safe_and_skim_ready() -> None:

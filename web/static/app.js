@@ -2906,6 +2906,16 @@ function formatSubscriberName(value) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function formatSponsorName(value) {
+  const names = {
+    tavily: "Tavily",
+    composio: "Composio",
+    openclaw: "OpenClaw",
+    nebius: "Nebius",
+  };
+  return names[value] || formatSubscriberName(value);
+}
+
 function renderSubscriberCard(data) {
   const authority = data.packet_authority || {};
   const rows = data.subscriber_rows || [];
@@ -2936,27 +2946,222 @@ function renderSubscriberCard(data) {
   walkthroughSubscriberCard.appendChild(grid);
 }
 
+function sponsorStepState({ live = false, dryRun = false, fallback = false, locked = false }) {
+  if (locked) return "locked";
+  if (live && !fallback) return "live";
+  if (dryRun) return "dry-run";
+  if (fallback) return "fallback";
+  return "planned";
+}
+
+function renderSponsorProofStep({ label, role, state, detail, meta }) {
+  const row = document.createElement("div");
+  row.className = `sponsor-proof-step ${state}`;
+  row.innerHTML = `
+    <span class="proof-step-state">${escapeHtml(state)}</span>
+    <strong>${escapeHtml(label)}</strong>
+    <em>${escapeHtml(role)}</em>
+    <p>${escapeHtml(detail)}</p>
+    <code>${escapeHtml(meta)}</code>
+  `;
+  return row;
+}
+
+function renderSponsorProofLoop({ trace, run, tavily, composio, nebius, synthesis, portkey }) {
+  const openclawStep = (run?.collector_steps || trace?.steps || []).find(
+    (step) => step.sponsor === "openclaw"
+  );
+  const tavilyCandidates = Array.isArray(tavily?.evidence_candidates)
+    ? tavily.evidence_candidates
+    : [];
+  const tavilySourceCount = tavilyCandidates.reduce(
+    (total, item) => total + (Array.isArray(item.source_urls) ? item.source_urls.length : 0),
+    0
+  );
+  const composioSummary = composio?.permission_diff_summary || {};
+  const sourceIndexCount = Number(synthesis?.source_index_count || 0);
+  const citedIds = Array.isArray(synthesis?.synthesis?.cited_source_ids)
+    ? synthesis.synthesis.cited_source_ids
+    : [];
+
+  const loop = document.createElement("div");
+  loop.className = "sponsor-proof-loop";
+  const steps = [
+    {
+      label: "Tavily",
+      role: "source candidates",
+      state: sponsorStepState({
+        live: Boolean(tavily?.live_call_attempted),
+        fallback: Boolean(tavily?.fallback_used),
+      }),
+      detail: tavily
+        ? `${tavily.live_call_count || 0} live calls, ${tavilySourceCount} source URLs collected.`
+        : "Plans source searches for missing proof without reducing proof debt.",
+      meta: tavily
+        ? `fallback ${String(tavily.fallback_used)}`
+        : "read-only evidence",
+    },
+    {
+      label: "Nebius",
+      role: "reviewer synthesis",
+      state: sponsorStepState({
+        live: Boolean(synthesis?.live_call_attempted || nebius?.live_call_attempted),
+        fallback: Boolean(synthesis?.fallback_used ?? nebius?.fallback_used),
+      }),
+      detail: synthesis
+        ? `${sourceIndexCount} Tavily sources indexed; cited ${citedIds.length || 0} source IDs.`
+        : "Narrates locked packet fields and source candidates for human review.",
+      meta: synthesis
+        ? `synthesis ${synthesis.status || "pending"}`
+        : "locked-field narration",
+    },
+    {
+      label: "Composio",
+      role: "permission diff",
+      state: sponsorStepState({ dryRun: true, fallback: Boolean(composio?.fallback_used) }),
+      detail: composio
+        ? `${composioSummary.tool_count || 0} tool plans; ${composioSummary.blocked_write_count || 0} writes blocked.`
+        : "Builds a dry-run permission diff; execute remains blocked.",
+      meta: composio
+        ? `api_call_made ${String(composio.api_call_made)}`
+        : "dry-run only",
+    },
+    {
+      label: "OpenClaw",
+      role: "runtime trace",
+      state: sponsorStepState({ fallback: Boolean(openclawStep?.fallback_used) }),
+      detail: openclawStep?.output_summary || "Records the runtime trace shape for blocked/dry-run steps.",
+      meta: `would_execute ${String(openclawStep?.would_execute ?? false)}`,
+    },
+    {
+      label: "Portkey",
+      role: "downstream gate",
+      state: sponsorStepState({ dryRun: true }),
+      detail: portkey
+        ? `Dry-run guardrail verdict ${String(portkey.portkey_guardrail_response?.verdict)}; credit limit ${String(portkey.usage_policy_plan?.request_body?.credit_limit ?? 0)}.`
+        : "Previews the downstream gate policy without a Portkey API mutation.",
+      meta: `api_call_made ${String(portkey?.api_call_made ?? false)}`,
+    },
+    {
+      label: "IA Packet",
+      role: "authority lock",
+      state: sponsorStepState({ locked: true }),
+      detail: "Decision, proof debt, and safety state stay unchanged after sponsor proof collection.",
+      meta: `decision_lock ${String(run?.invariants?.decision_lock_unchanged ?? trace?.decision_lock_unchanged ?? true)}`,
+    },
+  ];
+  steps.forEach((step, index) => {
+    loop.appendChild(renderSponsorProofStep({ ...step, label: `${index + 1}. ${step.label}` }));
+  });
+  return loop;
+}
+
+function renderSponsorSourcePanel({ synthesis, tavily }) {
+  if (!synthesis && !tavily) return null;
+  const panel = document.createElement("div");
+  panel.className = "sponsor-source-panel";
+  const citedIds = Array.isArray(synthesis?.synthesis?.cited_source_ids)
+    ? synthesis.synthesis.cited_source_ids
+    : [];
+  const sourceIndex = Array.isArray(synthesis?.source_index) ? synthesis.source_index : [];
+  const topSources = sourceIndex.slice(0, 3);
+  const summary =
+    synthesis?.synthesis?.reviewer_summary ||
+    "Tavily source candidates are available for human review; IA does not approve from sources alone.";
+  panel.innerHTML = `
+    <div class="sponsor-source-head">
+      <span class="trace-subhead">Live source synthesis</span>
+      <strong>${escapeHtml(synthesis?.status || "source candidates collected")}</strong>
+      <code>cited ${escapeHtml(citedIds.join(", ") || "none")} · no new URLs ${escapeHtml(String(synthesis?.invariants?.no_new_urls ?? true))}</code>
+    </div>
+    <p class="walkthrough-summary">${escapeHtml(summary)}</p>
+  `;
+  if (topSources.length) {
+    const links = document.createElement("div");
+    links.className = "sponsor-source-links";
+    topSources.forEach((source) => {
+      const url = String(source.url || "");
+      const safeUrl = url.startsWith("http://") || url.startsWith("https://") ? url : "";
+      const item = document.createElement(safeUrl ? "a" : "span");
+      item.className = "sponsor-source-link";
+      if (safeUrl) {
+        item.href = safeUrl;
+        item.target = "_blank";
+        item.rel = "noreferrer";
+      }
+      item.innerHTML = `
+        <code>${escapeHtml(source.source_id || "tavily")}</code>
+        <span>${escapeHtml(source.title || source.query || "Tavily source candidate")}</span>
+      `;
+      links.appendChild(item);
+    });
+    panel.appendChild(links);
+  }
+  const invariants = document.createElement("div");
+  invariants.className = "sponsor-source-locks";
+  [
+    ["Tavily only", synthesis?.invariants?.source_ids_from_tavily_only ?? true],
+    ["No new URLs", synthesis?.invariants?.no_new_urls ?? true],
+    ["Can approve", synthesis?.invariants?.can_approve_access ?? false],
+    ["Can reduce proof debt", synthesis?.invariants?.can_reduce_proof_debt ?? false],
+  ].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong>`;
+    invariants.appendChild(item);
+  });
+  panel.appendChild(invariants);
+  return panel;
+}
+
 function renderSponsorCard(data) {
   const trace = data.sponsor_proof_trace || {};
   const order = trace.sponsor_order || [];
+  const displayOrder = order.map((item) => formatSponsorName(item)).join(" -> ");
   walkthroughSponsorCard.innerHTML = `
     <span class="eyebrow">Sponsor proof trace</span>
-    <h3>Collect sponsor proof</h3>
-    <p class="walkthrough-summary">Locked order: ${escapeHtml(order.join(" -> ") || "Tavily -> Composio -> OpenClaw -> Nebius")}</p>
+    <h3>Live proof loop</h3>
+    <p class="walkthrough-summary">One local IA API call orchestrates sponsor proof. ${escapeHtml(displayOrder || "Tavily -> Composio -> OpenClaw -> Nebius")} contribute proof only; the IA Packet stays locked.</p>
   `;
+  const run = data.sponsor_proof_run || walkthroughSponsorRun;
+  const ledgerRecord = data.sponsor_proof_ledger_record || walkthroughSponsorLedgerRecord;
+  const tavily = run?.live_sponsor_proof?.tavily || null;
+  const composio = run?.dry_run_sponsor_proof?.composio || null;
+  const nebius = run?.live_sponsor_proof?.nebius || null;
+  const synthesis = run?.nebius_evidence_synthesis || null;
+  const portkey = run?.downstream_previews?.portkey_model_spend_gate || null;
+  const safetyForMetrics = run?.safety_boundary || {};
   const metrics = document.createElement("div");
   metrics.className = "trace-metrics";
-  [
-    ["Decision lock", trace.decision_lock_unchanged],
-    ["Fallback", trace.all_fallback_used],
-    ["Access evidence", trace.access_evidence_present],
-    ["Spend evidence", trace.spend_evidence_present],
-  ].forEach(([label, value]) => {
+  const metricRows = run
+    ? [
+        ["Decision lock", run.invariants?.decision_lock_unchanged],
+        ["Live calls", safetyForMetrics.live_calls_made],
+        ["Writes", safetyForMetrics.executes_external_writes],
+        [
+          "Approves",
+          Boolean(
+            safetyForMetrics.approves_access ||
+              safetyForMetrics.approves_spend ||
+              safetyForMetrics.grants_permissions
+          ),
+        ],
+      ]
+    : [
+        ["Decision lock", trace.decision_lock_unchanged],
+        ["Fallback", trace.all_fallback_used],
+        ["Access evidence", trace.access_evidence_present],
+        ["Spend evidence", trace.spend_evidence_present],
+      ];
+  metricRows.forEach(([label, value]) => {
     const item = document.createElement("div");
     item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong>`;
     metrics.appendChild(item);
   });
   walkthroughSponsorCard.appendChild(metrics);
+
+  walkthroughSponsorCard.appendChild(
+    renderSponsorProofLoop({ trace, run, tavily, composio, nebius, synthesis, portkey })
+  );
 
   const traceList = document.createElement("div");
   traceList.className = "trace-step-list";
@@ -2970,7 +3175,10 @@ function renderSponsorCard(data) {
     `;
     traceList.appendChild(row);
   });
-  walkthroughSponsorCard.appendChild(traceList);
+  const traceDetails = document.createElement("details");
+  traceDetails.className = "trace-detail-toggle";
+  traceDetails.innerHTML = "<summary>Raw trace details</summary>";
+  traceDetails.appendChild(traceList);
 
   const traceAction = document.createElement("button");
   traceAction.type = "button";
@@ -2980,11 +3188,8 @@ function renderSponsorCard(data) {
   traceAction.addEventListener("click", () => collectSponsorProof());
   walkthroughSponsorCard.appendChild(traceAction);
 
-  const run = data.sponsor_proof_run || walkthroughSponsorRun;
-  const ledgerRecord = data.sponsor_proof_ledger_record || walkthroughSponsorLedgerRecord;
   if (run) {
     const safety = run.safety_boundary || {};
-    const tavily = run.live_sponsor_proof?.tavily || null;
     const tavilyCandidates = Array.isArray(tavily?.evidence_candidates)
       ? tavily.evidence_candidates
       : [];
@@ -2992,9 +3197,7 @@ function renderSponsorCard(data) {
       (total, item) => total + (Array.isArray(item.source_urls) ? item.source_urls.length : 0),
       0
     );
-    const composio = run.dry_run_sponsor_proof?.composio || null;
     const composioSummary = composio?.permission_diff_summary || {};
-    const nebius = run.live_sponsor_proof?.nebius || null;
     const sponsorRunSummaries = [];
     if (tavily) {
       sponsorRunSummaries.push(
@@ -3009,6 +3212,11 @@ function renderSponsorCard(data) {
     if (nebius) {
       sponsorRunSummaries.push(
         `Nebius reviewer narration ${nebius.live_call_attempted ? "attempted" : "not attempted"}; ${nebius.live_call_count || 0} live calls; fallback ${String(nebius.fallback_used)}; anchors ${String(nebius.required_anchors_present)}.`
+      );
+    }
+    if (synthesis) {
+      sponsorRunSummaries.push(
+        `Nebius evidence synthesis ${synthesis.live_call_attempted ? "attempted" : "not attempted"}; ${synthesis.live_call_count || 0} live calls; ${synthesis.source_index_count || 0} Tavily sources indexed; fallback ${String(synthesis.fallback_used)}.`
       );
     }
     const runCard = document.createElement("article");
@@ -3030,7 +3238,10 @@ function renderSponsorCard(data) {
       )}</p>
     `;
     walkthroughSponsorCard.appendChild(runCard);
+    const sourcePanel = renderSponsorSourcePanel({ synthesis, tavily });
+    if (sourcePanel) walkthroughSponsorCard.appendChild(sourcePanel);
   }
+  walkthroughSponsorCard.appendChild(traceDetails);
 
   const rolesTitle = document.createElement("span");
   rolesTitle.className = "trace-subhead";

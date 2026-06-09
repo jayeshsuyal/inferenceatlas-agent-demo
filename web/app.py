@@ -46,6 +46,7 @@ from agent.portkey_guardrail import (
     validate_portkey_guardrail_token,
     write_portkey_guardrail_event,
 )
+from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loop
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
 from agent.subscribers import (
@@ -576,6 +577,28 @@ def portkey_downstream_preview(
         "ok": True,
         "read_only": True,
         "portkey": payload,
+    }
+
+
+@app.get("/api/packets/{fixture}/downstream/portkey/proof-loop")
+def portkey_guardrail_proof_loop(
+    fixture: str,
+    requested_mode: str = Query("model_request"),
+) -> dict:
+    """Read-only Portkey proof loop: webhook verdict plus policy preview."""
+    try:
+        payload = build_portkey_guardrail_proof_loop(
+            fixture=fixture,
+            requested_mode=requested_mode,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"unknown fixture: {fixture}") from exc
+    return {
+        "ok": True,
+        "read_only": True,
+        "portkey_guardrail_proof_loop": payload,
     }
 
 

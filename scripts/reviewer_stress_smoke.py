@@ -232,6 +232,36 @@ def _check_portkey_preview(base_url: str, timeout: float) -> None:
     _require(portkey["portkey_guardrail_response"]["verdict"] is False, "Portkey preview must block movement")
 
 
+def _check_portkey_guardrail_auth_boundary(base_url: str, timeout: float) -> None:
+    status, body = _json_request(
+        base_url,
+        "/api/portkey/guardrail",
+        method="POST",
+        payload={
+            "eventType": "beforeRequestHook",
+            "metadata": {
+                "ia_fixture": "ai_spend_budget_overrun",
+                "ia_requested_mode": "model_request",
+            },
+        },
+        timeout=timeout,
+    )
+    _require(
+        status in {401, 503},
+        f"Portkey guardrail unauthenticated call returned {status}, expected 401 or 503",
+    )
+    if status == 401:
+        _require(body["detail"] == "invalid_portkey_guardrail_token", "Portkey guardrail auth detail drifted")
+    if status == 503:
+        _require(
+            body["detail"] == "portkey_guardrail_token_not_configured",
+            "Portkey guardrail missing-token detail drifted",
+        )
+
+    events = _json_get(base_url, "/api/portkey/guardrail/events", timeout=timeout)
+    _require(events["read_only"] is True, "Portkey guardrail events endpoint must be read-only")
+
+
 def _expect_sponsor_run_safe(run: dict[str, Any], *, label: str) -> None:
     _require(run["status"] == "completed", f"{label} sponsor proof run did not complete")
     _require([step["sponsor"] for step in run["collector_steps"]] == EXPECTED_SPONSOR_ORDER, f"{label} sponsor order drifted")
@@ -309,6 +339,7 @@ def run_stress(base_url: str, *, timeout: float, session_id: str) -> list[str]:
         ("public packet verification selectors", lambda: _check_public_packet_verification(base_url, timeout)),
         ("bad inputs fail closed", lambda: _check_bad_inputs_fail_closed(base_url, timeout)),
         ("Portkey dry-run preview", lambda: _check_portkey_preview(base_url, timeout)),
+        ("Portkey guardrail auth boundary", lambda: _check_portkey_guardrail_auth_boundary(base_url, timeout)),
         ("Ask IA safety variants", lambda: _check_ask_ia_safety(base_url, timeout, session_id)),
         ("sponsor proof variants", lambda: _check_sponsor_variants(base_url, timeout)),
     ]

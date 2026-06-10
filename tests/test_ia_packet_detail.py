@@ -107,7 +107,8 @@ class IAPacketDetailTests(unittest.TestCase):
             "Export Portkey gate",
             "IA did not approve. The next human action is named above.",
             "Review in 60 seconds",
-            "Request -> IA Packet -> Sponsor proof -> Portkey proof loop -> Team lenses -> Export",
+            "Packet document",
+            "Read top-to-bottom: verdict, request, proof, downstream gate, export.",
             "Team lenses",
         ]:
             self.assertIn(expected, html)
@@ -207,8 +208,10 @@ class IAPacketDetailTests(unittest.TestCase):
         self.assertIn("scrollIntoView", js)
         self.assertIn("Sponsors collect proof only", js)
         self.assertIn("Live keys", js)
-        self.assertIn("trace ${escapeHtml(trace.trace_id", js)
-        self.assertIn("packet ${escapeHtml(trace.packet_id", js)
+        self.assertIn("packetDecisionTone", js)
+        self.assertIn("packet-status-card", js)
+        self.assertIn("sponsor-proof-strip", js)
+        self.assertIn("Sponsors contribute evidence only. IA keeps the packet decision locked.", js)
 
         for label, target in expected_steps.items():
             self.assertIn(label, html)

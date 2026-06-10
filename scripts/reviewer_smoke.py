@@ -113,7 +113,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "InferenceAtlas runway",
         "What should IA review?",
         "Generate the proof packet downstream systems trust before an AI agent moves.",
-        "Connect repo",
+        "Review cockpit",
+        "Current review step",
+        "Current step",
         "Connect GitHub",
         "Use demo repo",
         "IA indexes only the repo you select.",
@@ -122,6 +124,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "ReviewRun",
         "Choose one GitHub repository",
         "Connect and index one repo before generating a packet.",
+        "Ask IA Coach",
+        "Current read",
+        "Truth source",
+        "Raw agent intent is not trusted. Proof changes packet state.",
         "Review AI spend",
         "Review tool access",
         "support-triage-bot wants repo access",
@@ -129,8 +135,12 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "support-triage-bot",
         "Review access",
         "Next human action",
-        "Proof contributors",
+        "ProofGraph",
+        "Packet authority map",
         "Gate preview",
+        "Advanced",
+        "Packet and tools",
+        "Raw packet and workbench surfaces stay behind this advanced drawer.",
         "Open ProofGraph",
         "Sponsor Run",
         "composer-shell first-run-locked",
@@ -145,6 +155,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("Run proof check" not in html, "old cockpit-first CTA returned")
     _require("Run IA Packet Review" not in html, "old packet-document-first CTA returned")
     _require("Open one registered AI movement request. IA shows the packet" not in html, "old first-run body returned")
+    _require('class="review-lane-grid"' not in html, "old root lane selector returned")
+    _require('class="review-lane-card' not in html, "old root lane cards returned")
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require('const REPO_PROOF_FIXTURE = "support_triage_agent";' in js, "repo proof fixture is not locked")
     _require("loadReviewRepoList" in js, "root GitHub repo list loader missing")
@@ -156,6 +168,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Connect and index one GitHub repo before generating a packet." in js,
         "repo proof runner must fail closed before indexing",
     )
+    _require("repoCoachRead" in js, "Ask IA Coach read state missing")
+    _require("packet generated from the selected ReviewRun" in js, "Ask IA Coach must read from ReviewRun")
+    _require("proof steps mapped" in js, "ProofGraph summary must map proof steps")
     _require("runRepoProofCockpit" in js, "repo proof cockpit runner missing")
     _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
     _require("fetchRepoSponsorTrace" in js, "repo sponsor trace fetch helper missing")
@@ -176,8 +191,16 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(".repo-proof-cockpit" in css, "repo proof cockpit CSS missing")
-    _require(".review-lane-grid" in css, "review lane selector CSS missing")
-    _require(".review-lane-card.selected" in css, "selected lane CSS missing")
+    _require(".review-cockpit-shell" in css, "review cockpit layout CSS missing")
+    _require(".repo-current-step" in css, "current review step CSS missing")
+    _require(".repo-ask-coach" in css, "Ask IA Coach CSS missing")
+    _require(".repo-coach-state-grid" in css, "Ask IA safety state CSS missing")
+    _require(".repo-coach-invariant" in css, "Ask IA invariant CSS missing")
+    _require(".repo-ask-coach .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
+    _require(".repo-ask-coach .packet-coach-status" in css, "Ask IA status must live in coach CSS")
+    _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")
+    _require(".review-lane-grid" not in css, "dead review lane selector CSS returned")
+    _require(".review-lane-card" not in css, "dead review lane card CSS returned")
     _require(".repo-connect-panel" in css, "root repo connect panel CSS missing")
     _require(".repo-inline-picker" in css, "root repo picker CSS missing")
     _require(".repo-index-summary" in css, "repo index summary CSS missing")

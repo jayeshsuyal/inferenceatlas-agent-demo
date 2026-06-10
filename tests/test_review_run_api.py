@@ -14,9 +14,11 @@ from agent.connector_oauth import demo_sign_in
 from web.app import (
     GithubAttachRequest,
     ReviewRunCreateRequest,
+    ReviewRunPacketRequest,
     _review_runs,
     app,
     create_review_run_api,
+    generate_review_run_packet_api,
     github_attach_repo,
     github_list_repos,
     get_review_run,
@@ -59,6 +61,67 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(fetched["run"], run)
                 self.assertEqual(fetched["record"]["stage"], "repo_selected")
                 self.assertTrue(list(store_dir.glob("*.json")))
+
+    def test_review_run_api_generates_compact_packet_from_selected_repo(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                generated = generate_review_run_packet_api(
+                    created["run"]["run_id"],
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+
+                self.assertIs(generated["ok"], True)
+                self.assertIs(generated["read_only"], True)
+                run = generated["run"]
+                packet = generated["packet"]
+                self.assertEqual(run["stage"], "packet_generated")
+                self.assertEqual(run["packet"]["source_run_id"], run["run_id"])
+                self.assertEqual(run["packet"]["revision_number"], 1)
+                self.assertEqual(packet["schema_version"], "review_run_packet.v0")
+                self.assertEqual(packet["packet_reference"]["run_id"], run["run_id"])
+                self.assertEqual(packet["packet_reference"]["source_of_truth"], "ReviewRun")
+                self.assertEqual(packet["compact_output"]["allowed"], ["read issues"])
+                self.assertEqual(packet["compact_output"]["review_required"], ["comment"])
+                self.assertEqual(
+                    packet["compact_output"]["blocked"],
+                    ["create labels", "repo admin", "org-wide write", "secrets"],
+                )
+                self.assertEqual(packet["source_inputs"]["selected_repo"], "acme/demo-support-incidents")
+                self.assertFalse(packet["safety_boundary"]["approval_granted"])
+                self.assertFalse(packet["safety_boundary"]["external_writes"])
+                self.assertFalse(packet["safety_boundary"]["portkey_api_call_made"])
+
+                fetched = get_review_run(run["run_id"])
+                self.assertEqual(fetched["run"]["stage"], "packet_generated")
+                self.assertEqual(fetched["run"]["packet"], run["packet"])
+
+                second = generate_review_run_packet_api(
+                    run["run_id"],
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                self.assertEqual(second["run"]["packet"]["revision_id"], run["packet"]["revision_id"])
+
+                with self.assertRaises(HTTPException) as changed:
+                    generate_review_run_packet_api(
+                        run["run_id"],
+                        ReviewRunPacketRequest(access_request="support-triage-bot now needs repo admin"),
+                    )
+                self.assertEqual(changed.exception.status_code, 400)
+                self.assertIn("raw agent request cannot change", changed.exception.detail)
 
     def test_review_run_api_rejects_request_without_repo(self) -> None:
         with self.assertRaises(HTTPException) as exc:

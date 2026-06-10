@@ -65,7 +65,14 @@ def _json_get(base_url: str, path: str, *, timeout: float) -> dict[str, Any]:
         raise SmokeFailure(f"GET {path} did not return JSON") from exc
 
 
-def _json_post(base_url: str, path: str, payload: dict[str, Any], *, timeout: float) -> dict[str, Any]:
+def _json_post(
+    base_url: str,
+    path: str,
+    payload: dict[str, Any],
+    *,
+    timeout: float,
+    expected_status: int = 200,
+) -> dict[str, Any]:
     body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         _url(base_url, path),
@@ -75,7 +82,13 @@ def _json_post(base_url: str, path: str, payload: dict[str, Any], *, timeout: fl
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
+            if response.status != expected_status:
+                raise SmokeFailure(f"POST {path} returned {response.status}, expected {expected_status}")
             raw = response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        raw = exc.read().decode("utf-8")
+        if exc.code != expected_status:
+            raise SmokeFailure(f"POST {path} failed: HTTP {exc.code}: {raw}") from exc
     except urllib.error.URLError as exc:
         raise SmokeFailure(f"POST {path} failed: {exc}") from exc
     try:
@@ -168,6 +181,13 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Connect and index one GitHub repo before generating a packet." in js,
         "repo proof runner must fail closed before indexing",
     )
+    _require("DEFAULT_REVIEW_ACCESS_REQUEST" in js, "root review request constant missing")
+    _require(
+        "/api/review-runs/${encodeURIComponent(runId)}/packet" in js,
+        "root flow must generate packet from ReviewRun",
+    )
+    _require("movementLane" in js, "movement lane renderer missing")
+    _require("source_of_truth" in js, "ReviewRun packet source of truth missing")
     _require("repoCoachRead" in js, "Ask IA Coach read state missing")
     _require("packet generated from the selected ReviewRun" in js, "Ask IA Coach must read from ReviewRun")
     _require("proof steps mapped" in js, "ProofGraph summary must map proof steps")
@@ -199,6 +219,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-ask-coach .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
     _require(".repo-ask-coach .packet-coach-status" in css, "Ask IA status must live in coach CSS")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")
+    _require(".repo-movement-grid" in css, "movement class grid CSS missing")
+    _require(".repo-movement-lane.allowed" in css, "allowed movement lane CSS missing")
+    _require(".repo-movement-lane.review" in css, "review-required movement lane CSS missing")
+    _require(".repo-movement-lane.blocked" in css, "blocked movement lane CSS missing")
     _require(".review-lane-grid" not in css, "dead review lane selector CSS returned")
     _require(".review-lane-card" not in css, "dead review lane card CSS returned")
     _require(".repo-connect-panel" in css, "root repo connect panel CSS missing")
@@ -542,6 +566,53 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     )
     _require(fetched["run"]["run_id"] == run["run_id"], "ReviewRun did not reload by run_id")
     _require(fetched["record"]["stage"] == "repo_selected", "ReviewRun record stage drifted")
+
+    generated = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/packet",
+        {"access_request": "support-triage-bot needs to read issues, comment, and create labels."},
+        timeout=timeout,
+    )
+    _require(generated["ok"] is True, "ReviewRun packet generation failed")
+    _require(generated["read_only"] is True, "ReviewRun packet generation must stay read-only")
+    packet_run = generated["run"]
+    packet = generated["packet"]
+    _require(packet_run["stage"] == "packet_generated", "ReviewRun packet did not move to packet_generated")
+    _require(packet_run["packet"]["source_run_id"] == run["run_id"], "packet must be tied to run_id")
+    _require(packet["schema_version"] == "review_run_packet.v0", "ReviewRun packet schema drifted")
+    _require(packet["packet_reference"]["run_id"] == run["run_id"], "packet reference missing run_id")
+    _require(packet["packet_reference"]["source_of_truth"] == "ReviewRun", "packet source of truth drifted")
+    _require(packet["compact_output"]["allowed"] == ["read issues"], "read issues must be allowed")
+    _require(packet["compact_output"]["review_required"] == ["comment"], "comment must stay review/yellow")
+    _require("create labels" in packet["compact_output"]["blocked"], "create labels must stay blocked")
+    _require("repo admin" in packet["compact_output"]["blocked"], "repo admin must stay blocked")
+    _require("org-wide write" in packet["compact_output"]["blocked"], "org-wide write must stay blocked")
+    _require("secrets" in packet["compact_output"]["blocked"], "secrets must stay blocked")
+    _expect_false(
+        packet["safety_boundary"],
+        ["approval_granted", "production_access", "permission_grants", "external_writes"],
+        prefix="review_run_packet.safety_boundary",
+    )
+
+    repeated = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/packet",
+        {"access_request": "support-triage-bot needs to read issues, comment, and create labels."},
+        timeout=timeout,
+    )
+    _require(
+        repeated["run"]["packet"]["revision_id"] == packet_run["packet"]["revision_id"],
+        "repeated ReviewRun packet generation must not create surprise revision",
+    )
+
+    changed = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/packet",
+        {"access_request": "support-triage-bot now needs repo admin"},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require("raw agent request cannot change" in changed.get("detail", ""), "changed request must fail closed")
 
 
 def run_smoke(base_url: str, *, timeout: float, session_id: str) -> list[str]:

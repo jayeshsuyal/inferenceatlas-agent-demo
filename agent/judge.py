@@ -18,6 +18,7 @@ from .packet import build_support_triage_trace
 from .packet_authority import build_packet_authority_snapshot_for_scenario
 from .packet_diff import build_packet_diff_report, write_packet_diff_artifacts
 from .pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, write_pilot_memo_artifacts
+from .proof_graph_visual import write_proof_graph_visual_artifact
 from .proof_health import build_proof_health_report, write_proof_health_artifacts
 from .renderers import render_trace_markdown
 from .review_room import write_review_room_html
@@ -60,6 +61,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.trial_outcome_memo examples/requests/support_triage_trial.yml",
     "python3 -m agent.trial_evidence_replay examples/requests/support_triage_trial.yml",
     "python3 -m agent.pilot_memo examples/requests/support_triage_trial.yml",
+    "python3 -m agent.proof_graph_visual --write",
     "python3 -m unittest discover -s tests",
 ]
 
@@ -86,6 +88,7 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/support_triage_trial.sponsor_proof_trace.json",
     "examples/generated/review_room.md",
     "examples/generated/review_room.html",
+    "examples/generated/proofgraph.html",
     "examples/generated/support_triage_agent.proof_health.md",
     "examples/generated/support_triage_agent.proof_health.json",
     "examples/generated/ai_spend_budget_overrun.spend_packet.md",
@@ -156,6 +159,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(write_trial_outcome_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trial_evidence_replay_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_pilot_memo_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
+    written.append(write_proof_graph_visual_artifact(output_dir=output_dir))
     return written
 
 

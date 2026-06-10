@@ -110,6 +110,12 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "ProofGraph Visual",
+        (
+            "proofgraph.html",
+        ),
+    ),
+    ArtifactFamily(
         "Proof Health",
         (
             "support_triage_agent.proof_health.md",

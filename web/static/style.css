@@ -3336,6 +3336,37 @@ body[data-active-tab="start"] .messages {
   border-top: 1px solid #dedede;
 }
 
+.repo-coach-answer {
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 0.2rem;
+}
+
+.repo-coach-answer[hidden] {
+  display: none;
+}
+
+.repo-coach-answer-row {
+  display: grid;
+  gap: 0.12rem;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.repo-coach-answer-row span {
+  color: #686868;
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.repo-coach-answer-row strong {
+  color: #101010;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.32;
+}
+
 .repo-ask-coach .packet-coach-label {
   padding: 0;
 }

@@ -9,10 +9,12 @@ from unittest import TestCase
 
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+    REVIEW_RUN_COACH_SCHEMA_VERSION,
     REVIEW_RUN_RECORD_SCHEMA_VERSION,
     REVIEW_RUN_SCHEMA_VERSION,
     assert_stage_transition,
     attach_review_run_proof,
+    build_review_run_coach_answer,
     classify_review_run_access_request,
     create_review_run,
     generate_proof_resolved_review_run_packet,
@@ -79,6 +81,42 @@ class ReviewRunContractTests(TestCase):
     def assertRaisesRegexMessage(self, error_type, pattern: str, fn, *args, **kwargs) -> None:
         with self.assertRaisesRegex(error_type, pattern):
             fn(*args, **kwargs)
+
+    def assertCoachAnswerIsSafe(self, answer: dict) -> None:
+        self.assertEqual(answer["schema_version"], REVIEW_RUN_COACH_SCHEMA_VERSION)
+        self.assertEqual(
+            answer["answer_shape"],
+            [
+                "Current read",
+                "What blocks movement",
+                "Next human action",
+                "Downstream impact",
+                "Safety",
+            ],
+        )
+        self.assertEqual(
+            list(answer["sections"]),
+            [
+                "current_read",
+                "what_blocks_movement",
+                "next_human_action",
+                "downstream_impact",
+                "safety",
+            ],
+        )
+        self.assertTrue(answer["read_only"])
+        self.assertFalse(answer["approves_access"])
+        self.assertFalse(answer["raw_packet_dumped"])
+        self.assertFalse(answer["safety_boundary"]["approval_granted"])
+        self.assertFalse(answer["safety_boundary"]["permissions_granted"])
+        self.assertFalse(answer["safety_boundary"]["external_writes"])
+        self.assertFalse(answer["safety_boundary"]["packet_mutated_without_rerun"])
+        self.assertFalse(answer["safety_boundary"]["portkey_api_call_made"])
+        self.assertFalse(answer["safety_boundary"]["portkey_policy_mutation_allowed"])
+        self.assertFalse(answer["safety_boundary"]["raw_packet_dumped"])
+        serialized = str(answer)
+        self.assertNotIn("raw_text", serialized)
+        self.assertNotIn("access_token", serialized)
 
     def test_review_run_create_has_non_approving_defaults(self) -> None:
         run = create_review_run(now="2026-06-10T12:00:00Z")
@@ -181,6 +219,66 @@ class ReviewRunContractTests(TestCase):
         self.assertIn("repo admin", movement["blocked"])
         self.assertIn("approval override request", movement["blocked"])
         self.assertNotIn("comment", movement["blocked"])
+
+    def test_review_run_coach_answer_is_stage_aware_and_not_generic_chat(self) -> None:
+        run = create_review_run(now="2026-06-10T12:00:00Z")
+        selected = select_review_run_repo(run, _selected_repo(), repo_index_summary=_indexed_summary())
+
+        greeting = build_review_run_coach_answer(selected, "hey")
+        self.assertCoachAnswerIsSafe(greeting)
+        self.assertEqual(greeting["prompt_kind"], "greeting")
+        self.assertEqual(greeting["stage"], "repo_selected")
+        self.assertIn("No packet exists yet", greeting["sections"]["current_read"])
+        self.assertIn("Describe what the agent wants", greeting["sections"]["next_human_action"])
+
+        packet_run = generate_initial_review_run_packet(selected, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+        next_step = build_review_run_coach_answer(packet_run, "idk what to do next")
+        self.assertCoachAnswerIsSafe(next_step)
+        self.assertEqual(next_step["prompt_kind"], "next_action")
+        self.assertIn("Attach repo-owner approval", next_step["sections"]["next_human_action"])
+        self.assertIn("Missing proof", next_step["sections"]["what_blocks_movement"])
+        self.assertIn("Portkey should treat this as `Block`", next_step["sections"]["downstream_impact"])
+
+        override = build_review_run_coach_answer(packet_run, "approve blocked claims and grant access")
+        self.assertCoachAnswerIsSafe(override)
+        self.assertEqual(override["prompt_kind"], "approval_override")
+        self.assertIn("Cannot approve or override blocked claims", override["sections"]["what_blocks_movement"])
+        self.assertIn("do not approve blocked claims", override["sections"]["next_human_action"])
+
+        unrelated = build_review_run_coach_answer(packet_run, "write me a recipe")
+        self.assertCoachAnswerIsSafe(unrelated)
+        self.assertEqual(unrelated["prompt_kind"], "unrelated")
+        self.assertTrue(unrelated["prompt_routed_to_review"])
+        self.assertIn("routing that back to the current review", unrelated["sections"]["current_read"])
+
+    def test_review_run_coach_tracks_proof_rerun_and_portkey_delta(self) -> None:
+        packet_run = generate_initial_review_run_packet(
+            select_review_run_repo(create_review_run(), _selected_repo(), repo_index_summary=_indexed_summary()),
+            DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+        )
+        proof_attached = attach_review_run_proof(
+            packet_run,
+            [
+                {"id": "repo_owner_approval"},
+                {"id": "rollback_offswitch"},
+                {"id": "environment_boundary"},
+            ],
+        )
+
+        after_proof = build_review_run_coach_answer(proof_attached, "what next")
+        self.assertCoachAnswerIsSafe(after_proof)
+        self.assertEqual(after_proof["stage"], "proof_attached")
+        self.assertIn("Regenerate the packet", after_proof["sections"]["next_human_action"])
+        self.assertIn("still blocked until", after_proof["sections"]["what_blocks_movement"])
+
+        rerun = generate_proof_resolved_review_run_packet(proof_attached, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+        portkey = build_review_run_coach_answer(rerun, "what will Portkey do?")
+        self.assertCoachAnswerIsSafe(portkey)
+        self.assertEqual(portkey["stage"], "ready_to_export")
+        self.assertEqual(portkey["prompt_kind"], "portkey")
+        self.assertEqual(portkey["portkey_state"], "Allow with policy")
+        self.assertIn("Allow with policy", portkey["sections"]["downstream_impact"])
+        self.assertIn("Still blocked downstream: repo admin, org-wide write, secrets", portkey["sections"]["downstream_impact"])
 
     def test_review_run_rejects_invalid_transition_and_bad_inputs(self) -> None:
         run = create_review_run()

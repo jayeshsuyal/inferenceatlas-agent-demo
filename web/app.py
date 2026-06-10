@@ -55,6 +55,7 @@ from agent.review_run import (
     DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
     ReviewRun,
     attach_review_run_proof,
+    build_review_run_coach_answer,
     create_review_run,
     generate_proof_resolved_review_run_packet,
     generate_initial_review_run_packet,
@@ -353,6 +354,10 @@ class ReviewRunProofAttachRequest(BaseModel):
 
 class ReviewRunRerunRequest(BaseModel):
     access_request: Optional[str] = Field(default=None, max_length=10000)
+
+
+class ReviewRunCoachRequest(BaseModel):
+    prompt: str = Field(default="", max_length=1200)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -857,6 +862,35 @@ def rerun_review_run_packet_api(run_id: str, body: ReviewRunRerunRequest = Revie
         "packet": packet,
         "portkey": updated.portkey_preview,
         "review_delta": packet["review_delta"],
+    }
+
+
+@app.post("/api/review-runs/{run_id}/coach")
+def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
+    """Answer Ask IA from the current ReviewRun without chat/tool side effects."""
+    with _review_runs_lock:
+        run_payload = _review_runs.get(run_id)
+    try:
+        record = load_review_run_record(run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if run_payload is None:
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown review run")
+        run_payload = record["run"]
+    try:
+        run = ReviewRun.from_dict(run_payload)
+        answer = build_review_run_coach_answer(run, body.prompt)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "reply": answer["reply"],
+        "answer": answer,
     }
 
 

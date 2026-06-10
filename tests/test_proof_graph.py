@@ -605,6 +605,34 @@ def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
     assert graph["invariants"]["graph_can_change_verdict"] is False
 
 
+def test_all_sponsor_proof_preset_matches_explicit_layers() -> None:
+    preset = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_all_sponsor_proof=True,
+    )
+    explicit = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_tavily_evidence=True,
+        include_composio_blast_radius=True,
+        include_openclaw_runtime_trace=True,
+        include_nebius_reviewer_synthesis=True,
+    )
+
+    assert preset == explicit
+    assert preset["node_counts"] == {"packet": 1, "proof": 77, "edge": 136}
+    assert {node["provider"] for node in preset["proof_nodes"]} == {
+        "ia_packet",
+        "tavily",
+        "composio",
+        "openclaw",
+        "nebius",
+    }
+    assert preset["invariants"]["packet_remains_authority"] is True
+    assert preset["invariants"]["graph_can_approve"] is False
+    assert preset["invariants"]["graph_can_execute_external_write"] is False
+    assert preset["invariants"]["graph_can_change_verdict"] is False
+
+
 def test_proof_graph_covers_public_access_scenarios_without_keys() -> None:
     expected_locks = {
         "support_triage_agent": "scoped_validation_only",
@@ -741,6 +769,41 @@ def test_proof_graph_cli_can_include_nebius_reviewer_synthesis_layer() -> None:
     assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "nebius"}
 
 
+def test_proof_graph_cli_can_include_all_sponsors_preset() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-all-sponsors",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["node_counts"] == {"packet": 1, "proof": 77, "edge": 136}
+    assert payload["tavily_evidence"]["provider"] == "tavily"
+    assert payload["composio_blast_radius"]["provider"] == "composio"
+    assert payload["openclaw_runtime_trace"]["provider"] == "openclaw"
+    assert payload["nebius_reviewer_synthesis"]["provider"] == "nebius"
+    assert {node["provider"] for node in payload["proof_nodes"]} == {
+        "ia_packet",
+        "tavily",
+        "composio",
+        "openclaw",
+        "nebius",
+    }
+    assert payload["invariants"]["packet_remains_authority"] is True
+    assert payload["invariants"]["graph_can_change_verdict"] is False
+
+
 def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
     combined = "\n".join(
         [
@@ -768,6 +831,13 @@ def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
                 ),
                 sort_keys=True,
             ),
+            json.dumps(
+                build_proof_graph_for_scenario(
+                    "support_triage_agent",
+                    include_all_sponsor_proof=True,
+                ),
+                sort_keys=True,
+            ),
         ]
     )
 
@@ -780,3 +850,4 @@ def test_pr_smoke_checks_proof_graph_schema_and_command() -> None:
 
     assert "schemas/proof_graph.schema.json" in smoke_text
     assert "agent.proof_graph" in smoke_text
+    assert "--include-all-sponsors" in smoke_text

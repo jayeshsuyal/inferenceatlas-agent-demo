@@ -905,8 +905,15 @@ def build_proof_graph(
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
     include_nebius_reviewer_synthesis: bool = False,
+    include_all_sponsor_proof: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph from one DecisionPacket."""
+    if include_all_sponsor_proof:
+        include_tavily_evidence = True
+        include_composio_blast_radius = True
+        include_openclaw_runtime_trace = True
+        include_nebius_reviewer_synthesis = True
+
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
     next_action = _next_human_action(packet)
     decision = packet.get("decision", {})
@@ -1022,6 +1029,7 @@ def build_proof_graph_for_scenario(
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
     include_nebius_reviewer_synthesis: bool = False,
+    include_all_sponsor_proof: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph for a registered public access scenario."""
     if scenario_name not in SCENARIOS:
@@ -1033,6 +1041,7 @@ def build_proof_graph_for_scenario(
         include_composio_blast_radius=include_composio_blast_radius,
         include_openclaw_runtime_trace=include_openclaw_runtime_trace,
         include_nebius_reviewer_synthesis=include_nebius_reviewer_synthesis,
+        include_all_sponsor_proof=include_all_sponsor_proof,
     )
 
 
@@ -1108,6 +1117,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Attach Nebius reviewer synthesis proof nodes without live calls or verdict ownership.",
     )
+    parser.add_argument(
+        "--include-all-sponsors",
+        action="store_true",
+        help="Attach Tavily, Composio, OpenClaw, and Nebius proof nodes in one reviewer-friendly preset.",
+    )
     parser.add_argument("--json", action="store_true", help="Print the graph as JSON.")
     return parser
 
@@ -1121,6 +1135,7 @@ def main(argv: list[str] | None = None) -> int:
             include_composio_blast_radius=args.include_composio_blast_radius,
             include_openclaw_runtime_trace=args.include_openclaw_runtime_trace,
             include_nebius_reviewer_synthesis=args.include_nebius_reviewer_synthesis,
+            include_all_sponsor_proof=args.include_all_sponsors,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=29" />
+    <link rel="stylesheet" href="/static/style.css?v=30" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -218,21 +218,59 @@
                 </a>
               </section>
 
+              <section class="repo-connect-panel" id="repo-connect-panel" aria-label="Connect GitHub repository">
+                <div class="repo-connect-copy">
+                  <span class="repo-card-label">Step 1</span>
+                  <h3>Connect GitHub</h3>
+                  <p>Sign in to choose a repo, or use the safe demo repo when OAuth is not configured. IA indexes only the repo you select.</p>
+                </div>
+                <div class="repo-connect-actions">
+                  <button type="button" class="btn-primary" id="btn-root-connect-github">Connect GitHub</button>
+                  <button type="button" class="btn-ghost" id="btn-root-demo-github">Use demo repo</button>
+                </div>
+                <p class="repo-status-line repo-connect-status" id="repo-connect-status" role="status" aria-live="polite">Repo not connected. No approval, no writes, no downstream mutation.</p>
+                <div class="repo-inline-picker" id="repo-inline-picker" hidden>
+                  <input
+                    type="search"
+                    id="repo-inline-search"
+                    class="github-repo-search"
+                    placeholder="Search repositories..."
+                    autocomplete="off"
+                  />
+                  <div class="repo-inline-list" id="repo-inline-list" role="listbox" aria-label="Choose one GitHub repository"></div>
+                </div>
+              </section>
+
+              <section class="repo-index-summary" id="repo-index-summary" aria-label="Selected repository index summary" hidden>
+                <div>
+                  <span class="repo-card-label">Repo connected</span>
+                  <strong id="repo-selected-name">No repo selected</strong>
+                </div>
+                <div>
+                  <span class="repo-card-label">Indexed</span>
+                  <strong id="repo-indexed-state">Waiting</strong>
+                </div>
+                <div>
+                  <span class="repo-card-label">ReviewRun</span>
+                  <strong id="repo-review-run-id">Not created</strong>
+                </div>
+              </section>
+
               <section class="repo-review-request" id="repo-review-request" aria-label="Repo access request">
                 <div class="repo-request-copy">
                   <span class="repo-card-label">Selected request</span>
                   <h3>support-triage-bot wants repo access</h3>
-                  <p>Customer repo: <strong>demo-support-incidents</strong>. IA will decide what stays scoped, what is blocked, and who must review next.</p>
+                  <p>Customer repo: <strong id="repo-request-repo-name">Choose a GitHub repo first.</strong> IA will decide what stays scoped, what is blocked, and who must review next.</p>
                 </div>
                 <div class="permission-row compact" aria-label="Requested permissions">
                   <span class="permission-pill allowed">read issues</span>
                   <span class="permission-pill review">comment</span>
                   <span class="permission-pill blocked">create labels</span>
                 </div>
-                <button type="button" class="btn-primary repo-primary-action" id="btn-run-repo-proof">
+                <button type="button" class="btn-primary repo-primary-action" id="btn-run-repo-proof" disabled>
                   Review access
                 </button>
-                <p class="repo-status-line" id="repo-cockpit-status">No approval, no writes, no downstream mutation.</p>
+                <p class="repo-status-line" id="repo-cockpit-status">Connect and index one repo before generating a packet.</p>
               </section>
 
               <section class="repo-proof-result" id="repo-proof-result" aria-label="Repo access review result" hidden>
@@ -536,6 +574,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=50"></script>
+    <script src="/static/app.js?v=51"></script>
   </body>
 </html>

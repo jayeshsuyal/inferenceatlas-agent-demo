@@ -9,11 +9,16 @@ from unittest.mock import patch
 
 from fastapi import HTTPException
 
+from agent.connector_oauth import demo_sign_in
+
 from web.app import (
+    GithubAttachRequest,
     ReviewRunCreateRequest,
     _review_runs,
     app,
     create_review_run_api,
+    github_attach_repo,
+    github_list_repos,
     get_review_run,
 )
 
@@ -80,3 +85,48 @@ class ReviewRunApiTests(TestCase):
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
+
+    def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
+        session_id = "review-run-root-demo-flow"
+        demo_sign_in(session_id, "github")
+
+        repos = github_list_repos(session_id=session_id, q="triage")
+        self.assertTrue(repos["ok"])
+        self.assertTrue(repos["demo"])
+        selected = repos["repos"][0]
+
+        attached = github_attach_repo(
+            GithubAttachRequest(session_id=session_id, full_name=selected["full_name"])
+        )
+        self.assertTrue(attached["ok"])
+        self.assertGreater(attached["digest_chars"], 100)
+
+        created = create_review_run_api(
+            ReviewRunCreateRequest(
+                session_id=session_id,
+                selected_repo={
+                    "provider": "github",
+                    "full_name": selected["full_name"],
+                    "source": "demo_repo",
+                },
+                repo_index_summary={
+                    "status": "indexed",
+                    "indexed_repo_count": 1,
+                    "digest_chars": attached["digest_chars"],
+                    "readme_found": attached["readme_found"],
+                    "files_included": attached["files_included"],
+                    "paths_in_tree": attached["paths_in_tree"],
+                    "sample_paths": attached["sample_paths"],
+                },
+            )
+        )
+
+        run = created["run"]
+        self.assertTrue(created["read_only"])
+        self.assertEqual(run["stage"], "repo_selected")
+        self.assertEqual(run["selected_repo"]["full_name"], selected["full_name"])
+        self.assertEqual(run["repo_index_summary"]["status"], "indexed")
+        self.assertEqual(run["repo_index_summary"]["indexed_repo_count"], 1)
+        self.assertFalse(run["access_request"])
+        self.assertFalse(run["safety_invariants"]["approval_granted"])
+        self.assertFalse(run["safety_invariants"]["external_writes_enabled"])

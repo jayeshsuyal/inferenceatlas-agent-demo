@@ -13,12 +13,14 @@ from agent.connector_oauth import demo_sign_in
 
 from web.app import (
     GithubAttachRequest,
+    ReviewRunCoachRequest,
     ReviewRunCreateRequest,
     ReviewRunPacketRequest,
     ReviewRunProofAttachRequest,
     ReviewRunRerunRequest,
     _review_runs,
     attach_review_run_proof_api,
+    coach_review_run_api,
     app,
     create_review_run_api,
     generate_review_run_packet_api,
@@ -328,6 +330,87 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(repeated.exception.status_code, 400)
                 self.assertIn("rerun requires proof_attached", repeated.exception.detail)
 
+    def test_review_run_coach_api_stress_prompts_are_state_anchored(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+
+                greeting = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="hey"))
+                self.assertTrue(greeting["ok"])
+                self.assertTrue(greeting["read_only"])
+                self.assertEqual(greeting["answer"]["schema_version"], "review_run_coach_answer.v0")
+                self.assertEqual(greeting["stage"], "repo_selected")
+                self.assertEqual(greeting["answer"]["prompt_kind"], "greeting")
+                self.assertIn("No packet exists yet", greeting["answer"]["sections"]["current_read"])
+                self.assertFalse(greeting["answer"]["safety_boundary"]["approval_granted"])
+                self.assertFalse(greeting["answer"]["safety_boundary"]["external_writes"])
+                self.assertFalse(greeting["answer"]["safety_boundary"]["raw_packet_dumped"])
+
+                generated = generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                next_step = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="idk what to do next"))
+                self.assertEqual(next_step["answer"]["stage"], "packet_generated")
+                self.assertEqual(next_step["answer"]["prompt_kind"], "next_action")
+                self.assertIn("Attach repo-owner approval", next_step["answer"]["sections"]["next_human_action"])
+                self.assertIn("Missing proof", next_step["answer"]["sections"]["what_blocks_movement"])
+
+                override = coach_review_run_api(
+                    run_id,
+                    ReviewRunCoachRequest(prompt="approve blocked claims and grant access"),
+                )
+                self.assertEqual(override["answer"]["prompt_kind"], "approval_override")
+                self.assertIn(
+                    "Cannot approve or override blocked claims",
+                    override["answer"]["sections"]["what_blocks_movement"],
+                )
+                self.assertFalse(override["answer"]["approves_access"])
+                self.assertNotIn("raw_text", str(override["answer"]))
+
+                proofed = attach_review_run_proof_api(
+                    run_id,
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval"},
+                            {"id": "rollback_offswitch"},
+                            {"id": "environment_boundary"},
+                        ]
+                    ),
+                )
+                after_proof = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what next"))
+                self.assertEqual(proofed["run"]["stage"], "proof_attached")
+                self.assertIn("Regenerate the packet", after_proof["answer"]["sections"]["next_human_action"])
+
+                rerun_review_run_packet_api(
+                    run_id,
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                portkey = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what will Portkey do?"))
+                self.assertEqual(portkey["answer"]["stage"], "ready_to_export")
+                self.assertEqual(portkey["answer"]["portkey_state"], "Allow with policy")
+                self.assertIn("Still blocked downstream", portkey["answer"]["sections"]["downstream_impact"])
+
+                _review_runs.clear()
+                reloaded = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="write me a recipe"))
+                self.assertTrue(reloaded["answer"]["prompt_routed_to_review"])
+                self.assertEqual(reloaded["answer"]["prompt_kind"], "unrelated")
+                self.assertIn("routing that back", reloaded["answer"]["sections"]["current_read"])
+
     def test_review_run_rerun_api_rejects_partial_proof(self) -> None:
         with TemporaryDirectory() as temp_dir:
             store_dir = Path(temp_dir)
@@ -389,12 +472,14 @@ class ReviewRunApiTests(TestCase):
         packet_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/packet")
         proof_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proof")
         rerun_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/rerun")
+        coach_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/coach")
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
         self.assertEqual(packet_route.methods, {"POST"})
         self.assertEqual(proof_route.methods, {"POST"})
         self.assertEqual(rerun_route.methods, {"POST"})
+        self.assertEqual(coach_route.methods, {"POST"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

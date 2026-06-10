@@ -24,8 +24,17 @@ from .scenarios import ROOT_DIR
 REVIEW_RUN_SCHEMA_VERSION = "review_run.v0"
 REVIEW_RUN_RECORD_SCHEMA_VERSION = "review_run_record.v0"
 REVIEW_RUN_PACKET_SCHEMA_VERSION = "review_run_packet.v0"
+REVIEW_RUN_COACH_SCHEMA_VERSION = "review_run_coach_answer.v0"
 DEFAULT_REVIEW_RUN_STORE_DIR = ROOT_DIR / "state" / "review_runs"
 DEFAULT_REVIEW_RUN_ACCESS_REQUEST = "support-triage-bot needs to read issues, comment, and create labels."
+
+REVIEW_RUN_COACH_ANSWER_SHAPE = (
+    "Current read",
+    "What blocks movement",
+    "Next human action",
+    "Downstream impact",
+    "Safety",
+)
 
 REVIEW_RUN_STAGES = (
     "repo_not_connected",
@@ -202,13 +211,7 @@ def _ask_ia_state(stage: str, *, run_id: str, selected_repo: Optional[dict[str, 
         "run_id": run_id,
         "stage": stage,
         "selected_repo": repo_name,
-        "answer_shape": [
-            "Current read",
-            "What blocks movement",
-            "Next human action",
-            "Downstream impact",
-            "Safety",
-        ],
+        "answer_shape": list(REVIEW_RUN_COACH_ANSWER_SHAPE),
         "next_human_action": next_actions[stage],
         "safety_anchor": "IA did not approve, dispatch, grant access, or mutate downstream policy.",
     }
@@ -977,6 +980,212 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
         "copy_review_brief": "\n".join(brief_lines),
         "export_label": "Copy ReviewRun packet brief",
     }
+
+
+def _review_run_repo_name(run: ReviewRun) -> str:
+    repo = run.selected_repo or {}
+    return str(repo.get("full_name") or repo.get("name") or "no repo selected")
+
+
+def _review_run_coach_prompt_kind(prompt: str) -> str:
+    text = " ".join(str(prompt or "").lower().split())
+    if not text or text in {"hi", "hey", "hello", "yo"}:
+        return "greeting"
+    if any(
+        phrase in text
+        for phrase in (
+            "approve blocked",
+            "approve all",
+            "force approve",
+            "override",
+            "bypass",
+            "grant access",
+            "grant permissions",
+        )
+    ):
+        return "approval_override"
+    if any(
+        phrase in text
+        for phrase in (
+            "idk",
+            "i don't know",
+            "what do i do",
+            "what next",
+            "next step",
+            "what should i do",
+        )
+    ):
+        return "next_action"
+    if "portkey" in text or "downstream" in text or "spend" in text or "policy" in text:
+        return "portkey"
+    if "proof" in text or "missing" in text or "block" in text:
+        return "proof"
+    if "move" in text or "allow" in text or "can this" in text:
+        return "movement"
+    if any(phrase in text for phrase in ("weather", "joke", "recipe", "poem", "song", "movie")):
+        return "unrelated"
+    return "current_read"
+
+
+def _review_run_coach_next_action(run: ReviewRun) -> str:
+    if run.stage in {"packet_generated", "sponsor_proof_collected", "portkey_previewed"}:
+        return "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+    if run.stage == "proof_attached":
+        return "Regenerate the packet from the same request and attached proof."
+    if run.stage == "ready_to_export":
+        return "Export the updated packet brief and route the scoped allow-with-policy review."
+    state = run.ask_ia_state or _ask_ia_state(run.stage, run_id=run.run_id, selected_repo=run.selected_repo)
+    return str(state.get("next_human_action") or "Review the current packet state before movement.")
+
+
+def _review_run_coach_current_read(run: ReviewRun) -> str:
+    repo_name = _review_run_repo_name(run)
+    packet = run.packet or {}
+    revision = packet.get("revision_id") or "not generated"
+    verdict = packet.get("verdict") or "not_generated"
+    if run.stage == "repo_not_connected":
+        return "No GitHub repo is selected yet; Ask IA is waiting for one ReviewRun."
+    if run.stage == "repo_selected":
+        return f"`{repo_name}` is selected and indexed. No packet exists yet."
+    if run.stage == "request_entered":
+        return f"`{repo_name}` has an access request recorded. Generate the IA Packet next."
+    if run.stage == "proof_attached":
+        return f"`{repo_name}` has proof attached to packet revision `{revision}`, but the verdict is still `{verdict}` until rerun."
+    if run.stage == "ready_to_export":
+        return f"`{repo_name}` has updated packet revision `{revision}` with verdict `{verdict}`."
+    return f"`{repo_name}` has packet revision `{revision}` with verdict `{verdict}`."
+
+
+def _review_run_coach_blockers(run: ReviewRun) -> str:
+    movement = normalize_movement_classes(run.movement_classes)
+    missing_labels = _missing_proof_labels(run.missing_proof)
+    still_blocked = movement["blocked"]
+    if run.stage in {"repo_not_connected", "repo_selected", "request_entered"}:
+        return "Movement cannot be evaluated until IA generates a packet for the selected repo."
+    if run.stage == "proof_attached":
+        return "Proof is attached, but movement is still blocked until a human reruns review and creates a new packet revision."
+    if run.stage == "ready_to_export":
+        return f"No proof debt blocks scoped movement. Still blocked: {', '.join(still_blocked) or 'none'}."
+    return (
+        f"Missing proof: {', '.join(missing_labels) or 'none'}. "
+        f"Blocked claims: {', '.join(still_blocked) or 'none'}."
+    )
+
+
+def _review_run_coach_downstream_impact(run: ReviewRun) -> str:
+    movement = normalize_movement_classes(run.movement_classes)
+    portkey_state = _portkey_state(run.portkey_preview, default="Block")
+    if run.stage == "ready_to_export":
+        return (
+            f"Portkey dry-run reads the updated packet as `{portkey_state}` for selected-repo scope only. "
+            f"Still blocked downstream: {', '.join(movement['blocked']) or 'none'}."
+        )
+    if run.stage == "proof_attached":
+        return "Portkey remains effectively `Block` until the rerun produces a new packet revision from the attached proof."
+    if run.stage in {"repo_not_connected", "repo_selected", "request_entered"}:
+        return "Downstream systems have no packet to consume yet, so no movement should be allowed."
+    return "Portkey should treat this as `Block` while proof is missing; downstream systems consume the packet, not raw agent intent."
+
+
+def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str, Any]:
+    """Build a compact, deterministic Ask IA answer from ReviewRun state only."""
+    prompt_text = str(prompt or "").strip()
+    prompt_kind = _review_run_coach_prompt_kind(prompt_text)
+    movement = normalize_movement_classes(run.movement_classes)
+    packet = run.packet or {}
+    repo_name = _review_run_repo_name(run)
+    current_read = _review_run_coach_current_read(run)
+    blockers = _review_run_coach_blockers(run)
+    next_action = _review_run_coach_next_action(run)
+    downstream = _review_run_coach_downstream_impact(run)
+    safety = (
+        "Raw agent intent is not trusted. Proof changes packet state. "
+        "Downstream systems consume the packet. IA did not approve, grant, "
+        "write, mutate, dispatch, or call Portkey."
+    )
+
+    if prompt_kind == "approval_override":
+        blockers = (
+            "Cannot approve or override blocked claims. Resolve missing proof, "
+            "attach it to the ReviewRun, and rerun review so a new packet can change state."
+        )
+        next_action = (
+            "Attach human-provided proof, then regenerate the packet; "
+            "do not approve blocked claims directly."
+        )
+    elif prompt_kind == "unrelated":
+        current_read = f"I am routing that back to the current review: {current_read}"
+    elif prompt_kind == "portkey":
+        next_action = (
+            next_action
+            if run.stage != "packet_generated"
+            else "Attach missing proof before expecting Portkey to move from Block."
+        )
+    elif prompt_kind == "proof" and run.stage == "ready_to_export":
+        blockers = "Required proof is attached and the packet was regenerated. Only hard-blocked scopes remain blocked."
+
+    sections = {
+        "current_read": current_read,
+        "what_blocks_movement": blockers,
+        "next_human_action": next_action,
+        "downstream_impact": downstream,
+        "safety": safety,
+    }
+    reply_lines = []
+    for label, key in (
+        ("Current read", "current_read"),
+        ("What blocks movement", "what_blocks_movement"),
+        ("Next human action", "next_human_action"),
+        ("Downstream impact", "downstream_impact"),
+        ("Safety", "safety"),
+    ):
+        reply_lines.append(f"## {label}\n{sections[key]}")
+
+    return _sanitize_public_value(
+        {
+            "schema_version": REVIEW_RUN_COACH_SCHEMA_VERSION,
+            "run_id": run.run_id,
+            "stage": run.stage,
+            "prompt_kind": prompt_kind,
+            "prompt_routed_to_review": prompt_kind == "unrelated",
+            "selected_repo": repo_name,
+            "verdict": packet.get("verdict") or "not_generated",
+            "packet_revision": packet.get("revision_id"),
+            "packet_revision_number": packet.get("revision_number") or 0,
+            "portkey_state": _portkey_state(run.portkey_preview, default="Block"),
+            "answer_shape": list(REVIEW_RUN_COACH_ANSWER_SHAPE),
+            "sections": sections,
+            "movement_classes": {
+                "allowed": movement["allowed"],
+                "review_required": movement["review_required"],
+                "blocked": movement["blocked"],
+            },
+            "quick_actions": [
+                "Can this move?",
+                "What proof is missing?",
+                "What will Portkey do?",
+            ],
+            "safety_boundary": {
+                "read_only": True,
+                "approval_granted": False,
+                "approves_access": False,
+                "spend_approved": False,
+                "permissions_granted": False,
+                "external_writes": False,
+                "packet_mutated_without_rerun": False,
+                "raw_packet_dumped": False,
+                "raw_agent_intent_trusted": False,
+                "portkey_api_call_made": False,
+                "portkey_policy_mutation_allowed": False,
+                "human_action_required": True,
+            },
+            "raw_packet_dumped": False,
+            "approves_access": False,
+            "read_only": True,
+            "coach_provider": "review_run_state_coach",
+            "reply": "\n\n".join(reply_lines),
+        }
+    )
 
 
 def build_review_run_record(

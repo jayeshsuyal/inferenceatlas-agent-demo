@@ -120,6 +120,7 @@ const repoIndexedState = document.getElementById("repo-indexed-state");
 const repoReviewRunId = document.getElementById("repo-review-run-id");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
+const repoCoachAnswer = document.getElementById("repo-coach-answer");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -185,6 +186,7 @@ let packetDetail = null;
 let packetPortkeyPreview = null;
 let packetPortkeyProofLoop = null;
 let packetInlineCoachBusy = false;
+let reviewRunCoachBusy = false;
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -847,6 +849,104 @@ function updateReviewCtaState() {
   }
 }
 
+function setReviewRunCoachBusy(loading, statusText = "") {
+  reviewRunCoachBusy = loading;
+  if (packetCoachQuickChips) {
+    packetCoachQuickChips.setAttribute("aria-busy", String(loading));
+    packetCoachQuickChips.dataset.busy = String(loading);
+    packetCoachQuickChips
+      .querySelectorAll("button[data-ask-prompt]")
+      .forEach((button) => {
+        button.disabled = loading;
+        button.setAttribute("aria-disabled", String(loading));
+      });
+  }
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.classList.remove("error");
+    packetCoachStatus.textContent =
+      statusText ||
+      (loading
+        ? "Reading the current ReviewRun..."
+        : "Ask IA read current ReviewRun. Decision lock unchanged.");
+  }
+}
+
+function renderReviewRunCoachAnswer(answer) {
+  const sections = answer?.sections || {};
+  if (repoCoachRead && sections.current_read) {
+    repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
+  }
+  if (!repoCoachAnswer) return;
+  const rows = [
+    ["Current read", sections.current_read],
+    ["What blocks movement", sections.what_blocks_movement],
+    ["Next human action", sections.next_human_action],
+    ["Downstream impact", sections.downstream_impact],
+    ["Safety", sections.safety],
+  ].filter(([, value]) => value);
+  repoCoachAnswer.hidden = !rows.length;
+  repoCoachAnswer.innerHTML = rows
+    .map(
+      ([label, value]) => `
+        <div class="repo-coach-answer-row">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(String(value).replace(/`/g, ""))}</strong>
+        </div>
+      `
+    )
+    .join("");
+}
+
+function resetReviewRunCoachAnswer() {
+  if (!repoCoachAnswer) return;
+  repoCoachAnswer.hidden = true;
+  repoCoachAnswer.innerHTML = "";
+}
+
+async function askReviewRunCoach(prompt) {
+  if (reviewRunCoachBusy) return;
+  const message = String(prompt || "Current read").trim() || "Current read";
+  if (!currentReviewRun?.run_id) {
+    resetReviewRunCoachAnswer();
+    if (packetCoachStatus) {
+      packetCoachStatus.hidden = false;
+      packetCoachStatus.classList.add("error");
+      packetCoachStatus.textContent = "Connect and index one repo before asking IA.";
+    }
+    return;
+  }
+
+  setReviewRunCoachBusy(true);
+  let ok = false;
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: message }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
+    renderReviewRunCoachAnswer(data.answer || {});
+    ok = true;
+  } catch (err) {
+    resetReviewRunCoachAnswer();
+    if (packetCoachStatus) {
+      packetCoachStatus.hidden = false;
+      packetCoachStatus.classList.add("error");
+      packetCoachStatus.textContent = String(err.message || err);
+    }
+  } finally {
+    setReviewRunCoachBusy(
+      false,
+      ok
+        ? "Ask IA read current ReviewRun. Decision lock unchanged."
+        : packetCoachStatus?.textContent || ""
+    );
+    if (!ok && packetCoachStatus) packetCoachStatus.classList.add("error");
+  }
+}
+
 function updateReviewRepoConnectUi() {
   const signedIn = isGithubSignedIn();
   if (btnRootConnectGithub) {
@@ -863,6 +963,7 @@ function renderReviewRepoSummary(repo = null) {
   const selected = repo || selectedReviewRepo();
   repoIndexSummary.hidden = !selected;
   if (!selected) {
+    resetReviewRunCoachAnswer();
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
     if (repoCoachRead) {
       repoCoachRead.textContent =
@@ -889,6 +990,7 @@ function renderReviewRepoSummary(repo = null) {
     repoReviewRunId.textContent = currentReviewRun?.run_id || "Creating...";
   }
   if (repoCoachRead) {
+    resetReviewRunCoachAnswer();
     repoCoachRead.textContent = selected.indexing
       ? `Indexing ${selected.full_name}. IA cannot generate the packet until this repo is ready.`
       : `${selected.full_name} is indexed. Next human action: run the access review to generate a packet.`;
@@ -5037,8 +5139,8 @@ form.addEventListener("submit", (e) => {
 
 packetCoachQuickChips?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
-  if (!btn || busy) return;
-  sendMessage(btn.dataset.askPrompt || btn.textContent || "");
+  if (!btn || busy || reviewRunCoachBusy) return;
+  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
 });
 
 packetInlineCoachPrompts?.addEventListener("click", (event) => {

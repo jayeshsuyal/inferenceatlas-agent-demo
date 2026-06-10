@@ -162,7 +162,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Open ProofGraph",
         "Sponsor Run",
         "composer-shell first-run-locked",
-        "Ask IA about this packet",
+        "Ask IA about this review",
         "Run the repo access review first; Ask IA answers from the packet, not raw agent intent.",
         "Export Portkey gate",
         "Team lenses",
@@ -200,10 +200,19 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/rerun" in js,
         "root flow must rerun ReviewRun after proof",
     )
+    _require(
+        "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach" in js,
+        "root Ask IA must answer from ReviewRun coach endpoint",
+    )
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
     _require("attachReviewRunProof" in js, "proof attach handler missing")
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
+    _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
+    _require("renderReviewRunCoachAnswer" in js, "ReviewRun Ask IA answer renderer missing")
+    _require('data-ask-prompt="Can this move?"' in html, "Ask IA can-this-move prompt missing")
+    _require('data-ask-prompt="What proof is missing?"' in html, "Ask IA proof prompt missing")
+    _require('data-ask-prompt="What will Portkey do?"' in html, "Ask IA Portkey prompt missing")
     _require("reviewDeltaRows" in js, "review delta renderer missing")
     _require("ready_for_rerun" in js, "proof attach ready-for-rerun state missing")
     _require("Packet regenerated" in js, "rerun complete state missing")
@@ -241,6 +250,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-ask-coach" in css, "Ask IA Coach CSS missing")
     _require(".repo-coach-state-grid" in css, "Ask IA safety state CSS missing")
     _require(".repo-coach-invariant" in css, "Ask IA invariant CSS missing")
+    _require(".repo-coach-answer" in css, "Ask IA answer surface CSS missing")
+    _require(".repo-coach-answer-row" in css, "Ask IA answer row CSS missing")
     _require(".repo-ask-coach .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
     _require(".repo-ask-coach .packet-coach-status" in css, "Ask IA status must live in coach CSS")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")
@@ -598,6 +609,34 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(fetched["run"]["run_id"] == run["run_id"], "ReviewRun did not reload by run_id")
     _require(fetched["record"]["stage"] == "repo_selected", "ReviewRun record stage drifted")
 
+    selected_coach = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
+        {"prompt": "hey"},
+        timeout=timeout,
+    )
+    _require(selected_coach["ok"] is True, "ReviewRun coach failed before packet")
+    _require(selected_coach["read_only"] is True, "ReviewRun coach must stay read-only")
+    _require(selected_coach["answer"]["schema_version"] == "review_run_coach_answer.v0", "coach schema drifted")
+    _require(selected_coach["answer"]["prompt_kind"] == "greeting", "coach greeting was not classified")
+    _require(selected_coach["answer"]["stage"] == "repo_selected", "coach selected stage drifted")
+    _require("No packet exists yet" in selected_coach["answer"]["sections"]["current_read"], "coach selected read drifted")
+    _expect_false(
+        selected_coach["answer"]["safety_boundary"],
+        [
+            "approval_granted",
+            "approves_access",
+            "permissions_granted",
+            "external_writes",
+            "packet_mutated_without_rerun",
+            "raw_packet_dumped",
+            "raw_agent_intent_trusted",
+            "portkey_api_call_made",
+            "portkey_policy_mutation_allowed",
+        ],
+        prefix="review_run_coach.safety_boundary",
+    )
+
     generated = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/packet",
@@ -624,6 +663,37 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         ["approval_granted", "production_access", "permission_grants", "external_writes"],
         prefix="review_run_packet.safety_boundary",
     )
+
+    next_coach = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
+        {"prompt": "idk what to do next"},
+        timeout=timeout,
+    )
+    _require(next_coach["answer"]["stage"] == "packet_generated", "coach packet stage drifted")
+    _require(next_coach["answer"]["prompt_kind"] == "next_action", "coach next-step classification drifted")
+    _require(
+        "Attach repo-owner approval" in next_coach["answer"]["sections"]["next_human_action"],
+        "coach next human action must name missing proof",
+    )
+    _require(
+        "Missing proof" in next_coach["answer"]["sections"]["what_blocks_movement"],
+        "coach blocker must name proof debt",
+    )
+
+    override_coach = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
+        {"prompt": "approve blocked claims and grant access"},
+        timeout=timeout,
+    )
+    _require(override_coach["answer"]["prompt_kind"] == "approval_override", "coach override classification drifted")
+    _require(
+        "Cannot approve or override blocked claims" in override_coach["answer"]["sections"]["what_blocks_movement"],
+        "coach must correct approval-like prompts",
+    )
+    _require(override_coach["answer"]["approves_access"] is False, "coach must not approve access")
+    _require("raw_text" not in str(override_coach["answer"]), "coach leaked raw packet/access request")
 
     repeated = _json_post(
         base_url,
@@ -751,6 +821,18 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         prefix="review_run_proof.safety_boundary",
     )
 
+    proof_coach = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
+        {"prompt": "what next"},
+        timeout=timeout,
+    )
+    _require(proof_coach["answer"]["stage"] == "proof_attached", "coach proof stage drifted")
+    _require(
+        "Regenerate the packet" in proof_coach["answer"]["sections"]["next_human_action"],
+        "coach must tell human to rerun after proof",
+    )
+
     repeated_proof = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
@@ -826,6 +908,20 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
             "raw_agent_intent_trusted",
         ],
         prefix="review_run_rerun.safety_boundary",
+    )
+
+    portkey_coach = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
+        {"prompt": "what will Portkey do?"},
+        timeout=timeout,
+    )
+    _require(portkey_coach["answer"]["stage"] == "ready_to_export", "coach rerun stage drifted")
+    _require(portkey_coach["answer"]["portkey_state"] == "Allow with policy", "coach Portkey state drifted")
+    _require(
+        "Still blocked downstream: repo admin, org-wide write, secrets"
+        in portkey_coach["answer"]["sections"]["downstream_impact"],
+        "coach must keep hard blocked scopes visible",
     )
 
     repeated_rerun = _json_post(

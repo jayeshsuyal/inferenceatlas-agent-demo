@@ -14,13 +14,20 @@ The launcher runs the no-write judge smoke, starts the local web app, and opens:
 http://127.0.0.1:8080/packet?fixture=mcp_tool_blast_radius&autorun=1
 ```
 
+The same server exposes the full data-backed authority map:
+
+```text
+http://127.0.0.1:8080/proofgraph
+```
+
 What the reviewer sees:
 
 1. A public MCP/tool blast-radius fixture.
 2. A generated IA Packet with verdict, blocked claims, and missing proof.
 3. A Sponsor Proof Trace in locked order: Tavily -> Composio -> OpenClaw -> Nebius.
 4. Downstream consumers across gateways, CI, spend controls, review queues, and observability reading the same packet reference.
-5. Export actions for the IA Packet brief, Markdown, JSON, or Workbench handoff.
+5. A ProofGraph showing sponsor proof flowing into the IA Packet and downstream trust surfaces.
+6. Export actions for the IA Packet brief, Markdown, JSON, or Workbench handoff.
 
 Safety contract:
 

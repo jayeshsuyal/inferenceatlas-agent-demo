@@ -56,6 +56,7 @@ cd "$ROOT"
 
 BASE_URL="http://${HOST}:${PORT}"
 PACKET_URL="${BASE_URL}/packet?fixture=${FIXTURE}&autorun=1"
+PROOFGRAPH_URL="${BASE_URL}/proofgraph"
 
 fail() {
   printf '\nreview_60 failed: %s\n' "$*" >&2
@@ -132,13 +133,15 @@ print_banner() {
 
 [ok] ${status}  (no keys required - dry-run by default - no v1 calls)
 [ok] IA Packet autorun: ${PACKET_URL}
+[ok] ProofGraph: ${PROOFGRAPH_URL}
 
 What you will see in 60 seconds:
   1. Agent/tool request structured into a public fixture
   2. IA Packet - verdict, blocked claims, missing proof
   3. Sponsor Proof Trace - Tavily -> Composio -> OpenClaw -> Nebius
   4. Downstream gate - Portkey dry-run plus subscriber trust references
-  5. Export artifact - copy IA Packet brief or Portkey gate JSON
+  5. ProofGraph - sponsors -> IA Packet -> downstream trust
+  6. Export artifact - copy IA Packet brief or Portkey gate JSON
 
 Press Ctrl+C when done.
 EOF

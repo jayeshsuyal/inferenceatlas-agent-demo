@@ -6,11 +6,12 @@ import json
 import subprocess
 import sys
 
-from agent.chat_orchestrator import orchestrate_chat
+from agent.chat_orchestrator import ASK_IA_INTAKE_SCHEMA_VERSION, orchestrate_chat
 from agent.packet_advisor import (
     PACKET_ADVISOR_SCHEMA_VERSION,
     build_packet_advisor_answer,
     route_question,
+    should_use_packet_advisor,
 )
 
 
@@ -42,6 +43,7 @@ def test_question_router_is_bounded_and_deterministic() -> None:
     assert route_question("Who should Finance and Procurement route this to?") == "reviewer_routing"
     assert route_question("Is production access safe?") == "safety_status"
     assert route_question("tell me a joke") == "unsupported"
+    assert should_use_packet_advisor("hey", current_fixture="mcp_tool_blast_radius") is False
 
 
 def test_portkey_spend_gate_answer_is_packet_backed_and_non_approving() -> None:
@@ -147,3 +149,28 @@ def test_buyer_language_spend_question_uses_packet_advisor_not_catalog_tools() -
     assert "Catalog" not in orch.direct_reply
     assert "IA requires proof" in orch.direct_reply
     assert_safe_tone(orch.direct_answer)
+
+
+def test_ask_ia_greeting_uses_intake_not_packet_dump() -> None:
+    orch = orchestrate_chat(
+        message="hey",
+        skill_ids=[],
+        skill_position="prepend",
+        session_id="ask-ia-greeting",
+        github_repos=[],
+        drive_file_ids=[],
+        file_blocks=[],
+        attach_warnings=[],
+        current_fixture="mcp_tool_blast_radius",
+    )
+
+    assert orch.direct_reply_source == "ask_ia_intake"
+    assert orch.direct_answer["schema_version"] == ASK_IA_INTAKE_SCHEMA_VERSION
+    assert orch.direct_answer["invariants"]["raw_packet_dumped"] is False
+    assert orch.direct_answer["invariants"]["uses_packet_advisor"] is False
+    assert orch.use_tools is False
+    assert "Ask IA intake" in orch.context_manifest
+    assert "Can this move?" in orch.direct_reply
+    assert "What proof is missing?" in orch.direct_reply
+    assert "packet_id" not in orch.direct_reply
+    assert "Top blocker" not in orch.direct_reply

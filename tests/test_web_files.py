@@ -302,6 +302,29 @@ class WebFilesTests(unittest.TestCase):
         )
         self.assertIn("does not approve", response.reply.lower())
 
+    def test_chat_api_greeting_uses_intake_not_packet_dump(self) -> None:
+        from web.app import ChatRequest, _execute_chat
+
+        with patch("web.app._chat_validate", side_effect=AssertionError("Greeting must stay no-key")):
+            response = _execute_chat(
+                ChatRequest(
+                    session_id="ask-ia-greeting-contract",
+                    current_fixture="mcp_tool_blast_radius",
+                    message="hey",
+                )
+            )
+
+        self.assertIn("Context used", response.reply)
+        self.assertIn("Ask IA intake", response.reply)
+        self.assertEqual(response.answer["schema_version"], "ask_ia_intake.v0")
+        self.assertFalse(response.answer["invariants"]["raw_packet_dumped"])
+        self.assertFalse(response.answer["invariants"]["uses_packet_advisor"])
+        self.assertFalse(response.use_tools)
+        self.assertIn("Can this move?", response.reply)
+        self.assertIn("What proof is missing?", response.reply)
+        self.assertNotIn("Top blocker", response.reply)
+        self.assertNotIn("packet_id", response.reply)
+
     def test_design_partner_walkthrough_api_is_safe_and_export_ready(self) -> None:
         from web.app import design_partner_walkthrough
 
@@ -396,7 +419,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("Sponsor Run", html)
         self.assertIn('id="walkthrough-view"', html)
         self.assertIn("Private engine, public proof.", html)
-        self.assertIn("/static/app.js?v=43", html)
+        self.assertIn("/static/app.js?v=44", html)
         self.assertIn('id="btn-collect-sponsor-proof"', html)
         self.assertIn("Collect sponsor proof", html)
         self.assertIn('id="btn-copy-walkthrough-brief"', html)
@@ -418,6 +441,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("renderSponsorProofLoop", js)
         self.assertIn("renderBlastRadiusGraph", js)
         self.assertIn("IA Blast Radius Graph", js)
+        self.assertIn("proofGraphUrl", js)
+        self.assertIn("Open ProofGraph", js)
+        self.assertIn("Shows the full packet authority map", js)
         self.assertIn("IA created this graph from sponsor proof.", js)
         self.assertIn("Sponsors provide signals. IA builds the blast-radius graph", js)
         self.assertIn("One local IA API call orchestrates sponsor proof.", js)

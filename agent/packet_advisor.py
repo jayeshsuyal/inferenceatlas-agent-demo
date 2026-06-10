@@ -225,8 +225,6 @@ def select_subscriber_for_question(question: str, subscriber: str = "") -> str:
 def should_use_packet_advisor(question: str, *, current_fixture: str = "", subscriber: str = "") -> bool:
     """Return True when Ask IA should use packet truth instead of generic chat/tools."""
     answer_kind = route_question(question)
-    if answer_kind == "unsupported":
-        return bool(current_fixture or subscriber)
     normalized = _normalized(question)
     advisor_terms = (
         "packet",
@@ -243,6 +241,8 @@ def should_use_packet_advisor(question: str, *, current_fixture: str = "", subsc
         "proceed",
         "approve",
     )
+    if answer_kind == "unsupported":
+        return bool(subscriber or _contains_any(normalized, advisor_terms))
     return bool(current_fixture or subscriber or _contains_any(normalized, advisor_terms))
 
 

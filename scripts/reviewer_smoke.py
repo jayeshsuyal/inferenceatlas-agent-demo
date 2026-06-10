@@ -250,6 +250,30 @@ def _check_portkey_and_chat(base_url: str, timeout: float, session_id: str) -> N
         _require(expected in chat["reply"], f"Ask IA reply missing: {expected}")
 
 
+def _check_proofgraph_visual(base_url: str, timeout: float) -> None:
+    html = _read(base_url, "/proofgraph", timeout=timeout)
+    for expected in (
+        "InferenceAtlas ProofGraph",
+        "The packet authority layer downstream systems trust before AI moves.",
+        "80",
+        "proof nodes",
+        "141",
+        "edges",
+        "zero",
+        "writes",
+        "Tavily",
+        "Composio",
+        "OpenClaw",
+        "Nebius",
+        "IA Packet Authority",
+        "Portkey Gate",
+        "Sponsors contribute proof only - IA keeps the packet locked - no approval - no writes - no verdict mutation",
+    ):
+        _require(expected in html, f"ProofGraph visual missing: {expected}")
+    _require("77 proof nodes" not in html, "ProofGraph visual returned stale 77-node screenshot count")
+    _require("136 edges" not in html, "ProofGraph visual returned stale 136-edge screenshot count")
+
+
 def _check_sponsors(base_url: str, timeout: float) -> None:
     readiness = _json_get(base_url, "/api/sponsor-readiness/matrix", timeout=timeout)
     _require(readiness.get("read_only") is True, "sponsor readiness must be read-only")
@@ -359,6 +383,7 @@ def run_smoke(base_url: str, *, timeout: float, session_id: str) -> list[str]:
         ("Workbench", lambda: _check_workbench(base_url, timeout)),
         ("Walkthrough", lambda: _check_walkthrough(base_url, timeout)),
         ("Portkey + Ask IA", lambda: _check_portkey_and_chat(base_url, timeout, session_id)),
+        ("ProofGraph visual", lambda: _check_proofgraph_visual(base_url, timeout)),
         ("Sponsor readiness + proof run", lambda: _check_sponsors(base_url, timeout)),
         ("Access review cycle", lambda: _check_review_cycle(base_url, timeout)),
         ("Skills/connectors/metrics", lambda: _check_skills_connectors_metrics(base_url, timeout, session_id)),

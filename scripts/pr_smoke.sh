@@ -74,6 +74,7 @@ command_json_check /tmp/ia_proof_graph.json "$PYTHON_BIN" -m agent.proof_graph -
 command_json_check /tmp/ia_proof_graph.tavily_evidence.json "$PYTHON_BIN" -m agent.proof_graph --include-tavily-evidence --json
 command_json_check /tmp/ia_proof_graph.composio_blast_radius.json "$PYTHON_BIN" -m agent.proof_graph --include-composio-blast-radius --json
 command_json_check /tmp/ia_proof_graph.openclaw_runtime_trace.json "$PYTHON_BIN" -m agent.proof_graph --include-openclaw-runtime-trace --json
+command_json_check /tmp/ia_proof_graph.nebius_reviewer_synthesis.json "$PYTHON_BIN" -m agent.proof_graph --include-nebius-reviewer-synthesis --json
 command_json_check /tmp/ia_verification.all.json "$PYTHON_BIN" -m agent.verification --all --json
 command_json_check /tmp/ia_subscribers.json "$PYTHON_BIN" -m agent.subscribers --json
 command_json_check /tmp/ia_downstream_gate.all.json "$PYTHON_BIN" -m agent.downstream_gate --all --json

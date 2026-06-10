@@ -78,6 +78,9 @@
     "openclaw_runtime_trace": {
       "$ref": "#/$defs/openclaw_runtime_trace"
     },
+    "nebius_reviewer_synthesis": {
+      "$ref": "#/$defs/nebius_reviewer_synthesis"
+    },
     "node_counts": {
       "type": "object",
       "required": ["packet", "proof", "edge"],
@@ -390,6 +393,53 @@
         "runtime_write_attempted": { "type": "boolean", "const": false },
         "human_review_boundary_preserved": { "type": "boolean", "const": true },
         "would_execute": { "type": "boolean", "const": false },
+        "safety_impact": { "type": "string", "const": "none" }
+      }
+    },
+    "nebius_reviewer_synthesis": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "provider",
+        "mode",
+        "status",
+        "api_call_made",
+        "fallback_used",
+        "input_field_count",
+        "draft_output_count",
+        "locked_field_count",
+        "llm_may_edit_count",
+        "llm_must_not_edit_count",
+        "required_anchor_count",
+        "required_anchors_present",
+        "forbidden_phrases_present",
+        "can_change_verdict",
+        "can_mutate_packet",
+        "human_review_required",
+        "safety_impact"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "sponsor_adapter_contract.v0" },
+        "provider": { "type": "string", "const": "nebius" },
+        "mode": { "type": "string", "const": "deterministic_fallback" },
+        "status": { "type": "string", "const": "deterministic_narration_fallback" },
+        "api_call_made": { "type": "boolean", "const": false },
+        "fallback_used": { "type": "boolean", "const": true },
+        "input_field_count": { "type": "integer", "minimum": 1 },
+        "draft_output_count": { "type": "integer", "minimum": 1 },
+        "locked_field_count": { "type": "integer", "minimum": 1 },
+        "llm_may_edit_count": { "type": "integer", "minimum": 0 },
+        "llm_must_not_edit_count": { "type": "integer", "minimum": 1 },
+        "required_anchor_count": { "type": "integer", "minimum": 1 },
+        "required_anchors_present": { "type": "boolean", "const": true },
+        "forbidden_phrases_present": {
+          "type": "array",
+          "maxItems": 0,
+          "items": { "type": "string" }
+        },
+        "can_change_verdict": { "type": "boolean", "const": false },
+        "can_mutate_packet": { "type": "boolean", "const": false },
+        "human_review_required": { "type": "boolean", "const": true },
         "safety_impact": { "type": "string", "const": "none" }
       }
     },

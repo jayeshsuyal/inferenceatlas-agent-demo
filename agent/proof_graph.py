@@ -14,7 +14,12 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from .adapters.core import ADAPTER_CONTRACT_VERSION, build_adapter_result
+from .adapters.core import (
+    ADAPTER_CONTRACT_VERSION,
+    NEBIUS_FORBIDDEN_NARRATION_PHRASES,
+    NEBIUS_REQUIRED_TONE_ANCHORS,
+    build_adapter_result,
+)
 from .composio_dry_run_diff import (
     COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION,
     build_composio_dry_run_diff,
@@ -565,6 +570,147 @@ def _openclaw_runtime_trace_nodes(
     return tuple(nodes), tuple(edges), _openclaw_runtime_trace_summary(openclaw)
 
 
+def _nebius_reviewer_synthesis_summary(nebius: dict[str, Any]) -> dict[str, Any]:
+    contract = nebius["reviewer_narration_contract"]
+    narration = nebius["narration"]
+    forbidden = [
+        phrase for phrase in NEBIUS_FORBIDDEN_NARRATION_PHRASES if phrase.lower() in narration.lower()
+    ]
+    return {
+        "schema_version": ADAPTER_CONTRACT_VERSION,
+        "provider": "nebius",
+        "mode": "deterministic_fallback",
+        "status": nebius["status"],
+        "api_call_made": False,
+        "fallback_used": True,
+        "input_field_count": len(contract["input_fields"]),
+        "draft_output_count": len(contract["draft_outputs"]),
+        "locked_field_count": len(contract["locked_fields"]),
+        "llm_may_edit_count": len(nebius["llm_may_edit"]),
+        "llm_must_not_edit_count": len(nebius["llm_must_not_edit"]),
+        "required_anchor_count": len(NEBIUS_REQUIRED_TONE_ANCHORS),
+        "required_anchors_present": all(anchor in narration for anchor in NEBIUS_REQUIRED_TONE_ANCHORS),
+        "forbidden_phrases_present": forbidden,
+        "can_change_verdict": False,
+        "can_mutate_packet": False,
+        "human_review_required": bool(contract["human_review_required"]),
+        "safety_impact": nebius["safety_impact"],
+    }
+
+
+def _nebius_field_for_locked_field(field: str) -> str:
+    if field == "blocked_claims":
+        return "blocked_claims"
+    if field == "safety_state":
+        return "safety_invariants"
+    return "decision_lock"
+
+
+def _nebius_reviewer_synthesis_nodes(
+    *,
+    scenario_name: str,
+    next_human_action: str,
+) -> tuple[tuple[ProofNode, ...], tuple[ProofEdge, ...], dict[str, Any]]:
+    nebius = build_adapter_result("nebius", scenario_name)
+    contract = nebius["reviewer_narration_contract"]
+    nodes: list[ProofNode] = []
+    edges: list[ProofEdge] = []
+    contract_node = _sponsor_proof_node(
+        provider="nebius",
+        node_id="proof:nebius:reviewer_synthesis_contract",
+        field="claim_ledger",
+        label="Nebius reviewer synthesis contract",
+        summary=(
+            f"human_review_required={contract['human_review_required']}; "
+            f"inputs={len(contract['input_fields'])}; locked_fields={len(contract['locked_fields'])}; "
+            "Nebius may draft language but cannot own verdicts."
+        ),
+        source_refs=[
+            "nebius.reviewer_narration_contract",
+            "nebius.llm_may_edit",
+            "nebius.llm_must_not_edit",
+        ],
+        next_human_action=next_human_action,
+    )
+    nodes.append(contract_node)
+
+    for index, field in enumerate(contract["locked_fields"], start=1):
+        locked_node = _sponsor_proof_node(
+            provider="nebius",
+            node_id=f"proof:nebius:locked_field:{index}:{_slug(field)}",
+            field=_nebius_field_for_locked_field(field),
+            label=f"Nebius locked field: {field}",
+            summary=(
+                f"{field} is locked before narration. Nebius must not edit this field "
+                "or change the packet decision."
+            ),
+            source_refs=[
+                f"nebius.reviewer_narration_contract.locked_fields[{index - 1}]",
+                "nebius.llm_must_not_edit",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(locked_node)
+        edges.append(
+            ProofEdge(
+                edge_id=f"edge:{locked_node.node_id}:to:{contract_node.node_id}:supports_review",
+                edge_type="supports_review",
+                from_node_id=locked_node.node_id,
+                to_node_id=contract_node.node_id,
+                packet_field=locked_node.attached_packet_field,
+            )
+        )
+
+    for index, draft_output in enumerate(contract["draft_outputs"], start=1):
+        draft_node = _sponsor_proof_node(
+            provider="nebius",
+            node_id=f"proof:nebius:draft_output:{index}:{_slug(draft_output)}",
+            field="claim_ledger",
+            label=f"Nebius draft output: {draft_output}",
+            summary=(
+                f"{draft_output} is reviewer-facing language only. "
+                "It can explain packet truth but cannot approve access."
+            ),
+            source_refs=[
+                f"nebius.reviewer_narration_contract.draft_outputs[{index - 1}]",
+                "nebius.llm_may_edit",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(draft_node)
+        edges.append(
+            ProofEdge(
+                edge_id=f"edge:{draft_node.node_id}:to:{contract_node.node_id}:supports_review",
+                edge_type="supports_review",
+                from_node_id=draft_node.node_id,
+                to_node_id=contract_node.node_id,
+                packet_field="claim_ledger",
+            )
+        )
+
+    anchor_node = _sponsor_proof_node(
+        provider="nebius",
+        node_id="proof:nebius:safety_anchor:no_approval",
+        field="safety_invariants",
+        label="Nebius safety anchor",
+        summary=" ".join(NEBIUS_REQUIRED_TONE_ANCHORS),
+        source_refs=["nebius.narration", "nebius.required_tone_anchors"],
+        next_human_action=next_human_action,
+    )
+    nodes.append(anchor_node)
+    edges.append(
+        ProofEdge(
+            edge_id=f"edge:{anchor_node.node_id}:to:{contract_node.node_id}:supports_review",
+            edge_type="supports_review",
+            from_node_id=anchor_node.node_id,
+            to_node_id=contract_node.node_id,
+            packet_field="safety_invariants",
+        )
+    )
+
+    return tuple(nodes), tuple(edges), _nebius_reviewer_synthesis_summary(nebius)
+
+
 def _tavily_evidence_summary(tavily: dict[str, Any]) -> dict[str, Any]:
     query_summary = tavily["query_plan_summary"]
     source_summary = tavily["source_quality_summary"]
@@ -758,6 +904,7 @@ def build_proof_graph(
     include_tavily_evidence: bool = False,
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
+    include_nebius_reviewer_synthesis: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph from one DecisionPacket."""
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
@@ -784,6 +931,9 @@ def build_proof_graph(
     openclaw_nodes: tuple[ProofNode, ...] = ()
     openclaw_edges: tuple[ProofEdge, ...] = ()
     openclaw_summary: dict[str, Any] | None = None
+    nebius_nodes: tuple[ProofNode, ...] = ()
+    nebius_edges: tuple[ProofEdge, ...] = ()
+    nebius_summary: dict[str, Any] | None = None
     if include_tavily_evidence:
         tavily_nodes, tavily_edges, tavily_summary = _tavily_evidence_nodes(
             packet,
@@ -801,9 +951,20 @@ def build_proof_graph(
             scenario_name=scenario_name,
             next_human_action=next_action,
         )
-    proof_nodes = (*packet_proof_nodes, *tavily_nodes, *composio_nodes, *openclaw_nodes)
+    if include_nebius_reviewer_synthesis:
+        nebius_nodes, nebius_edges, nebius_summary = _nebius_reviewer_synthesis_nodes(
+            scenario_name=scenario_name,
+            next_human_action=next_action,
+        )
+    proof_nodes = (
+        *packet_proof_nodes,
+        *tavily_nodes,
+        *composio_nodes,
+        *openclaw_nodes,
+        *nebius_nodes,
+    )
     packet_edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
-    edges = (*packet_edges, *tavily_edges, *composio_edges, *openclaw_edges)
+    edges = (*packet_edges, *tavily_edges, *composio_edges, *openclaw_edges, *nebius_edges)
     base_payload = {
         "schema_version": PROOF_GRAPH_SCHEMA_VERSION,
         "scenario_name": scenario_name,
@@ -818,6 +979,8 @@ def build_proof_graph(
         base_payload["composio_blast_radius"] = composio_summary
     if openclaw_summary:
         base_payload["openclaw_runtime_trace"] = openclaw_summary
+    if nebius_summary:
+        base_payload["nebius_reviewer_synthesis"] = nebius_summary
     digest = stable_sha256(base_payload)
     return {
         **base_payload,
@@ -858,6 +1021,7 @@ def build_proof_graph_for_scenario(
     include_tavily_evidence: bool = False,
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
+    include_nebius_reviewer_synthesis: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph for a registered public access scenario."""
     if scenario_name not in SCENARIOS:
@@ -868,6 +1032,7 @@ def build_proof_graph_for_scenario(
         include_tavily_evidence=include_tavily_evidence,
         include_composio_blast_radius=include_composio_blast_radius,
         include_openclaw_runtime_trace=include_openclaw_runtime_trace,
+        include_nebius_reviewer_synthesis=include_nebius_reviewer_synthesis,
     )
 
 
@@ -938,6 +1103,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Attach OpenClaw runtime trace proof nodes without live calls or execute.",
     )
+    parser.add_argument(
+        "--include-nebius-reviewer-synthesis",
+        action="store_true",
+        help="Attach Nebius reviewer synthesis proof nodes without live calls or verdict ownership.",
+    )
     parser.add_argument("--json", action="store_true", help="Print the graph as JSON.")
     return parser
 
@@ -950,6 +1120,7 @@ def main(argv: list[str] | None = None) -> int:
             include_tavily_evidence=args.include_tavily_evidence,
             include_composio_blast_radius=args.include_composio_blast_radius,
             include_openclaw_runtime_trace=args.include_openclaw_runtime_trace,
+            include_nebius_reviewer_synthesis=args.include_nebius_reviewer_synthesis,
         )
     except (KeyError, ValueError) as exc:
         print(str(exc), file=sys.stderr)

@@ -69,6 +69,14 @@ python3 -m agent.portkey_guardrail_proof_loop \
 
 This renders the read-only proof loop a reviewer expects after a Portkey guardrail call: webhook shape, packet reference, verdict, latency, policy preview, auth boundary, and safety invariants. It writes nothing and makes no Portkey API calls.
 
+## Full Sponsor ProofGraph
+
+```bash
+python3 -m agent.proof_graph --include-all-sponsors --json
+```
+
+This renders the complete packet-bound sponsor proof graph in one command: Tavily evidence candidates, Composio dry-run blast radius, OpenClaw runtime trace, and Nebius reviewer synthesis. The preset is equivalent to the four explicit sponsor flags and remains non-approving, non-mutating, no-write, and no-live-call by default.
+
 ## Optional Max Rehearsal Stress
 
 ```bash
@@ -96,6 +104,7 @@ python3 -m agent.skills
 python3 -m agent.packet_diff
 python3 -m agent.evidence_receipts
 python3 -m agent.packet_authority
+python3 -m agent.proof_graph --include-all-sponsors --json
 python3 -m agent.verification --all
 python3 -m agent.subscribers --json
 python3 -m agent.downstream_gate --all

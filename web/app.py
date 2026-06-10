@@ -48,7 +48,7 @@ from agent.portkey_guardrail import (
 )
 from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loop
 from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO
-from agent.proof_graph_visual import build_proof_graph_visual
+from agent.proof_graph_visual import build_proof_graph_visual, render_review_run_proof_graph_html
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_STORE_DIR,
@@ -56,6 +56,7 @@ from agent.review_run import (
     ReviewRun,
     attach_review_run_proof,
     build_review_run_coach_answer,
+    build_review_run_proofgraph,
     create_review_run,
     generate_proof_resolved_review_run_packet,
     generate_initial_review_run_packet,
@@ -346,6 +347,7 @@ class ReviewRunPacketRequest(BaseModel):
         min_length=1,
         max_length=10000,
     )
+    sponsor_proof_trace: Optional[Dict[str, Any]] = None
 
 
 class ReviewRunProofAttachRequest(BaseModel):
@@ -761,6 +763,23 @@ def create_review_run_api(body: ReviewRunCreateRequest) -> dict:
     }
 
 
+def _load_review_run_or_404(run_id: str) -> tuple[ReviewRun, Optional[dict]]:
+    with _review_runs_lock:
+        run_payload = _review_runs.get(run_id)
+    try:
+        record = load_review_run_record(run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if run_payload is None:
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown review run")
+        run_payload = record["run"]
+    try:
+        return ReviewRun.from_dict(run_payload), record
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @app.post("/api/review-runs/{run_id}/packet")
 def generate_review_run_packet_api(run_id: str, body: ReviewRunPacketRequest) -> dict:
     """Generate one compact IA Packet from the current ReviewRun."""
@@ -776,7 +795,11 @@ def generate_review_run_packet_api(run_id: str, body: ReviewRunPacketRequest) ->
         run_payload = record["run"]
     try:
         run = ReviewRun.from_dict(run_payload)
-        generated = generate_initial_review_run_packet(run, body.access_request)
+        generated = generate_initial_review_run_packet(
+            run,
+            body.access_request,
+            sponsor_proof_trace=body.sponsor_proof_trace,
+        )
         record = write_review_run_record(generated, store_dir=REVIEW_RUN_STORE_DIR)
         packet = review_run_packet_projection(generated)
     except ValueError as exc:
@@ -891,6 +914,20 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         "stage": run.stage,
         "reply": answer["reply"],
         "answer": answer,
+    }
+
+
+@app.get("/api/review-runs/{run_id}/proofgraph")
+def get_review_run_proofgraph_api(run_id: str) -> dict:
+    """Return the dynamic, read-only ProofGraph projection for one ReviewRun."""
+    run, _record = _load_review_run_or_404(run_id)
+    graph = build_review_run_proofgraph(run)
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "proofgraph": graph,
     }
 
 
@@ -2411,7 +2448,11 @@ def packet_index() -> FileResponse:
 @app.get("/proofgraph", response_class=HTMLResponse)
 def proofgraph_index(
     fixture: str = Query(DEFAULT_PROOF_GRAPH_SCENARIO, description="Public access scenario to visualize."),
+    review_run_id: Optional[str] = Query(None, description="Local ReviewRun id to visualize."),
 ) -> HTMLResponse:
+    if review_run_id:
+        run, _record = _load_review_run_or_404(review_run_id)
+        return HTMLResponse(render_review_run_proof_graph_html(build_review_run_proofgraph(run)))
     try:
         html_page = build_proof_graph_visual(fixture)
     except ValueError as exc:

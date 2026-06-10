@@ -3934,6 +3934,52 @@ body[data-active-tab="start"] .messages {
   border-top: 1px solid #dedede;
 }
 
+.repo-proofgraph-run-ref {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.repo-proofgraph-run-ref code {
+  color: var(--success);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.repo-proofgraph-map {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.65rem 0;
+}
+
+.repo-proofgraph-row {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 0.75fr) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: start;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.5rem 0.55rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.repo-proofgraph-row span {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+}
+
+.repo-proofgraph-row strong {
+  color: #ffffff;
+  font-size: 0.78rem;
+  line-height: 1.32;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .repo-packet-ref {
   display: block;
   margin-top: 0.65rem;
@@ -4567,6 +4613,14 @@ body[data-active-tab="start"] .repo-proof-details summary {
 
   .repo-card {
     min-height: auto;
+  }
+
+  .repo-proofgraph-row {
+    grid-template-columns: 1fr;
+  }
+
+  .repo-proofgraph-row strong {
+    text-align: left;
   }
 
   .repo-status-line {

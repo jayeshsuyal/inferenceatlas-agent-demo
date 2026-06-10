@@ -10,11 +10,13 @@ from unittest import TestCase
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
     REVIEW_RUN_COACH_SCHEMA_VERSION,
+    REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION,
     REVIEW_RUN_RECORD_SCHEMA_VERSION,
     REVIEW_RUN_SCHEMA_VERSION,
     assert_stage_transition,
     attach_review_run_proof,
     build_review_run_coach_answer,
+    build_review_run_proofgraph,
     classify_review_run_access_request,
     create_review_run,
     generate_proof_resolved_review_run_packet,
@@ -537,6 +539,75 @@ class ReviewRunContractTests(TestCase):
             rerun.movement_classes["allowed"],
             ["read issues", "comment", "create labels in selected repo"],
         )
+
+    def test_review_run_proofgraph_tracks_packet_revisions_and_zero_writes(self) -> None:
+        run = create_review_run(now="2026-06-10T12:00:00Z")
+        selected = select_review_run_repo(run, _selected_repo(), repo_index_summary=_indexed_summary())
+
+        waiting = build_review_run_proofgraph(selected)
+        self.assertEqual(waiting["schema_version"], REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION)
+        self.assertEqual(waiting["graph_state"], "waiting_for_packet")
+        self.assertEqual(waiting["generated_from_run_id"], selected.run_id)
+        self.assertEqual(waiting["selected_repo"], "acme/demo-support-incidents")
+        self.assertEqual(waiting["packet_reference"]["verdict"], "not_generated")
+        self.assertEqual(waiting["portkey_state"], "No packet")
+        self.assertTrue(waiting["zero_writes"])
+        self.assertFalse(waiting["safety_boundary"]["approves_access"])
+        self.assertFalse(waiting["safety_boundary"]["external_writes"])
+        self.assertIn("Generated from run_id", waiting["summary"]["generated_from_run_id"])
+
+        packet_run = generate_initial_review_run_packet(
+            selected,
+            DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+            sponsor_proof_trace={"steps": [{"id": "tavily"}, {"id": "composio"}, {"id": "nebius"}]},
+        )
+        rev1_graph = build_review_run_proofgraph(
+            packet_run,
+        )
+        self.assertEqual(rev1_graph["graph_state"], "packet_generated")
+        self.assertEqual(rev1_graph["packet_reference"]["revision_id"], packet_run.packet["revision_id"])
+        self.assertEqual(rev1_graph["proof_counts"]["missing"], 3)
+        self.assertEqual(rev1_graph["proof_counts"]["attached"], 0)
+        self.assertEqual(rev1_graph["proof_counts"]["sponsor_steps"], 3)
+        self.assertEqual(rev1_graph["portkey_state"], "Block")
+        self.assertFalse(rev1_graph["revision_changed"])
+
+        proof_attached = attach_review_run_proof(
+            packet_run,
+            [
+                {"id": "repo_owner_approval"},
+                {"id": "rollback_offswitch"},
+                {"id": "environment_boundary"},
+            ],
+        )
+        proof_graph = build_review_run_proofgraph(proof_attached)
+        self.assertEqual(proof_graph["graph_state"], "proof_attached_rerun_required")
+        self.assertEqual(proof_graph["packet_reference"]["revision_id"], packet_run.packet["revision_id"])
+        self.assertEqual(proof_graph["proof_counts"]["attached"], 3)
+        self.assertEqual(proof_graph["proof_counts"]["missing"], 0)
+        self.assertEqual(proof_graph["packet_reference"]["ready_for_rerun"], True)
+        self.assertEqual(proof_graph["portkey_state"], "Block")
+
+        rerun = generate_proof_resolved_review_run_packet(proof_attached, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+        rev2_graph = build_review_run_proofgraph(rerun)
+        self.assertEqual(rev2_graph["graph_state"], "updated_packet_ready")
+        self.assertEqual(rev2_graph["packet_reference"]["previous_revision_id"], packet_run.packet["revision_id"])
+        self.assertNotEqual(rev2_graph["packet_reference"]["revision_id"], packet_run.packet["revision_id"])
+        self.assertEqual(rev2_graph["portkey_state"], "Allow with policy")
+        self.assertTrue(rev2_graph["revision_changed"])
+        self.assertNotEqual(rev1_graph["content_hash"], rev2_graph["content_hash"])
+        self.assertTrue(rev2_graph["zero_writes"])
+        serialized = str(rev2_graph)
+        self.assertNotIn("access_token", serialized)
+        self.assertNotIn("raw_text", serialized)
+
+    def test_review_run_proofgraph_handles_missing_sponsor_trace(self) -> None:
+        graph = build_review_run_proofgraph(_packet_run())
+
+        self.assertEqual(graph["graph_state"], "packet_generated")
+        self.assertEqual(graph["proof_counts"]["sponsor_steps"], 0)
+        self.assertEqual(graph["summary"]["zero_writes"], "zero writes")
+        self.assertFalse(graph["safety_boundary"]["raw_agent_intent_trusted"])
 
     def test_review_run_store_persists_records_and_rejects_bad_run_id(self) -> None:
         with TemporaryDirectory() as temp_dir:

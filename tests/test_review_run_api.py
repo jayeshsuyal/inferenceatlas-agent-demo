@@ -24,9 +24,11 @@ from web.app import (
     app,
     create_review_run_api,
     generate_review_run_packet_api,
+    get_review_run_proofgraph_api,
     github_attach_repo,
     github_list_repos,
     get_review_run,
+    proofgraph_index,
     rerun_review_run_packet_api,
 )
 
@@ -128,6 +130,102 @@ class ReviewRunApiTests(TestCase):
                     )
                 self.assertEqual(changed.exception.status_code, 400)
                 self.assertIn("raw agent request cannot change", changed.exception.detail)
+
+    def test_review_run_proofgraph_api_tracks_full_review_loop(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                            "access_token": "ghp_1234567890abcdefSECRET",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+
+                waiting = get_review_run_proofgraph_api(run_id)
+                self.assertTrue(waiting["read_only"])
+                self.assertEqual(waiting["stage"], "repo_selected")
+                self.assertEqual(waiting["proofgraph"]["graph_state"], "waiting_for_packet")
+                self.assertEqual(waiting["proofgraph"]["generated_from_run_id"], run_id)
+                self.assertEqual(waiting["proofgraph"]["portkey_state"], "No packet")
+                self.assertTrue(waiting["proofgraph"]["zero_writes"])
+
+                generated = generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev1 = get_review_run_proofgraph_api(run_id)
+                self.assertEqual(rev1["proofgraph"]["graph_state"], "packet_generated")
+                self.assertEqual(
+                    rev1["proofgraph"]["packet_reference"]["revision_id"],
+                    generated["run"]["packet"]["revision_id"],
+                )
+                self.assertEqual(rev1["proofgraph"]["selected_repo"], "acme/demo-support-incidents")
+                self.assertEqual(rev1["proofgraph"]["portkey_state"], "Block")
+                self.assertNotIn("ghp_1234567890abcdefSECRET", str(rev1["proofgraph"]))
+                rev1_hash = rev1["proofgraph"]["content_hash"]
+
+                _review_runs.clear()
+                reloaded = get_review_run_proofgraph_api(run_id)
+                self.assertEqual(reloaded["proofgraph"]["content_hash"], rev1_hash)
+
+                proofed = attach_review_run_proof_api(
+                    run_id,
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                            {"id": "environment_boundary", "label": "Environment boundary"},
+                        ]
+                    ),
+                )
+                proof_graph = get_review_run_proofgraph_api(run_id)["proofgraph"]
+                self.assertEqual(proof_graph["graph_state"], "proof_attached_rerun_required")
+                self.assertEqual(
+                    proof_graph["packet_reference"]["revision_id"],
+                    generated["run"]["packet"]["revision_id"],
+                )
+                self.assertEqual(proof_graph["proof_counts"]["attached"], 3)
+                self.assertEqual(proof_graph["proof_counts"]["missing"], 0)
+                self.assertEqual(proofed["run"]["stage"], "proof_attached")
+
+                rerun = rerun_review_run_packet_api(
+                    run_id,
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev2 = get_review_run_proofgraph_api(run_id)["proofgraph"]
+                self.assertEqual(rev2["graph_state"], "updated_packet_ready")
+                self.assertEqual(rev2["portkey_state"], "Allow with policy")
+                self.assertEqual(
+                    rev2["packet_reference"]["previous_revision_id"],
+                    generated["run"]["packet"]["revision_id"],
+                )
+                self.assertEqual(rev2["packet_reference"]["revision_id"], rerun["run"]["packet"]["revision_id"])
+                self.assertTrue(rev2["revision_changed"])
+                self.assertNotEqual(rev1_hash, rev2["content_hash"])
+
+                body = proofgraph_index(review_run_id=run_id).body.decode("utf-8")
+                self.assertIn("InferenceAtlas ReviewRun ProofGraph", body)
+                self.assertIn(f"Generated from run_id <span class=\"run-id\">{run_id}</span>", body)
+                self.assertIn("Allow with policy", body)
+                self.assertIn("zero writes", body)
+
+                with self.assertRaises(HTTPException) as bad:
+                    get_review_run_proofgraph_api("../escape")
+                self.assertEqual(bad.exception.status_code, 400)
+
+                with self.assertRaises(HTTPException) as missing:
+                    get_review_run_proofgraph_api("ia-review-run-missing")
+                self.assertEqual(missing.exception.status_code, 404)
 
     def test_review_run_proof_api_stress_cases_fail_closed(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -473,6 +571,7 @@ class ReviewRunApiTests(TestCase):
         proof_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proof")
         rerun_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/rerun")
         coach_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/coach")
+        proofgraph_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proofgraph")
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
@@ -480,6 +579,7 @@ class ReviewRunApiTests(TestCase):
         self.assertEqual(proof_route.methods, {"POST"})
         self.assertEqual(rerun_route.methods, {"POST"})
         self.assertEqual(coach_route.methods, {"POST"})
+        self.assertEqual(proofgraph_route.methods, {"GET"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

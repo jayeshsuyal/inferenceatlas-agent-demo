@@ -73,6 +73,29 @@ def _downstream_card(title: str, subtitle: str) -> str:
           </article>"""
 
 
+def _review_run_node_card(node: dict[str, Any]) -> str:
+    return f"""
+        <article class="review-node { _escape(node.get('node_type', 'node')) }">
+          <span>{_escape(node.get('node_type', 'node'))}</span>
+          <h2>{_escape(node.get('label', 'unknown'))}</h2>
+          <p>{_escape(node.get('summary', ''))}</p>
+          <strong>{_escape(node.get('status', 'unknown'))}</strong>
+        </article>"""
+
+
+def _review_run_edge_row(edge: dict[str, Any]) -> str:
+    can_change = "yes" if edge.get("can_change_packet_verdict") else "no"
+    return f"""
+          <p>
+            <span>{_escape(edge.get('from_node_id', 'source'))} -> {_escape(edge.get('to_node_id', 'target'))}</span>
+            <strong>{_escape(edge.get('label', 'edge'))} / can change packet: {_escape(can_change)}</strong>
+          </p>"""
+
+
+def _review_run_fact(label: str, value: Any) -> str:
+    return f"<p><span>{_escape(label)}</span><strong>{_escape(value)}</strong></p>"
+
+
 def render_proof_graph_html(graph: dict[str, Any]) -> str:
     """Render a data-backed, no-JS ProofGraph page."""
     counts = graph["node_counts"]
@@ -524,6 +547,322 @@ def render_proof_graph_html(graph: dict[str, Any]) -> str:
 
     <footer>
       packet: {_escape(packet["packet_id"])} - graph: {_escape(graph["graph_id"])} - hash: {_escape(graph["content_hash"])}
+    </footer>
+  </main>
+</body>
+</html>
+"""
+    return html_doc
+
+
+def render_review_run_proof_graph_html(graph: dict[str, Any]) -> str:
+    """Render the dynamic ReviewRun-backed ProofGraph page."""
+    run_id = graph.get("generated_from_run_id") or graph.get("generated_from", {}).get("run_id") or "unknown"
+    selected_repo = graph.get("selected_repo") or graph.get("generated_from", {}).get("selected_repo") or "no repo selected"
+    packet = graph.get("packet_reference") or {}
+    packet_id = packet.get("packet_id") or "not generated"
+    revision_id = packet.get("revision_id") or "not generated"
+    revision_number = packet.get("revision_number") or 0
+    previous_revision = packet.get("previous_revision_id") or "none"
+    proof_counts = graph.get("proof_counts") or {}
+    node_counts = graph.get("node_counts") or {}
+    movement = graph.get("movement_classes") or {}
+    safety = graph.get("safety_boundary") or {}
+    summary = graph.get("summary") or {}
+    zero_writes = bool(graph.get("zero_writes"))
+    status_label = graph.get("status_label") or graph.get("graph_state") or "unknown"
+    portkey_state = graph.get("portkey_state") or "No packet"
+
+    nodes = "\n".join(_review_run_node_card(node) for node in graph.get("nodes", []))
+    edges = "\n".join(_review_run_edge_row(edge) for edge in graph.get("edges", []))
+    movement_rows = "\n".join(
+        _review_run_fact(label, ", ".join(movement.get(key) or []) or "none")
+        for label, key in (
+            ("Allowed", "allowed"),
+            ("Review required", "review_required"),
+            ("Blocked", "blocked"),
+        )
+    )
+    safety_rows = "\n".join(
+        _review_run_fact(label, _yes_no(bool(safety.get(key))))
+        for label, key in (
+            ("Approves access", "approves_access"),
+            ("Grants permissions", "permissions_granted"),
+            ("External writes", "external_writes"),
+            ("Portkey API call", "portkey_api_call_made"),
+            ("Raw intent trusted", "raw_agent_intent_trusted"),
+        )
+    )
+    html_doc = f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InferenceAtlas ReviewRun ProofGraph</title>
+  <style>
+    :root {{
+      color-scheme: dark;
+      --bg: #090b10;
+      --panel: #12161e;
+      --panel-soft: #171c24;
+      --line: #2b3442;
+      --text: #f4f5f7;
+      --muted: #a7adb8;
+      --blue: #6aa6ff;
+      --green: #71d58b;
+      --amber: #f2b84b;
+      --red: #ff786f;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }}
+    main {{
+      width: min(1220px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 34px 0 42px;
+    }}
+    header {{
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }}
+    h1 {{
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 5vw, 4.1rem);
+      line-height: 1;
+      font-weight: 760;
+    }}
+    .lede {{
+      margin: 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.5;
+    }}
+    .run-id {{
+      color: var(--green);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      overflow-wrap: anywhere;
+    }}
+    .stats {{
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }}
+    .stat {{
+      min-width: 138px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 10px 12px;
+      text-align: center;
+      color: var(--muted);
+    }}
+    .stat strong {{
+      display: block;
+      color: var(--text);
+      font-size: 1rem;
+      overflow-wrap: anywhere;
+    }}
+    .stat span {{
+      display: block;
+      margin-top: 3px;
+      font-size: 0.72rem;
+      font-weight: 760;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }}
+    .stat.ok {{
+      border-color: rgba(113, 213, 139, 0.72);
+      background: rgba(25, 92, 48, 0.32);
+    }}
+    .boundary {{
+      display: inline-flex;
+      margin-top: 12px;
+      border: 1px solid rgba(113, 213, 139, 0.62);
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: #c9f8d5;
+      background: rgba(25, 92, 48, 0.24);
+      font-weight: 780;
+    }}
+    .graph-shell {{
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--panel);
+      padding: 18px;
+    }}
+    .rail {{
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+      align-items: stretch;
+      margin-bottom: 18px;
+    }}
+    .review-node {{
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 14px;
+    }}
+    .review-node span {{
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 780;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }}
+    .review-node h2 {{
+      margin: 8px 0;
+      color: var(--text);
+      font-size: 1rem;
+      line-height: 1.25;
+      overflow-wrap: anywhere;
+    }}
+    .review-node p {{
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }}
+    .review-node strong {{
+      color: var(--green);
+      overflow-wrap: anywhere;
+    }}
+    .review-node.packet {{
+      border-color: rgba(242, 184, 75, 0.78);
+    }}
+    .review-node.downstream {{
+      border-color: rgba(106, 166, 255, 0.7);
+    }}
+    .facts {{
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }}
+    .fact-card {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel-soft);
+      padding: 15px;
+    }}
+    .fact-card h2 {{
+      margin: 0 0 10px;
+      font-size: 0.9rem;
+      color: var(--text);
+    }}
+    .fact-card p {{
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 8px 0;
+      color: var(--muted);
+      line-height: 1.35;
+    }}
+    .fact-card strong {{
+      color: var(--text);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }}
+    .edge-list p {{
+      display: block;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+    }}
+    footer {{
+      margin-top: 16px;
+      color: #788191;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.78rem;
+      overflow-wrap: anywhere;
+    }}
+    @media (max-width: 980px) {{
+      header {{ grid-template-columns: 1fr; }}
+      .stats {{ justify-content: flex-start; }}
+      .rail, .facts {{ grid-template-columns: 1fr; }}
+    }}
+    @media (max-width: 620px) {{
+      main {{ width: min(100vw - 20px, 1220px); padding: 20px 0 28px; }}
+      .graph-shell {{ padding: 12px; }}
+      .fact-card p {{ display: block; }}
+      .fact-card strong {{ display: block; margin-top: 3px; text-align: left; }}
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>InferenceAtlas ReviewRun ProofGraph</h1>
+        <p class="lede">Generated from run_id <span class="run-id">{_escape(run_id)}</span>. Same request, current packet revision, proof state, and downstream Portkey read are rendered from the live ReviewRun.</p>
+        <span class="boundary">No approval / no writes / no mutation - zero writes</span>
+      </div>
+      <div class="stats" aria-label="ReviewRun ProofGraph status">
+        {_stat("state", status_label)}
+        {_stat("packet revision", revision_id)}
+        {_stat("writes", "zero" if zero_writes else "unknown", ok=zero_writes)}
+      </div>
+    </header>
+
+    <section class="graph-shell" aria-label="Dynamic ReviewRun ProofGraph">
+      <div class="rail">
+{nodes}
+      </div>
+      <div class="facts">
+        <article class="fact-card">
+          <h2>Current Read</h2>
+          {_review_run_fact("Selected repo", selected_repo)}
+          {_review_run_fact("Packet", packet_id)}
+          {_review_run_fact("Revision", f"{revision_id} (rev {revision_number})")}
+          {_review_run_fact("Previous revision", previous_revision)}
+          {_review_run_fact("Portkey state", portkey_state)}
+        </article>
+        <article class="fact-card">
+          <h2>Proof State</h2>
+          {_review_run_fact("Sponsor proof count", proof_counts.get("sponsor_steps", 0))}
+          {_review_run_fact("Attached proof", proof_counts.get("attached", 0))}
+          {_review_run_fact("Missing proof", proof_counts.get("missing", 0))}
+          {_review_run_fact("Graph nodes", node_counts.get("proof", 0))}
+          {_review_run_fact("Revision changed", _yes_no(bool(graph.get("revision_changed"))))}
+        </article>
+        <article class="fact-card">
+          <h2>Packet Authority</h2>
+          {_review_run_fact("Authority", summary.get("authority", "Packet remains authority. Sponsors contribute proof only."))}
+          {_review_run_fact("Next human action", graph.get("next_human_action", "human review required"))}
+          {_review_run_fact("Safety", "Packet remains authority")}
+          {_review_run_fact("Sponsor role", "Sponsors contribute proof only")}
+          {_review_run_fact("Writes", "zero writes")}
+        </article>
+        <article class="fact-card">
+          <h2>Movement</h2>
+          {movement_rows}
+        </article>
+        <article class="fact-card">
+          <h2>Edges</h2>
+          <div class="edge-list">
+{edges}
+          </div>
+        </article>
+        <article class="fact-card">
+          <h2>Safety Boundary</h2>
+          {safety_rows}
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      ReviewRun ProofGraph: {_escape(graph.get("graph_id", "unknown"))} - hash: {_escape(graph.get("content_hash", "missing"))}
     </footer>
   </main>
 </body>

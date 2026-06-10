@@ -158,6 +158,17 @@ def _proof_lookup(run: "ReviewRun") -> dict[str, dict[str, Any]]:
     return lookup
 
 
+def _attached_proof_ids(run: "ReviewRun") -> set[str]:
+    proof_ids: set[str] = set()
+    for item in run.attached_proof:
+        if not isinstance(item, Mapping):
+            continue
+        proof_id = str(item.get("id") or "").strip()
+        if proof_id:
+            proof_ids.add(proof_id)
+    return proof_ids
+
+
 def _default_safety_invariants() -> dict[str, bool]:
     return {
         "read_only": True,
@@ -362,6 +373,48 @@ def _safe_portkey_preview(value: Mapping[str, Any]) -> dict[str, Any]:
     preview["portkey_policy_mutation_allowed"] = False
     preview["dry_run"] = True
     return preview
+
+
+def _portkey_state(value: Optional[Mapping[str, Any]], *, default: str = "Block") -> str:
+    if not value:
+        return default
+    for key in ("state", "verdict", "status"):
+        candidate = value.get(key)
+        if candidate:
+            return str(candidate)
+    guardrail = value.get("portkey_guardrail_response")
+    if isinstance(guardrail, Mapping):
+        verdict = guardrail.get("verdict")
+        if verdict is True:
+            return "Allow with policy"
+        if verdict is False:
+            return "Block"
+    return default
+
+
+def _review_run_allow_portkey_preview(run: "ReviewRun") -> dict[str, Any]:
+    packet = run.packet or {}
+    return _safe_portkey_preview(
+        {
+            "state": "Allow with policy",
+            "mode": "dry-run",
+            "packet_id": packet.get("packet_id"),
+            "revision_id": _review_run_revision_id(run, int(packet.get("revision_number") or 1) + 1),
+            "portkey_guardrail_response": {
+                "verdict": True,
+                "reason": "Attached human proof allows scoped movement under policy for the selected repo only.",
+            },
+            "usage_policy_plan": {
+                "request_body": {
+                    "policy_name": "reviewrun-scoped-repo-access",
+                    "credit_limit": 0,
+                    "scope": "selected_repo_only",
+                    "allowed_with_policy": ["read issues", "comment", "create labels in selected repo"],
+                    "still_blocked": ["repo admin", "org-wide write", "secrets"],
+                }
+            },
+        }
+    )
 
 
 @dataclass(frozen=True)
@@ -645,7 +698,14 @@ def rerun_review_run_packet(
         raise ValueError("rerun requires proof_attached stage")
     if not run.attached_proof:
         raise ValueError("rerun requires attached proof")
+    required_proof_ids = set(_proof_lookup(run))
+    attached_proof_ids = _attached_proof_ids(run)
+    missing_required_proof = sorted(required_proof_ids - attached_proof_ids)
+    if missing_required_proof:
+        raise ValueError("rerun requires all missing proof")
     previous_revision = run.packet.get("revision_id")
+    previous_verdict = run.packet.get("verdict")
+    previous_portkey_state = _portkey_state(run.portkey_preview)
     if str(revision_id) == previous_revision:
         raise ValueError("rerun must create a new packet revision")
     packet = copy.deepcopy(run.packet)
@@ -682,8 +742,21 @@ def rerun_review_run_packet(
     preview = _sanitize_public_value(dict(portkey_preview or {})) if portkey_preview else run.portkey_preview
     if preview:
         preview = _safe_portkey_preview(preview)
+    new_portkey_state = _portkey_state(preview, default=previous_portkey_state)
     if preview:
-        delta["portkey_state"] = preview.get("state") or preview.get("verdict") or preview.get("status")
+        delta["portkey_state"] = new_portkey_state
+    delta.update(
+        {
+            "packet_changed": True,
+            "previous_verdict": previous_verdict,
+            "new_verdict": str(verdict),
+            "previous_portkey_state": previous_portkey_state,
+            "new_portkey_state": new_portkey_state,
+            "portkey_changed": previous_portkey_state != new_portkey_state,
+            "verdict_changed": previous_verdict != str(verdict),
+            "attached_proof_ids": sorted(attached_proof_ids),
+        }
+    )
     return _replace_run(
         run,
         stage="ready_to_export",
@@ -692,6 +765,33 @@ def rerun_review_run_packet(
         packet=packet,
         movement_classes=normalize_movement_classes(movement_classes),
         portkey_preview=preview,
+        now=now,
+    )
+
+
+def generate_proof_resolved_review_run_packet(
+    run: ReviewRun,
+    raw_access_request: Optional[str] = None,
+    *,
+    now: Optional[str] = None,
+) -> ReviewRun:
+    """Generate the second packet revision after all human proof is attached."""
+    request_text = str(raw_access_request or "").strip()
+    if request_text and _digest(request_text) != run.access_request.get("raw_request_hash"):
+        raise ValueError("raw agent request cannot change before rerun")
+    next_revision_number = int(run.packet.get("revision_number") or 1) + 1
+    movement_classes = {
+        "allowed": ["read issues", "comment", "create labels in selected repo"],
+        "review_required": [],
+        "blocked": ["repo admin", "org-wide write", "secrets"],
+    }
+    return rerun_review_run_packet(
+        run,
+        revision_id=_review_run_revision_id(run, next_revision_number),
+        verdict="ready_with_gates",
+        movement_classes=movement_classes,
+        portkey_preview=_review_run_allow_portkey_preview(run),
+        still_blocked=movement_classes["blocked"],
         now=now,
     )
 
@@ -738,6 +838,13 @@ def generate_initial_review_run_packet(
     )
 
 
+def _latest_review_rerun_delta(run: ReviewRun) -> dict[str, Any]:
+    for event in reversed(run.audit_events or []):
+        if event.get("event_type") == "review_rerun":
+            return _sanitize_public_value(dict(event.get("details") or {}))
+    return {}
+
+
 def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
     """Return the compact packet shape the root cockpit consumes."""
     if run.stage not in {"packet_generated", "sponsor_proof_collected", "portkey_previewed", "proof_attached", "ready_to_export"}:
@@ -749,6 +856,9 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
     missing_labels = _missing_proof_labels(run.missing_proof)
     packet = run.packet
     ready_for_rerun = bool(packet.get("ready_for_rerun"))
+    ready_to_export = run.stage == "ready_to_export"
+    verdict_class = packet.get("verdict") or "scoped_validation_only"
+    review_delta = _latest_review_rerun_delta(run)
     packet_reference = {
         "packet_id": packet.get("packet_id"),
         "revision_id": packet.get("revision_id"),
@@ -759,13 +869,15 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
         "source_of_truth": "ReviewRun",
     }
     next_action = (
-        "Proof attached. Regenerate the packet before any verdict or Portkey state can change."
+        "Export the updated packet brief and route the scoped allow-with-policy review."
+        if ready_to_export
+        else "Proof attached. Regenerate the packet before any verdict or Portkey state can change."
         if ready_for_rerun
         else "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
     )
     brief_lines = [
         f"ReviewRun `{run.run_id}` generated packet `{packet.get('packet_id')}` for `{repo_name}`.",
-        "Verdict class: `scoped_validation_only`.",
+        f"Verdict class: `{verdict_class}`.",
         f"Allowed: {', '.join(movement['allowed']) or 'none'}.",
         f"Review required: {', '.join(movement['review_required']) or 'none'}.",
         f"Blocked: {', '.join(movement['blocked']) or 'none'}.",
@@ -788,6 +900,7 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "packet": run.packet,
             "missing_proof": run.missing_proof,
             "attached_proof": run.attached_proof,
+            "portkey_preview": run.portkey_preview,
         },
         "packet_reference": packet_reference,
         "source_inputs": {
@@ -796,8 +909,8 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "raw_request_hash": run.access_request.get("raw_request_hash"),
         },
         "decision": {
-            "verdict_class": packet.get("verdict") or "scoped_validation_only",
-            "requires_human_review": True,
+            "verdict_class": verdict_class,
+            "requires_human_review": not ready_to_export,
             "production_access": False,
             "permission_grants": False,
             "external_writes": False,
@@ -828,10 +941,26 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "attached_proof": run.attached_proof,
             "attached_proof_count": len(run.attached_proof),
             "ready_for_rerun": ready_for_rerun,
-            "verdict_changed": False,
-            "portkey_changed": False,
+            "verdict_changed": bool(review_delta.get("verdict_changed")),
+            "portkey_changed": bool(review_delta.get("portkey_changed")),
             "next_human_action": next_action,
         },
+        "review_delta": {
+            "schema_version": "review_run_delta.v0",
+            "same_request": bool(review_delta.get("same_request")),
+            "raw_request_hash": run.access_request.get("raw_request_hash"),
+            "new_proof": run.attached_proof,
+            "packet_revision_before": review_delta.get("previous_revision_id") or packet.get("previous_revision_id"),
+            "packet_revision_after": packet.get("revision_id"),
+            "packet_changed": bool(review_delta.get("packet_changed")),
+            "verdict_before": review_delta.get("previous_verdict"),
+            "verdict_after": verdict_class,
+            "portkey_before": review_delta.get("previous_portkey_state"),
+            "portkey_after": review_delta.get("new_portkey_state") or _portkey_state(run.portkey_preview, default="Block"),
+            "portkey_changed": bool(review_delta.get("portkey_changed")),
+            "still_blocked": review_delta.get("still_blocked") or movement["blocked"],
+        },
+        "portkey_preview": run.portkey_preview,
         "safety_boundary": {
             "approval_granted": False,
             "production_access": False,

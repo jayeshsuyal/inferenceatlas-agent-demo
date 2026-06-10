@@ -56,6 +56,7 @@ from agent.review_run import (
     ReviewRun,
     attach_review_run_proof,
     create_review_run,
+    generate_proof_resolved_review_run_packet,
     generate_initial_review_run_packet,
     load_review_run_record,
     review_run_record_summary,
@@ -348,6 +349,10 @@ class ReviewRunPacketRequest(BaseModel):
 
 class ReviewRunProofAttachRequest(BaseModel):
     proof_items: List[Dict[str, Any]] = Field(default_factory=list, max_length=8)
+
+
+class ReviewRunRerunRequest(BaseModel):
+    access_request: Optional[str] = Field(default=None, max_length=10000)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -816,6 +821,42 @@ def attach_review_run_proof_api(run_id: str, body: ReviewRunProofAttachRequest) 
         "run": run_payload,
         "record": review_run_record_summary(record),
         "packet": packet,
+    }
+
+
+@app.post("/api/review-runs/{run_id}/rerun")
+def rerun_review_run_packet_api(run_id: str, body: ReviewRunRerunRequest = ReviewRunRerunRequest()) -> dict:
+    """Generate the updated packet after human proof is attached."""
+    with _review_runs_lock:
+        run_payload = _review_runs.get(run_id)
+    try:
+        record = load_review_run_record(run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if run_payload is None:
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown review run")
+        run_payload = record["run"]
+    try:
+        run = ReviewRun.from_dict(run_payload)
+        updated = generate_proof_resolved_review_run_packet(run, body.access_request)
+        record = write_review_run_record(updated, store_dir=REVIEW_RUN_STORE_DIR)
+        packet = review_run_packet_projection(updated)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    run_payload = record["run"]
+    with _review_runs_lock:
+        _review_runs[updated.run_id] = run_payload
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run_payload,
+        "record": review_run_record_summary(record),
+        "packet": packet,
+        "portkey": updated.portkey_preview,
+        "review_delta": packet["review_delta"],
     }
 
 

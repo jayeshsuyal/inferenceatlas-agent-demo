@@ -3691,6 +3691,11 @@ body[data-active-tab="start"] .messages {
   background: #fff8e7;
 }
 
+.repo-proof-resolution-card[data-rerun-complete="true"] {
+  border-color: rgba(21, 128, 61, 0.32);
+  background: #f0fdf4;
+}
+
 .repo-proof-resolution-card h3 {
   margin: 0;
   color: #0b0b0c;
@@ -3741,6 +3746,39 @@ body[data-active-tab="start"] .messages {
 
 .repo-proof-attach-action {
   justify-self: start;
+}
+
+.repo-review-delta {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.repo-review-delta div {
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid rgba(21, 128, 61, 0.26);
+  border-radius: 8px;
+  background: rgba(21, 128, 61, 0.08);
+}
+
+.repo-review-delta span,
+.repo-review-delta strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.repo-review-delta span {
+  color: #62646b;
+  font-size: 0.68rem;
+}
+
+.repo-review-delta strong {
+  margin-top: 0.18rem;
+  color: #0b0b0c;
+  font-size: 0.78rem;
+  line-height: 1.28;
 }
 
 .repo-proof-attach-status {
@@ -4156,6 +4194,24 @@ body[data-active-tab="start"] .repo-proof-check.attached {
   background: rgba(183, 121, 31, 0.13);
 }
 
+body:not([data-active-tab]) .repo-proof-resolution-card[data-rerun-complete="true"],
+body[data-active-tab="start"] .repo-proof-resolution-card[data-rerun-complete="true"],
+body:not([data-active-tab]) .repo-review-delta div,
+body[data-active-tab="start"] .repo-review-delta div {
+  border-color: rgba(21, 128, 61, 0.5);
+  background: rgba(21, 128, 61, 0.13);
+}
+
+body:not([data-active-tab]) .repo-review-delta span,
+body[data-active-tab="start"] .repo-review-delta span {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+body:not([data-active-tab]) .repo-review-delta strong,
+body[data-active-tab="start"] .repo-review-delta strong {
+  color: #ffffff;
+}
+
 body:not([data-active-tab]) .repo-outcome.approved,
 body[data-active-tab="start"] .repo-outcome.approved,
 body:not([data-active-tab]) .repo-movement-lane.allowed,
@@ -4465,6 +4521,7 @@ body[data-active-tab="start"] .repo-proof-details summary {
   .repo-field-grid,
   .repo-movement-grid,
   .repo-proof-checklist,
+  .repo-review-delta,
   .repo-outcome-grid {
     grid-template-columns: 1fr;
   }

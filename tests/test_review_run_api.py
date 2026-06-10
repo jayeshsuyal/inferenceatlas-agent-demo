@@ -16,6 +16,7 @@ from web.app import (
     ReviewRunCreateRequest,
     ReviewRunPacketRequest,
     ReviewRunProofAttachRequest,
+    ReviewRunRerunRequest,
     _review_runs,
     attach_review_run_proof_api,
     app,
@@ -24,6 +25,7 @@ from web.app import (
     github_attach_repo,
     github_list_repos,
     get_review_run,
+    rerun_review_run_packet_api,
 )
 
 
@@ -233,6 +235,135 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(rerun_without_rerun_api.exception.status_code, 400)
                 self.assertIn("packet generation requires repo_selected", rerun_without_rerun_api.exception.detail)
 
+    def test_review_run_rerun_api_creates_updated_packet_delta(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                generated = generate_review_run_packet_api(
+                    created["run"]["run_id"],
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+
+                with self.assertRaises(HTTPException) as before_proof:
+                    rerun_review_run_packet_api(
+                        generated["run"]["run_id"],
+                        ReviewRunRerunRequest(
+                            access_request="support-triage-bot needs to read issues, comment, and create labels."
+                        ),
+                    )
+                self.assertEqual(before_proof.exception.status_code, 400)
+                self.assertIn("rerun requires proof_attached", before_proof.exception.detail)
+
+                proofed = attach_review_run_proof_api(
+                    generated["run"]["run_id"],
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                            {"id": "environment_boundary", "label": "Environment boundary"},
+                        ]
+                    ),
+                )
+
+                with self.assertRaises(HTTPException) as changed_request:
+                    rerun_review_run_packet_api(
+                        generated["run"]["run_id"],
+                        ReviewRunRerunRequest(access_request="support-triage-bot now wants repo admin"),
+                    )
+                self.assertEqual(changed_request.exception.status_code, 400)
+                self.assertIn("raw agent request cannot change before rerun", changed_request.exception.detail)
+
+                rerun = rerun_review_run_packet_api(
+                    generated["run"]["run_id"],
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+
+                self.assertIs(rerun["ok"], True)
+                self.assertIs(rerun["read_only"], True)
+                updated_run = rerun["run"]
+                packet = rerun["packet"]
+                delta = rerun["review_delta"]
+                self.assertEqual(updated_run["stage"], "ready_to_export")
+                self.assertEqual(updated_run["packet"]["previous_revision_id"], proofed["run"]["packet"]["revision_id"])
+                self.assertNotEqual(updated_run["packet"]["revision_id"], proofed["run"]["packet"]["revision_id"])
+                self.assertEqual(updated_run["packet"]["revision_number"], 2)
+                self.assertEqual(updated_run["packet"]["verdict"], "ready_with_gates")
+                self.assertFalse(updated_run["packet"]["ready_for_rerun"])
+                self.assertEqual(packet["decision"]["verdict_class"], "ready_with_gates")
+                self.assertFalse(packet["decision"]["requires_human_review"])
+                self.assertEqual(packet["compact_output"]["allowed"], ["read issues", "comment", "create labels in selected repo"])
+                self.assertEqual(packet["compact_output"]["blocked"], ["repo admin", "org-wide write", "secrets"])
+                self.assertTrue(packet["review_delta"]["same_request"])
+                self.assertTrue(packet["review_delta"]["packet_changed"])
+                self.assertEqual(delta["packet_revision_before"], proofed["run"]["packet"]["revision_id"])
+                self.assertEqual(delta["packet_revision_after"], updated_run["packet"]["revision_id"])
+                self.assertEqual(delta["portkey_before"], "Block")
+                self.assertEqual(delta["portkey_after"], "Allow with policy")
+                self.assertEqual(delta["still_blocked"], ["repo admin", "org-wide write", "secrets"])
+                self.assertEqual(rerun["portkey"]["state"], "Allow with policy")
+                self.assertTrue(rerun["portkey"]["portkey_guardrail_response"]["verdict"])
+                self.assertFalse(rerun["portkey"]["api_call_made"])
+                self.assertFalse(rerun["portkey"]["policy_mutation_allowed"])
+
+                with self.assertRaises(HTTPException) as repeated:
+                    rerun_review_run_packet_api(
+                        generated["run"]["run_id"],
+                        ReviewRunRerunRequest(
+                            access_request="support-triage-bot needs to read issues, comment, and create labels."
+                        ),
+                    )
+                self.assertEqual(repeated.exception.status_code, 400)
+                self.assertIn("rerun requires proof_attached", repeated.exception.detail)
+
+    def test_review_run_rerun_api_rejects_partial_proof(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                generated = generate_review_run_packet_api(
+                    created["run"]["run_id"],
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                attach_review_run_proof_api(
+                    generated["run"]["run_id"],
+                    ReviewRunProofAttachRequest(
+                        proof_items=[{"id": "repo_owner_approval", "label": "Repo owner approval"}]
+                    ),
+                )
+
+                with self.assertRaises(HTTPException) as partial:
+                    rerun_review_run_packet_api(
+                        generated["run"]["run_id"],
+                        ReviewRunRerunRequest(
+                            access_request="support-triage-bot needs to read issues, comment, and create labels."
+                        ),
+                    )
+                self.assertEqual(partial.exception.status_code, 400)
+                self.assertIn("rerun requires all missing proof", partial.exception.detail)
+
     def test_review_run_api_rejects_request_without_repo(self) -> None:
         with self.assertRaises(HTTPException) as exc:
             create_review_run_api(ReviewRunCreateRequest(access_request="read issues"))
@@ -257,11 +388,13 @@ class ReviewRunApiTests(TestCase):
         get_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}")
         packet_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/packet")
         proof_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proof")
+        rerun_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/rerun")
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
         self.assertEqual(packet_route.methods, {"POST"})
         self.assertEqual(proof_route.methods, {"POST"})
+        self.assertEqual(rerun_route.methods, {"POST"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

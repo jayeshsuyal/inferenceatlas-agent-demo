@@ -50,6 +50,13 @@ from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loo
 from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO
 from agent.proof_graph_visual import build_proof_graph_visual
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
+from agent.review_run import (
+    DEFAULT_REVIEW_RUN_STORE_DIR,
+    create_review_run,
+    load_review_run_record,
+    review_run_record_summary,
+    write_review_run_record,
+)
 from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
 from agent.subscribers import (
     PACKET_AUTHORITY_SHORT_SENTENCE,
@@ -163,8 +170,11 @@ app = FastAPI(title="InferenceAtlas Agent", version="1.0.0")
 
 _sessions: Dict[str, object] = {}
 _lock = threading.Lock()
+_review_runs: Dict[str, dict] = {}
+_review_runs_lock = threading.Lock()
 _sponsor_proof_runs: Dict[str, dict] = {}
 _sponsor_proof_runs_lock = threading.Lock()
+REVIEW_RUN_STORE_DIR = Path(os.environ.get("IA_REVIEW_RUN_STORE_DIR", DEFAULT_REVIEW_RUN_STORE_DIR)).expanduser()
 SPONSOR_PROOF_RUN_LEDGER_DIR = Path(
     os.environ.get("IA_SPONSOR_PROOF_RUN_LEDGER_DIR", DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR)
 ).expanduser()
@@ -314,6 +324,13 @@ class SponsorProofRunRequest(BaseModel):
     live_tavily: bool = False
     live_nebius: bool = False
     composio_dry_run: bool = False
+
+
+class ReviewRunCreateRequest(BaseModel):
+    session_id: Optional[str] = Field(default=None, max_length=160)
+    selected_repo: Optional[Dict[str, Any]] = None
+    repo_index_summary: Dict[str, Any] = Field(default_factory=dict)
+    access_request: str = Field(default="", max_length=10000)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -687,6 +704,69 @@ def sponsor_readiness_matrix(
         },
         "matrix": report["readiness_matrix"],
         "private_boundary": report["private_boundary"],
+    }
+
+
+@app.post("/api/review-runs")
+def create_review_run_api(body: ReviewRunCreateRequest) -> dict:
+    """Create one local ReviewRun with non-approving safety defaults."""
+    try:
+        run = create_review_run(
+            session_id=body.session_id,
+            selected_repo=body.selected_repo,
+            repo_index_summary=body.repo_index_summary,
+            access_request=body.access_request,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    record = write_review_run_record(run, store_dir=REVIEW_RUN_STORE_DIR)
+    run_payload = record["run"]
+
+    with _review_runs_lock:
+        _review_runs[run.run_id] = run_payload
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run_payload,
+        "record": review_run_record_summary(record),
+    }
+
+
+@app.get("/api/review-runs/{run_id}")
+def get_review_run(run_id: str) -> dict:
+    """Return a previously created local ReviewRun."""
+    with _review_runs_lock:
+        run = _review_runs.get(run_id)
+    try:
+        record = load_review_run_record(run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if run is None:
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown review run")
+        run = record["run"]
+    if record is None:
+        record = {
+            "schema_version": "review_run_record.v0",
+            "run_id": run_id,
+            "record_path": "",
+            "generated_at": run["updated_at"],
+            "mode": "local_durable_read_model",
+            "read_only": True,
+            "run": run,
+            "safety_invariants": run["safety_invariants"],
+            "private_boundary": {
+                "private_source_exposed": False,
+                "principle": "Private engine, public proof.",
+            },
+        }
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run,
+        "record": review_run_record_summary(record),
     }
 
 

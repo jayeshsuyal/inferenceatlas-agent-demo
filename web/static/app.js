@@ -108,6 +108,17 @@ const drivePickerTabs = document.getElementById("drive-picker-tabs");
 const repoProofCockpit = document.getElementById("repo-proof-cockpit");
 const btnRunRepoProof = document.getElementById("btn-run-repo-proof");
 const btnExportRepoBrief = document.getElementById("btn-export-repo-brief");
+const btnRootConnectGithub = document.getElementById("btn-root-connect-github");
+const btnRootDemoGithub = document.getElementById("btn-root-demo-github");
+const repoConnectStatus = document.getElementById("repo-connect-status");
+const repoInlinePicker = document.getElementById("repo-inline-picker");
+const repoInlineSearch = document.getElementById("repo-inline-search");
+const repoInlineList = document.getElementById("repo-inline-list");
+const repoIndexSummary = document.getElementById("repo-index-summary");
+const repoSelectedName = document.getElementById("repo-selected-name");
+const repoIndexedState = document.getElementById("repo-indexed-state");
+const repoReviewRunId = document.getElementById("repo-review-run-id");
+const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -177,11 +188,13 @@ let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
 let walkthroughActiveIndex = 0;
 let runtimeHealth = null;
+let currentReviewRun = null;
 /** @type {Array<{id:string, name:string, slash:string, slash_trigger:string, what_it_proves:string}>} */
 let selectedSkills = [];
 /** @type {Array<{full_name:string, preview?:string, indexing?:boolean}>} */
 let selectedGithubRepos = [];
 let githubSearchTimer = null;
+let rootRepoSearchTimer = null;
 /** @type {Array<{file_id:string, name:string, mimeType?:string, media_kind?:string, indexing?:boolean, digest_chars?:number, index_label?:string}>} */
 let selectedDriveFiles = [];
 let driveSearchTimer = null;
@@ -789,6 +802,243 @@ function isGithubSignedIn() {
 function updateGithubToolbar() {
   if (!btnGithub) return;
   btnGithub.hidden = !isGithubSignedIn();
+  updateReviewRepoConnectUi();
+}
+
+function selectedReviewRepo() {
+  return selectedGithubRepos.find((repo) => !repo.indexing && repo.digest_chars) || null;
+}
+
+function isReviewRepoReady() {
+  const repo = selectedReviewRepo();
+  return Boolean(
+    repo &&
+      currentReviewRun &&
+      currentReviewRun.stage === "repo_selected" &&
+      currentReviewRun.selected_repo?.full_name === repo.full_name
+  );
+}
+
+function setRepoConnectStatus(message, error = false) {
+  if (!repoConnectStatus) return;
+  repoConnectStatus.textContent = message;
+  repoConnectStatus.classList.toggle("error", error);
+}
+
+function updateReviewCtaState() {
+  if (!btnRunRepoProof) return;
+  const loading = btnRunRepoProof.dataset.loading === "true";
+  btnRunRepoProof.disabled = loading || !isReviewRepoReady();
+  btnRunRepoProof.textContent = loading ? "Reviewing access..." : "Review access";
+  if (repoCockpitStatus && !loading && repoProofCockpit?.dataset.loaded !== "true") {
+    repoCockpitStatus.classList.remove("error");
+    repoCockpitStatus.textContent = isReviewRepoReady()
+      ? "Repo connected and indexed. Ready to generate the packet."
+      : "Connect and index one repo before generating a packet.";
+  }
+}
+
+function updateReviewRepoConnectUi() {
+  const signedIn = isGithubSignedIn();
+  if (btnRootConnectGithub) {
+    btnRootConnectGithub.textContent = signedIn ? "Choose repo" : "Connect GitHub";
+  }
+  if (btnRootDemoGithub) {
+    btnRootDemoGithub.hidden = false;
+  }
+  updateReviewCtaState();
+}
+
+function renderReviewRepoSummary(repo = null) {
+  if (!repoIndexSummary) return;
+  const selected = repo || selectedReviewRepo();
+  repoIndexSummary.hidden = !selected;
+  if (!selected) {
+    if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
+    return;
+  }
+  if (repoSelectedName) {
+    repoSelectedName.textContent = selected.full_name;
+  }
+  if (repoRequestRepoName) {
+    repoRequestRepoName.textContent = selected.full_name;
+  }
+  if (repoIndexedState) {
+    if (selected.indexing) {
+      repoIndexedState.textContent = "Indexing...";
+    } else {
+      const files = selected.files_included ?? 0;
+      const chars = selected.digest_chars ? selected.digest_chars.toLocaleString() : "0";
+      repoIndexedState.textContent = `Indexed · ${chars} chars · ${files} files`;
+    }
+  }
+  if (repoReviewRunId) {
+    repoReviewRunId.textContent = currentReviewRun?.run_id || "Creating...";
+  }
+  updateReviewCtaState();
+}
+
+function closeReviewRepoPicker() {
+  if (repoInlinePicker) repoInlinePicker.hidden = true;
+}
+
+function renderReviewRepoList(repos, demo = false) {
+  if (!repoInlineList) return;
+  repoInlineList.innerHTML = "";
+  if (!repos.length) {
+    repoInlineList.innerHTML = '<p class="github-repo-empty">No repositories match your search.</p>';
+    return;
+  }
+  if (demo) {
+    const note = document.createElement("p");
+    note.className = "github-repo-demo-note";
+    note.textContent = "Demo list. Select one repo; IA indexes only that repo for this ReviewRun.";
+    repoInlineList.appendChild(note);
+  }
+  repos.forEach((repo) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `repo-inline-item${repo.indexed ? " indexed" : ""}`;
+    btn.role = "option";
+    btn.innerHTML = `
+      <span class="github-repo-item-name">${escapeHtml(repo.full_name)}</span>
+      <span class="github-repo-item-meta">${escapeHtml(repo.description || "")}${repo.private ? " · private" : ""}${repo.indexed ? " · indexed" : ""}</span>
+    `;
+    btn.addEventListener("click", () => attachReviewRepo(repo));
+    repoInlineList.appendChild(btn);
+  });
+}
+
+async function loadReviewRepoList(query = "") {
+  if (!repoInlineList || !repoInlinePicker) return;
+  if (!isGithubSignedIn()) {
+    setRepoConnectStatus("Connect GitHub or use the demo repo before choosing a repository.");
+    return;
+  }
+  repoInlinePicker.hidden = false;
+  repoInlineList.innerHTML = '<p class="github-repo-empty">Loading repositories...</p>';
+  try {
+    const res = await fetch(
+      `/api/connectors/github/repos?session_id=${encodeURIComponent(sessionId)}&q=${encodeURIComponent(query)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error(data.message || data.detail || "Failed to load repos");
+    renderReviewRepoList(data.repos || [], Boolean(data.demo));
+    setRepoConnectStatus(
+      data.demo
+        ? "Demo GitHub connected. Choose one repo to index."
+        : "GitHub connected. Choose one repo to index."
+    );
+  } catch (err) {
+    repoInlineList.innerHTML = `<p class="github-repo-empty">${escapeHtml(String(err.message || err))}</p>`;
+    setRepoConnectStatus(String(err.message || err), true);
+  }
+}
+
+async function createReviewRunForIndexedRepo(repo) {
+  const res = await fetch("/api/review-runs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: sessionId,
+      selected_repo: {
+        provider: "github",
+        full_name: repo.full_name,
+        source: repo.demo ? "demo_repo" : "github_connector",
+      },
+      repo_index_summary: {
+        status: repo.digest_chars ? "indexed" : "ready",
+        indexed_repo_count: 1,
+        digest_chars: repo.digest_chars || 0,
+        readme_found: Boolean(repo.readme_found),
+        files_included: repo.files_included || 0,
+        paths_in_tree: repo.paths_in_tree || 0,
+        sample_paths: repo.sample_paths || [],
+        index_label: repo.index_label || `Indexed ${repo.full_name}`,
+      },
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
+  currentReviewRun = data.run;
+  return currentReviewRun;
+}
+
+async function attachReviewRepo(repo) {
+  const fullName = repo.full_name;
+  currentReviewRun = null;
+  selectedGithubRepos = [{ full_name: fullName, indexing: true, demo: Boolean(repo.demo) }];
+  renderGithubChips();
+  renderReviewRepoSummary(selectedGithubRepos[0]);
+  closeReviewRepoPicker();
+  setRepoConnectStatus(`Indexing ${fullName}...`);
+  try {
+    const res = await fetch("/api/connectors/github/attach", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, full_name: fullName }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.message || data.detail || "Attach failed");
+    const indexedRepo = {
+      full_name: fullName,
+      preview: data.preview,
+      indexing: false,
+      demo: Boolean(repo.demo),
+      digest_chars: data.digest_chars,
+      readme_found: data.readme_found,
+      files_included: data.files_included,
+      paths_in_tree: data.paths_in_tree,
+      sample_paths: data.sample_paths || [],
+      index_label: data.message || `Indexed ${fullName}`,
+    };
+    selectedGithubRepos = [indexedRepo];
+    if (data.file_id && !chatAttachmentIds.includes(data.file_id)) {
+      chatAttachmentIds.push(data.file_id);
+    }
+    await createReviewRunForIndexedRepo(indexedRepo);
+    renderGithubChips();
+    renderReviewRepoSummary(indexedRepo);
+    setRepoConnectStatus(`Repo connected and indexed: ${fullName}. ReviewRun is ready.`);
+    showConnectorToast("GitHub", data.message || `Indexed ${fullName}`, 9000);
+  } catch (err) {
+    selectedGithubRepos = [];
+    currentReviewRun = null;
+    renderGithubChips();
+    renderReviewRepoSummary(null);
+    setRepoConnectStatus(String(err.message || err), true);
+  } finally {
+    updateReviewCtaState();
+  }
+}
+
+async function beginRootGithubConnect() {
+  if (isGithubSignedIn()) {
+    await loadReviewRepoList("");
+    return;
+  }
+  setRepoConnectStatus("Opening GitHub sign-in. Use demo repo if OAuth is not configured.");
+  await connectConnector("github");
+}
+
+async function useDemoGithubForReview() {
+  setRepoConnectStatus("Starting demo GitHub session...");
+  try {
+    const body = new URLSearchParams({ demo: "1" });
+    const res = await fetch(
+      `/api/connectors/oauth/popup/github?session_id=${encodeURIComponent(sessionId)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      }
+    );
+    if (!res.ok) throw new Error(`Demo sign-in failed (${res.status})`);
+    await refreshConnectors();
+    await loadReviewRepoList("");
+  } catch (err) {
+    setRepoConnectStatus(String(err.message || err), true);
+  }
 }
 
 function isDriveSignedIn() {
@@ -1161,10 +1411,32 @@ if (githubRepoSearch) {
   });
 }
 
+if (btnRootConnectGithub) {
+  btnRootConnectGithub.addEventListener("click", () => beginRootGithubConnect());
+}
+
+if (btnRootDemoGithub) {
+  btnRootDemoGithub.addEventListener("click", () => useDemoGithubForReview());
+}
+
+if (repoInlineSearch) {
+  repoInlineSearch.addEventListener("input", () => {
+    clearTimeout(rootRepoSearchTimer);
+    rootRepoSearchTimer = setTimeout(() => loadReviewRepoList(repoInlineSearch.value.trim()), 280);
+  });
+}
+
 document.addEventListener("click", (e) => {
   if (githubPicker && !githubPicker.hidden) {
     if (!githubPicker.contains(e.target) && e.target !== btnGithub) {
       closeGithubPicker();
+    }
+  }
+  if (repoInlinePicker && !repoInlinePicker.hidden) {
+    const clickedRootConnect =
+      e.target === btnRootConnectGithub || e.target === btnRootDemoGithub;
+    if (!repoInlinePicker.contains(e.target) && !clickedRootConnect) {
+      closeReviewRepoPicker();
     }
   }
   if (drivePicker && !drivePicker.hidden) {
@@ -1404,6 +1676,9 @@ window.addEventListener("message", (event) => {
       event.data.message ||
       (event.data.ok ? "Signed in successfully." : "Sign-in failed — see popup for details.");
     showConnectorToast(event.data.connector_id || "Connector", msg, event.data.ok ? 6000 : 14000);
+    if (event.data.ok && event.data.connector_id === "github") {
+      loadReviewRepoList("");
+    }
   }
 });
 
@@ -2368,14 +2643,19 @@ function compactList(items = [], limit = 3) {
 
 function setRepoCockpitBusy(loading) {
   if (btnRunRepoProof) {
-    btnRunRepoProof.disabled = loading;
+    btnRunRepoProof.dataset.loading = String(loading);
+    btnRunRepoProof.disabled = loading || !isReviewRepoReady();
     btnRunRepoProof.textContent = loading ? "Reviewing access..." : "Review access";
   }
   if (repoCockpitStatus) {
     repoCockpitStatus.classList.remove("error");
-    repoCockpitStatus.textContent = loading
-      ? "Collecting proof and building the IA Packet..."
-      : "No approval, no writes, no downstream mutation.";
+    if (loading) {
+      repoCockpitStatus.textContent = "Collecting proof and building the IA Packet...";
+    } else if (repoProofCockpit?.dataset.loaded !== "true") {
+      repoCockpitStatus.textContent = isReviewRepoReady()
+        ? "Repo connected and indexed. Ready to generate the packet."
+        : "Connect and index one repo before generating a packet.";
+    }
   }
 }
 
@@ -2424,7 +2704,9 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   }
   if (repoCockpitStatus) {
     repoCockpitStatus.classList.remove("error");
-    repoCockpitStatus.textContent = "Packet ready. Decision lock unchanged; downstream writes remain false.";
+    const repoName = currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo";
+    repoCockpitStatus.textContent =
+      `Packet ready for ${repoName}. Decision lock unchanged; downstream writes remain false.`;
   }
   if (btnExportRepoBrief) {
     btnExportRepoBrief.disabled = !packet.copy_review_brief;
@@ -2434,6 +2716,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoNextActionCard.innerHTML = `
       <span class="repo-card-label">Next human action</span>
       <h3>${escapeHtml(decision.next_human_action || "Human review required before access moves.")}</h3>
+      <p>ReviewRun ${escapeHtml(currentReviewRun?.run_id || "local")} is tied to ${escapeHtml(currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo")}.</p>
       <div class="repo-outcome-grid">
         <div class="repo-outcome ${decision.production_access ? "approved" : "blocked"}">
           <span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong>
@@ -2492,6 +2775,13 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
 }
 
 async function runRepoProofCockpit() {
+  if (!isReviewRepoReady()) {
+    if (repoCockpitStatus) {
+      repoCockpitStatus.textContent = "Connect and index one GitHub repo before generating a packet.";
+      repoCockpitStatus.classList.add("error");
+    }
+    return;
+  }
   setRepoCockpitBusy(true);
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
@@ -2517,6 +2807,7 @@ async function runRepoProofCockpit() {
     }
   } finally {
     setRepoCockpitBusy(false);
+    updateReviewCtaState();
   }
 }
 

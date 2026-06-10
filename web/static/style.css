@@ -3400,6 +3400,116 @@ body[data-active-tab="start"] .messages {
   background: #ffffff;
 }
 
+.repo-connect-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.05);
+}
+
+.repo-connect-copy h3 {
+  margin: 0.25rem 0 0.32rem;
+  color: #0b0b0c;
+  font-size: 1rem;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+
+.repo-connect-copy p {
+  margin: 0;
+  color: #62646b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.repo-connect-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.repo-connect-actions .btn-primary,
+.repo-connect-actions .btn-ghost {
+  min-height: 2.55rem;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.repo-inline-picker {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #dedede;
+}
+
+.repo-inline-picker[hidden] {
+  display: none;
+}
+
+.repo-inline-list {
+  display: grid;
+  gap: 0.45rem;
+  max-height: 15.5rem;
+  overflow: auto;
+}
+
+.repo-inline-item {
+  display: grid;
+  gap: 0.18rem;
+  width: 100%;
+  min-height: 3.4rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f7f7f5;
+  color: #0b0b0c;
+  text-align: left;
+}
+
+.repo-inline-item:hover,
+.repo-inline-item.indexed {
+  border-color: #0b0b0c;
+  background: #ffffff;
+}
+
+.repo-index-summary {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.repo-index-summary[hidden] {
+  display: none;
+}
+
+.repo-index-summary div {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f7f7f5;
+}
+
+.repo-index-summary strong {
+  display: block;
+  margin-top: 0.28rem;
+  color: #0b0b0c;
+  font-size: 0.82rem;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
 .repo-review-request {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(10rem, 12rem);
@@ -3417,6 +3527,8 @@ body[data-active-tab="start"] .messages {
 }
 
 .repo-proof-cockpit[data-loaded="true"] .review-lane-grid,
+.repo-proof-cockpit[data-loaded="true"] .repo-connect-panel,
+.repo-proof-cockpit[data-loaded="true"] .repo-index-summary,
 .repo-proof-cockpit[data-loaded="true"] .repo-review-request {
   display: none;
 }
@@ -3563,6 +3675,11 @@ body[data-active-tab="start"] .messages {
 
 .repo-primary-action {
   width: 100%;
+}
+
+.repo-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .repo-proof-details {
@@ -4147,10 +4264,16 @@ body[data-active-tab="start"] .repo-proof-details summary {
 
   .review-lane-grid,
   .repo-review-request,
+  .repo-connect-panel,
+  .repo-index-summary,
   .repo-result-header,
   .repo-proof-grid,
   .repo-field-grid,
   .repo-outcome-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .repo-connect-actions {
     grid-template-columns: 1fr;
   }
 

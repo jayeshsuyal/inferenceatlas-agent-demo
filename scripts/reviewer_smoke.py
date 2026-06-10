@@ -84,6 +84,21 @@ def _json_post(base_url: str, path: str, payload: dict[str, Any], *, timeout: fl
         raise SmokeFailure(f"POST {path} did not return JSON") from exc
 
 
+def _form_post(base_url: str, path: str, payload: dict[str, str], *, timeout: float) -> str:
+    body = urllib.parse.urlencode(payload).encode("utf-8")
+    request = urllib.request.Request(
+        _url(base_url, path),
+        data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return response.read().decode("utf-8")
+    except urllib.error.URLError as exc:
+        raise SmokeFailure(f"POST {path} failed: {exc}") from exc
+
+
 def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> None:
     for key in keys:
         _require(mapping.get(key) is False, f"{prefix}.{key} must stay false")
@@ -99,10 +114,18 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "What should IA review?",
         "Generate the proof packet downstream systems trust before an AI agent moves.",
         "Connect repo",
+        "Connect GitHub",
+        "Use demo repo",
+        "IA indexes only the repo you select.",
+        "Repo connected",
+        "Indexed",
+        "ReviewRun",
+        "Choose one GitHub repository",
+        "Connect and index one repo before generating a packet.",
         "Review AI spend",
         "Review tool access",
         "support-triage-bot wants repo access",
-        "demo-support-incidents",
+        "Choose a GitHub repo first.",
         "support-triage-bot",
         "Review access",
         "Next human action",
@@ -124,6 +147,15 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("Open one registered AI movement request. IA shows the packet" not in html, "old first-run body returned")
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require('const REPO_PROOF_FIXTURE = "support_triage_agent";' in js, "repo proof fixture is not locked")
+    _require("loadReviewRepoList" in js, "root GitHub repo list loader missing")
+    _require("attachReviewRepo" in js, "root GitHub repo attach handler missing")
+    _require("createReviewRunForIndexedRepo" in js, "ReviewRun creation from selected repo missing")
+    _require('fetch("/api/review-runs"' in js, "root flow must create ReviewRun from selected repo")
+    _require("currentReviewRun.stage === \"repo_selected\"" in js, "repo review must wait for repo_selected ReviewRun")
+    _require(
+        "Connect and index one GitHub repo before generating a packet." in js,
+        "repo proof runner must fail closed before indexing",
+    )
     _require("runRepoProofCockpit" in js, "repo proof cockpit runner missing")
     _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
     _require("fetchRepoSponsorTrace" in js, "repo sponsor trace fetch helper missing")
@@ -146,6 +178,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-proof-cockpit" in css, "repo proof cockpit CSS missing")
     _require(".review-lane-grid" in css, "review lane selector CSS missing")
     _require(".review-lane-card.selected" in css, "selected lane CSS missing")
+    _require(".repo-connect-panel" in css, "root repo connect panel CSS missing")
+    _require(".repo-inline-picker" in css, "root repo picker CSS missing")
+    _require(".repo-index-summary" in css, "repo index summary CSS missing")
+    _require(".repo-primary-action:disabled" in css, "repo review CTA disabled state missing")
     _require(".repo-review-request" in css, "repo review request CSS missing")
     _require(".repo-proof-result[hidden]" in css, "repo proof result hidden state CSS missing")
     _require(".repo-proof-grid" in css, "repo proof grid CSS missing")
@@ -399,9 +435,96 @@ def _check_skills_connectors_metrics(base_url: str, timeout: float, session_id: 
         _require(key in metrics["billable"], f"session metrics missing {key}")
 
 
+def _check_review_run_github_connect(base_url: str, timeout: float, session_id: str) -> None:
+    review_session = session_id + "-reviewrun"
+    popup_html = _form_post(
+        base_url,
+        "/api/connectors/oauth/popup/github?session_id=" + urllib.parse.quote(review_session),
+        {"demo": "1"},
+        timeout=timeout,
+    )
+    _require("connector-oauth" in popup_html, "demo GitHub sign-in popup did not complete")
+
+    status = _json_get(
+        base_url,
+        "/api/connectors/status?session_id="
+        + urllib.parse.quote(review_session)
+        + "&connector_id=github",
+        timeout=timeout,
+    )
+    connection = status["connection"]
+    _require(connection["status"] == "connected", "demo GitHub session did not connect")
+    _require("access_token" not in connection, "public connector status leaked access token")
+
+    repos = _json_get(
+        base_url,
+        "/api/connectors/github/repos?session_id="
+        + urllib.parse.quote(review_session)
+        + "&q=triage",
+        timeout=timeout,
+    )
+    _require(repos["ok"] is True, "GitHub repo list failed after demo sign-in")
+    _require(repos["demo"] is True, "demo GitHub session should return demo repo list")
+    _require(len(repos["repos"]) >= 1, "demo GitHub repo list empty")
+    full_name = repos["repos"][0]["full_name"]
+
+    attached = _json_post(
+        base_url,
+        "/api/connectors/github/attach",
+        {"session_id": review_session, "full_name": full_name},
+        timeout=timeout,
+    )
+    _require(attached["ok"] is True, "selected GitHub repo did not attach")
+    _require(attached["digest_chars"] > 100, "selected GitHub repo did not index enough context")
+
+    created = _json_post(
+        base_url,
+        "/api/review-runs",
+        {
+            "session_id": review_session,
+            "selected_repo": {
+                "provider": "github",
+                "full_name": full_name,
+                "source": "demo_repo",
+            },
+            "repo_index_summary": {
+                "status": "indexed",
+                "indexed_repo_count": 1,
+                "digest_chars": attached["digest_chars"],
+                "readme_found": attached["readme_found"],
+                "files_included": attached["files_included"],
+                "paths_in_tree": attached["paths_in_tree"],
+                "sample_paths": attached["sample_paths"],
+            },
+        },
+        timeout=timeout,
+    )
+    _require(created["ok"] is True, "ReviewRun create failed for selected repo")
+    _require(created["read_only"] is True, "ReviewRun create must be read-only")
+    run = created["run"]
+    _require(run["stage"] == "repo_selected", "ReviewRun must stop at repo_selected before request entry")
+    _require(run["selected_repo"]["full_name"] == full_name, "ReviewRun selected repo drifted")
+    _require(run["repo_index_summary"]["indexed_repo_count"] == 1, "ReviewRun must index exactly one repo")
+    _require(run["access_request"] == {}, "ReviewRun PR126 must not pre-generate access request")
+    _expect_false(
+        run["safety_invariants"],
+        ["approval_granted", "spend_approved", "permissions_granted", "external_writes_enabled"],
+        prefix="review_run.safety_invariants",
+    )
+
+    fetched = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]),
+        timeout=timeout,
+    )
+    _require(fetched["run"]["run_id"] == run["run_id"], "ReviewRun did not reload by run_id")
+    _require(fetched["record"]["stage"] == "repo_selected", "ReviewRun record stage drifted")
+
+
 def run_smoke(base_url: str, *, timeout: float, session_id: str) -> list[str]:
     steps: list[tuple[str, Any]] = [
         ("first-run surface", lambda: _check_first_run(base_url, timeout)),
+        ("GitHub repo select ReviewRun", lambda: _check_review_run_github_connect(base_url, timeout, session_id)),
         ("IA Packet fixtures", lambda: [_check_packet(base_url, fixture, timeout) for fixture in PACKET_FIXTURES]),
         ("Workbench", lambda: _check_workbench(base_url, timeout)),
         ("Walkthrough", lambda: _check_walkthrough(base_url, timeout)),

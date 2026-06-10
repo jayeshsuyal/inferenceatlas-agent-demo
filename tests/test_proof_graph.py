@@ -16,6 +16,7 @@ from agent.proof_graph import (
     build_proof_graph_for_scenario,
 )
 from agent.scenarios import SCENARIOS
+from agent.tavily_live_evidence import TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION
 from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 
@@ -106,6 +107,13 @@ def test_proof_graph_schema_file_locks_contract() -> None:
     assert schema["$defs"]["proof_node"]["properties"]["external_write_made"]["const"] is False
     assert schema["$defs"]["proof_node"]["properties"]["can_change_packet_verdict"]["const"] is False
     assert schema["$defs"]["proof_node"]["properties"]["human_review_required"]["const"] is True
+    assert schema["properties"]["tavily_evidence"]["$ref"] == "#/$defs/tavily_evidence"
+    assert schema["$defs"]["tavily_evidence"]["properties"]["schema_version"]["const"] == (
+        TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION
+    )
+    assert schema["$defs"]["tavily_evidence"]["properties"]["live_call_attempted"]["const"] is False
+    assert schema["$defs"]["tavily_evidence"]["properties"]["can_reduce_proof_debt"]["const"] is False
+    assert schema["$defs"]["tavily_evidence"]["properties"]["cannot_grant_access"]["const"] is True
     assert schema["properties"]["composio_blast_radius"]["$ref"] == (
         "#/$defs/composio_blast_radius"
     )
@@ -139,8 +147,107 @@ def test_packet_only_proof_graph_is_deterministic_and_packet_backed() -> None:
     _assert_graph_boundary(first)
     assert first["scenario_name"] == "support_triage_agent"
     assert first["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert "tavily_evidence" not in first
     assert "composio_blast_radius" not in first
     assert "openclaw_runtime_trace" not in first
+
+
+def test_tavily_evidence_graph_layer_is_opt_in_and_non_mutating() -> None:
+    graph = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_tavily_evidence=True,
+    )
+
+    assert graph["scenario_name"] == "support_triage_agent"
+    assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["invariants"] == {
+        "packet_remains_authority": True,
+        "graph_can_approve": False,
+        "graph_can_mutate_packet": False,
+        "graph_can_execute_external_write": False,
+        "graph_can_change_verdict": False,
+        "all_nodes_require_human_review": True,
+        "all_nodes_non_mutating": True,
+        "all_edges_non_mutating": True,
+    }
+
+    evidence_summary = graph["tavily_evidence"]
+    assert evidence_summary["schema_version"] == TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION
+    assert evidence_summary["provider"] == "tavily"
+    assert evidence_summary["mode"] == "deterministic_fallback"
+    assert evidence_summary["status"] == "evidence_candidates_planned"
+    assert evidence_summary["live_requested"] is False
+    assert evidence_summary["live_call_attempted"] is False
+    assert evidence_summary["live_call_count"] == 0
+    assert evidence_summary["used_live_key"] is False
+    assert evidence_summary["fallback_used"] is True
+    assert evidence_summary["fallback_reason"] == "live_tavily_not_requested"
+    assert evidence_summary["query_count"] == 5
+    assert evidence_summary["query_variant_count"] == 10
+    assert evidence_summary["total_planned_searches"] == 10
+    assert evidence_summary["source_url_count"] == 0
+    assert evidence_summary["unique_source_url_count"] == 0
+    assert evidence_summary["source_domain_count"] == 0
+    assert evidence_summary["domain_diversity_score"] == 0
+    assert evidence_summary["freshness_labels"] == ["not_fetched_in_offline_mode"]
+    assert evidence_summary["can_reduce_proof_debt"] is False
+    assert evidence_summary["cannot_grant_access"] is True
+    assert evidence_summary["human_review_required"] is True
+    assert evidence_summary["safety_impact"] == "none"
+
+    tavily_nodes = [node for node in graph["proof_nodes"] if node["provider"] == "tavily"]
+    assert len(tavily_nodes) == (
+        evidence_summary["query_count"]
+        + evidence_summary["query_variant_count"]
+        + evidence_summary["query_count"]
+    )
+    assert graph["node_counts"] == {
+        "packet": 1,
+        "proof": len(PACKET_ONLY_PROOF_FIELDS) + len(tavily_nodes),
+        "edge": len(graph["proof_edges"]),
+    }
+
+    candidate_nodes = [
+        node for node in tavily_nodes if node["node_id"].startswith("proof:tavily:evidence_candidate:")
+    ]
+    query_nodes = [
+        node for node in tavily_nodes if node["node_id"].startswith("proof:tavily:query_variant:")
+    ]
+    quality_nodes = [
+        node for node in tavily_nodes if node["node_id"].startswith("proof:tavily:source_quality:")
+    ]
+    assert len(candidate_nodes) == evidence_summary["query_count"]
+    assert len(query_nodes) == evidence_summary["query_variant_count"]
+    assert len(quality_nodes) == evidence_summary["query_count"]
+
+    for node in tavily_nodes:
+        assert node["mode"] == "deterministic_fallback"
+        assert node["api_call_made"] is False
+        assert node["fallback_used"] is True
+        assert node["external_write_made"] is False
+        assert node["can_change_packet_verdict"] is False
+        assert node["human_review_required"] is True
+        assert node["attached_packet_field"] == "source_candidates"
+
+    tavily_node_ids = {node["node_id"] for node in tavily_nodes}
+    packet_node_id = graph["packet_node"]["node_id"]
+    tavily_packet_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"] in tavily_node_ids and edge["to_node_id"] == packet_node_id
+    ]
+    supports_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"].startswith(("proof:tavily:query_variant:", "proof:tavily:source_quality:"))
+        and edge["edge_type"] == "supports_review"
+    ]
+
+    assert len(tavily_packet_edges) == len(tavily_nodes)
+    assert len(supports_edges) == evidence_summary["query_variant_count"] + evidence_summary["query_count"]
+    for edge in graph["proof_edges"]:
+        assert edge["human_review_required"] is True
+        assert edge["can_change_packet_verdict"] is False
 
 
 def test_composio_blast_radius_graph_layer_is_opt_in_and_non_mutating() -> None:
@@ -349,15 +456,18 @@ def test_openclaw_runtime_trace_graph_layer_is_opt_in_and_non_mutating() -> None
 def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
     graph = build_proof_graph_for_scenario(
         "support_triage_agent",
+        include_tavily_evidence=True,
         include_composio_blast_radius=True,
         include_openclaw_runtime_trace=True,
     )
 
     assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["tavily_evidence"]["provider"] == "tavily"
     assert graph["composio_blast_radius"]["provider"] == "composio"
     assert graph["openclaw_runtime_trace"]["provider"] == "openclaw"
     assert {node["provider"] for node in graph["proof_nodes"]} == {
         "ia_packet",
+        "tavily",
         "composio",
         "openclaw",
     }
@@ -423,6 +533,32 @@ def test_proof_graph_cli_can_include_composio_blast_radius_layer() -> None:
     assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "composio"}
 
 
+def test_proof_graph_cli_can_include_tavily_evidence_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-tavily-evidence",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["tavily_evidence"]["provider"] == "tavily"
+    assert payload["tavily_evidence"]["live_call_attempted"] is False
+    assert payload["tavily_evidence"]["can_reduce_proof_debt"] is False
+    assert payload["tavily_evidence"]["cannot_grant_access"] is True
+    assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "tavily"}
+
+
 def test_proof_graph_cli_can_include_openclaw_runtime_trace_layer() -> None:
     result = subprocess.run(
         [
@@ -455,6 +591,13 @@ def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
             SCHEMA_PATH.read_text(encoding="utf-8"),
             (ROOT / "agent" / "proof_graph.py").read_text(encoding="utf-8"),
             json.dumps(build_proof_graph_for_scenario("support_triage_agent"), sort_keys=True),
+            json.dumps(
+                build_proof_graph_for_scenario(
+                    "support_triage_agent",
+                    include_tavily_evidence=True,
+                ),
+                sort_keys=True,
+            ),
             json.dumps(
                 build_proof_graph_for_scenario(
                     "support_triage_agent",

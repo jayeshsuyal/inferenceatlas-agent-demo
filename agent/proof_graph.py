@@ -25,6 +25,10 @@ from .packet_authority import (
     stable_sha256,
 )
 from .scenarios import SCENARIOS, build_scenario_packet
+from .tavily_live_evidence import (
+    TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
+    build_tavily_live_evidence,
+)
 
 
 PROOF_GRAPH_SCHEMA_VERSION = "proof_graph.v0"
@@ -561,6 +565,160 @@ def _openclaw_runtime_trace_nodes(
     return tuple(nodes), tuple(edges), _openclaw_runtime_trace_summary(openclaw)
 
 
+def _tavily_evidence_summary(tavily: dict[str, Any]) -> dict[str, Any]:
+    query_summary = tavily["query_plan_summary"]
+    source_summary = tavily["source_quality_summary"]
+    return {
+        "schema_version": TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
+        "provider": "tavily",
+        "mode": "deterministic_fallback",
+        "status": tavily["status"],
+        "live_requested": bool(tavily["live_requested"]),
+        "live_call_attempted": bool(tavily["live_call_attempted"]),
+        "live_call_count": int(tavily["live_call_count"]),
+        "used_live_key": bool(tavily["used_live_key"]),
+        "fallback_used": bool(tavily["fallback_used"]),
+        "fallback_reason": tavily["fallback_reason"],
+        "query_count": int(query_summary["query_count"]),
+        "query_variant_count": int(query_summary["query_variant_count"]),
+        "total_planned_searches": int(query_summary["total_planned_searches"]),
+        "source_url_count": int(source_summary["source_url_count"]),
+        "unique_source_url_count": int(source_summary["unique_source_url_count"]),
+        "source_domain_count": int(source_summary["source_domain_count"]),
+        "domain_diversity_score": float(source_summary["domain_diversity_score"]),
+        "freshness_labels": list(source_summary["freshness_labels"]),
+        "can_reduce_proof_debt": bool(source_summary["can_reduce_proof_debt"]),
+        "cannot_grant_access": bool(source_summary["cannot_grant_access"]),
+        "human_review_required": bool(source_summary["human_review_required"]),
+        "docs_reference": tavily["docs_reference"],
+        "safety_impact": tavily["safety_impact"],
+    }
+
+
+def _tavily_evidence_nodes(
+    packet: dict[str, Any],
+    *,
+    scenario_name: str,
+    next_human_action: str,
+) -> tuple[tuple[ProofNode, ...], tuple[ProofEdge, ...], dict[str, Any]]:
+    tavily = build_tavily_live_evidence(
+        packet,
+        scenario_name=scenario_name,
+        live_enabled=False,
+    )
+    nodes: list[ProofNode] = []
+    edges: list[ProofEdge] = []
+
+    for index, candidate in enumerate(tavily["evidence_candidates"], start=1):
+        candidate_slug = _slug(candidate["query"])
+        candidate_node = _sponsor_proof_node(
+            provider="tavily",
+            node_id=f"proof:tavily:evidence_candidate:{index}:{candidate_slug}",
+            field="source_candidates",
+            label=f"Tavily evidence candidate: {candidate.get('reviewer_owner', 'reviewer')}",
+            summary=(
+                f"{candidate['query']} ({candidate['evidence_type']}); "
+                f"freshness={candidate['freshness']}; "
+                f"sources={len(candidate.get('source_urls', []))}; "
+                f"can_reduce_proof_debt={candidate['can_reduce_proof_debt']}."
+            ),
+            source_refs=[
+                f"missing_proof[{index - 1}]",
+                f"tavily.evidence_candidates[{index - 1}]",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(candidate_node)
+
+        for variant_index, query in enumerate(candidate.get("query_variants", [candidate["query"]]), start=1):
+            query_node = _sponsor_proof_node(
+                provider="tavily",
+                node_id=(
+                    f"proof:tavily:query_variant:{index}:{variant_index}:"
+                    f"{_slug(query)}"
+                ),
+                field="source_candidates",
+                label="Tavily query variant",
+                summary=(
+                    f"Planned search `{query}` using {candidate['search_mode']}; "
+                    "human review required before any proof debt changes."
+                ),
+                source_refs=[
+                    f"tavily.evidence_candidates[{index - 1}].query_variants[{variant_index - 1}]",
+                    "tavily.query_plan_summary",
+                ],
+                next_human_action=next_human_action,
+            )
+            nodes.append(query_node)
+            edges.append(
+                ProofEdge(
+                    edge_id=f"edge:{query_node.node_id}:to:{candidate_node.node_id}:supports_review",
+                    edge_type="supports_review",
+                    from_node_id=query_node.node_id,
+                    to_node_id=candidate_node.node_id,
+                    packet_field="source_candidates",
+                )
+            )
+
+        quality = candidate["source_quality"]
+        quality_node = _sponsor_proof_node(
+            provider="tavily",
+            node_id=f"proof:tavily:source_quality:{index}:{candidate_slug}",
+            field="source_candidates",
+            label="Tavily source quality",
+            summary=(
+                f"source_count={quality['source_count']}; "
+                f"unique_sources={quality['unique_source_count']}; "
+                f"domain_diversity={quality['diversity_score']}; "
+                f"trust_tiers={quality['trust_tiers']}."
+            ),
+            source_refs=[
+                f"tavily.evidence_candidates[{index - 1}].source_quality",
+                "tavily.source_quality_summary",
+            ],
+            next_human_action=next_human_action,
+        )
+        nodes.append(quality_node)
+        edges.append(
+            ProofEdge(
+                edge_id=f"edge:{quality_node.node_id}:to:{candidate_node.node_id}:supports_review",
+                edge_type="supports_review",
+                from_node_id=quality_node.node_id,
+                to_node_id=candidate_node.node_id,
+                packet_field="source_candidates",
+            )
+        )
+
+        for source_index, source in enumerate(candidate.get("source_notes", []), start=1):
+            source_node = _sponsor_proof_node(
+                provider="tavily",
+                node_id=f"proof:tavily:source:{index}:{source_index}:{_slug(source['domain'])}",
+                field="source_candidates",
+                label=f"Tavily source: {source['domain']}",
+                summary=(
+                    f"{source['title']} ({source['trust_tier']}); "
+                    f"url={source['url']}; score={source.get('score')}."
+                ),
+                source_refs=[
+                    f"tavily.evidence_candidates[{index - 1}].source_notes[{source_index - 1}]",
+                    source["url"],
+                ],
+                next_human_action=next_human_action,
+            )
+            nodes.append(source_node)
+            edges.append(
+                ProofEdge(
+                    edge_id=f"edge:{source_node.node_id}:to:{candidate_node.node_id}:supports_review",
+                    edge_type="supports_review",
+                    from_node_id=source_node.node_id,
+                    to_node_id=candidate_node.node_id,
+                    packet_field="source_candidates",
+                )
+            )
+
+    return tuple(nodes), tuple(edges), _tavily_evidence_summary(tavily)
+
+
 def _edge_for_node(packet_node_id: str, node: ProofNode) -> ProofEdge:
     edge_type: EdgeType = "attaches_to_packet_field"
     if node.attached_packet_field == "blocked_claims":
@@ -597,6 +755,7 @@ def build_proof_graph(
     packet: dict[str, Any],
     *,
     scenario_name: str = DEFAULT_SCENARIO,
+    include_tavily_evidence: bool = False,
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
 ) -> dict[str, Any]:
@@ -616,12 +775,21 @@ def build_proof_graph(
         safety_state=_packet_safety(packet),
     )
     packet_proof_nodes = _packet_only_nodes(packet, next_human_action=next_action)
+    tavily_nodes: tuple[ProofNode, ...] = ()
+    tavily_edges: tuple[ProofEdge, ...] = ()
+    tavily_summary: dict[str, Any] | None = None
     composio_nodes: tuple[ProofNode, ...] = ()
     composio_edges: tuple[ProofEdge, ...] = ()
     composio_summary: dict[str, Any] | None = None
     openclaw_nodes: tuple[ProofNode, ...] = ()
     openclaw_edges: tuple[ProofEdge, ...] = ()
     openclaw_summary: dict[str, Any] | None = None
+    if include_tavily_evidence:
+        tavily_nodes, tavily_edges, tavily_summary = _tavily_evidence_nodes(
+            packet,
+            scenario_name=scenario_name,
+            next_human_action=next_action,
+        )
     if include_composio_blast_radius:
         composio_nodes, composio_edges, composio_summary = _composio_blast_radius_nodes(
             packet,
@@ -633,9 +801,9 @@ def build_proof_graph(
             scenario_name=scenario_name,
             next_human_action=next_action,
         )
-    proof_nodes = (*packet_proof_nodes, *composio_nodes, *openclaw_nodes)
+    proof_nodes = (*packet_proof_nodes, *tavily_nodes, *composio_nodes, *openclaw_nodes)
     packet_edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
-    edges = (*packet_edges, *composio_edges, *openclaw_edges)
+    edges = (*packet_edges, *tavily_edges, *composio_edges, *openclaw_edges)
     base_payload = {
         "schema_version": PROOF_GRAPH_SCHEMA_VERSION,
         "scenario_name": scenario_name,
@@ -644,6 +812,8 @@ def build_proof_graph(
         "proof_edges": [edge.to_dict() for edge in edges],
         "invariants": _graph_invariants(proof_nodes, edges),
     }
+    if tavily_summary:
+        base_payload["tavily_evidence"] = tavily_summary
     if composio_summary:
         base_payload["composio_blast_radius"] = composio_summary
     if openclaw_summary:
@@ -685,6 +855,7 @@ def build_proof_graph(
 def build_proof_graph_for_scenario(
     scenario_name: str = DEFAULT_SCENARIO,
     *,
+    include_tavily_evidence: bool = False,
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
 ) -> dict[str, Any]:
@@ -694,6 +865,7 @@ def build_proof_graph_for_scenario(
     return build_proof_graph(
         build_scenario_packet(scenario_name),
         scenario_name=scenario_name,
+        include_tavily_evidence=include_tavily_evidence,
         include_composio_blast_radius=include_composio_blast_radius,
         include_openclaw_runtime_trace=include_openclaw_runtime_trace,
     )
@@ -752,6 +924,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("scenario", nargs="?", default=DEFAULT_SCENARIO, choices=sorted(SCENARIOS))
     parser.add_argument(
+        "--include-tavily-evidence",
+        action="store_true",
+        help="Attach Tavily evidence query/source proof nodes without live calls.",
+    )
+    parser.add_argument(
         "--include-composio-blast-radius",
         action="store_true",
         help="Attach Composio dry-run blast-radius proof nodes without live calls or execute.",
@@ -770,6 +947,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         graph = build_proof_graph_for_scenario(
             args.scenario,
+            include_tavily_evidence=args.include_tavily_evidence,
             include_composio_blast_radius=args.include_composio_blast_radius,
             include_openclaw_runtime_trace=args.include_openclaw_runtime_trace,
         )

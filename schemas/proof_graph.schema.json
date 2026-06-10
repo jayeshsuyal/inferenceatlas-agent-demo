@@ -69,6 +69,9 @@
         "$ref": "#/$defs/proof_edge"
       }
     },
+    "tavily_evidence": {
+      "$ref": "#/$defs/tavily_evidence"
+    },
     "composio_blast_radius": {
       "$ref": "#/$defs/composio_blast_radius"
     },
@@ -239,6 +242,62 @@
         "packet_field": { "type": "string", "minLength": 1 },
         "human_review_required": { "type": "boolean", "const": true },
         "can_change_packet_verdict": { "type": "boolean", "const": false }
+      }
+    },
+    "tavily_evidence": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "provider",
+        "mode",
+        "status",
+        "live_requested",
+        "live_call_attempted",
+        "live_call_count",
+        "used_live_key",
+        "fallback_used",
+        "fallback_reason",
+        "query_count",
+        "query_variant_count",
+        "total_planned_searches",
+        "source_url_count",
+        "unique_source_url_count",
+        "source_domain_count",
+        "domain_diversity_score",
+        "freshness_labels",
+        "can_reduce_proof_debt",
+        "cannot_grant_access",
+        "human_review_required",
+        "docs_reference",
+        "safety_impact"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "tavily_live_evidence.v0" },
+        "provider": { "type": "string", "const": "tavily" },
+        "mode": { "type": "string", "const": "deterministic_fallback" },
+        "status": { "type": "string", "const": "evidence_candidates_planned" },
+        "live_requested": { "type": "boolean", "const": false },
+        "live_call_attempted": { "type": "boolean", "const": false },
+        "live_call_count": { "type": "integer", "const": 0 },
+        "used_live_key": { "type": "boolean", "const": false },
+        "fallback_used": { "type": "boolean", "const": true },
+        "fallback_reason": { "type": "string", "const": "live_tavily_not_requested" },
+        "query_count": { "type": "integer", "minimum": 0 },
+        "query_variant_count": { "type": "integer", "minimum": 0 },
+        "total_planned_searches": { "type": "integer", "minimum": 0 },
+        "source_url_count": { "type": "integer", "minimum": 0 },
+        "unique_source_url_count": { "type": "integer", "minimum": 0 },
+        "source_domain_count": { "type": "integer", "minimum": 0 },
+        "domain_diversity_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "freshness_labels": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "can_reduce_proof_debt": { "type": "boolean", "const": false },
+        "cannot_grant_access": { "type": "boolean", "const": true },
+        "human_review_required": { "type": "boolean", "const": true },
+        "docs_reference": { "type": "string", "minLength": 1 },
+        "safety_impact": { "type": "string", "const": "none" }
       }
     },
     "composio_blast_radius": {

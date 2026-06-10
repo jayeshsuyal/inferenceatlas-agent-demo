@@ -52,9 +52,13 @@ from agent.proof_graph_visual import build_proof_graph_visual
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_STORE_DIR,
+    DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+    ReviewRun,
     create_review_run,
+    generate_initial_review_run_packet,
     load_review_run_record,
     review_run_record_summary,
+    review_run_packet_projection,
     write_review_run_record,
 )
 from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
@@ -331,6 +335,14 @@ class ReviewRunCreateRequest(BaseModel):
     selected_repo: Optional[Dict[str, Any]] = None
     repo_index_summary: Dict[str, Any] = Field(default_factory=dict)
     access_request: str = Field(default="", max_length=10000)
+
+
+class ReviewRunPacketRequest(BaseModel):
+    access_request: str = Field(
+        default=DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+        min_length=1,
+        max_length=10000,
+    )
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -731,6 +743,40 @@ def create_review_run_api(body: ReviewRunCreateRequest) -> dict:
         "read_only": True,
         "run": run_payload,
         "record": review_run_record_summary(record),
+    }
+
+
+@app.post("/api/review-runs/{run_id}/packet")
+def generate_review_run_packet_api(run_id: str, body: ReviewRunPacketRequest) -> dict:
+    """Generate one compact IA Packet from the current ReviewRun."""
+    with _review_runs_lock:
+        run_payload = _review_runs.get(run_id)
+    try:
+        record = load_review_run_record(run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if run_payload is None:
+        if record is None:
+            raise HTTPException(status_code=404, detail="unknown review run")
+        run_payload = record["run"]
+    try:
+        run = ReviewRun.from_dict(run_payload)
+        generated = generate_initial_review_run_packet(run, body.access_request)
+        record = write_review_run_record(generated, store_dir=REVIEW_RUN_STORE_DIR)
+        packet = review_run_packet_projection(generated)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    run_payload = record["run"]
+    with _review_runs_lock:
+        _review_runs[generated.run_id] = run_payload
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run": run_payload,
+        "record": review_run_record_summary(record),
+        "packet": packet,
     }
 
 

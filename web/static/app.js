@@ -202,6 +202,8 @@ let driveSearchTimer = null;
 let drivePickerKind = "all";
 
 const REPO_PROOF_FIXTURE = "support_triage_agent";
+const DEFAULT_REVIEW_ACCESS_REQUEST =
+  "support-triage-bot needs to read issues, comment, and create labels.";
 const FIRST_RUN_PACKET_URL = "/packet?fixture=support_triage_agent&autorun=1";
 const FIRST_RUN_HEADING =
   "Review GitHub access for an AI agent";
@@ -2651,6 +2653,16 @@ function compactList(items = [], limit = 3) {
   ].join("");
 }
 
+function movementLane(label, items = [], tone = "review") {
+  const values = (items || []).filter(Boolean);
+  return `
+    <div class="repo-movement-lane ${tone}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(values.length ? values.join(", ") : "none")}</strong>
+    </div>
+  `;
+}
+
 function setRepoCockpitBusy(loading) {
   if (btnRunRepoProof) {
     btnRunRepoProof.dataset.loading = String(loading);
@@ -2709,6 +2721,8 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const policy = portkeyPayload?.usage_policy_plan?.request_body || {};
   const proofCall = portkeyProofLoop?.portkey_call || {};
   const tone = verdictTone(decision);
+  const movement = packet.movement_classes || {};
+  const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
   repoProofCockpit.dataset.loaded = "true";
   if (repoProofResult) {
@@ -2725,7 +2739,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoCockpitStatus.classList.remove("error");
     const repoName = currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo";
     repoCockpitStatus.textContent =
-      `Packet ready for ${repoName}. Decision lock unchanged; downstream writes remain false.`;
+      `Packet ${packetRef.revision_id || "rev_1"} is tied to ${repoName}. Decision lock unchanged; downstream writes remain false.`;
   }
   if (btnExportRepoBrief) {
     btnExportRepoBrief.disabled = !packet.copy_review_brief;
@@ -2735,7 +2749,12 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoNextActionCard.innerHTML = `
       <span class="repo-card-label">Next human action</span>
       <h3>${escapeHtml(decision.next_human_action || "Human review required before access moves.")}</h3>
-      <p>ReviewRun ${escapeHtml(currentReviewRun?.run_id || "local")} is tied to ${escapeHtml(currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo")}.</p>
+      <p>${escapeHtml(sourceTruth)} ${escapeHtml(currentReviewRun?.run_id || packetRef.run_id || "local")} generated a compact packet for ${escapeHtml(currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo")}.</p>
+      <div class="repo-movement-grid" aria-label="Packet movement classes">
+        ${movementLane("Allowed", movement.allowed || packet.allowed || [], "allowed")}
+        ${movementLane("Review required", movement.review_required || packet.review_required || [], "review")}
+        ${movementLane("Blocked", movement.blocked || packet.blocked || [], "blocked")}
+      </div>
       <div class="repo-outcome-grid">
         <div class="repo-outcome ${decision.production_access ? "approved" : "blocked"}">
           <span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong>
@@ -2805,9 +2824,16 @@ async function runRepoProofCockpit() {
   setRepoCockpitBusy(true);
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
-    const packetRes = await fetch(`/api/ia-packet?fixture=${encodeURIComponent(fixtureId)}`);
-    const packet = await packetRes.json().catch(() => ({}));
-    if (!packetRes.ok) throw new Error(packet.detail || "IA Packet load failed");
+    const runId = currentReviewRun?.run_id;
+    const packetRes = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/packet`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_request: DEFAULT_REVIEW_ACCESS_REQUEST }),
+    });
+    const packetData = await packetRes.json().catch(() => ({}));
+    if (!packetRes.ok || !packetData.ok) throw new Error(packetData.detail || "ReviewRun packet generation failed");
+    currentReviewRun = packetData.run || currentReviewRun;
+    const packet = packetData.packet || {};
     const [{ payload, proofLoop }, sponsorTrace] = await Promise.all([
       fetchPortkeyProofForFixture(fixtureId),
       fetchRepoSponsorTrace().catch(() => packet.sponsor_proof_trace || null),

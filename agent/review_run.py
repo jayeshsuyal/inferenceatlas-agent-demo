@@ -23,7 +23,9 @@ from .scenarios import ROOT_DIR
 
 REVIEW_RUN_SCHEMA_VERSION = "review_run.v0"
 REVIEW_RUN_RECORD_SCHEMA_VERSION = "review_run_record.v0"
+REVIEW_RUN_PACKET_SCHEMA_VERSION = "review_run_packet.v0"
 DEFAULT_REVIEW_RUN_STORE_DIR = ROOT_DIR / "state" / "review_runs"
+DEFAULT_REVIEW_RUN_ACCESS_REQUEST = "support-triage-bot needs to read issues, comment, and create labels."
 
 REVIEW_RUN_STAGES = (
     "repo_not_connected",
@@ -65,6 +67,11 @@ def _utcnow() -> str:
 
 def _digest(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
+
+
+def _content_hash(value: Mapping[str, Any]) -> str:
+    payload = json.dumps(_public_dict(value), sort_keys=True, separators=(",", ":"))
+    return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _public_dict(value: Any) -> Any:
@@ -130,6 +137,14 @@ def _default_packet() -> dict[str, Any]:
 
 def _default_movement_classes() -> dict[str, list[str]]:
     return {"allowed": [], "review_required": [], "blocked": []}
+
+
+def _default_missing_proof() -> list[dict[str, str]]:
+    return [
+        {"id": "repo_owner_approval", "label": "Repo owner approval"},
+        {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+        {"id": "environment_boundary", "label": "Environment boundary"},
+    ]
 
 
 def _default_safety_invariants() -> dict[str, bool]:
@@ -201,6 +216,83 @@ def normalize_movement_classes(value: Optional[Mapping[str, Any]] = None) -> dic
             items = [items]
         normalized[key] = [str(item).strip() for item in list(items or []) if str(item).strip()]
     return _sanitize_public_value(normalized)
+
+
+def _append_once(items: list[str], value: str) -> None:
+    if value not in items:
+        items.append(value)
+
+
+def classify_review_run_access_request(raw_text: str) -> dict[str, list[str]]:
+    """Classify a repo access request without treating any action as approved."""
+    text = " ".join(str(raw_text or "").lower().split())
+    movement = _default_movement_classes()
+
+    if "read" in text and ("issue" in text or "issues" in text):
+        _append_once(movement["allowed"], "read issues")
+    if "comment" in text or "reply" in text:
+        _append_once(movement["review_required"], "comment")
+    if "label" in text:
+        _append_once(movement["blocked"], "create labels")
+
+    if "admin" in text:
+        _append_once(movement["blocked"], "repo admin")
+    if "org-wide" in text or "org wide" in text or "organization" in text:
+        _append_once(movement["blocked"], "org-wide write")
+    if "secret" in text or "credential" in text:
+        _append_once(movement["blocked"], "secrets")
+    if "approve everything" in text or "bypass" in text or "ignore ia" in text or "override" in text:
+        _append_once(movement["blocked"], "approval override request")
+
+    for hard_block in ("repo admin", "org-wide write", "secrets"):
+        _append_once(movement["blocked"], hard_block)
+
+    return normalize_movement_classes(movement)
+
+
+def _missing_proof_labels(items: list[Any]) -> list[str]:
+    labels: list[str] = []
+    for item in items:
+        if isinstance(item, Mapping):
+            label = item.get("label") or item.get("id") or item
+        else:
+            label = item
+        text = str(label).strip()
+        if text:
+            labels.append(text)
+    return labels
+
+
+def _review_run_packet_id(run: ReviewRun) -> str:
+    repo_name = (run.selected_repo or {}).get("full_name") or (run.selected_repo or {}).get("name") or "repo"
+    return f"ia-review-run-packet-{_digest(f'{run.run_id}:{repo_name}')}-v0"
+
+
+def _review_run_revision_id(run: ReviewRun, revision_number: int = 1) -> str:
+    raw_hash = run.access_request.get("raw_request_hash") or "no-request"
+    repo_name = (run.selected_repo or {}).get("full_name") or (run.selected_repo or {}).get("name") or "repo"
+    return f"rev_{_digest(f'{run.run_id}:{repo_name}:{raw_hash}:{revision_number}')}"
+
+
+def _packet_hash_payload(
+    *,
+    run: ReviewRun,
+    packet_id: str,
+    revision_id: str,
+    verdict: str,
+    movement_classes: Mapping[str, Any],
+    missing_proof: list[Any],
+) -> dict[str, Any]:
+    return {
+        "run_id": run.run_id,
+        "selected_repo": (run.selected_repo or {}).get("full_name") or (run.selected_repo or {}).get("name"),
+        "raw_request_hash": run.access_request.get("raw_request_hash"),
+        "packet_id": packet_id,
+        "revision_id": revision_id,
+        "verdict": verdict,
+        "movement_classes": normalize_movement_classes(movement_classes),
+        "missing_proof": _missing_proof_labels(missing_proof),
+    }
 
 
 def _safe_portkey_preview(value: Mapping[str, Any]) -> dict[str, Any]:
@@ -394,6 +486,7 @@ def record_review_run_packet(
     if run.stage != "request_entered":
         raise ValueError("packet generation requires request_entered stage")
     normalized = normalize_movement_classes(movement_classes)
+    clean_missing_proof = _sanitize_public_value(list(missing_proof or []))
     packet = {
         "packet_id": str(packet_id),
         "revision_id": str(revision_id),
@@ -402,7 +495,18 @@ def record_review_run_packet(
         "verdict": str(verdict),
         "ready_for_rerun": False,
         "raw_agent_request_hash": run.access_request.get("raw_request_hash"),
+        "source_run_id": run.run_id,
     }
+    packet["content_hash"] = _content_hash(
+        _packet_hash_payload(
+            run=run,
+            packet_id=packet["packet_id"],
+            revision_id=packet["revision_id"],
+            verdict=packet["verdict"],
+            movement_classes=normalized,
+            missing_proof=clean_missing_proof,
+        )
+    )
     return _replace_run(
         run,
         stage="packet_generated",
@@ -410,7 +514,7 @@ def record_review_run_packet(
         details={"packet_id": packet["packet_id"], "revision_id": packet["revision_id"]},
         packet=packet,
         movement_classes=normalized,
-        missing_proof=_sanitize_public_value(list(missing_proof or [])),
+        missing_proof=clean_missing_proof,
         sponsor_proof_trace=_sanitize_public_value(dict(sponsor_proof_trace or {})) if sponsor_proof_trace else None,
         proofgraph_ref=_sanitize_public_value(dict(proofgraph_ref or {})) if proofgraph_ref else None,
         now=now,
@@ -494,7 +598,18 @@ def rerun_review_run_packet(
             "verdict": str(verdict),
             "ready_for_rerun": False,
             "raw_agent_request_hash": run.access_request.get("raw_request_hash"),
+            "source_run_id": run.run_id,
         }
+    )
+    packet["content_hash"] = _content_hash(
+        _packet_hash_payload(
+            run=run,
+            packet_id=str(packet.get("packet_id") or _review_run_packet_id(run)),
+            revision_id=str(revision_id),
+            verdict=str(verdict),
+            movement_classes=movement_classes,
+            missing_proof=run.missing_proof,
+        )
     )
     delta = {
         "same_request": True,
@@ -520,6 +635,142 @@ def rerun_review_run_packet(
         portkey_preview=preview,
         now=now,
     )
+
+
+def generate_initial_review_run_packet(
+    run: ReviewRun,
+    raw_access_request: str = DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+    *,
+    now: Optional[str] = None,
+) -> ReviewRun:
+    """Generate the first compact IA Packet from selected repo + index + request."""
+    request_text = str(raw_access_request or "").strip()
+    if not request_text:
+        raise ValueError("access_request cannot be empty")
+    request_hash = _digest(request_text)
+
+    if run.stage == "repo_selected":
+        run = record_review_run_access_request(run, request_text, now=now)
+    elif run.stage == "request_entered":
+        if run.access_request.get("raw_request_hash") != request_hash:
+            raise ValueError("access_request cannot change before packet generation")
+    elif run.stage == "packet_generated":
+        if run.access_request.get("raw_request_hash") != request_hash:
+            raise ValueError("raw agent request cannot change after packet generation")
+        return run
+    else:
+        raise ValueError("packet generation requires repo_selected or request_entered stage")
+
+    movement_classes = classify_review_run_access_request(request_text)
+    missing_proof = _default_missing_proof()
+    return record_review_run_packet(
+        run,
+        packet_id=_review_run_packet_id(run),
+        revision_id=_review_run_revision_id(run, 1),
+        verdict="scoped_validation_only",
+        movement_classes=movement_classes,
+        missing_proof=missing_proof,
+        proofgraph_ref={
+            "source": "review_run",
+            "run_id": run.run_id,
+            "status": "ready_for_dynamic_graph",
+        },
+        now=now,
+    )
+
+
+def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
+    """Return the compact packet shape the root cockpit consumes."""
+    if run.stage not in {"packet_generated", "sponsor_proof_collected", "portkey_previewed", "proof_attached", "ready_to_export"}:
+        raise ValueError("review run has no generated packet")
+
+    repo = run.selected_repo or {}
+    repo_name = repo.get("full_name") or repo.get("name") or "selected repo"
+    movement = normalize_movement_classes(run.movement_classes)
+    missing_labels = _missing_proof_labels(run.missing_proof)
+    packet = run.packet
+    packet_reference = {
+        "packet_id": packet.get("packet_id"),
+        "revision_id": packet.get("revision_id"),
+        "revision_number": packet.get("revision_number"),
+        "previous_revision_id": packet.get("previous_revision_id"),
+        "content_hash": packet.get("content_hash"),
+        "run_id": run.run_id,
+        "source_of_truth": "ReviewRun",
+    }
+    next_action = "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+    brief_lines = [
+        f"ReviewRun `{run.run_id}` generated packet `{packet.get('packet_id')}` for `{repo_name}`.",
+        "Verdict class: `scoped_validation_only`.",
+        f"Allowed: {', '.join(movement['allowed']) or 'none'}.",
+        f"Review required: {', '.join(movement['review_required']) or 'none'}.",
+        f"Blocked: {', '.join(movement['blocked']) or 'none'}.",
+        f"Missing proof: {', '.join(missing_labels) or 'none'}.",
+        "IA did not approve, grant, write, mutate, or dispatch. Raw agent intent is not trusted; proof changes packet state.",
+    ]
+    return {
+        "schema_version": REVIEW_RUN_PACKET_SCHEMA_VERSION,
+        "ok": True,
+        "read_only": True,
+        "product_object": "IA Packet",
+        "title": f"IA Packet: {repo_name}",
+        "definition": "Compact packet generated from the current ReviewRun.",
+        "review_run": {
+            "run_id": run.run_id,
+            "stage": run.stage,
+            "selected_repo": repo,
+            "repo_index_summary": run.repo_index_summary,
+            "access_request": run.access_request,
+            "packet": run.packet,
+        },
+        "packet_reference": packet_reference,
+        "source_inputs": {
+            "selected_repo": repo_name,
+            "repo_index_summary": run.repo_index_summary,
+            "raw_request_hash": run.access_request.get("raw_request_hash"),
+        },
+        "decision": {
+            "verdict_class": packet.get("verdict") or "scoped_validation_only",
+            "requires_human_review": True,
+            "production_access": False,
+            "permission_grants": False,
+            "external_writes": False,
+            "approval_granted": False,
+            "next_human_action": next_action,
+        },
+        "movement_classes": movement,
+        "allowed": movement["allowed"],
+        "review_required": movement["review_required"],
+        "blocked": movement["blocked"],
+        "missing_proof": missing_labels,
+        "blocked_claims": [
+            "Production tool access is not approved.",
+            "Repo label creation is blocked until repo-owner approval, rollback proof, and environment boundary exist.",
+            "Repo admin, org-wide writes, and secrets remain blocked.",
+        ],
+        "compact_output": {
+            "verdict": packet.get("verdict") or "scoped_validation_only",
+            "allowed": movement["allowed"],
+            "review_required": movement["review_required"],
+            "blocked": movement["blocked"],
+            "missing_proof": missing_labels,
+            "next_human_action": next_action,
+        },
+        "safety_boundary": {
+            "approval_granted": False,
+            "production_access": False,
+            "permission_grants": False,
+            "external_writes": False,
+            "packet_mutated_without_rerun": False,
+            "portkey_api_call_made": False,
+            "portkey_policy_mutation_allowed": False,
+            "raw_agent_intent_trusted": False,
+            "source_of_truth": "ReviewRun",
+        },
+        "safety_anchor": "Raw agent intent is not trusted. Proof changes packet state. Downstream systems consume the packet.",
+        "copy_review_brief": "\n".join(brief_lines),
+        "export_label": "Copy ReviewRun packet brief",
+    }
 
 
 def build_review_run_record(

@@ -43,6 +43,7 @@ STATIC_ROUTES = (
     "/packet?fixture=ai_spend_budget_overrun&autorun=1",
     "/packet?fixture=miasma_pre_permission_packet&autorun=1",
 )
+PROOFGRAPH_ROUTE = "/proofgraph"
 
 
 def _url(base_url: str, path: str) -> str:
@@ -123,6 +124,13 @@ def _check_static_routes(base_url: str, timeout: float) -> None:
         html = _read(base_url, route, timeout=timeout)
         _require("Private engine, public proof." in html, f"{route} missing public proof framing")
         _require("IA did not approve. The next human action is named above." in html, f"{route} missing safety anchor")
+    proofgraph = _read(base_url, PROOFGRAPH_ROUTE, timeout=timeout)
+    _require("InferenceAtlas ProofGraph" in proofgraph, "ProofGraph route missing title")
+    _require("80" in proofgraph and "proof nodes" in proofgraph, "ProofGraph route missing proof-node count")
+    _require("141" in proofgraph and "edges" in proofgraph, "ProofGraph route missing edge count")
+    _require("zero" in proofgraph and "writes" in proofgraph, "ProofGraph route missing no-write count")
+    _require("77 proof nodes" not in proofgraph, "ProofGraph route returned stale proof-node count")
+    _require("136 edges" not in proofgraph, "ProofGraph route returned stale edge count")
 
 
 def _check_public_packet_verification(base_url: str, timeout: float) -> None:

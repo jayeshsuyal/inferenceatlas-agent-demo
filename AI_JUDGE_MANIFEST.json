@@ -19,6 +19,7 @@
   "packet_workbench_api": "/api/workbench/generate",
   "review_60_command": "bash scripts/review_60.sh",
   "review_60_packet_url": "/packet?fixture=mcp_tool_blast_radius&autorun=1",
+  "review_60_proofgraph_url": "/proofgraph",
   "review_60_workbench_url": "/workbench?fixture=mcp_tool_blast_radius&autorun=1",
   "subscriber_examples": "examples/subscribers/",
   "subscriber_categories": ["gateway", "ci", "spend", "review", "observability"],

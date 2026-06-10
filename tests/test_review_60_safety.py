@@ -50,6 +50,8 @@ class Review60SafetyTests(unittest.TestCase):
         self.assertIn("dry-run by default", result.stdout)
         self.assertIn("no v1 calls", result.stdout)
         self.assertIn("/packet?fixture=mcp_tool_blast_radius&autorun=1", result.stdout)
+        self.assertIn("/proofgraph", result.stdout)
+        self.assertIn("ProofGraph - sponsors -> IA Packet -> downstream trust", result.stdout)
         self.assertIn("Tavily -> Composio -> OpenClaw -> Nebius", result.stdout)
 
     def test_review_60_surface_is_declared(self) -> None:
@@ -63,8 +65,10 @@ class Review60SafetyTests(unittest.TestCase):
             manifest["review_60_packet_url"],
             "/packet?fixture=mcp_tool_blast_radius&autorun=1",
         )
+        self.assertEqual(manifest["review_60_proofgraph_url"], "/proofgraph")
         self.assertIn("bash scripts/review_60.sh", readme)
         self.assertIn("/packet?fixture=mcp_tool_blast_radius&autorun=1", readme)
+        self.assertIn("/proofgraph", docs)
         self.assertIn("Copy verification link", js)
         self.assertIn("Copy IA Packet link", js)
         self.assertIn("workbenchShouldAutorun", js)

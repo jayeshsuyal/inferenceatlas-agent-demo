@@ -2325,6 +2325,10 @@ function packetPortkeyProofLoopPath(fixtureId, requestedMode = "model_request") 
   return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey/proof-loop?requested_mode=${encodeURIComponent(requestedMode)}`;
 }
 
+function proofGraphUrl() {
+  return "/proofgraph";
+}
+
 function packetPortkeyExportName(payload) {
   const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
   return `${packetId}.portkey_gate.dry_run.json`;
@@ -2542,6 +2546,13 @@ function renderPacketDetail(data) {
   `;
   const packetBlastGraph = renderBlastRadiusGraph({ trace, run: null, context: "packet" });
   if (packetBlastGraph) packetSponsorCard.appendChild(packetBlastGraph);
+  const proofGraphActions = document.createElement("div");
+  proofGraphActions.className = "walk-actions proofgraph-actions";
+  proofGraphActions.innerHTML = `
+    <a class="btn-primary" href="${proofGraphUrl()}">Open ProofGraph</a>
+    <span class="walkthrough-summary">Shows the full packet authority map: sponsors -> IA Packet -> downstream systems.</span>
+  `;
+  packetSponsorCard.appendChild(proofGraphActions);
 
   packetDownstreamCard.innerHTML = `
     <span class="eyebrow">Downstream trust</span>

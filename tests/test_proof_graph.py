@@ -8,7 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from agent.adapters.core import ADAPTER_CONTRACT_VERSION
+from agent.adapters.core import (
+    ADAPTER_CONTRACT_VERSION,
+    NEBIUS_REQUIRED_TONE_ANCHORS,
+)
 from agent.composio_dry_run_diff import COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION
 from agent.proof_graph import (
     PACKET_ONLY_PROOF_FIELDS,
@@ -131,6 +134,20 @@ def test_proof_graph_schema_file_locks_contract() -> None:
     assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["api_call_made"]["const"] is False
     assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["runtime_write_attempted"]["const"] is False
     assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["would_execute"]["const"] is False
+    assert schema["properties"]["nebius_reviewer_synthesis"]["$ref"] == (
+        "#/$defs/nebius_reviewer_synthesis"
+    )
+    assert schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["schema_version"]["const"] == (
+        ADAPTER_CONTRACT_VERSION
+    )
+    assert schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["provider"]["const"] == "nebius"
+    assert schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["api_call_made"]["const"] is False
+    assert schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["can_change_verdict"]["const"] is False
+    assert schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["can_mutate_packet"]["const"] is False
+    assert (
+        schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["forbidden_phrases_present"]["maxItems"]
+        == 0
+    )
     assert schema["$defs"]["invariants"]["properties"]["packet_remains_authority"]["const"] is True
     assert schema["$defs"]["invariants"]["properties"]["graph_can_change_verdict"]["const"] is False
     assert schema["$defs"]["safety_boundary"]["properties"]["executes_external_writes"]["const"] is False
@@ -150,6 +167,7 @@ def test_packet_only_proof_graph_is_deterministic_and_packet_backed() -> None:
     assert "tavily_evidence" not in first
     assert "composio_blast_radius" not in first
     assert "openclaw_runtime_trace" not in first
+    assert "nebius_reviewer_synthesis" not in first
 
 
 def test_tavily_evidence_graph_layer_is_opt_in_and_non_mutating() -> None:
@@ -453,23 +471,133 @@ def test_openclaw_runtime_trace_graph_layer_is_opt_in_and_non_mutating() -> None
         assert edge["can_change_packet_verdict"] is False
 
 
+def test_nebius_reviewer_synthesis_graph_layer_is_opt_in_and_non_mutating() -> None:
+    graph = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_nebius_reviewer_synthesis=True,
+    )
+
+    assert graph["scenario_name"] == "support_triage_agent"
+    assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["invariants"] == {
+        "packet_remains_authority": True,
+        "graph_can_approve": False,
+        "graph_can_mutate_packet": False,
+        "graph_can_execute_external_write": False,
+        "graph_can_change_verdict": False,
+        "all_nodes_require_human_review": True,
+        "all_nodes_non_mutating": True,
+        "all_edges_non_mutating": True,
+    }
+
+    synthesis_summary = graph["nebius_reviewer_synthesis"]
+    assert synthesis_summary["schema_version"] == ADAPTER_CONTRACT_VERSION
+    assert synthesis_summary["provider"] == "nebius"
+    assert synthesis_summary["mode"] == "deterministic_fallback"
+    assert synthesis_summary["status"] == "deterministic_narration_fallback"
+    assert synthesis_summary["api_call_made"] is False
+    assert synthesis_summary["fallback_used"] is True
+    assert synthesis_summary["input_field_count"] == 5
+    assert synthesis_summary["draft_output_count"] == 3
+    assert synthesis_summary["locked_field_count"] == 4
+    assert synthesis_summary["llm_may_edit_count"] == 2
+    assert synthesis_summary["llm_must_not_edit_count"] == 4
+    assert synthesis_summary["required_anchor_count"] == len(NEBIUS_REQUIRED_TONE_ANCHORS)
+    assert synthesis_summary["required_anchors_present"] is True
+    assert synthesis_summary["forbidden_phrases_present"] == []
+    assert synthesis_summary["can_change_verdict"] is False
+    assert synthesis_summary["can_mutate_packet"] is False
+    assert synthesis_summary["human_review_required"] is True
+    assert synthesis_summary["safety_impact"] == "none"
+
+    nebius_nodes = [node for node in graph["proof_nodes"] if node["provider"] == "nebius"]
+    assert len(nebius_nodes) == (
+        1
+        + synthesis_summary["locked_field_count"]
+        + synthesis_summary["draft_output_count"]
+        + 1
+    )
+    assert graph["node_counts"] == {
+        "packet": 1,
+        "proof": len(PACKET_ONLY_PROOF_FIELDS) + len(nebius_nodes),
+        "edge": len(graph["proof_edges"]),
+    }
+
+    contract_nodes = [
+        node for node in nebius_nodes if node["node_id"] == "proof:nebius:reviewer_synthesis_contract"
+    ]
+    locked_nodes = [
+        node for node in nebius_nodes if node["node_id"].startswith("proof:nebius:locked_field:")
+    ]
+    draft_nodes = [
+        node for node in nebius_nodes if node["node_id"].startswith("proof:nebius:draft_output:")
+    ]
+    anchor_nodes = [
+        node for node in nebius_nodes if node["node_id"] == "proof:nebius:safety_anchor:no_approval"
+    ]
+    assert len(contract_nodes) == 1
+    assert len(locked_nodes) == synthesis_summary["locked_field_count"]
+    assert len(draft_nodes) == synthesis_summary["draft_output_count"]
+    assert len(anchor_nodes) == 1
+    assert set(node["attached_packet_field"] for node in nebius_nodes) == {
+        "blocked_claims",
+        "claim_ledger",
+        "decision_lock",
+        "safety_invariants",
+    }
+    assert all(anchor in anchor_nodes[0]["summary"] for anchor in NEBIUS_REQUIRED_TONE_ANCHORS)
+
+    for node in nebius_nodes:
+        assert node["mode"] == "deterministic_fallback"
+        assert node["api_call_made"] is False
+        assert node["fallback_used"] is True
+        assert node["external_write_made"] is False
+        assert node["can_change_packet_verdict"] is False
+        assert node["human_review_required"] is True
+
+    nebius_node_ids = {node["node_id"] for node in nebius_nodes}
+    packet_node_id = graph["packet_node"]["node_id"]
+    nebius_packet_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"] in nebius_node_ids and edge["to_node_id"] == packet_node_id
+    ]
+    contract_support_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["to_node_id"] == "proof:nebius:reviewer_synthesis_contract"
+        and edge["edge_type"] == "supports_review"
+    ]
+
+    assert len(nebius_packet_edges) == len(nebius_nodes)
+    assert len(contract_support_edges) == (
+        synthesis_summary["locked_field_count"] + synthesis_summary["draft_output_count"] + 1
+    )
+    for edge in graph["proof_edges"]:
+        assert edge["human_review_required"] is True
+        assert edge["can_change_packet_verdict"] is False
+
+
 def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
     graph = build_proof_graph_for_scenario(
         "support_triage_agent",
         include_tavily_evidence=True,
         include_composio_blast_radius=True,
         include_openclaw_runtime_trace=True,
+        include_nebius_reviewer_synthesis=True,
     )
 
     assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
     assert graph["tavily_evidence"]["provider"] == "tavily"
     assert graph["composio_blast_radius"]["provider"] == "composio"
     assert graph["openclaw_runtime_trace"]["provider"] == "openclaw"
+    assert graph["nebius_reviewer_synthesis"]["provider"] == "nebius"
     assert {node["provider"] for node in graph["proof_nodes"]} == {
         "ia_packet",
         "tavily",
         "composio",
         "openclaw",
+        "nebius",
     }
     assert graph["invariants"]["packet_remains_authority"] is True
     assert graph["invariants"]["graph_can_approve"] is False
@@ -585,6 +713,34 @@ def test_proof_graph_cli_can_include_openclaw_runtime_trace_layer() -> None:
     assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "openclaw"}
 
 
+def test_proof_graph_cli_can_include_nebius_reviewer_synthesis_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-nebius-reviewer-synthesis",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["nebius_reviewer_synthesis"]["provider"] == "nebius"
+    assert payload["nebius_reviewer_synthesis"]["api_call_made"] is False
+    assert payload["nebius_reviewer_synthesis"]["required_anchors_present"] is True
+    assert payload["nebius_reviewer_synthesis"]["forbidden_phrases_present"] == []
+    assert payload["nebius_reviewer_synthesis"]["can_change_verdict"] is False
+    assert payload["nebius_reviewer_synthesis"]["can_mutate_packet"] is False
+    assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "nebius"}
+
+
 def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
     combined = "\n".join(
         [
@@ -602,6 +758,13 @@ def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
                 build_proof_graph_for_scenario(
                     "support_triage_agent",
                     include_openclaw_runtime_trace=True,
+                ),
+                sort_keys=True,
+            ),
+            json.dumps(
+                build_proof_graph_for_scenario(
+                    "support_triage_agent",
+                    include_nebius_reviewer_synthesis=True,
                 ),
                 sort_keys=True,
             ),

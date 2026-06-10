@@ -1206,6 +1206,219 @@ body[data-active-tab="start"] #btn-reset {
   overflow-wrap: anywhere;
 }
 
+.blast-radius-graph-card {
+  margin-top: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(248, 113, 113, 0.08), rgba(251, 191, 36, 0.045)),
+    var(--bg);
+}
+
+.blast-radius-graph-card.high {
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.blast-radius-graph-card.medium,
+.blast-radius-graph-card.low {
+  border-color: rgba(61, 156, 245, 0.28);
+  background:
+    linear-gradient(135deg, rgba(61, 156, 245, 0.07), rgba(52, 211, 153, 0.04)),
+    var(--bg);
+}
+
+.blast-radius-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(7rem, auto);
+  gap: 1rem;
+  align-items: start;
+}
+
+.blast-radius-head h4 {
+  margin: 0.25rem 0 0.35rem;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.blast-risk {
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  border-radius: 8px;
+  background: rgba(248, 113, 113, 0.08);
+  text-align: right;
+}
+
+.blast-radius-graph-card.high .blast-risk {
+  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.blast-risk span,
+.blast-node span,
+.blast-bars span,
+.blast-tool-row span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  line-height: 1.3;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.blast-risk strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--danger);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.blast-radius-graph-card.high .blast-risk strong {
+  color: var(--warn);
+}
+
+.blast-radius-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.18fr) minmax(0, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+}
+
+.blast-node {
+  position: relative;
+  min-width: 0;
+  min-height: 6.2rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(20, 26, 34, 0.88);
+}
+
+.blast-node:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -0.6rem;
+  width: 0.6rem;
+  height: 2px;
+  background: rgba(139, 156, 179, 0.55);
+}
+
+.blast-node.hero {
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.blast-node.safe {
+  border-color: rgba(52, 211, 153, 0.34);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.blast-node strong {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.blast-node.hero strong {
+  color: #fecaca;
+}
+
+.blast-node.safe strong {
+  color: var(--success);
+}
+
+.blast-node small {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.blast-bars {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.blast-bars div {
+  min-width: 0;
+  padding: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(12, 15, 20, 0.82);
+}
+
+.blast-bars strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--success);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.blast-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+
+.blast-tool-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid rgba(248, 113, 113, 0.24);
+  border-radius: 8px;
+  background: rgba(12, 15, 20, 0.78);
+}
+
+.blast-tool-row.high {
+  border-color: rgba(251, 191, 36, 0.25);
+}
+
+.blast-tool-row.medium,
+.blast-tool-row.low {
+  border-color: rgba(61, 156, 245, 0.24);
+}
+
+.blast-tool-row strong,
+.blast-tool-row code {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.blast-tool-row strong {
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
+.blast-tool-row code {
+  color: var(--success);
+  font-size: 0.68rem;
+  line-height: 1.35;
+  text-align: right;
+  white-space: normal;
+}
+
+.blast-authority {
+  margin-top: 0.75rem;
+}
+
 .trace-subhead {
   display: block;
   margin-top: 1rem;
@@ -3310,6 +3523,16 @@ body[data-active-tab="start"] #btn-reset {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .blast-radius-head,
+  .blast-radius-flow,
+  .blast-tool-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .blast-node:not(:last-child)::after {
+    display: none;
+  }
+
   .team-lens-list {
     grid-template-columns: 1fr;
   }
@@ -3406,8 +3629,21 @@ body[data-active-tab="start"] #btn-reset {
   .portkey-proof-metrics,
   .sponsor-proof-loop,
   .sponsor-source-links,
-  .sponsor-source-locks {
+  .sponsor-source-locks,
+  .blast-bars {
     grid-template-columns: 1fr;
+  }
+
+  .blast-risk {
+    text-align: left;
+  }
+
+  .blast-tool-row {
+    flex-direction: column;
+  }
+
+  .blast-tool-row code {
+    text-align: left;
   }
 
   .sponsor-proof-step {

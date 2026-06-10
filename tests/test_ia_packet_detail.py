@@ -49,6 +49,13 @@ class IAPacketDetailTests(unittest.TestCase):
                 self.assertFalse(trace["approves_access"], msg=fixture["fixture_id"])
                 self.assertFalse(trace["approves_spend"], msg=fixture["fixture_id"])
                 self.assertFalse(trace["selects_provider"], msg=fixture["fixture_id"])
+                self.assertEqual(trace["blast_radius"]["schema_version"], "blast_radius.v0", msg=fixture["fixture_id"])
+                self.assertEqual(trace["blast_radius"]["summary"]["blocked_action_count"], 9, msg=fixture["fixture_id"])
+                self.assertFalse(trace["blast_radius"]["summary"]["would_execute"], msg=fixture["fixture_id"])
+                self.assertTrue(
+                    trace["blast_radius"]["summary"]["all_write_or_admin_blocked"],
+                    msg=fixture["fixture_id"],
+                )
                 self.assertEqual(len(trace["steps"]), 4, msg=fixture["fixture_id"])
                 for step in trace["steps"]:
                     self.assertFalse(step["used_live_key"], msg=fixture["fixture_id"])

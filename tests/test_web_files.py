@@ -316,6 +316,15 @@ class WebFilesTests(unittest.TestCase):
         )
         self.assertEqual(data["steps"][-1]["id"], "pilot_memo")
         self.assertEqual(data["steps"][2]["title"], "Collect sponsor proof")
+        self.assertEqual(
+            data["sponsor_proof_trace"]["blast_radius"]["summary"]["blocked_action_count"],
+            9,
+        )
+        self.assertEqual(
+            data["sponsor_proof_trace"]["blast_radius"]["summary"]["max_risk_level"],
+            "critical",
+        )
+        self.assertFalse(data["sponsor_proof_trace"]["blast_radius"]["summary"]["would_execute"])
         self.assertIn("support_triage_trial.packet.json", data["packet_reference"]["packet_artifact"])
         self.assertTrue(data["packet_reference"]["content_hash"].startswith("sha256:"))
         self.assertEqual(data["decision"]["verdict_class"], "scoped_validation_only")
@@ -387,7 +396,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("Sponsor Run", html)
         self.assertIn('id="walkthrough-view"', html)
         self.assertIn("Private engine, public proof.", html)
-        self.assertIn("/static/app.js?v=42", html)
+        self.assertIn("/static/app.js?v=43", html)
         self.assertIn('id="btn-collect-sponsor-proof"', html)
         self.assertIn("Collect sponsor proof", html)
         self.assertIn('id="btn-copy-walkthrough-brief"', html)
@@ -407,6 +416,10 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("sponsor_proof_run", js)
         self.assertIn("Latest collected run", js)
         self.assertIn("renderSponsorProofLoop", js)
+        self.assertIn("renderBlastRadiusGraph", js)
+        self.assertIn("IA Blast Radius Graph", js)
+        self.assertIn("IA created this graph from sponsor proof.", js)
+        self.assertIn("Sponsors provide signals. IA builds the blast-radius graph", js)
         self.assertIn("One local IA API call orchestrates sponsor proof.", js)
         self.assertIn("const tavily = run?.live_sponsor_proof?.tavily || null;", js)
         self.assertIn("Tavily live evidence", js)

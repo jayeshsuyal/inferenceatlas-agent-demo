@@ -1147,6 +1147,7 @@ def design_partner_walkthrough() -> dict:
         "packet_id": sponsor_trace["packet_id"],
         "revision_id": sponsor_trace["revision_id"],
         "lane": sponsor_trace["lane"],
+        "blast_radius": sponsor_trace["blast_radius"],
         "step_count": len(sponsor_trace_steps),
         "sponsor_order": [step["sponsor"] for step in sponsor_trace_steps],
         "decision_lock_unchanged": sponsor_trace["decision_lock_before"] == sponsor_trace["decision_lock_after"],

@@ -202,6 +202,7 @@ def _sponsor_trace_summary(request_path: Path) -> dict[str, Any]:
         "trace_id": trace["trace_id"],
         "packet_id": trace["packet_id"],
         "lane": trace["lane"],
+        "blast_radius": trace["blast_radius"],
         "step_count": len(steps),
         "sponsor_order": [step["sponsor"] for step in steps],
         "decision_lock_unchanged": trace["decision_lock_before"] == trace["decision_lock_after"],

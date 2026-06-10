@@ -2540,6 +2540,8 @@ function renderPacketDetail(data) {
     }
     <p class="safety-anchor">Sponsors collect proof only; approve ${escapeHtml(String(trace?.approves_access ?? false))} · spend ${escapeHtml(String(trace?.approves_spend ?? false))} · provider ${escapeHtml(String(trace?.selects_provider ?? false))}</p>
   `;
+  const packetBlastGraph = renderBlastRadiusGraph({ trace, run: null, context: "packet" });
+  if (packetBlastGraph) packetSponsorCard.appendChild(packetBlastGraph);
 
   packetDownstreamCard.innerHTML = `
     <span class="eyebrow">Downstream trust</span>
@@ -3141,6 +3143,111 @@ function renderSponsorSourcePanel({ synthesis, tavily }) {
   return panel;
 }
 
+function riskTone(level) {
+  const normalized = String(level || "review").toLowerCase();
+  if (normalized === "critical") return "critical";
+  if (normalized === "high") return "high";
+  if (normalized === "medium") return "medium";
+  return "low";
+}
+
+function blastRadiusFrom({ trace, run }) {
+  return run?.blast_radius || trace?.blast_radius || null;
+}
+
+function renderBlastRadiusGraph({ trace, run, context = "walkthrough" }) {
+  const blastRadius = blastRadiusFrom({ trace, run });
+  if (!blastRadius) return null;
+
+  const summary = blastRadius.summary || run?.live_proof_intelligence?.blast_radius || {};
+  const tools = Array.isArray(blastRadius.tools) ? blastRadius.tools : [];
+  const maxRisk = summary.max_risk_level || "review";
+  const blockedCount = Number(summary.blocked_action_count || 0);
+  const writeCount = Number(summary.write_like_action_count || 0);
+  const adminCount = Number(summary.admin_like_action_count || 0);
+  const highCriticalCount = Number(summary.high_or_critical_action_count || writeCount + adminCount || blockedCount);
+  const wouldExecute = Boolean(summary.would_execute);
+  const allBlocked = summary.all_write_or_admin_blocked ?? summary.all_blocked_before_execution ?? true;
+  const toolNames = tools.map((tool) => tool.tool).filter(Boolean);
+  const sponsorOrder = Array.isArray(trace?.sponsor_order) ? trace.sponsor_order : [];
+  const graph = document.createElement("section");
+  graph.className = `blast-radius-graph-card ${riskTone(maxRisk)} ${context}`;
+  graph.setAttribute("aria-label", "IA blast radius graph");
+  graph.innerHTML = `
+    <div class="blast-radius-head">
+      <div>
+        <span class="eyebrow">IA Blast Radius Graph</span>
+        <h4>IA maps what can move before anything executes</h4>
+        <p class="walkthrough-summary">IA created this graph from sponsor proof. Composio contributes permission diffs; OpenClaw contributes blocked-action trace shape; Tavily and Nebius add evidence and reviewer context. The IA Packet remains the authority.</p>
+      </div>
+      <div class="blast-risk">
+        <span>Max risk</span>
+        <strong>${escapeHtml(maxRisk)}</strong>
+      </div>
+    </div>
+    <div class="blast-radius-flow">
+      <div class="blast-node">
+        <span>Requested systems</span>
+        <strong>${escapeHtml(toolNames.length ? toolNames.join(" / ") : "packet scope")}</strong>
+        <small>${escapeHtml(sponsorOrder.length ? sponsorOrder.map(formatSponsorName).join(" -> ") : "sponsor proof")}</small>
+      </div>
+      <div class="blast-node hero">
+        <span>IA containment map</span>
+        <strong>${escapeHtml(String(blockedCount))} blocked actions</strong>
+        <small>${escapeHtml(String(writeCount))} write-like · ${escapeHtml(String(adminCount))} admin-like</small>
+      </div>
+      <div class="blast-node safe">
+        <span>Outcome</span>
+        <strong>executes ${escapeHtml(String(wouldExecute))}</strong>
+        <small>human review ${escapeHtml(String(summary.human_review_required ?? trace?.requires_human_review ?? true))}</small>
+      </div>
+    </div>
+    <div class="blast-bars" aria-label="Blast radius action classes">
+      <div>
+        <span>High / critical</span>
+        <strong>${escapeHtml(String(highCriticalCount))}</strong>
+      </div>
+      <div>
+        <span>Write-like</span>
+        <strong>${escapeHtml(String(writeCount))}</strong>
+      </div>
+      <div>
+        <span>Admin-like</span>
+        <strong>${escapeHtml(String(adminCount))}</strong>
+      </div>
+      <div>
+        <span>All blocked</span>
+        <strong>${escapeHtml(String(allBlocked))}</strong>
+      </div>
+    </div>
+  `;
+
+  if (tools.length) {
+    const toolGrid = document.createElement("div");
+    toolGrid.className = "blast-tool-grid";
+    tools.slice(0, 4).forEach((tool) => {
+      const toolSummary = tool.summary || {};
+      const row = document.createElement("article");
+      row.className = `blast-tool-row ${riskTone(toolSummary.max_risk_level || tool.blocked_actions?.[0]?.risk_level || maxRisk)}`;
+      row.innerHTML = `
+        <div>
+          <strong>${escapeHtml(tool.tool || "tool")}</strong>
+          <span>${escapeHtml(tool.blast_radius_class || "review scope")}</span>
+        </div>
+        <code>${escapeHtml(String(toolSummary.blocked_action_count || 0))} blocked · execute ${escapeHtml(String(toolSummary.would_execute ?? false))}</code>
+      `;
+      toolGrid.appendChild(row);
+    });
+    graph.appendChild(toolGrid);
+  }
+
+  const authority = document.createElement("p");
+  authority.className = "safety-anchor blast-authority";
+  authority.textContent = "Sponsors provide signals. IA builds the blast-radius graph, preserves the decision lock, and names the next human review.";
+  graph.appendChild(authority);
+  return graph;
+}
+
 function renderSponsorCard(data) {
   const trace = data.sponsor_proof_trace || {};
   const order = trace.sponsor_order || [];
@@ -3186,6 +3293,9 @@ function renderSponsorCard(data) {
     metrics.appendChild(item);
   });
   walkthroughSponsorCard.appendChild(metrics);
+
+  const blastGraph = renderBlastRadiusGraph({ trace, run, context: "walkthrough" });
+  if (blastGraph) walkthroughSponsorCard.appendChild(blastGraph);
 
   walkthroughSponsorCard.appendChild(
     renderSponsorProofLoop({ trace, run, tavily, composio, nebius, synthesis, portkey })

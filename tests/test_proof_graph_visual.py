@@ -11,7 +11,16 @@ from agent.proof_graph_visual import (
     PROOF_GRAPH_VISUAL_SUBTITLE,
     PROOF_GRAPH_VISUAL_TITLE,
     render_proof_graph_html,
+    render_review_run_proof_graph_html,
     write_proof_graph_visual_artifact,
+)
+from agent.review_run import (
+    DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+    attach_review_run_proof,
+    build_review_run_proofgraph,
+    create_review_run,
+    generate_proof_resolved_review_run_packet,
+    generate_initial_review_run_packet,
 )
 from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
@@ -67,6 +76,36 @@ def test_proof_graph_visual_preserves_public_boundary_language() -> None:
     assert "Mutate production</span><strong>no</strong>" in html
     assert "Verdict changes" in html
     assert "Graph creator</span><strong>InferenceAtlas</strong>" in html
+    for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+        assert forbidden.lower() not in html.lower()
+
+
+def test_review_run_proof_graph_visual_is_dynamic_and_packet_backed() -> None:
+    run = create_review_run(
+        selected_repo={"provider": "github", "full_name": "acme/demo-support-incidents"},
+        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+    )
+    packet_run = generate_initial_review_run_packet(run, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+    proofed = attach_review_run_proof(
+        packet_run,
+        [
+            {"id": "repo_owner_approval"},
+            {"id": "rollback_offswitch"},
+            {"id": "environment_boundary"},
+        ],
+    )
+    rerun = generate_proof_resolved_review_run_packet(proofed, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+    graph = build_review_run_proofgraph(rerun)
+    html = render_review_run_proof_graph_html(graph)
+
+    assert "InferenceAtlas ReviewRun ProofGraph" in html
+    assert f"Generated from run_id <span class=\"run-id\">{rerun.run_id}</span>" in html
+    assert "Packet remains authority" in html
+    assert "Sponsors contribute proof only" in html
+    assert "No approval / no writes / no mutation - zero writes" in html
+    assert "Allow with policy" in html
+    assert rerun.packet["revision_id"] in html
+    assert graph["content_hash"] in html
     for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
         assert forbidden.lower() not in html.lower()
 

@@ -25,6 +25,7 @@ REVIEW_RUN_SCHEMA_VERSION = "review_run.v0"
 REVIEW_RUN_RECORD_SCHEMA_VERSION = "review_run_record.v0"
 REVIEW_RUN_PACKET_SCHEMA_VERSION = "review_run_packet.v0"
 REVIEW_RUN_COACH_SCHEMA_VERSION = "review_run_coach_answer.v0"
+REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION = "review_run_proofgraph.v0"
 DEFAULT_REVIEW_RUN_STORE_DIR = ROOT_DIR / "state" / "review_runs"
 DEFAULT_REVIEW_RUN_ACCESS_REQUEST = "support-triage-bot needs to read issues, comment, and create labels."
 
@@ -803,6 +804,7 @@ def generate_initial_review_run_packet(
     run: ReviewRun,
     raw_access_request: str = DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
     *,
+    sponsor_proof_trace: Optional[Mapping[str, Any]] = None,
     now: Optional[str] = None,
 ) -> ReviewRun:
     """Generate the first compact IA Packet from selected repo + index + request."""
@@ -832,6 +834,7 @@ def generate_initial_review_run_packet(
         verdict="scoped_validation_only",
         movement_classes=movement_classes,
         missing_proof=missing_proof,
+        sponsor_proof_trace=sponsor_proof_trace,
         proofgraph_ref={
             "source": "review_run",
             "run_id": run.run_id,
@@ -1186,6 +1189,210 @@ def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str,
             "reply": "\n\n".join(reply_lines),
         }
     )
+
+
+def build_review_run_proofgraph(
+    run: ReviewRun,
+    *,
+    sponsor_trace: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
+    """Build the dynamic ProofGraph read model for one ReviewRun."""
+    repo = run.selected_repo or {}
+    repo_name = str(repo.get("full_name") or repo.get("name") or "no repo selected")
+    packet = run.packet or {}
+    packet_id = packet.get("packet_id")
+    revision_id = packet.get("revision_id")
+    revision_number = int(packet.get("revision_number") or 0)
+    previous_revision_id = packet.get("previous_revision_id")
+    movement = normalize_movement_classes(run.movement_classes)
+    attached_proof = list(run.attached_proof or [])
+    missing_proof = list(run.missing_proof or [])
+    attached_proof_ids = {
+        str(item.get("id") or "").strip()
+        for item in attached_proof
+        if isinstance(item, Mapping) and str(item.get("id") or "").strip()
+    }
+    unresolved_missing_proof = [
+        item
+        for item in missing_proof
+        if not isinstance(item, Mapping) or str(item.get("id") or "").strip() not in attached_proof_ids
+    ]
+    unresolved_missing_count = len(unresolved_missing_proof)
+    trace = _sanitize_public_value(dict(sponsor_trace or run.sponsor_proof_trace or {}))
+    sponsor_steps = trace.get("steps")
+    if isinstance(sponsor_steps, list):
+        sponsor_step_count = len(sponsor_steps)
+    else:
+        sponsor_step_count = int(trace.get("step_count") or 0)
+    if sponsor_step_count == 0 and run.stage in {"packet_generated", "proof_attached", "ready_to_export"}:
+        sponsor_step_count = 0
+
+    if run.stage in {"repo_not_connected", "repo_selected", "request_entered"}:
+        graph_state = "waiting_for_packet"
+        status_label = "Waiting for packet"
+        next_human_action = _review_run_coach_next_action(run)
+    elif run.stage == "proof_attached":
+        graph_state = "proof_attached_rerun_required"
+        status_label = "Proof attached - rerun required"
+        next_human_action = "Regenerate the packet from the same request and attached proof."
+    elif run.stage == "ready_to_export":
+        graph_state = "updated_packet_ready"
+        status_label = "Updated packet ready"
+        next_human_action = "Export review brief and route the scoped allow-with-policy review."
+    else:
+        graph_state = "packet_generated"
+        status_label = "Packet generated"
+        next_human_action = (
+            "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+        )
+
+    portkey_state = _portkey_state(run.portkey_preview, default="Block" if packet_id else "No packet")
+    proof_counts = {
+        "missing": unresolved_missing_count,
+        "attached": len(attached_proof),
+        "sponsor_steps": sponsor_step_count,
+        "total": unresolved_missing_count + len(attached_proof) + sponsor_step_count,
+    }
+    node_counts = {
+        "repo": 1 if run.selected_repo else 0,
+        "packet": 1 if packet_id else 0,
+        "proof": proof_counts["total"],
+        "downstream": 1,
+        "edge": 4 if packet_id else 1,
+    }
+    packet_label = revision_id or "not_generated"
+    graph_id = f"reviewrun-proofgraph-{_digest(f'{run.run_id}:{run.stage}:{packet_label}:{portkey_state}')}"
+    generated_from = {
+        "source_of_truth": "ReviewRun",
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "selected_repo": repo_name,
+        "repo_index_status": run.repo_index_summary.get("status") or "not_indexed",
+        "raw_request_hash": run.access_request.get("raw_request_hash"),
+    }
+    packet_reference = {
+        "packet_id": packet_id,
+        "revision_id": revision_id,
+        "revision_number": revision_number,
+        "previous_revision_id": previous_revision_id,
+        "verdict": packet.get("verdict") or "not_generated",
+        "ready_for_rerun": bool(packet.get("ready_for_rerun")),
+        "content_hash": packet.get("content_hash"),
+    }
+    nodes = [
+        {
+            "node_id": "repo:selected",
+            "node_type": "repo",
+            "label": repo_name,
+            "summary": "Selected GitHub repo for this ReviewRun.",
+            "status": run.repo_index_summary.get("status") or "not_indexed",
+        },
+        {
+            "node_id": "packet:authority",
+            "node_type": "packet",
+            "label": packet_label,
+            "summary": "IA Packet remains the authority; raw agent intent is not trusted.",
+            "status": packet.get("verdict") or "not_generated",
+        },
+        {
+            "node_id": "proof:sponsor",
+            "node_type": "proof",
+            "label": f"{sponsor_step_count} sponsor proof steps",
+            "summary": "Sponsors contribute proof only and cannot approve access.",
+            "status": "proof_only",
+        },
+        {
+            "node_id": "proof:human",
+            "node_type": "proof",
+            "label": f"{len(attached_proof)} attached / {unresolved_missing_count} missing",
+            "summary": "Human proof can change packet state only after rerun.",
+            "status": "ready_for_rerun" if packet.get("ready_for_rerun") else "packet_locked",
+        },
+        {
+            "node_id": "downstream:portkey",
+            "node_type": "downstream",
+            "label": portkey_state,
+            "summary": "Portkey consumes the packet revision; IA does not mutate Portkey policy.",
+            "status": "dry_run",
+        },
+    ]
+    edges = [
+        {
+            "edge_id": "repo-to-packet",
+            "from_node_id": "repo:selected",
+            "to_node_id": "packet:authority",
+            "label": "repo context",
+            "can_change_packet_verdict": False,
+        },
+        {
+            "edge_id": "sponsor-to-packet",
+            "from_node_id": "proof:sponsor",
+            "to_node_id": "packet:authority",
+            "label": "proof only",
+            "can_change_packet_verdict": False,
+        },
+        {
+            "edge_id": "human-proof-to-packet",
+            "from_node_id": "proof:human",
+            "to_node_id": "packet:authority",
+            "label": "requires rerun",
+            "can_change_packet_verdict": run.stage == "ready_to_export",
+        },
+        {
+            "edge_id": "packet-to-portkey",
+            "from_node_id": "packet:authority",
+            "to_node_id": "downstream:portkey",
+            "label": "downstream consumes packet",
+            "can_change_packet_verdict": False,
+        },
+    ]
+    proofgraph = {
+        "schema_version": REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION,
+        "graph_id": graph_id,
+        "generated_from_run_id": run.run_id,
+        "generated_from": generated_from,
+        "graph_state": graph_state,
+        "status_label": status_label,
+        "selected_repo": repo_name,
+        "packet_reference": packet_reference,
+        "proof_counts": proof_counts,
+        "node_counts": node_counts,
+        "nodes": nodes,
+        "edges": edges if packet_id else edges[:1],
+        "movement_classes": movement,
+        "portkey_state": portkey_state,
+        "zero_writes": True,
+        "next_human_action": next_human_action,
+        "revision_changed": bool(previous_revision_id and revision_id != previous_revision_id),
+        "summary": {
+            "generated_from_run_id": f"Generated from run_id {run.run_id}",
+            "selected_repo": repo_name,
+            "packet_revision": revision_id or "not generated",
+            "sponsor_proof_count": sponsor_step_count,
+            "attached_proof_count": len(attached_proof),
+            "portkey_state": portkey_state,
+            "zero_writes": "zero writes",
+            "authority": "Packet remains authority. Sponsors contribute proof only.",
+        },
+        "safety_boundary": {
+            "read_only": True,
+            "approval_granted": False,
+            "approves_access": False,
+            "permissions_granted": False,
+            "external_writes": False,
+            "mutates_production": False,
+            "packet_mutated_without_rerun": False,
+            "portkey_api_call_made": False,
+            "portkey_policy_mutation_allowed": False,
+            "raw_agent_intent_trusted": False,
+        },
+        "private_boundary": {
+            "private_source_exposed": False,
+            "principle": "Private engine, public proof.",
+        },
+    }
+    proofgraph["content_hash"] = _content_hash(proofgraph)
+    return _sanitize_public_value(proofgraph)
 
 
 def build_review_run_record(

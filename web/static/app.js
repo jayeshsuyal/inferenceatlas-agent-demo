@@ -185,6 +185,7 @@ let workbenchResult = null;
 let packetDetail = null;
 let packetPortkeyPreview = null;
 let packetPortkeyProofLoop = null;
+let currentReviewRunProofGraph = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let walkthroughPayload = null;
@@ -963,6 +964,7 @@ function renderReviewRepoSummary(repo = null) {
   const selected = repo || selectedReviewRepo();
   repoIndexSummary.hidden = !selected;
   if (!selected) {
+    currentReviewRunProofGraph = null;
     resetReviewRunCoachAnswer();
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
     if (repoCoachRead) {
@@ -1081,12 +1083,14 @@ async function createReviewRunForIndexedRepo(repo) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
   currentReviewRun = data.run;
+  currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
   return currentReviewRun;
 }
 
 async function attachReviewRepo(repo) {
   const fullName = repo.full_name;
   currentReviewRun = null;
+  currentReviewRunProofGraph = null;
   selectedGithubRepos = [{ full_name: fullName, indexing: true, demo: Boolean(repo.demo) }];
   renderGithubChips();
   renderReviewRepoSummary(selectedGithubRepos[0]);
@@ -1124,6 +1128,7 @@ async function attachReviewRepo(repo) {
   } catch (err) {
     selectedGithubRepos = [];
     currentReviewRun = null;
+    currentReviewRunProofGraph = null;
     renderGithubChips();
     renderReviewRepoSummary(null);
     setRepoConnectStatus(String(err.message || err), true);
@@ -2728,8 +2733,23 @@ function packetPortkeyProofLoopPath(fixtureId, requestedMode = "model_request") 
   return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey/proof-loop?requested_mode=${encodeURIComponent(requestedMode)}`;
 }
 
+function reviewRunProofGraphUrl(runId = currentReviewRun?.run_id || currentReviewRunProofGraph?.generated_from_run_id) {
+  if (runId) {
+    return `/proofgraph?review_run_id=${encodeURIComponent(runId)}`;
+  }
+  return `/proofgraph?fixture=${encodeURIComponent(REPO_PROOF_FIXTURE)}`;
+}
+
 function proofGraphUrl() {
-  return "/proofgraph";
+  return reviewRunProofGraphUrl();
+}
+
+async function fetchReviewRunProofGraph(runId = currentReviewRun?.run_id) {
+  if (!runId) return null;
+  const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/proofgraph`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun ProofGraph failed");
+  return data.proofgraph || null;
 }
 
 function packetPortkeyExportName(payload) {
@@ -2934,6 +2954,15 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const decision = packet.decision || {};
   const trace = packet.sponsor_proof_trace || {};
   const packetRef = packet.packet_reference || {};
+  const graph = currentReviewRunProofGraph || null;
+  const graphPacketRef = graph?.packet_reference || packetRef;
+  const graphProofCounts = graph?.proof_counts || {};
+  const graphRunId = graph?.generated_from_run_id || currentReviewRun?.run_id || packetRef.run_id;
+  const graphState = graph?.status_label || graph?.graph_state || "Packet authority map";
+  const graphPortkeyState = graph?.portkey_state || (portkeyPayload?.portkey_guardrail_response?.verdict ? "Allow with policy" : "Block");
+  const graphSponsorProofCount = graphProofCounts.sponsor_steps ?? trace.step_count ?? 0;
+  const graphAttachedProofCount = graphProofCounts.attached ?? packet.proof_resolution?.attached_proof_count ?? 0;
+  const graphMissingProofCount = graphProofCounts.missing ?? (packet.proof_resolution?.missing_proof || []).length;
   const guardrail = portkeyPayload?.portkey_guardrail_response || {};
   const policy = portkeyPayload?.usage_policy_plan?.request_body || {};
   const proofCall = portkeyProofLoop?.portkey_call || {};
@@ -2997,17 +3026,20 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoSponsorProofCard.innerHTML = `
       <summary>
         <span class="repo-card-label">ProofGraph</span>
-        <strong>${escapeHtml(String(trace.step_count || 0))} proof steps mapped</strong>
+        <strong>${escapeHtml(String(graphSponsorProofCount))} proof steps mapped · ${escapeHtml(graphState)}</strong>
       </summary>
       <div class="repo-accordion-body">
-        <p>${escapeHtml((trace.sponsor_order || ["Tavily", "Composio", "OpenClaw", "Nebius"]).join(" -> "))}</p>
-        <div class="repo-outcome-grid">
-          <div class="repo-outcome approved"><span>Decision lock</span><strong>${escapeHtml(String(trace.decision_lock_unchanged ?? true))}</strong></div>
-          <div class="repo-outcome ${trace.all_non_executing === false ? "blocked" : "approved"}"><span>Writes</span><strong>${escapeHtml(String(trace.all_non_executing === false))}</strong></div>
-          <div class="repo-outcome review"><span>Live keys</span><strong>${escapeHtml(String((trace.steps || []).some((step) => step.used_live_key)))}</strong></div>
+        <p class="repo-proofgraph-run-ref">Generated from run_id <code>${escapeHtml(graphRunId || "local")}</code></p>
+        <div class="repo-proofgraph-map" aria-label="ReviewRun ProofGraph summary">
+          <div class="repo-proofgraph-row"><span>selected repo</span><strong>${escapeHtml(graph?.selected_repo || currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo")}</strong></div>
+          <div class="repo-proofgraph-row"><span>packet</span><strong>${escapeHtml(graphPacketRef.packet_id || "not generated")}</strong></div>
+          <div class="repo-proofgraph-row"><span>revision</span><strong>${escapeHtml(graphPacketRef.revision_id || "not generated")}</strong></div>
+          <div class="repo-proofgraph-row"><span>proof</span><strong>${escapeHtml(String(graphAttachedProofCount))} attached / ${escapeHtml(String(graphMissingProofCount))} missing / ${escapeHtml(String(graphSponsorProofCount))} sponsor</strong></div>
+          <div class="repo-proofgraph-row"><span>Portkey state</span><strong>${escapeHtml(graphPortkeyState)}</strong></div>
+          <div class="repo-proofgraph-row"><span>writes</span><strong>zero writes</strong></div>
         </div>
-        <p class="repo-microcopy">Generated from the ReviewRun. Sponsors contribute proof only. IA keeps the packet authority locked.</p>
-        <a class="btn-ghost repo-secondary-link" href="/proofgraph?fixture=support_triage_agent">Open ProofGraph</a>
+        <p class="repo-microcopy">Packet remains authority. Sponsors contribute proof only. No approval / no writes / no mutation.</p>
+        <a class="btn-ghost repo-secondary-link" href="${escapeHtml(reviewRunProofGraphUrl(graphRunId))}">Open ProofGraph</a>
       </div>
     `;
     repoSponsorProofCard.open = false;
@@ -3070,6 +3102,7 @@ async function attachReviewRunProof() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.detail || "Proof attachment failed");
     currentReviewRun = data.run || currentReviewRun;
+    currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
     const nextPacket = {
       ...(data.packet || {}),
       sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
@@ -3119,6 +3152,7 @@ async function rerunReviewRunPacket() {
     if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun rerun failed");
     currentReviewRun = data.run || currentReviewRun;
     packetPortkeyPreview = data.portkey || packetPortkeyPreview;
+    currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
     const nextPacket = {
       ...(data.packet || {}),
       sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
@@ -3158,19 +3192,24 @@ async function runRepoProofCockpit() {
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
     const runId = currentReviewRun?.run_id;
+    const sponsorTrace = await fetchRepoSponsorTrace().catch(() => null);
     const packetRes = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/packet`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ access_request: DEFAULT_REVIEW_ACCESS_REQUEST }),
+      body: JSON.stringify({
+        access_request: DEFAULT_REVIEW_ACCESS_REQUEST,
+        sponsor_proof_trace: sponsorTrace || undefined,
+      }),
     });
     const packetData = await packetRes.json().catch(() => ({}));
     if (!packetRes.ok || !packetData.ok) throw new Error(packetData.detail || "ReviewRun packet generation failed");
     currentReviewRun = packetData.run || currentReviewRun;
     const packet = packetData.packet || {};
-    const [{ payload, proofLoop }, sponsorTrace] = await Promise.all([
+    const [{ payload, proofLoop }, proofGraph] = await Promise.all([
       fetchPortkeyProofForFixture(fixtureId),
-      fetchRepoSponsorTrace().catch(() => packet.sponsor_proof_trace || null),
+      fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null),
     ]);
+    currentReviewRunProofGraph = proofGraph;
     const cockpitPacket = {
       ...packet,
       sponsor_proof_trace: sponsorTrace || packet.sponsor_proof_trace,

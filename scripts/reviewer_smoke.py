@@ -204,6 +204,17 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach" in js,
         "root Ask IA must answer from ReviewRun coach endpoint",
     )
+    _require(
+        "/api/review-runs/${encodeURIComponent(runId)}/proofgraph" in js,
+        "root flow must fetch dynamic ReviewRun ProofGraph",
+    )
+    _require("fetchReviewRunProofGraph" in js, "ReviewRun ProofGraph fetcher missing")
+    _require("reviewRunProofGraphUrl" in js, "ReviewRun ProofGraph URL helper missing")
+    _require("/proofgraph?review_run_id=" in js, "ProofGraph link must carry review_run_id")
+    _require("repo-proofgraph-map" in js, "ProofGraph cockpit summary missing")
+    _require("Generated from run_id" in js, "ProofGraph cockpit must show run_id source")
+    _require("zero writes" in js, "ProofGraph cockpit must show zero writes")
+    _require("sponsor_proof_trace: sponsorTrace || undefined" in js, "ReviewRun packet must preserve sponsor trace when available")
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
     _require("attachReviewRunProof" in js, "proof attach handler missing")
@@ -609,6 +620,35 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(fetched["run"]["run_id"] == run["run_id"], "ReviewRun did not reload by run_id")
     _require(fetched["record"]["stage"] == "repo_selected", "ReviewRun record stage drifted")
 
+    waiting_graph = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proofgraph",
+        timeout=timeout,
+    )
+    _require(waiting_graph["ok"] is True, "ReviewRun ProofGraph failed before packet")
+    _require(waiting_graph["read_only"] is True, "ReviewRun ProofGraph must be read-only")
+    _require(waiting_graph["proofgraph"]["graph_state"] == "waiting_for_packet", "ProofGraph before packet state drifted")
+    _require(
+        waiting_graph["proofgraph"]["generated_from_run_id"] == run["run_id"],
+        "ProofGraph before packet missing run_id source",
+    )
+    _require(waiting_graph["proofgraph"]["portkey_state"] == "No packet", "ProofGraph before packet Portkey state drifted")
+    _require(waiting_graph["proofgraph"]["zero_writes"] is True, "ProofGraph before packet must show zero writes")
+    _expect_false(
+        waiting_graph["proofgraph"]["safety_boundary"],
+        [
+            "approval_granted",
+            "approves_access",
+            "permissions_granted",
+            "external_writes",
+            "mutates_production",
+            "portkey_api_call_made",
+            "portkey_policy_mutation_allowed",
+            "raw_agent_intent_trusted",
+        ],
+        prefix="review_run_proofgraph_waiting.safety_boundary",
+    )
+
     selected_coach = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
@@ -663,6 +703,22 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         ["approval_granted", "production_access", "permission_grants", "external_writes"],
         prefix="review_run_packet.safety_boundary",
     )
+
+    rev1_graph = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proofgraph",
+        timeout=timeout,
+    )["proofgraph"]
+    _require(rev1_graph["graph_state"] == "packet_generated", "ProofGraph rev_1 state drifted")
+    _require(
+        rev1_graph["packet_reference"]["revision_id"] == packet_run["packet"]["revision_id"],
+        "ProofGraph rev_1 revision mismatch",
+    )
+    _require(rev1_graph["selected_repo"] == full_name, "ProofGraph selected repo drifted")
+    _require(rev1_graph["portkey_state"] == "Block", "ProofGraph rev_1 Portkey state drifted")
+    _require(rev1_graph["proof_counts"]["missing"] == 3, "ProofGraph rev_1 missing proof count drifted")
+    _require(rev1_graph["zero_writes"] is True, "ProofGraph rev_1 must show zero writes")
+    rev1_graph_hash = rev1_graph["content_hash"]
 
     next_coach = _json_post(
         base_url,
@@ -821,6 +877,23 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         prefix="review_run_proof.safety_boundary",
     )
 
+    proof_graph = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proofgraph",
+        timeout=timeout,
+    )["proofgraph"]
+    _require(
+        proof_graph["graph_state"] == "proof_attached_rerun_required",
+        "ProofGraph proof-attached state drifted",
+    )
+    _require(
+        proof_graph["packet_reference"]["revision_id"] == packet_run["packet"]["revision_id"],
+        "ProofGraph proof attach changed packet revision",
+    )
+    _require(proof_graph["proof_counts"]["attached"] == 3, "ProofGraph proof attached count drifted")
+    _require(proof_graph["proof_counts"]["missing"] == 0, "ProofGraph proof missing count drifted")
+    _require(proof_graph["portkey_state"] == "Block", "ProofGraph proof Portkey state drifted")
+
     proof_coach = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
@@ -909,6 +982,43 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         ],
         prefix="review_run_rerun.safety_boundary",
     )
+
+    rev2_graph = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proofgraph",
+        timeout=timeout,
+    )["proofgraph"]
+    _require(rev2_graph["graph_state"] == "updated_packet_ready", "ProofGraph rev_2 state drifted")
+    _require(rev2_graph["revision_changed"] is True, "ProofGraph rev_2 must mark revision changed")
+    _require(
+        rev2_graph["packet_reference"]["previous_revision_id"] == proofed_run["packet"]["revision_id"],
+        "ProofGraph rev_2 previous revision mismatch",
+    )
+    _require(
+        rev2_graph["packet_reference"]["revision_id"] == rerun_run["packet"]["revision_id"],
+        "ProofGraph rev_2 revision mismatch",
+    )
+    _require(rev2_graph["portkey_state"] == "Allow with policy", "ProofGraph rev_2 Portkey state drifted")
+    _require(rev2_graph["content_hash"] != rev1_graph_hash, "ProofGraph content hash did not change from rev_1 to rev_2")
+    _require(rev2_graph["zero_writes"] is True, "ProofGraph rev_2 must show zero writes")
+
+    proofgraph_html = _read(
+        base_url,
+        "/proofgraph?review_run_id=" + urllib.parse.quote(run["run_id"]),
+        timeout=timeout,
+    )
+    for expected in (
+        "InferenceAtlas ReviewRun ProofGraph",
+        "Generated from run_id",
+        run["run_id"],
+        full_name,
+        rerun_run["packet"]["revision_id"],
+        "Allow with policy",
+        "Packet remains authority",
+        "Sponsors contribute proof only",
+        "zero writes",
+    ):
+        _require(expected in proofgraph_html, f"dynamic ProofGraph visual missing: {expected}")
 
     portkey_coach = _json_post(
         base_url,

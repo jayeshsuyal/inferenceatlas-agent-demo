@@ -147,6 +147,17 @@ def _default_missing_proof() -> list[dict[str, str]]:
     ]
 
 
+def _proof_lookup(run: "ReviewRun") -> dict[str, dict[str, Any]]:
+    lookup: dict[str, dict[str, Any]] = {}
+    for item in run.missing_proof or _default_missing_proof():
+        if not isinstance(item, Mapping):
+            continue
+        proof_id = str(item.get("id") or "").strip()
+        if proof_id:
+            lookup[proof_id] = {"id": proof_id, "label": str(item.get("label") or proof_id).strip()}
+    return lookup
+
+
 def _default_safety_invariants() -> dict[str, bool]:
     return {
         "read_only": True,
@@ -216,6 +227,54 @@ def normalize_movement_classes(value: Optional[Mapping[str, Any]] = None) -> dic
             items = [items]
         normalized[key] = [str(item).strip() for item in list(items or []) if str(item).strip()]
     return _sanitize_public_value(normalized)
+
+
+def normalize_review_run_proof_items(run: "ReviewRun", proof_items: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Normalize human-attached proof without allowing approval-like shortcuts."""
+    if not proof_items:
+        raise ValueError("proof_items cannot be empty")
+
+    allowed = _proof_lookup(run)
+    seen: set[str] = set()
+    normalized: list[dict[str, Any]] = []
+    blocked_phrases = (
+        "approve all",
+        "approve blocked",
+        "force approve",
+        "override packet",
+        "bypass review",
+        "grant access",
+        "grant permissions",
+    )
+    for item in proof_items:
+        if not isinstance(item, Mapping):
+            raise ValueError("proof item requires object")
+        payload = _sanitize_public_value(dict(item or {}))
+        proof_id = str(payload.get("id") or "").strip()
+        if not proof_id:
+            raise ValueError("proof item requires id")
+        if proof_id in seen:
+            raise ValueError("duplicate proof item")
+        if allowed and proof_id not in allowed:
+            raise ValueError(f"unknown proof item: {proof_id}")
+        label = str(payload.get("label") or allowed.get(proof_id, {}).get("label") or proof_id).strip()
+        evidence_note = str(payload.get("evidence_note") or "").strip()
+        phrase_target = f"{proof_id} {label} {evidence_note}".lower()
+        if any(phrase in phrase_target for phrase in blocked_phrases):
+            raise ValueError("proof item cannot approve or override blocked claims")
+        seen.add(proof_id)
+        normalized.append(
+            {
+                "id": proof_id,
+                "label": label,
+                "evidence_note": evidence_note or "Human marked this proof item as attached.",
+                "human_attached": True,
+                "approves_access": False,
+                "grants_permissions": False,
+                "mutates_downstream_policy": False,
+            }
+        )
+    return normalized
 
 
 def _append_once(items: list[str], value: str) -> None:
@@ -552,7 +611,7 @@ def attach_review_run_proof(
     """Attach human-provided proof and require rerun before verdict changes."""
     if run.stage not in {"packet_generated", "sponsor_proof_collected", "portkey_previewed"}:
         raise ValueError("proof attachment requires generated packet state")
-    clean_items = _sanitize_public_value(list(proof_items))
+    clean_items = normalize_review_run_proof_items(run, proof_items)
     packet = copy.deepcopy(run.packet)
     previous_verdict = packet.get("verdict")
     previous_portkey = copy.deepcopy(run.portkey_preview)
@@ -689,6 +748,7 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
     movement = normalize_movement_classes(run.movement_classes)
     missing_labels = _missing_proof_labels(run.missing_proof)
     packet = run.packet
+    ready_for_rerun = bool(packet.get("ready_for_rerun"))
     packet_reference = {
         "packet_id": packet.get("packet_id"),
         "revision_id": packet.get("revision_id"),
@@ -698,7 +758,11 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
         "run_id": run.run_id,
         "source_of_truth": "ReviewRun",
     }
-    next_action = "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+    next_action = (
+        "Proof attached. Regenerate the packet before any verdict or Portkey state can change."
+        if ready_for_rerun
+        else "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+    )
     brief_lines = [
         f"ReviewRun `{run.run_id}` generated packet `{packet.get('packet_id')}` for `{repo_name}`.",
         "Verdict class: `scoped_validation_only`.",
@@ -722,6 +786,8 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "repo_index_summary": run.repo_index_summary,
             "access_request": run.access_request,
             "packet": run.packet,
+            "missing_proof": run.missing_proof,
+            "attached_proof": run.attached_proof,
         },
         "packet_reference": packet_reference,
         "source_inputs": {
@@ -755,6 +821,16 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "blocked": movement["blocked"],
             "missing_proof": missing_labels,
             "next_human_action": next_action,
+            "ready_for_rerun": ready_for_rerun,
+        },
+        "proof_resolution": {
+            "missing_proof": run.missing_proof,
+            "attached_proof": run.attached_proof,
+            "attached_proof_count": len(run.attached_proof),
+            "ready_for_rerun": ready_for_rerun,
+            "verdict_changed": False,
+            "portkey_changed": False,
+            "next_human_action": next_action,
         },
         "safety_boundary": {
             "approval_granted": False,
@@ -762,6 +838,7 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "permission_grants": False,
             "external_writes": False,
             "packet_mutated_without_rerun": False,
+            "proof_attachment_changes_verdict": False,
             "portkey_api_call_made": False,
             "portkey_policy_mutation_allowed": False,
             "raw_agent_intent_trusted": False,

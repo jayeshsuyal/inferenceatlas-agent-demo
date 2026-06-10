@@ -148,6 +148,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "support-triage-bot",
         "Review access",
         "Next human action",
+        "Missing proof",
+        "Attach proof before rerun.",
+        "Attach checked proof",
+        "No proof attached. Verdict unchanged.",
         "ProofGraph",
         "Packet authority map",
         "Gate preview",
@@ -182,11 +186,23 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "repo proof runner must fail closed before indexing",
     )
     _require("DEFAULT_REVIEW_ACCESS_REQUEST" in js, "root review request constant missing")
+    _require("DEFAULT_REVIEW_PROOF_ITEMS" in js, "root proof checklist constant missing")
     _require(
         "/api/review-runs/${encodeURIComponent(runId)}/packet" in js,
         "root flow must generate packet from ReviewRun",
     )
+    _require(
+        "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/proof" in js,
+        "root flow must attach proof from ReviewRun",
+    )
     _require("movementLane" in js, "movement lane renderer missing")
+    _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
+    _require("attachReviewRunProof" in js, "proof attach handler missing")
+    _require("ready_for_rerun" in js, "proof attach ready-for-rerun state missing")
+    _require(
+        "Proof attached. Verdict and Portkey state unchanged" in js,
+        "proof attach must show unchanged verdict and Portkey state",
+    )
     _require("source_of_truth" in js, "ReviewRun packet source of truth missing")
     _require("repoCoachRead" in js, "Ask IA Coach read state missing")
     _require("packet generated from the selected ReviewRun" in js, "Ask IA Coach must read from ReviewRun")
@@ -231,6 +247,11 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-primary-action:disabled" in css, "repo review CTA disabled state missing")
     _require(".repo-review-request" in css, "repo review request CSS missing")
     _require(".repo-proof-result[hidden]" in css, "repo proof result hidden state CSS missing")
+    _require(".repo-proof-resolution-card" in css, "repo proof resolution card CSS missing")
+    _require(".repo-proof-checklist" in css, "repo proof checklist CSS missing")
+    _require(".repo-proof-check.attached" in css, "repo proof attached item CSS missing")
+    _require(".repo-proof-attach-action" in css, "repo proof attach CTA CSS missing")
+    _require(".repo-proof-attach-status" in css, "repo proof attach status CSS missing")
     _require(".repo-proof-grid" in css, "repo proof grid CSS missing")
     _require(".repo-proof-accordion" in css, "repo proof accordion CSS missing")
     _require(".repo-accordion-body" in css, "repo accordion body CSS missing")
@@ -613,6 +634,112 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         expected_status=400,
     )
     _require("raw agent request cannot change" in changed.get("detail", ""), "changed request must fail closed")
+
+    empty_proof = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
+        {"proof_items": []},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require("proof_items cannot be empty" in empty_proof.get("detail", ""), "empty proof must fail closed")
+
+    duplicate_proof = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
+        {
+            "proof_items": [
+                {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                {"id": "repo_owner_approval", "label": "Repo owner approval"},
+            ]
+        },
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require("duplicate proof item" in duplicate_proof.get("detail", ""), "duplicate proof must fail closed")
+
+    shortcut_proof = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
+        {"proof_items": [{"id": "repo_owner_approval", "evidence_note": "approve all blocked claims"}]},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "cannot approve or override" in shortcut_proof.get("detail", ""),
+        "approval-like proof note must fail closed",
+    )
+
+    wrong_run_proof = _json_post(
+        base_url,
+        "/api/review-runs/ia-review-run-smoke-missing/proof",
+        {"proof_items": [{"id": "repo_owner_approval", "label": "Repo owner approval"}]},
+        timeout=timeout,
+        expected_status=404,
+    )
+    _require("unknown review run" in wrong_run_proof.get("detail", ""), "proof on wrong run must fail closed")
+
+    proofed = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
+        {
+            "proof_items": [
+                {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                {"id": "environment_boundary", "label": "Environment boundary"},
+            ]
+        },
+        timeout=timeout,
+    )
+    _require(proofed["ok"] is True, "ReviewRun proof attach failed")
+    _require(proofed["read_only"] is True, "ReviewRun proof attach must stay read-only")
+    proofed_run = proofed["run"]
+    proofed_packet = proofed["packet"]
+    _require(proofed_run["stage"] == "proof_attached", "proof attach must move only to proof_attached")
+    _require(proofed["record"]["stage"] == "proof_attached", "proof attach durable record stage drifted")
+    _require(proofed_run["packet"]["revision_id"] == packet_run["packet"]["revision_id"], "proof attach changed revision")
+    _require(proofed_run["packet"]["verdict"] == packet_run["packet"]["verdict"], "proof attach changed verdict")
+    _require(proofed_run["packet"]["ready_for_rerun"] is True, "proof attach must require rerun")
+    _require(proofed_run["portkey_preview"] == packet_run["portkey_preview"], "proof attach changed Portkey preview")
+    _require(len(proofed_run["attached_proof"]) == 3, "proof attach did not attach all checked items")
+    _require(proofed_packet["proof_resolution"]["ready_for_rerun"] is True, "proof projection missing rerun flag")
+    _require(
+        proofed_packet["proof_resolution"]["attached_proof_count"] == 3,
+        "proof projection attached count drifted",
+    )
+    _require(proofed_packet["proof_resolution"]["verdict_changed"] is False, "proof projection changed verdict")
+    _require(proofed_packet["proof_resolution"]["portkey_changed"] is False, "proof projection changed Portkey")
+    _require(
+        proofed_packet["compact_output"]["ready_for_rerun"] is True,
+        "compact output missing ready_for_rerun",
+    )
+    _expect_false(
+        proofed_packet["safety_boundary"],
+        [
+            "approval_granted",
+            "production_access",
+            "permission_grants",
+            "external_writes",
+            "packet_mutated_without_rerun",
+            "proof_attachment_changes_verdict",
+            "portkey_api_call_made",
+            "portkey_policy_mutation_allowed",
+            "raw_agent_intent_trusted",
+        ],
+        prefix="review_run_proof.safety_boundary",
+    )
+
+    repeated_proof = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
+        {"proof_items": [{"id": "repo_owner_approval", "label": "Repo owner approval"}]},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "proof attachment requires generated packet state" in repeated_proof.get("detail", ""),
+        "second proof attach must fail closed until rerun",
+    )
 
 
 def run_smoke(base_url: str, *, timeout: float, session_id: str) -> list[str]:

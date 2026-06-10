@@ -63,6 +63,7 @@ json_check schemas/agent_access_decision_brief.schema.json /tmp/ia_decision_brie
 json_check schemas/pilot_memo.schema.json /tmp/ia_pilot_memo_schema.checked.json
 json_check schemas/sponsor_proof_trace.schema.json /tmp/ia_sponsor_proof_trace_schema.checked.json
 json_check schemas/proof_graph.schema.json /tmp/ia_proof_graph_schema.checked.json
+json_check schemas/sponsor_value_receipts.schema.json /tmp/ia_sponsor_value_receipts_schema.checked.json
 
 command_json_check /tmp/ia_public_run.no_write.json bash scripts/run.sh --json
 command_json_check /tmp/ia_judge.no_write.json "$PYTHON_BIN" -m agent.judge --no-write --json
@@ -86,6 +87,7 @@ command_json_check /tmp/ia_outcome_memo.no_write.json "$PYTHON_BIN" -m agent.out
 command_json_check /tmp/ia_gate.all.json "$PYTHON_BIN" -m agent.gate --all --json
 command_json_check /tmp/ia_adapters.all.json "$PYTHON_BIN" -m agent.adapters --all --json
 command_json_check /tmp/ia_sponsor_readiness.no_write.json "$PYTHON_BIN" -m agent.sponsor_readiness --no-write --json
+command_json_check /tmp/ia_sponsor_value_receipts.no_write.json "$PYTHON_BIN" -m agent.sponsor_value_receipts --no-write --json
 command_json_check /tmp/ia_sponsor_proof_collector.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --json
 command_json_check /tmp/ia_composio_dry_run.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write --composio-dry-run --json
 command_json_check /tmp/ia_sponsor_proof_trace.no_write.json "$PYTHON_BIN" -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write --json
@@ -105,6 +107,7 @@ run "$PYTHON_BIN" -m agent.pilot_memo examples/requests/support_triage_trial.yml
 run "$PYTHON_BIN" -m agent.contract --all
 run "$PYTHON_BIN" -m agent.spend examples/requests/ai_spend_budget_overrun.yml --no-write
 run "$PYTHON_BIN" -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml --no-write
+run "$PYTHON_BIN" -m agent.sponsor_value_receipts --no-write
 run "$PYTHON_BIN" -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml --no-write
 run "$PYTHON_BIN" scripts/walkthrough_smoke.py
 run bash scripts/reviewer_smoke_gate.sh

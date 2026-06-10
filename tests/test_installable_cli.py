@@ -26,6 +26,7 @@ EXPECTED_SCRIPTS = {
     "ia-sponsor-proof-collector": "agent.sponsor_proof_collector:main",
     "ia-sponsor-proof-trace": "agent.sponsor_proof_trace:main",
     "ia-sponsor-readiness": "agent.sponsor_readiness:main",
+    "ia-sponsor-value-receipts": "agent.sponsor_value_receipts:main",
     "ia-subscribers": "agent.subscribers:main",
     "ia-trial": "agent.trial:main",
     "ia-trial-evidence-replay": "agent.trial_evidence_replay:main",
@@ -104,6 +105,7 @@ class InstallableCliTests(unittest.TestCase):
         self.assertIn("ia-sponsor-proof-collector examples/requests/support_triage_trial.yml", command_reference)
         self.assertIn("ia-sponsor-proof-trace", command_reference)
         self.assertIn("ia-sponsor-readiness", command_reference)
+        self.assertIn("ia-sponsor-value-receipts", command_reference)
         self.assertIn("ia-review --list", command_reference)
         self.assertIn("ia-contract --all", command_reference)
         self.assertIn("ia-trial examples/requests/support_triage_trial.yml", command_reference)

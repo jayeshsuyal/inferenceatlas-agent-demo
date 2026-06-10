@@ -161,7 +161,12 @@ class CtoHandoffDocsTests(unittest.TestCase):
         self.assertEqual(manifest["agent_skills_json_command"], "python3 -m agent.skills --json")
         self.assertEqual(manifest["artifact_integrity_command"], "python3 -m agent.verify_artifacts")
         self.assertEqual(manifest["artifact_integrity_json_command"], "python3 -m agent.verify_artifacts --json")
-        self.assertIn("60 generated artifacts byte-compared", manifest["artifact_integrity_gate"])
+        self.assertIn("62 generated artifacts byte-compared", manifest["artifact_integrity_gate"])
+        self.assertEqual(manifest["sponsor_value_receipts_command"], "python3 -m agent.sponsor_value_receipts --no-write")
+        self.assertEqual(
+            manifest["sponsor_value_receipts_json_command"],
+            "python3 -m agent.sponsor_value_receipts --no-write --json",
+        )
         self.assertEqual(
             manifest["sponsor_proof_trace_command"],
             "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",

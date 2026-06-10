@@ -77,6 +77,15 @@ python3 -m agent.proof_graph --include-all-sponsors --json
 
 This renders the complete packet-bound proof graph in one command: Tavily evidence candidates, Composio dry-run blast radius, OpenClaw runtime trace, Nebius reviewer synthesis, and the Portkey downstream guardrail consumer. The preset is equivalent to the explicit sponsor/downstream flags and remains non-approving, non-mutating, no-write, and no-live-call by default.
 
+## Sponsor Value Receipts
+
+```bash
+python3 -m agent.sponsor_value_receipts --no-write
+python3 -m agent.sponsor_value_receipts --no-write --json
+```
+
+This renders one receipt per sponsor/downstream tool: Tavily, Composio, OpenClaw, Nebius, and Portkey. Each receipt shows the proof contribution, what stayed blocked, and the safety boundary that keeps IA as the packet authority.
+
 ## Optional Max Rehearsal Stress
 
 ```bash
@@ -116,6 +125,7 @@ python3 -m agent.contract --all
 python3 -m agent.gate --all
 python3 -m agent.adapters --all
 python3 -m agent.sponsor_readiness
+python3 -m agent.sponsor_value_receipts --no-write
 python3 -m agent.sponsor_proof_collector examples/requests/support_triage_trial.yml
 python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml
 python3 -m agent.trust
@@ -151,6 +161,7 @@ ia-contract --all
 ia-gate --all
 ia-adapters --all
 ia-sponsor-readiness
+ia-sponsor-value-receipts --no-write
 ia-sponsor-proof-collector examples/requests/support_triage_trial.yml
 ia-sponsor-proof-trace examples/requests/support_triage_trial.yml
 ia-trust

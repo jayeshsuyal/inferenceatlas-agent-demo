@@ -95,21 +95,38 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     css = _read(base_url, "/static/style.css?v=22", timeout=timeout)
 
     for expected in (
-        "Review in 90 seconds",
-        "Run IA Packet Review",
-        "Open one registered AI movement request. IA shows the packet",
-        "Open one registered AI movement request.",
-        "Inspect verdict, proof debt, owners, and hash.",
+        "InferenceAtlas runway",
+        "What should IA review?",
+        "Generate the proof packet downstream systems trust before an AI agent moves.",
+        "Connect repo",
+        "Review AI spend",
+        "Review tool access",
+        "support-triage-bot wants repo access",
+        "demo-support-incidents",
+        "support-triage-bot",
+        "Review access",
+        "Next human action",
+        "Proof contributors",
+        "Gate preview",
+        "Open ProofGraph",
         "Sponsor Run",
         "composer-shell first-run-locked",
         "Ask IA about this packet",
-        "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.",
+        "Run the repo access review first; Ask IA answers from the packet, not raw agent intent.",
         "Export Portkey gate",
         "Team lenses",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
+    _require("Should this AI agent get repo access?" not in html, "old cockpit-first heading returned")
+    _require("Run proof check" not in html, "old cockpit-first CTA returned")
+    _require("Run IA Packet Review" not in html, "old packet-document-first CTA returned")
+    _require("Open one registered AI movement request. IA shows the packet" not in html, "old first-run body returned")
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
+    _require('const REPO_PROOF_FIXTURE = "support_triage_agent";' in js, "repo proof fixture is not locked")
+    _require("runRepoProofCockpit" in js, "repo proof cockpit runner missing")
+    _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
+    _require("fetchRepoSponsorTrace" in js, "repo sponsor trace fetch helper missing")
     _require("renderPacketCoachReply" in js, "Ask IA packet coach renderer missing")
     _require("renderPacketTeamLenses" in js, "Team Lenses renderer missing")
     _require("Sponsors collect proof only" in js, "packet sponsor safety line missing")
@@ -126,10 +143,16 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     )
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
-    _require(
-        "grid-template-columns: repeat(3, minmax(0, 1fr));" in css,
-        "first-run proof rail must stay compressed",
-    )
+    _require(".repo-proof-cockpit" in css, "repo proof cockpit CSS missing")
+    _require(".review-lane-grid" in css, "review lane selector CSS missing")
+    _require(".review-lane-card.selected" in css, "selected lane CSS missing")
+    _require(".repo-review-request" in css, "repo review request CSS missing")
+    _require(".repo-proof-result[hidden]" in css, "repo proof result hidden state CSS missing")
+    _require(".repo-proof-grid" in css, "repo proof grid CSS missing")
+    _require(".repo-proof-accordion" in css, "repo proof accordion CSS missing")
+    _require(".repo-accordion-body" in css, "repo accordion body CSS missing")
+    _require(".repo-verdict-card.review" in css, "repo review verdict CSS missing")
+    _require("grid-template-columns: 1fr;" in css, "repo proof outputs must stack vertically")
     _require('body[data-active-tab="start"] .stack' in css, "start tab must hide status pill cluster")
     _require('body[data-active-tab="start"] #btn-reset' in css, "start tab must hide reset button")
     _require(re.search(r"/static/app\.js\?v=\d+", html) is not None, "app.js cache marker missing")

@@ -71,6 +71,7 @@ command_json_check /tmp/ia_packet_diff.no_write.json "$PYTHON_BIN" -m agent.pack
 command_json_check /tmp/ia_evidence_receipts.no_write.json "$PYTHON_BIN" -m agent.evidence_receipts --no-write --json
 command_json_check /tmp/ia_packet_authority.json "$PYTHON_BIN" -m agent.packet_authority --json
 command_json_check /tmp/ia_proof_graph.json "$PYTHON_BIN" -m agent.proof_graph --json
+command_json_check /tmp/ia_proof_graph.tavily_evidence.json "$PYTHON_BIN" -m agent.proof_graph --include-tavily-evidence --json
 command_json_check /tmp/ia_proof_graph.composio_blast_radius.json "$PYTHON_BIN" -m agent.proof_graph --include-composio-blast-radius --json
 command_json_check /tmp/ia_proof_graph.openclaw_runtime_trace.json "$PYTHON_BIN" -m agent.proof_graph --include-openclaw-runtime-trace --json
 command_json_check /tmp/ia_verification.all.json "$PYTHON_BIN" -m agent.verification --all --json

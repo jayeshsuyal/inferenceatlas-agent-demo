@@ -75,7 +75,7 @@ This renders the read-only proof loop a reviewer expects after a Portkey guardra
 python3 -m agent.proof_graph --include-all-sponsors --json
 ```
 
-This renders the complete packet-bound sponsor proof graph in one command: Tavily evidence candidates, Composio dry-run blast radius, OpenClaw runtime trace, and Nebius reviewer synthesis. The preset is equivalent to the four explicit sponsor flags and remains non-approving, non-mutating, no-write, and no-live-call by default.
+This renders the complete packet-bound proof graph in one command: Tavily evidence candidates, Composio dry-run blast radius, OpenClaw runtime trace, Nebius reviewer synthesis, and the Portkey downstream guardrail consumer. The preset is equivalent to the explicit sponsor/downstream flags and remains non-approving, non-mutating, no-write, and no-live-call by default.
 
 ## Optional Max Rehearsal Stress
 

@@ -38,6 +38,8 @@ TOOL_KEYWORDS = (
     "composio_action",
 )
 
+ASK_IA_INTAKE_SCHEMA_VERSION = "ask_ia_intake.v0"
+
 ORCHESTRATED_GROUNDED_PROMPT = """You are the InferenceAtlas assistant. The user attached multiple context sources in ONE message.
 
 Your message is structured in labeled sections:
@@ -111,6 +113,82 @@ def _message_snippet(message: str, max_len: int = 72) -> str:
 
 def _normalized(message: str) -> str:
     return " ".join(message.lower().split())
+
+
+def _intent_key(message: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", message.lower()).split())
+
+
+def _is_ask_ia_intake_message(message: str) -> bool:
+    intent = _intent_key(message)
+    if not intent:
+        return False
+    return intent in {
+        "hi",
+        "hey",
+        "hello",
+        "hello there",
+        "yo",
+        "sup",
+        "whats up",
+        "wassup",
+        "gm",
+        "good morning",
+        "good afternoon",
+        "good evening",
+        "ok",
+        "okay",
+        "cool",
+        "nice",
+        "bet",
+        "thanks",
+        "thank you",
+        "lol",
+    }
+
+
+def _ask_ia_intake_reply(current_fixture: str = "") -> tuple[str, str, dict[str, Any]]:
+    fixture_label = (
+        f"the current `{current_fixture}` packet"
+        if current_fixture
+        else "the current IA Packet"
+    )
+    suggestions = [
+        "Can this move?",
+        "What proof is missing?",
+        "Who reviews this?",
+        "Can Portkey allow this?",
+    ]
+    reply = "\n".join(
+        [
+            "Hey — I’m here.",
+            "",
+            f"Ask IA works best when you ask about {fixture_label}. Try one:",
+            "",
+            *[f"- {question}" for question in suggestions],
+            "",
+            "I’ll answer from packet truth, keep approval blocked, and name the next human action.",
+        ]
+    )
+    return (
+        reply,
+        "ask_ia_intake",
+        {
+            "schema_version": ASK_IA_INTAKE_SCHEMA_VERSION,
+            "answer_kind": "intake",
+            "current_fixture": current_fixture,
+            "suggested_questions": suggestions,
+            "invariants": {
+                "read_only": True,
+                "calls_v1": False,
+                "raw_packet_dumped": False,
+                "uses_packet_advisor": False,
+                "requires_human_review": True,
+                "approves_access": False,
+                "executes_external_writes": False,
+            },
+        },
+    )
 
 
 def _is_spend_review_question(message: str) -> bool:
@@ -474,6 +552,8 @@ def orchestrate_chat(
     cost = None
 
     direct_reply, direct_reply_source, direct_answer = _demo_direct_reply(message)
+    if not direct_reply and _is_ask_ia_intake_message(message):
+        direct_reply, direct_reply_source, direct_answer = _ask_ia_intake_reply(current_fixture)
     if direct_reply:
         use_tools = False
     elif should_use_packet_advisor(message, current_fixture=current_fixture):
@@ -578,6 +658,11 @@ def orchestrate_chat(
                 f"Packet Advisor selected — {direct_answer.get('fixture', {}).get('fixture_id', fixture)} "
                 f"→ {direct_answer.get('answer_kind', 'decision')}",
             )
+        elif direct_reply_source == "ask_ia_intake":
+            thinking.insert(
+                1,
+                "Ask IA intake detected — greeting handled without dumping packet context",
+            )
         elif direct_answer:
             thinking.insert(
                 1,
@@ -633,6 +718,8 @@ def orchestrate_chat(
         manifest.append("ChatAnswer: ai_spend_review")
     elif direct_reply_source == "packet_advisor":
         manifest.append("Packet-backed chat: shared CLI/API truth")
+    elif direct_reply_source == "ask_ia_intake":
+        manifest.append("Ask IA intake")
     elif direct_reply_source in {"catalog_example", "pricing_example"}:
         manifest.append("Deterministic catalog example")
     elif direct_reply_source == "access_review_example":

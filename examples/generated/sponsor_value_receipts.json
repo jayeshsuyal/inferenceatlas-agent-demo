@@ -1,0 +1,292 @@
+{
+  "generated_by": "inferenceatlas-agent-demo",
+  "graph_reference": {
+    "content_hash": "sha256:4f619498deec8dd74dca10b7e6a703241add101b7de62ea33fbae7ed34605f4c",
+    "graph_id": "ia-proof-graph-support_triage_agent-4f619498deec8dd7-public-v0",
+    "graph_revision_id": "pgr_4f619498deec8dd7"
+  },
+  "headline": "Sponsors provide proof signals. IA converts them into packet authority.",
+  "packet_reference": {
+    "content_hash": "sha256:965302783cee86882b5ceaf5c7b25aace54bcee9071a645191421d82c1f4131d",
+    "packet_id": "ia-agent-access-support-triage-v0",
+    "revision_id": "rev_965302783cee8688"
+  },
+  "private_boundary": {
+    "principle": "Private engine, public proof.",
+    "private_source_exposed": false
+  },
+  "receipt_set_id": "ia-sponsor-value-receipts-support_triage_agent-73bf95f7f89d3d99-public-v0",
+  "receipts": [
+    {
+      "attached_packet_fields": [
+        "source_candidates"
+      ],
+      "contribution_type": "source_candidate_planning",
+      "downstream_value": "Reviewers can see which evidence should be fetched before proof debt is reduced.",
+      "ia_authority_boundary": "Provider proof can inform review, but IA Packet identity, decision lock, verdict, and next human action remain authoritative.",
+      "key_metrics": {
+        "api_call_made": false,
+        "can_reduce_proof_debt": false,
+        "cannot_grant_access": true,
+        "fallback_used": true,
+        "freshness_labels": [
+          "not_fetched_in_offline_mode"
+        ],
+        "mode": "deterministic_fallback",
+        "query_count": 5,
+        "query_variant_count": 10,
+        "source_url_count": 0
+      },
+      "proof_node_count": 20,
+      "provider": "tavily",
+      "receipt_id": "svr_tavily_dcaa0cdf4355",
+      "role": "Evidence search and freshness layer",
+      "safety_boundary": {
+        "can_approve": false,
+        "can_change_verdict": false,
+        "can_execute_external_write": false,
+        "can_grant_permissions": false,
+        "can_mutate_packet": false,
+        "can_reduce_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "schema_version": "sponsor_value_receipt.v0",
+      "source_refs": [
+        "missing_proof[0]",
+        "missing_proof[1]",
+        "missing_proof[2]",
+        "missing_proof[3]",
+        "missing_proof[4]",
+        "tavily.evidence_candidates[0]",
+        "tavily.evidence_candidates[0].query_variants[0]",
+        "tavily.evidence_candidates[0].query_variants[1]",
+        "tavily.evidence_candidates[0].source_quality",
+        "tavily.evidence_candidates[1]",
+        "tavily.evidence_candidates[1].query_variants[0]",
+        "tavily.evidence_candidates[1].query_variants[1]"
+      ],
+      "sponsor_value": "Turns missing proof into query plans, source candidates, freshness labels, and reviewer-owned evidence slots.",
+      "what_stayed_blocked": "No proof debt is reduced and no access is approved from search output alone."
+    },
+    {
+      "attached_packet_fields": [
+        "missing_proof",
+        "tool_scope"
+      ],
+      "contribution_type": "dry_run_permission_diff",
+      "downstream_value": "Security and engineering can review the exact tool blast radius before granting scope.",
+      "ia_authority_boundary": "Provider proof can inform review, but IA Packet identity, decision lock, verdict, and next human action remain authoritative.",
+      "key_metrics": {
+        "admin_like_action_count": 4,
+        "api_call_made": false,
+        "blocked_action_count": 9,
+        "fallback_used": true,
+        "max_risk_level": "critical",
+        "mode": "deterministic_fallback",
+        "tool_count": 3,
+        "would_execute": false,
+        "write_like_action_count": 5
+      },
+      "proof_node_count": 21,
+      "provider": "composio",
+      "receipt_id": "svr_composio_a8fb7cd4b14f",
+      "role": "Tool permission blast-radius layer",
+      "safety_boundary": {
+        "can_approve": false,
+        "can_change_verdict": false,
+        "can_execute_external_write": false,
+        "can_grant_permissions": false,
+        "can_mutate_packet": false,
+        "can_reduce_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "schema_version": "sponsor_value_receipt.v0",
+      "source_refs": [
+        "composio.permission_diffs.github.blast_radius.blocked_actions[0]",
+        "composio.permission_diffs.github.blast_radius.blocked_actions[1]",
+        "composio.permission_diffs.github.blast_radius.blocked_actions[2]",
+        "composio.permission_diffs.github.execute_action_preview",
+        "composio.permission_diffs.github.permission_review_matrix",
+        "composio.permission_diffs.github.required_scopes_or_proof[0]",
+        "composio.permission_diffs.github.required_scopes_or_proof[1]",
+        "composio.permission_diffs.github.required_scopes_or_proof[2]",
+        "composio.permission_diffs.jira.blast_radius.blocked_actions[0]",
+        "composio.permission_diffs.jira.blast_radius.blocked_actions[1]",
+        "composio.permission_diffs.jira.blast_radius.blocked_actions[2]",
+        "composio.permission_diffs.jira.execute_action_preview"
+      ],
+      "sponsor_value": "Projects connector actions into blocked write/admin scopes before any tool executes.",
+      "what_stayed_blocked": "Write-like and admin-like actions stay blocked before execution."
+    },
+    {
+      "attached_packet_fields": [
+        "runtime_trace"
+      ],
+      "contribution_type": "runtime_trace_projection",
+      "downstream_value": "Operators get an audit-shaped trace of what would happen without allowing the agent to act.",
+      "ia_authority_boundary": "Provider proof can inform review, but IA Packet identity, decision lock, verdict, and next human action remain authoritative.",
+      "key_metrics": {
+        "api_call_made": false,
+        "attempted_action_count": 9,
+        "blocked_event_count": 9,
+        "checkpoint_count": 3,
+        "fallback_used": true,
+        "human_review_boundary_preserved": true,
+        "mode": "deterministic_fallback",
+        "runtime_write_attempted": false
+      },
+      "proof_node_count": 21,
+      "provider": "openclaw",
+      "receipt_id": "svr_openclaw_00da6824846d",
+      "role": "Runtime trace and blocked-action layer",
+      "safety_boundary": {
+        "can_approve": false,
+        "can_change_verdict": false,
+        "can_execute_external_write": false,
+        "can_grant_permissions": false,
+        "can_mutate_packet": false,
+        "can_reduce_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "schema_version": "sponsor_value_receipt.v0",
+      "source_refs": [
+        "openclaw.attempted_action_timeline[0]",
+        "openclaw.attempted_action_timeline[1]",
+        "openclaw.attempted_action_timeline[2]",
+        "openclaw.attempted_action_timeline[3]",
+        "openclaw.attempted_action_timeline[4]",
+        "openclaw.attempted_action_timeline[5]",
+        "openclaw.attempted_action_timeline[6]",
+        "openclaw.attempted_action_timeline[7]",
+        "openclaw.attempted_action_timeline[8]",
+        "openclaw.blocked_action_events[0]",
+        "openclaw.blocked_action_events[1]",
+        "openclaw.blocked_action_events[2]"
+      ],
+      "sponsor_value": "Shows the checkpoint timeline, attempted actions, policy decisions, and blocked outcomes.",
+      "what_stayed_blocked": "Attempted writes remain blocked and runtime traces cannot replace human review."
+    },
+    {
+      "attached_packet_fields": [
+        "blocked_claims",
+        "claim_ledger",
+        "decision_lock",
+        "safety_invariants"
+      ],
+      "contribution_type": "locked_field_narration",
+      "downstream_value": "CFO, Security, CTO, and Legal readers get readable summaries without losing packet authority.",
+      "ia_authority_boundary": "Provider proof can inform review, but IA Packet identity, decision lock, verdict, and next human action remain authoritative.",
+      "key_metrics": {
+        "api_call_made": false,
+        "can_change_verdict": false,
+        "can_mutate_packet": false,
+        "draft_output_count": 3,
+        "fallback_used": true,
+        "forbidden_phrases_present": [],
+        "locked_field_count": 4,
+        "mode": "deterministic_fallback",
+        "required_anchors_present": true
+      },
+      "proof_node_count": 9,
+      "provider": "nebius",
+      "receipt_id": "svr_nebius_6e22f2721e81",
+      "role": "Reviewer synthesis layer",
+      "safety_boundary": {
+        "can_approve": false,
+        "can_change_verdict": false,
+        "can_execute_external_write": false,
+        "can_grant_permissions": false,
+        "can_mutate_packet": false,
+        "can_reduce_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "schema_version": "sponsor_value_receipt.v0",
+      "source_refs": [
+        "nebius.llm_may_edit",
+        "nebius.llm_must_not_edit",
+        "nebius.narration",
+        "nebius.required_tone_anchors",
+        "nebius.reviewer_narration_contract",
+        "nebius.reviewer_narration_contract.draft_outputs[0]",
+        "nebius.reviewer_narration_contract.draft_outputs[1]",
+        "nebius.reviewer_narration_contract.draft_outputs[2]",
+        "nebius.reviewer_narration_contract.locked_fields[0]",
+        "nebius.reviewer_narration_contract.locked_fields[1]",
+        "nebius.reviewer_narration_contract.locked_fields[2]",
+        "nebius.reviewer_narration_contract.locked_fields[3]"
+      ],
+      "sponsor_value": "Drafts reviewer-facing summaries from locked packet facts while preserving verdict and safety state.",
+      "what_stayed_blocked": "Narration cannot edit verdicts, blocked claims, safety state, or approval posture."
+    },
+    {
+      "attached_packet_fields": [
+        "downstream_verdict",
+        "safety_invariants"
+      ],
+      "contribution_type": "packet_backed_guardrail_verdict",
+      "downstream_value": "Gateways can ask IA for a packet-backed allow/block answer instead of trusting raw agent intent.",
+      "ia_authority_boundary": "Provider proof can inform review, but IA Packet identity, decision lock, verdict, and next human action remain authoritative.",
+      "key_metrics": {
+        "api_call_made": false,
+        "auth_required": true,
+        "delivery_mode": "live_guardrail_webhook",
+        "mode": "deterministic_fallback",
+        "portkey_api_call_made": false,
+        "portkey_policy_mutation_allowed": false,
+        "raw_agent_intent_trusted": false,
+        "reason": "requested_mode_not_packet_scoped",
+        "response_verdict": false,
+        "webhook_path": "/api/portkey/guardrail"
+      },
+      "proof_node_count": 3,
+      "provider": "portkey",
+      "receipt_id": "svr_portkey_1aaf570ea28c",
+      "role": "Downstream guardrail consumer",
+      "safety_boundary": {
+        "can_approve": false,
+        "can_change_verdict": false,
+        "can_execute_external_write": false,
+        "can_grant_permissions": false,
+        "can_mutate_packet": false,
+        "can_reduce_proof_debt_automatically": false,
+        "requires_human_review": true
+      },
+      "schema_version": "sponsor_value_receipt.v0",
+      "source_refs": [
+        "https://portkey.ai/docs/product/guardrails/bring-your-own-guardrails",
+        "portkey_guardrail_proof_loop.ia_packet_reference",
+        "portkey_guardrail_proof_loop.invariants",
+        "portkey_guardrail_proof_loop.packet_truth",
+        "portkey_guardrail_proof_loop.portkey_call",
+        "portkey_guardrail_proof_loop.portkey_policy_preview"
+      ],
+      "sponsor_value": "Consumes IA packet truth as a guardrail verdict before model or spend movement.",
+      "what_stayed_blocked": "IA does not push policy, call Portkey APIs, mutate Portkey state, or approve spend."
+    }
+  ],
+  "safety": {
+    "all_receipts_non_approving": true,
+    "all_receipts_non_auto_reducing": true,
+    "all_receipts_non_executing": true,
+    "all_receipts_non_granting": true,
+    "all_receipts_non_mutating": true,
+    "all_receipts_preserve_verdict": true,
+    "all_receipts_require_human_review": true,
+    "packet_remains_authority": true
+  },
+  "scenario": "support_triage_agent",
+  "schema_version": "sponsor_value_receipts.v0",
+  "summary": {
+    "proof_edge_count": 141,
+    "proof_node_count": 80,
+    "provider_count": 5,
+    "providers": [
+      "tavily",
+      "composio",
+      "openclaw",
+      "nebius",
+      "portkey"
+    ],
+    "receipt_count": 5
+  }
+}

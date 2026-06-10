@@ -135,6 +135,13 @@ GENERATED_ARTIFACT_FAMILIES = (
         ),
     ),
     ArtifactFamily(
+        "Sponsor Value Receipts",
+        (
+            "sponsor_value_receipts.md",
+            "sponsor_value_receipts.json",
+        ),
+    ),
+    ArtifactFamily(
         "Sponsor Proof Trace",
         (
             "support_triage_trial.sponsor_proof_trace.md",

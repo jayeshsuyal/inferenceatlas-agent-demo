@@ -36,6 +36,20 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertTrue(report["sponsor_live_readiness"]["all_non_approving"])
         self.assertTrue(report["sponsor_live_readiness"]["all_non_granting"])
         self.assertTrue(report["sponsor_live_readiness"]["all_non_mutating"])
+        self.assertEqual(report["sponsor_value_receipts"]["provider_count"], 5)
+        self.assertEqual(report["sponsor_value_receipts"]["receipt_count"], 5)
+        self.assertEqual(
+            report["sponsor_value_receipts"]["providers"],
+            ["tavily", "composio", "openclaw", "nebius", "portkey"],
+        )
+        self.assertTrue(report["sponsor_value_receipts"]["packet_remains_authority"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_require_human_review"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_non_approving"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_non_granting"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_non_executing"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_non_mutating"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_preserve_verdict"])
+        self.assertTrue(report["sponsor_value_receipts"]["all_non_auto_reducing"])
         self.assertEqual(report["policy_gate"]["admin_code_fix_bot"]["decision"], "BLOCKED")
         self.assertTrue(report["access_speed_layer"]["all_routes_immediate"])
         self.assertTrue(report["access_speed_layer"]["has_fast_lane"])
@@ -142,6 +156,8 @@ class JudgeHarnessTests(unittest.TestCase):
             "examples/generated/support_triage_agent.outcome_memo.json",
             "examples/generated/sponsor_live_readiness.md",
             "examples/generated/sponsor_live_readiness.json",
+            "examples/generated/sponsor_value_receipts.md",
+            "examples/generated/sponsor_value_receipts.json",
             "examples/generated/review_room.html",
             "examples/generated/support_triage_agent.proof_health.md",
             "examples/generated/support_triage_agent.proof_health.json",
@@ -197,6 +213,9 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("examples/generated/support_triage_agent.outcome_memo.md", markdown)
         self.assertIn("Sponsor Live Readiness", markdown)
         self.assertIn("examples/generated/sponsor_live_readiness.md", markdown)
+        self.assertIn("Sponsor Value Receipts", markdown)
+        self.assertIn("Sponsors provide proof signals. IA converts them into packet authority.", markdown)
+        self.assertIn("examples/generated/sponsor_value_receipts.md", markdown)
         self.assertIn("fast_lane_scoped_validation", markdown)
         self.assertIn("proof_routed_scoped_validation", markdown)
         self.assertIn("blocked_fast", markdown)
@@ -230,6 +249,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertIn("dry_run_permission_diff", result.stdout)
         self.assertIn("Packet Outcome Memo", result.stdout)
         self.assertIn("Sponsor Live Readiness", result.stdout)
+        self.assertIn("Sponsor Value Receipts", result.stdout)
+        self.assertIn("examples/generated/sponsor_value_receipts.md", result.stdout)
         self.assertIn("all non-approving: True", result.stdout)
         self.assertIn("Design Partner Trial Runner", result.stdout)
         self.assertIn("Design Partner Outcome Memo", result.stdout)
@@ -255,6 +276,8 @@ class JudgeHarnessTests(unittest.TestCase):
         self.assertEqual(report["policy_gate"]["admin_code_fix_bot"]["decision"], "BLOCKED")
         self.assertEqual(report["sponsor_adapters"]["composio"]["proof_pack_types"], ["permission_diff"])
         self.assertTrue(report["sponsor_live_readiness"]["all_contracts_ready"])
+        self.assertEqual(report["sponsor_value_receipts"]["provider_count"], 5)
+        self.assertTrue(report["sponsor_value_receipts"]["packet_remains_authority"])
         self.assertFalse(report["sponsor_live_readiness"]["default_path_requires_keys"])
         self.assertTrue(report["sponsor_adapters"]["tavily"]["human_review_required"])
         self.assertEqual(report["access_speed_layer"]["blocked_fast_count"], 1)

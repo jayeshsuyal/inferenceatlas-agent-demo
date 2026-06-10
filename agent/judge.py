@@ -24,6 +24,7 @@ from .review_room import write_review_room_html
 from .scenarios import GENERATED_DIR, ROOT_DIR, SCENARIOS, build_scenario_packet, write_scenario_artifacts
 from .sponsor_proof_trace import SPONSOR_ORDER, build_sponsor_proof_trace, write_sponsor_proof_trace_artifacts
 from .sponsor_readiness import build_sponsor_live_readiness, write_sponsor_live_readiness_artifacts
+from .sponsor_value_receipts import build_sponsor_value_receipts, write_sponsor_value_receipts_artifacts
 from .spend import SPEND_SCENARIO_ID, build_spend_review_bundle, write_spend_review_artifacts
 from .trust import build_trust_receipt, write_trust_artifacts
 from .trial import DEFAULT_TRIAL_REQUEST, build_trial_report, write_trial_artifacts
@@ -49,6 +50,7 @@ JUDGE_COMMANDS = [
     "python3 -m agent.gate --all",
     "python3 -m agent.adapters --all",
     "python3 -m agent.sponsor_readiness",
+    "python3 -m agent.sponsor_value_receipts",
     "python3 -m agent.sponsor_proof_trace examples/requests/support_triage_trial.yml",
     "python3 -m agent.trust",
     "python3 -m agent.review_room",
@@ -78,6 +80,8 @@ PRIMARY_ARTIFACTS = [
     "examples/generated/support_triage_agent.outcome_memo.json",
     "examples/generated/sponsor_live_readiness.md",
     "examples/generated/sponsor_live_readiness.json",
+    "examples/generated/sponsor_value_receipts.md",
+    "examples/generated/sponsor_value_receipts.json",
     "examples/generated/support_triage_trial.sponsor_proof_trace.md",
     "examples/generated/support_triage_trial.sponsor_proof_trace.json",
     "examples/generated/review_room.md",
@@ -140,6 +144,7 @@ def write_judge_artifacts(output_dir: Path = GENERATED_DIR) -> list[Path]:
     written.extend(write_scenario_artifacts(output_dir))
     written.extend(_write_support_trace(output_dir))
     written.extend(write_sponsor_live_readiness_artifacts(output_dir=output_dir))
+    written.extend(write_sponsor_value_receipts_artifacts(output_dir=output_dir))
     written.extend(write_sponsor_proof_trace_artifacts(DEFAULT_TRIAL_REQUEST, output_dir))
     written.extend(write_trust_artifacts(output_dir))
     written.extend(write_packet_diff_artifacts(output_dir))
@@ -196,6 +201,7 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
     gate_results = evaluate_all()
     adapter_summary = _adapter_summary()
     sponsor_readiness = build_sponsor_live_readiness()
+    sponsor_value_receipts = build_sponsor_value_receipts()
     trust_receipt = build_trust_receipt()
     packet_diff = build_packet_diff_report()
     outcome_memo = build_packet_outcome_memo()
@@ -360,6 +366,25 @@ def build_judge_report(*, write_artifacts: bool = True) -> dict[str, Any]:
             "approves_access": trial_evidence_replay["safety_boundary"]["approves_access"],
             "grants_permissions": trial_evidence_replay["safety_boundary"]["grants_permissions"],
             "executes_external_writes": trial_evidence_replay["safety_boundary"]["executes_external_writes"],
+        },
+        "sponsor_value_receipts": {
+            "receipt_set_id": sponsor_value_receipts["receipt_set_id"],
+            "scenario": sponsor_value_receipts["scenario"],
+            "provider_count": sponsor_value_receipts["summary"]["provider_count"],
+            "receipt_count": sponsor_value_receipts["summary"]["receipt_count"],
+            "providers": sponsor_value_receipts["summary"]["providers"],
+            "proof_node_count": sponsor_value_receipts["summary"]["proof_node_count"],
+            "proof_edge_count": sponsor_value_receipts["summary"]["proof_edge_count"],
+            "packet_remains_authority": sponsor_value_receipts["safety"]["packet_remains_authority"],
+            "all_require_human_review": sponsor_value_receipts["safety"]["all_receipts_require_human_review"],
+            "all_non_approving": sponsor_value_receipts["safety"]["all_receipts_non_approving"],
+            "all_non_granting": sponsor_value_receipts["safety"]["all_receipts_non_granting"],
+            "all_non_executing": sponsor_value_receipts["safety"]["all_receipts_non_executing"],
+            "all_non_mutating": sponsor_value_receipts["safety"]["all_receipts_non_mutating"],
+            "all_preserve_verdict": sponsor_value_receipts["safety"]["all_receipts_preserve_verdict"],
+            "all_non_auto_reducing": sponsor_value_receipts["safety"]["all_receipts_non_auto_reducing"],
+            "artifact": "examples/generated/sponsor_value_receipts.md",
+            "json_artifact": "examples/generated/sponsor_value_receipts.json",
         },
         "sponsor_proof_trace": {
             "trace_id": sponsor_proof_trace["trace_id"],
@@ -582,6 +607,14 @@ def report_has_failures(report: dict[str, Any]) -> bool:
         or report["design_partner_evidence_replay"]["approves_access"]
         or report["design_partner_evidence_replay"]["grants_permissions"]
         or report["design_partner_evidence_replay"]["executes_external_writes"]
+        or not report["sponsor_value_receipts"]["packet_remains_authority"]
+        or not report["sponsor_value_receipts"]["all_require_human_review"]
+        or not report["sponsor_value_receipts"]["all_non_approving"]
+        or not report["sponsor_value_receipts"]["all_non_granting"]
+        or not report["sponsor_value_receipts"]["all_non_executing"]
+        or not report["sponsor_value_receipts"]["all_non_mutating"]
+        or not report["sponsor_value_receipts"]["all_preserve_verdict"]
+        or not report["sponsor_value_receipts"]["all_non_auto_reducing"]
         or not report["sponsor_proof_trace"]["decision_lock_unchanged"]
         or tuple(report["sponsor_proof_trace"]["sponsor_order"]) != SPONSOR_ORDER
         or not report["sponsor_proof_trace"]["all_fallback_used"]
@@ -861,6 +894,31 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
         ]
     )
 
+    value_receipts = report["sponsor_value_receipts"]
+    lines.extend(
+        [
+            "",
+            "## Sponsor Value Receipts",
+            "",
+            "Sponsors provide proof signals. IA converts them into packet authority.",
+            "",
+            f"- receipt_set_id: `{value_receipts['receipt_set_id']}`",
+            f"- scenario: `{value_receipts['scenario']}`",
+            f"- providers: {', '.join(value_receipts['providers'])}",
+            f"- receipts: {value_receipts['receipt_count']}",
+            f"- proof nodes: {value_receipts['proof_node_count']}",
+            f"- proof edges: {value_receipts['proof_edge_count']}",
+            f"- packet remains authority: {value_receipts['packet_remains_authority']}",
+            f"- all require human review: {value_receipts['all_require_human_review']}",
+            f"- all non-approving: {value_receipts['all_non_approving']}",
+            f"- all non-granting: {value_receipts['all_non_granting']}",
+            f"- all non-executing: {value_receipts['all_non_executing']}",
+            f"- all non-mutating: {value_receipts['all_non_mutating']}",
+            f"- all preserve verdict: {value_receipts['all_preserve_verdict']}",
+            f"- artifact: `{value_receipts['artifact']}`",
+        ]
+    )
+
     sponsor_trace = report["sponsor_proof_trace"]
     lines.extend(
         [
@@ -1018,15 +1076,16 @@ def render_judge_report_markdown(report: dict[str, Any]) -> str:
             "8. Read `examples/generated/trust_receipt.md`.",
             "9. Read `examples/generated/support_triage_agent.proof_health.md`.",
             "10. Read `examples/generated/sponsor_live_readiness.md`.",
-            "11. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
-            "12. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
-            "13. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
-            "14. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
-            "15. Read `examples/generated/support_triage_trial.evidence_replay.md`.",
-            "16. Read `examples/generated/support_triage_trial.pilot_memo.md` and copy `examples/generated/support_triage_trial.copy_review_brief.md`.",
-            "17. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
-            "18. Confirm `admin_code_fix_bot` remains blocked before validation.",
-            "19. Confirm sponsor adapters stay dry-run and non-approving.",
+            "11. Read `examples/generated/sponsor_value_receipts.md`.",
+            "12. Read `docs/DESIGN_PARTNER_BRIEF.md` for the one-workflow trial path.",
+            "13. Open `docs/DESIGN_PARTNER_TRIAL_KIT.md` and `examples/requests/design_partner_trial.yml`.",
+            "14. Run `python3 -m agent.trial examples/requests/support_triage_trial.yml`.",
+            "15. Read `examples/generated/support_triage_trial.outcome_memo.md`.",
+            "16. Read `examples/generated/support_triage_trial.evidence_replay.md`.",
+            "17. Read `examples/generated/support_triage_trial.pilot_memo.md` and copy `examples/generated/support_triage_trial.copy_review_brief.md`.",
+            "18. Use `docs/REVIEW_ROOM_WALKTHROUGH.md` for the demo talk track.",
+            "19. Confirm `admin_code_fix_bot` remains blocked before validation.",
+            "20. Confirm sponsor adapters stay dry-run and non-approving.",
             "",
         ]
     )

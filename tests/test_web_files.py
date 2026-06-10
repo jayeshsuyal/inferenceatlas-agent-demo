@@ -163,6 +163,15 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("Open ProofGraph", html)
         self.assertIn("Copy review brief", html)
         self.assertIn("Inspect packet", html)
+        self.assertIn('id="repo-proof-resolution-card"', html)
+        self.assertIn("Attach proof before rerun.", html)
+        self.assertIn(
+            "Checking proof does not approve access. It marks human evidence as attached and requires a packet rerun.",
+            html,
+        )
+        self.assertIn('class="repo-proof-checklist"', html)
+        self.assertIn("Attach checked proof", html)
+        self.assertIn("No proof attached. Verdict unchanged.", html)
         self.assertIn("<summary>More examples</summary>", html)
         self.assertIn(
             "Downstream systems do not trust raw agent intent. They trust the IA Packet.",
@@ -205,9 +214,15 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("packet generated from the selected ReviewRun", js)
         self.assertIn("proof steps mapped", js)
         self.assertIn("DEFAULT_REVIEW_ACCESS_REQUEST", js)
+        self.assertIn("DEFAULT_REVIEW_PROOF_ITEMS", js)
         self.assertIn("support-triage-bot needs to read issues, comment, and create labels.", js)
         self.assertIn('/api/review-runs/${encodeURIComponent(runId)}/packet', js)
+        self.assertIn('/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/proof', js)
         self.assertIn("movementLane", js)
+        self.assertIn("renderRepoProofResolution", js)
+        self.assertIn("attachReviewRunProof", js)
+        self.assertIn("ready_for_rerun", js)
+        self.assertIn("Proof attached. Verdict and Portkey state unchanged", js)
         self.assertIn("repo-movement-grid", js)
         self.assertIn("Review required", js)
         self.assertIn("source_of_truth", js)
@@ -316,6 +331,11 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn(".repo-primary-action:disabled", css)
         self.assertIn(".repo-review-request", css)
         self.assertIn(".repo-proof-result[hidden]", css)
+        self.assertIn(".repo-proof-resolution-card", css)
+        self.assertIn(".repo-proof-checklist", css)
+        self.assertIn(".repo-proof-check.attached", css)
+        self.assertIn(".repo-proof-attach-action", css)
+        self.assertIn(".repo-proof-attach-status", css)
         self.assertIn(".repo-proof-grid", css)
         self.assertIn(".repo-proof-accordion", css)
         self.assertIn(".repo-accordion-body", css)

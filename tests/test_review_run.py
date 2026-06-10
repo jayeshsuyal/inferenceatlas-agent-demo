@@ -262,6 +262,52 @@ class ReviewRunContractTests(TestCase):
         )
         self.assertIs(proof_attached.packet["ready_for_rerun"], True)
         self.assertEqual(proof_attached.portkey_preview, before_portkey)
+        projection = review_run_packet_projection(proof_attached)
+        self.assertTrue(projection["proof_resolution"]["ready_for_rerun"])
+        self.assertEqual(projection["proof_resolution"]["attached_proof_count"], 3)
+        self.assertFalse(projection["proof_resolution"]["verdict_changed"])
+        self.assertFalse(projection["proof_resolution"]["portkey_changed"])
+        self.assertFalse(projection["safety_boundary"]["proof_attachment_changes_verdict"])
+
+    def test_proof_attachment_rejects_empty_duplicate_unknown_and_approval_shortcuts(self) -> None:
+        run = _packet_run()
+
+        for label, proof_items, pattern in (
+            ("empty", [], "proof_items cannot be empty"),
+            (
+                "duplicate",
+                [
+                    {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                    {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                ],
+                "duplicate proof item",
+            ),
+            (
+                "unknown",
+                [{"id": "approve_everything", "label": "Approve all blocked claims"}],
+                "unknown proof item",
+            ),
+            ("malformed", ["repo_owner_approval"], "proof item requires object"),
+            (
+                "approval_shortcut",
+                [
+                    {
+                        "id": "repo_owner_approval",
+                        "label": "Repo owner approval",
+                        "evidence_note": "approve all blocked claims",
+                    }
+                ],
+                "cannot approve or override",
+            ),
+        ):
+            with self.subTest(label=label):
+                self.assertRaisesRegexMessage(
+                    ValueError,
+                    pattern,
+                    attach_review_run_proof,
+                    run,
+                    proof_items,
+                )
 
     def test_rerun_preserves_raw_request_and_creates_review_delta(self) -> None:
         run = _packet_run()

@@ -124,6 +124,7 @@ const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
 const repoNextActionCard = document.getElementById("repo-next-action-card");
+const repoProofResolutionCard = document.getElementById("repo-proof-resolution-card");
 const repoSponsorProofCard = document.getElementById("repo-sponsor-proof-card");
 const repoPortkeyCard = document.getElementById("repo-portkey-card");
 
@@ -204,6 +205,11 @@ let drivePickerKind = "all";
 const REPO_PROOF_FIXTURE = "support_triage_agent";
 const DEFAULT_REVIEW_ACCESS_REQUEST =
   "support-triage-bot needs to read issues, comment, and create labels.";
+const DEFAULT_REVIEW_PROOF_ITEMS = [
+  { id: "repo_owner_approval", label: "Repo owner approval" },
+  { id: "rollback_offswitch", label: "Rollback/off-switch proof" },
+  { id: "environment_boundary", label: "Environment boundary" },
+];
 const FIRST_RUN_PACKET_URL = "/packet?fixture=support_triage_agent&autorun=1";
 const FIRST_RUN_HEADING =
   "Review GitHub access for an AI agent";
@@ -2663,6 +2669,75 @@ function movementLane(label, items = [], tone = "review") {
   `;
 }
 
+function proofItemsForPacket(packet) {
+  const items = packet?.review_run?.missing_proof;
+  if (!Array.isArray(items) || !items.length) return DEFAULT_REVIEW_PROOF_ITEMS;
+  return items
+    .map((item) => ({
+      id: String(item?.id || "").trim(),
+      label: String(item?.label || item?.id || "").trim(),
+    }))
+    .filter((item) => item.id && item.label);
+}
+
+function attachedProofIds(packet) {
+  const attached = packet?.proof_resolution?.attached_proof || packet?.review_run?.attached_proof || [];
+  return new Set((attached || []).map((item) => String(item?.id || "").trim()).filter(Boolean));
+}
+
+function updateProofAttachButton() {
+  if (!repoProofResolutionCard) return;
+  const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
+  const checked = Array.from(repoProofResolutionCard.querySelectorAll('input[type="checkbox"]')).filter(
+    (input) => input.checked && !input.disabled
+  );
+  if (button) button.disabled = checked.length === 0;
+}
+
+function renderRepoProofResolution(packet) {
+  if (!repoProofResolutionCard) return;
+  const proof = packet.proof_resolution || {};
+  const readyForRerun = Boolean(proof.ready_for_rerun || packet?.review_run?.packet?.ready_for_rerun);
+  const attachedIds = attachedProofIds(packet);
+  const proofItems = proofItemsForPacket(packet);
+  const checklist = repoProofResolutionCard.querySelector(".repo-proof-checklist");
+  const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
+  const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
+  repoProofResolutionCard.dataset.readyForRerun = String(readyForRerun);
+
+  const title = repoProofResolutionCard.querySelector("h3");
+  if (title) {
+    title.textContent = readyForRerun ? "Proof attached. Rerun required." : "Attach proof before rerun.";
+  }
+  if (checklist) {
+    checklist.innerHTML = proofItems
+      .map((item) => {
+        const checked = attachedIds.has(item.id);
+        return `
+          <label class="repo-proof-check${checked ? " attached" : ""}">
+            <input type="checkbox" data-proof-id="${escapeHtml(item.id)}" data-proof-label="${escapeHtml(item.label)}"${checked ? " checked" : ""}${readyForRerun ? " disabled" : ""} />
+            <span>${escapeHtml(item.label)}</span>
+          </label>
+        `;
+      })
+      .join("");
+    checklist.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+      input.addEventListener("change", updateProofAttachButton);
+    });
+  }
+  if (button) {
+    button.disabled = true;
+    button.textContent = readyForRerun ? "Proof attached" : "Attach checked proof";
+    button.onclick = readyForRerun ? null : () => attachReviewRunProof();
+  }
+  if (status) {
+    status.classList.remove("error");
+    status.textContent = readyForRerun
+      ? "Proof attached. Verdict unchanged; regenerate the packet before movement changes."
+      : "No proof attached. Verdict unchanged.";
+  }
+}
+
 function setRepoCockpitBusy(loading) {
   if (btnRunRepoProof) {
     btnRunRepoProof.dataset.loading = String(loading);
@@ -2744,6 +2819,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (btnExportRepoBrief) {
     btnExportRepoBrief.disabled = !packet.copy_review_brief;
   }
+  renderRepoProofResolution(packet);
 
   if (repoNextActionCard) {
     repoNextActionCard.innerHTML = `
@@ -2810,6 +2886,70 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
       </div>
     `;
     repoPortkeyCard.open = false;
+  }
+}
+
+async function attachReviewRunProof() {
+  if (!currentReviewRun?.run_id || !repoProofResolutionCard) return;
+  const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
+  const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
+  const selected = Array.from(repoProofResolutionCard.querySelectorAll('input[type="checkbox"]'))
+    .filter((input) => input.checked && !input.disabled)
+    .map((input) => ({
+      id: input.dataset.proofId,
+      label: input.dataset.proofLabel,
+      evidence_note: "Human checked this proof item in the ReviewRun cockpit.",
+    }));
+
+  if (!selected.length) {
+    if (status) {
+      status.textContent = "Select at least one proof item to attach.";
+      status.classList.add("error");
+    }
+    return;
+  }
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Attaching proof...";
+  }
+  if (status) {
+    status.classList.remove("error");
+    status.textContent = "Attaching proof without changing verdict...";
+  }
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/proof`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ proof_items: selected }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "Proof attachment failed");
+    currentReviewRun = data.run || currentReviewRun;
+    const nextPacket = {
+      ...(data.packet || {}),
+      sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
+    };
+    packetDetail = nextPacket;
+    renderRepoProofCockpit(nextPacket, packetPortkeyPreview, packetPortkeyProofLoop);
+    if (repoCockpitStatus) {
+      repoCockpitStatus.classList.remove("error");
+      repoCockpitStatus.textContent =
+        "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
+    }
+    if (repoCoachRead) {
+      repoCoachRead.textContent =
+        "Current read: proof is attached to the ReviewRun. IA still needs a rerun before the packet or Portkey state can change.";
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = String(err.message || err);
+      status.classList.add("error");
+    }
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Attach checked proof";
+    }
   }
 }
 

@@ -91,8 +91,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=38", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=22", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=45", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=24", timeout=timeout)
 
     for expected in (
         "Review in 90 seconds",
@@ -100,7 +100,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Open one registered AI movement request. IA shows the packet",
         "Open one registered AI movement request.",
         "Inspect verdict, proof debt, owners, and hash.",
-        "Sponsor Run",
+        "Packet Review",
+        "Proof Run",
+        "Sponsor Proof Run",
         "composer-shell first-run-locked",
         "Ask IA about this packet",
         "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.",
@@ -114,7 +116,12 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("renderPacketTeamLenses" in js, "Team Lenses renderer missing")
     _require("Sponsors collect proof only" in js, "packet sponsor safety line missing")
     _require("Live keys" in js, "packet sponsor live-key flag missing")
-    _require("trace ${escapeHtml(trace.trace_id" in js, "packet sponsor trace id missing")
+    _require("packetDecisionTone" in js, "packet document decision tone missing")
+    _require("sponsor-proof-strip" in js, "packet sponsor proof strip missing")
+    _require(
+        "Sponsors contribute evidence only. IA keeps the packet decision locked." in js,
+        "packet sponsor compact safety line missing",
+    )
     _require("Packet-backed decision coach" in js, "Ask IA packet coach title missing")
     _require("reply-section-heading" in js, "packet-backed answer section renderer missing")
     _require("renderReplyLines" in js, "packet-backed answer list renderer missing")
@@ -124,6 +131,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         ".composer-shell.first-run-locked .composer" in css,
         "first-run chat composer must stay hidden",
     )
+    _require(".packet-status-card" in css, "packet status card CSS missing")
+    _require(".packet-inline-coach-summary" in css, "collapsed packet coach CSS missing")
+    _require(".sponsor-proof-strip" in css, "sponsor proof strip CSS missing")
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(

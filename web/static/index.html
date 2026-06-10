@@ -29,9 +29,18 @@
 
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
-          <button type="button" class="tab active" data-tab="start">Start Here</button>
-          <button type="button" class="tab" data-tab="packet">IA Packet</button>
-          <button type="button" class="tab" data-tab="walkthrough">Sponsor Run</button>
+          <button type="button" class="tab active" data-tab="start">
+            <span>Start Here</span>
+            <small>90-second path</small>
+          </button>
+          <button type="button" class="tab tab-packet" data-tab="packet">
+            <span>Packet Review</span>
+            <small>verdict + next action</small>
+          </button>
+          <button type="button" class="tab tab-proof" data-tab="walkthrough">
+            <span>Proof Run</span>
+            <small>sponsor timeline</small>
+          </button>
           <details class="advanced-nav">
             <summary>Advanced</summary>
             <div class="advanced-tab-list">
@@ -375,8 +384,8 @@
 
           <section class="packet-review-rail" id="packet-review-rail" aria-label="Review in 60 seconds">
             <div class="packet-review-rail-head">
-              <span class="eyebrow">Review in 60 seconds</span>
-              <p>Request -> IA Packet -> Sponsor proof -> Portkey proof loop -> Team lenses -> Export</p>
+              <span class="eyebrow">Packet document</span>
+              <p>Read top-to-bottom: verdict, request, proof, downstream gate, export.</p>
             </div>
             <div class="walkthrough-strip packet-review-steps">
               <button type="button" class="walk-step packet-review-step active" data-packet-target="packet-summary-card" aria-current="step">
@@ -406,7 +415,7 @@
             </div>
           </section>
 
-          <section class="walkthrough-grid packet-detail-grid">
+          <section class="walkthrough-grid packet-detail-grid packet-document-grid">
             <article class="walkthrough-panel span-2" id="packet-summary-card">
               <span class="eyebrow">Canonical object</span>
               <h3>IA Packet</h3>
@@ -423,23 +432,31 @@
             <article class="walkthrough-panel" id="packet-export-card"></article>
           </section>
 
-          <section class="packet-inline-coach" id="packet-inline-coach" aria-label="Ask IA packet coach">
-            <div class="packet-inline-coach-head">
-              <span class="eyebrow">Ask IA</span>
-              <h3>Packet-backed decision coach</h3>
-              <p>Ask the packet what can move, what is blocked, who reviews, or how Portkey would read it.</p>
+          <details class="packet-inline-coach" id="packet-inline-coach" aria-label="Ask IA packet coach">
+            <summary class="packet-inline-coach-summary">
+              <span>
+                <span class="eyebrow">Ask IA</span>
+                <strong>Explain this packet</strong>
+              </span>
+              <small>optional sidecar</small>
+            </summary>
+            <div class="packet-inline-coach-body">
+              <div class="packet-inline-coach-head">
+                <h3>Packet-backed decision coach</h3>
+                <p>Ask what can move, what is blocked, who reviews, or how Portkey would read it.</p>
+              </div>
+              <div class="packet-inline-coach-prompts" id="packet-inline-coach-prompts">
+                <button type="button" data-ask-prompt="Can this move?">Can it move?</button>
+                <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
+                <button type="button" data-ask-prompt="Who reviews this?">Review route</button>
+                <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
+              </div>
+              <p class="packet-inline-coach-status" id="packet-inline-coach-status" role="status" aria-live="polite">
+                Load an IA Packet, then ask a packet-backed follow-up. IA stays read-only.
+              </p>
+              <div class="packet-inline-coach-output" id="packet-inline-coach-output"></div>
             </div>
-            <div class="packet-inline-coach-prompts" id="packet-inline-coach-prompts">
-              <button type="button" data-ask-prompt="Can this move?">Can it move?</button>
-              <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
-              <button type="button" data-ask-prompt="Who reviews this?">Review route</button>
-              <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
-            </div>
-            <p class="packet-inline-coach-status" id="packet-inline-coach-status" role="status" aria-live="polite">
-              Load an IA Packet, then ask a packet-backed follow-up. IA stays read-only.
-            </p>
-            <div class="packet-inline-coach-output" id="packet-inline-coach-output"></div>
-          </section>
+          </details>
         </div>
 
         <div id="walkthrough-view" class="walkthrough-workspace" hidden>
@@ -475,6 +492,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=44"></script>
+    <script src="/static/app.js?v=45"></script>
   </body>
 </html>

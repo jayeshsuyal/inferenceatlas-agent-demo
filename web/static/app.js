@@ -2329,6 +2329,54 @@ function proofGraphUrl() {
   return "/proofgraph";
 }
 
+function packetDecisionTone(decision = {}) {
+  const verdict = String(decision.verdict_class || "").toLowerCase();
+  if (decision.approval_granted === true) return "ready";
+  if (verdict.includes("blocked") || verdict.includes("deny")) return "blocked";
+  if (decision.requires_human_review !== false) return "review";
+  return "ready";
+}
+
+function packetDecisionLabel(decision = {}) {
+  const tone = packetDecisionTone(decision);
+  if (tone === "ready") return "Ready";
+  if (tone === "blocked") return "Blocked";
+  return "Review required";
+}
+
+function statusPill(label, tone = "review") {
+  return `<span class="status-pill ${escapeHtml(tone)}">${escapeHtml(label)}</span>`;
+}
+
+function statusFact(label, value, tone, displayValue = null) {
+  return `
+    <div class="status-fact ${escapeHtml(tone)}">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(displayValue ?? String(value))}</strong>
+    </div>
+  `;
+}
+
+function lockToneFor(label, value) {
+  if (label === "Human review") return value ? "review" : "ready";
+  return value ? "ready" : "blocked";
+}
+
+function lockTextFor(label, value) {
+  if (label === "Human review") return value ? "required" : "not required";
+  return value ? "allowed" : "blocked";
+}
+
+function renderSystemChips(items = []) {
+  const selected = items.slice(0, 5).filter(Boolean);
+  if (!selected.length) return "";
+  return `
+    <div class="system-chip-row" aria-label="Requested systems">
+      ${selected.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+    </div>
+  `;
+}
+
 function packetPortkeyExportName(payload) {
   const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
   return `${packetId}.portkey_gate.dry_run.json`;
@@ -2475,6 +2523,8 @@ function renderPacketDetail(data) {
   const packet = data.packet_reference || {};
   const local = data.local_verification || {};
   const trace = data.sponsor_proof_trace || null;
+  const decisionTone = packetDecisionTone(decision);
+  const decisionLabel = packetDecisionLabel(decision);
   packetTitle.textContent = data.title || "IA Packet";
   packetSubtitle.textContent = data.definition || "Canonical packet detail.";
   if (fixture.fixture_id) {
@@ -2482,38 +2532,49 @@ function renderPacketDetail(data) {
   }
   markPacketReviewRailLoaded();
 
+  packetSummaryCard.className = `walkthrough-panel span-2 packet-status-card ${decisionTone}`;
   packetSummaryCard.innerHTML = `
-    <span class="eyebrow">Canonical object</span>
-    <h3>${escapeHtml(data.product_object || "IA Packet")}</h3>
-    <p class="walkthrough-summary">${escapeHtml(data.definition || "")}</p>
-    <code class="walkthrough-fact">${escapeHtml(fixture.path || fixture.scenario_name || fixture.fixture_id || "")}</code>
-    <p class="safety-anchor">${escapeHtml(data.safety_anchor || "IA did not approve. The next human action is named above.")}</p>
-  `;
-
-  packetDecisionCard.innerHTML = `
-    <span class="eyebrow">Decision</span>
-    <h3>${escapeHtml(decision.verdict_class || "review_required")}</h3>
-    <div class="walk-metrics">
-      <div><span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong></div>
-      <div><span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong></div>
-      <div><span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong></div>
-      <div><span>Human review</span><strong>${escapeHtml(String(decision.requires_human_review))}</strong></div>
+    <div class="packet-status-head">
+      <div>
+        <span class="eyebrow">IA Packet</span>
+        <h3>${escapeHtml(decisionLabel)}</h3>
+        <p class="packet-status-line">${escapeHtml(decision.next_human_action || "Human review is required before this packet moves.")}</p>
+      </div>
+      ${statusPill(decisionLabel, decisionTone)}
     </div>
-    <p class="walkthrough-summary">${escapeHtml(decision.next_human_action || "")}</p>
+    ${renderSystemChips(data.requested_systems || [])}
+    <p class="packet-status-foot">${escapeHtml(data.safety_anchor || "IA did not approve. The next human action is named above.")}</p>
   `;
 
+  packetDecisionCard.className = "walkthrough-panel packet-lock-card";
+  packetDecisionCard.innerHTML = `
+    <span class="eyebrow">Decision lock</span>
+    <h3>${escapeHtml(decision.verdict_class || "review_required")}</h3>
+    <div class="status-fact-grid">
+      ${statusFact("Production", decision.production_access, lockToneFor("Production", decision.production_access), lockTextFor("Production", decision.production_access))}
+      ${statusFact("Grants", decision.permission_grants, lockToneFor("Grants", decision.permission_grants), lockTextFor("Grants", decision.permission_grants))}
+      ${statusFact("Writes", decision.external_writes, lockToneFor("Writes", decision.external_writes), lockTextFor("Writes", decision.external_writes))}
+      ${statusFact("Human review", decision.requires_human_review, lockToneFor("Human review", decision.requires_human_review), lockTextFor("Human review", decision.requires_human_review))}
+    </div>
+  `;
+
+  packetVerificationCard.className = "walkthrough-panel packet-metadata-card";
   packetVerificationCard.innerHTML = `
-    <span class="eyebrow">Verification</span>
-    <h3>Packet id / revision / hash</h3>
-    <code class="walkthrough-fact">${escapeHtml(packet.packet_id || "")}</code>
-    <code class="walkthrough-fact">${escapeHtml(packet.revision_id || "")}</code>
-    <code class="walkthrough-fact">${escapeHtml(packet.content_hash || local.content_hash || "")}</code>
-    <p class="safety-anchor">read-only ${escapeHtml(String(local.read_only))} · v1 call ${escapeHtml(String(local.calls_v1))}</p>
+    <span class="eyebrow">Metadata</span>
+    <h3>Locked packet</h3>
+    <dl class="packet-meta-list">
+      <div><dt>Packet</dt><dd>${escapeHtml(packet.packet_id || "")}</dd></div>
+      <div><dt>Revision</dt><dd>${escapeHtml(packet.revision_id || "")}</dd></div>
+      <div><dt>Hash</dt><dd>${escapeHtml(packet.content_hash || local.content_hash || "")}</dd></div>
+      <div><dt>Read-only</dt><dd>${escapeHtml(String(local.read_only))}</dd></div>
+      <div><dt>v1 call</dt><dd>${escapeHtml(String(local.calls_v1))}</dd></div>
+    </dl>
   `;
 
+  packetProofCard.className = "walkthrough-panel span-2 packet-proof-debt-card";
   packetProofCard.innerHTML = `
     <span class="eyebrow">Proof debt</span>
-    <h3>Blocked claims and missing proof</h3>
+    <h3>What keeps this from moving</h3>
   `;
   const proofGrid = document.createElement("div");
   proofGrid.className = "workbench-proof-grid";
@@ -2526,19 +2587,24 @@ function renderPacketDetail(data) {
   proofGrid.append(blocked, missing);
   packetProofCard.appendChild(proofGrid);
 
+  packetSponsorCard.className = "walkthrough-panel span-2 packet-sponsor-card";
   packetSponsorCard.innerHTML = `
-    <span class="eyebrow">Sponsor Proof Trace</span>
-    <h3>${trace ? escapeHtml(String(trace.step_count)) + " proof steps" : "No live proof step required"}</h3>
-    <p class="walkthrough-summary">${trace ? escapeHtml((trace.sponsor_order || []).join(" -> ")) : "Scenario result remains fixture-backed."}</p>
+    <span class="eyebrow">Sponsor proof</span>
+    <h3>${trace ? escapeHtml(String(trace.step_count)) + " proof steps collected" : "No proof step required"}</h3>
+    <p class="walkthrough-summary">${trace ? "Sponsors contribute evidence only. IA keeps the packet decision locked." : "Scenario result remains fixture-backed."}</p>
     ${
       trace
-        ? `<code class="walkthrough-fact">trace ${escapeHtml(trace.trace_id || "sponsor-proof-trace")}</code>
-           <code class="walkthrough-fact">packet ${escapeHtml(trace.packet_id || packet.packet_id || "")}</code>
-           <div class="trace-metrics compact">
-             <div><span>Decision lock</span><strong>${escapeHtml(String(trace.decision_lock_unchanged))}</strong></div>
-             <div><span>Fallback</span><strong>${escapeHtml(String(trace.all_fallback_used))}</strong></div>
-             <div><span>Live keys</span><strong>${escapeHtml(String((trace.steps || []).some((step) => step.used_live_key)))}</strong></div>
-             <div><span>Writes</span><strong>${escapeHtml(String(!trace.all_non_executing))}</strong></div>
+        ? `<div class="sponsor-proof-strip">
+             <div><span>Tavily</span><strong>evidence</strong></div>
+             <div><span>Composio</span><strong>dry-run diff</strong></div>
+             <div><span>OpenClaw</span><strong>runtime trace</strong></div>
+             <div><span>Nebius</span><strong>summary</strong></div>
+           </div>
+           <div class="status-fact-grid compact">
+             ${statusFact("Decision lock", trace.decision_lock_unchanged, trace.decision_lock_unchanged ? "ready" : "blocked", trace.decision_lock_unchanged ? "unchanged" : "changed")}
+             ${statusFact("Live keys", (trace.steps || []).some((step) => step.used_live_key), (trace.steps || []).some((step) => step.used_live_key) ? "review" : "ready", (trace.steps || []).some((step) => step.used_live_key) ? "some" : "none")}
+             ${statusFact("Writes", !trace.all_non_executing, !trace.all_non_executing ? "blocked" : "ready", !trace.all_non_executing ? "attempted" : "none")}
+             ${statusFact("Fallback", trace.all_fallback_used, trace.all_fallback_used ? "review" : "ready", trace.all_fallback_used ? "deterministic" : "live")}
            </div>`
         : ""
     }
@@ -2554,6 +2620,7 @@ function renderPacketDetail(data) {
   `;
   packetSponsorCard.appendChild(proofGraphActions);
 
+  packetDownstreamCard.className = "walkthrough-panel span-2 packet-downstream-card";
   packetDownstreamCard.innerHTML = `
     <span class="eyebrow">Downstream trust</span>
     <h3>${escapeHtml(String((data.downstream_consumers || []).length))} consumer patterns read the same packet</h3>
@@ -2562,6 +2629,7 @@ function renderPacketDetail(data) {
   packetDownstreamCard.appendChild(renderPacketConsumers(data.downstream_consumers || []));
   packetDownstreamCard.appendChild(renderPacketPortkeyGateCard(null, null));
 
+  packetTeamCard.className = "walkthrough-panel span-2 packet-team-card";
   packetTeamCard.innerHTML = `
     <span class="eyebrow">Cross-functional review</span>
     <h3>Teams reading this packet</h3>
@@ -2569,12 +2637,14 @@ function renderPacketDetail(data) {
   `;
   packetTeamCard.appendChild(renderPacketTeamLenses(data.team_lenses));
 
+  packetReviewerCard.className = "walkthrough-panel packet-reviewer-card";
   packetReviewerCard.innerHTML = `
     <span class="eyebrow">Reviewer routing</span>
     <h3>${escapeHtml(String((data.reviewer_routing || []).length))} owner gates</h3>
   `;
   packetReviewerCard.appendChild(renderMiniList(data.reviewer_routing || [], { limit: 6 }));
 
+  packetExportCard.className = "walkthrough-panel packet-export-card";
   packetExportCard.innerHTML = `
     <span class="eyebrow">Export</span>
     <h3>${escapeHtml(data.export_label || "Copy IA Packet brief")}</h3>

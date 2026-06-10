@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InferenceAtlas ProofGraph</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07101f;
+      --panel: #0c1628;
+      --panel-strong: #101b31;
+      --line: #334155;
+      --line-soft: rgba(148, 163, 184, 0.2);
+      --text: #f8fafc;
+      --muted: #a9b5c8;
+      --blue: #60a5fa;
+      --cyan: #67e8f9;
+      --violet: #a78bfa;
+      --amber: #f59e0b;
+      --amber-light: #fde68a;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    main {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 40px 0;
+    }
+    header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2.2rem, 5vw, 4.4rem);
+      line-height: 1;
+      font-weight: 740;
+    }
+    .lede {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.35rem);
+      max-width: 850px;
+    }
+    .stats {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    .stat {
+      min-width: 150px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(15, 23, 42, 0.72);
+      border-radius: 999px;
+      padding: 10px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .stat strong {
+      display: block;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .stat span {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .stat.ok {
+      border-color: rgba(74, 222, 128, 0.52);
+      background: rgba(20, 83, 45, 0.35);
+    }
+    .stat.ok strong { color: #bbf7d0; }
+    .stage {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 28px;
+      background:
+        linear-gradient(var(--line-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line-soft) 1px, transparent 1px),
+        rgba(15, 23, 42, 0.58);
+      background-size: 32px 32px;
+      padding: 52px 44px 34px;
+      box-shadow: 0 24px 90px rgba(0, 0, 0, 0.35);
+    }
+    .flow {
+      display: grid;
+      grid-template-columns: 1.1fr 1.25fr 1.45fr 1.5fr 1.18fr;
+      gap: 28px;
+      align-items: center;
+      min-height: 610px;
+    }
+    .node, .collector, .packet, .sponsor-card, .downstream-card {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.88);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.24);
+    }
+    .node, .collector {
+      border-radius: 22px;
+      padding: 28px;
+      text-align: center;
+    }
+    .node h2, .collector h2, .packet h2, .downstream-card h3, .sponsor-card h3 {
+      margin: 0;
+      line-height: 1.05;
+    }
+    .node p, .collector p, .packet p, .downstream-card p, .sponsor-card p {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .collector {
+      border-radius: 26px;
+      padding: 44px 26px;
+    }
+    .collector h2 {
+      font-size: clamp(1.7rem, 3vw, 2.45rem);
+    }
+    .connector-line {
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #64748b, transparent);
+      margin: 20px 0;
+    }
+    .sponsors {
+      display: grid;
+      gap: 20px;
+    }
+    .sponsor-card {
+      position: relative;
+      border-radius: 18px;
+      padding: 20px 22px;
+    }
+    .sponsor-card::before {
+      content: "";
+      position: absolute;
+      left: -34px;
+      top: 50%;
+      width: 34px;
+      border-top: 2px dashed rgba(96, 165, 250, 0.75);
+    }
+    .sponsor-card::after {
+      content: "";
+      position: absolute;
+      right: -38px;
+      top: 50%;
+      width: 38px;
+      border-top: 3px solid rgba(245, 158, 11, 0.88);
+    }
+    .sponsor-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sponsor-heading span {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--blue);
+      box-shadow: 0 0 0 5px rgba(96, 165, 250, 0.12);
+    }
+    .sponsor-card strong {
+      display: block;
+      margin-top: 12px;
+      font-size: 1.12rem;
+      color: #dbeafe;
+    }
+    .sponsor-card small {
+      display: block;
+      margin-top: 8px;
+      color: #93c5fd;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .sponsor-card.tavily { border-color: rgba(96, 165, 250, 0.82); }
+    .sponsor-card.composio { border-color: rgba(129, 140, 248, 0.78); }
+    .sponsor-card.openclaw { border-color: rgba(103, 232, 249, 0.78); }
+    .sponsor-card.nebius { border-color: rgba(167, 139, 250, 0.78); }
+    .packet {
+      position: relative;
+      border: 3px solid rgba(245, 158, 11, 0.96);
+      border-radius: 26px;
+      padding: 42px 34px;
+      min-height: 260px;
+      display: grid;
+      align-content: center;
+      background: linear-gradient(135deg, var(--amber-light), #fb923c);
+      color: #43270b;
+      box-shadow: 0 0 0 8px rgba(245, 158, 11, 0.12), 0 24px 86px rgba(245, 158, 11, 0.28);
+    }
+    .packet h2 {
+      font-size: clamp(2rem, 4vw, 3.3rem);
+      font-weight: 760;
+    }
+    .packet p {
+      color: #713f12;
+      font-weight: 650;
+    }
+    .packet .mini {
+      margin-top: 18px;
+      display: grid;
+      gap: 8px;
+    }
+    .packet .mini p {
+      margin: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      color: #78350f;
+      font-size: 0.94rem;
+    }
+    .downstream {
+      display: grid;
+      gap: 24px;
+    }
+    .downstream-card {
+      border-radius: 18px;
+      padding: 20px 24px;
+      min-height: 88px;
+    }
+    .downstream-card h3 { font-size: 1.25rem; }
+    .downstream-card p {
+      margin-top: 8px;
+      font-size: 0.94rem;
+    }
+    .safety-banner {
+      width: min(1120px, 100%);
+      margin: 36px auto 0;
+      border: 1px solid rgba(74, 222, 128, 0.76);
+      border-radius: 18px;
+      padding: 17px 22px;
+      color: #dcfce7;
+      background: rgba(20, 83, 45, 0.35);
+      text-align: center;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      font-weight: 720;
+    }
+    .details {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+    .detail-card {
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 18px;
+      background: rgba(15, 23, 42, 0.62);
+      padding: 20px;
+    }
+    .detail-card h2 {
+      margin: 0 0 12px;
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: #cbd5e1;
+    }
+    .detail-card p {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      margin: 10px 0;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .detail-card strong { color: var(--text); text-align: right; }
+    footer {
+      margin-top: 18px;
+      color: #64748b;
+      font-size: 0.82rem;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 1100px) {
+      header { grid-template-columns: 1fr; }
+      .stats { justify-content: flex-start; }
+      .flow { grid-template-columns: 1fr; min-height: auto; }
+      .sponsor-card::before, .sponsor-card::after { display: none; }
+      .details { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      main { width: min(100vw - 20px, 1480px); padding: 20px 0; }
+      .stage { padding: 24px 16px; border-radius: 20px; }
+      .stat { min-width: 132px; }
+      .node, .collector, .packet, .sponsor-card, .downstream-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>InferenceAtlas ProofGraph</h1>
+        <p class="lede">The packet authority layer downstream systems trust before AI moves.</p>
+      </div>
+      <div class="stats" aria-label="ProofGraph counts">
+        <span class="stat"><strong>80</strong><span>proof nodes</span></span>
+        <span class="stat"><strong>141</strong><span>edges</span></span>
+        <span class="stat ok"><strong>zero</strong><span>writes</span></span>
+      </div>
+    </header>
+
+    <section class="stage" aria-label="InferenceAtlas ProofGraph flow">
+      <div class="flow">
+        <article class="node">
+          <h2>Agent Request</h2>
+          <p>tools - data - spend - production movement</p>
+          <div class="connector-line"></div>
+          <p>raw intent is not trusted directly</p>
+        </article>
+
+        <article class="collector">
+          <h2>Sponsor Proof Collector</h2>
+          <p>locked order - proof only</p>
+          <p>offline deterministic</p>
+        </article>
+
+        <section class="sponsors" aria-label="Sponsor proof contributors">
+
+          <article class="sponsor-card tavily">
+            <div class="sponsor-heading"><span></span><h3>Tavily</h3></div>
+            <strong>20 proof nodes</strong>
+            <p>5 evidence questions, 10 planned searches</p>
+            <small>proof contributor - cannot approve</small>
+          </article>
+
+          <article class="sponsor-card composio">
+            <div class="sponsor-heading"><span></span><h3>Composio</h3></div>
+            <strong>21 proof nodes</strong>
+            <p>9 blocked actions, max critical</p>
+            <small>dry-run blast radius - cannot execute</small>
+          </article>
+
+          <article class="sponsor-card openclaw">
+            <div class="sponsor-heading"><span></span><h3>OpenClaw</h3></div>
+            <strong>21 proof nodes</strong>
+            <p>3 checkpoints, 9 blocked events</p>
+            <small>runtime trace - cannot approve</small>
+          </article>
+
+          <article class="sponsor-card nebius">
+            <div class="sponsor-heading"><span></span><h3>Nebius</h3></div>
+            <strong>9 proof nodes</strong>
+            <p>4 locked fields, 2 anchors kept</p>
+            <small>reviewer synthesis - cannot mutate</small>
+          </article>
+        </section>
+
+        <article class="packet">
+          <h2>IA Packet Authority</h2>
+          <p>verdict - proof lock - reviewer routing</p>
+          <div class="mini">
+            <p><span>packet nodes</span><strong>1</strong></p>
+            <p><span>native proof nodes</span><strong>6</strong></p>
+            <p><span>decision lock</span><strong>scoped_validation_only</strong></p>
+            <p><span>Verdict changes</span><strong>no</strong></p>
+          </div>
+        </article>
+
+        <section class="downstream" aria-label="Downstream consumers">
+
+          <article class="downstream-card">
+            <h3>Portkey Gate</h3>
+            <p>/api/portkey/guardrail</p>
+          </article>
+
+          <article class="downstream-card">
+            <h3>CI / Deploy</h3>
+            <p>release check</p>
+          </article>
+
+          <article class="downstream-card">
+            <h3>Verification</h3>
+            <p>packet id - hash - verdict - revision</p>
+          </article>
+
+          <article class="downstream-card">
+            <h3>Finance</h3>
+            <p>spend review</p>
+          </article>
+
+          <article class="downstream-card">
+            <h3>Security / Legal</h3>
+            <p>human owners</p>
+          </article>
+        </section>
+      </div>
+      <div class="safety-banner">Sponsors contribute proof only - IA keeps the packet locked - no approval - no writes - no verdict mutation</div>
+    </section>
+
+    <section class="details" aria-label="ProofGraph proof summary">
+      <article class="detail-card">
+        <h2>Why It Matters</h2>
+        <p><span>Graph creator</span><strong>InferenceAtlas</strong></p>
+        <p><span>Trust source</span><strong>IA Packet</strong></p>
+        <p><span>Human review</span><strong>yes</strong></p>
+      </article>
+      <article class="detail-card">
+        <h2>Sponsor Boundary</h2>
+        <p><span>Approve access</span><strong>no</strong></p>
+        <p><span>Grant permissions</span><strong>no</strong></p>
+        <p><span>Mutate production</span><strong>no</strong></p>
+      </article>
+      <article class="detail-card">
+        <h2>Packet Reference</h2>
+        <p><span>Packet</span><strong>ia-agent-access-support-triage-v0</strong></p>
+        <p><span>Revision</span><strong>rev_965302783cee8688</strong></p>
+        <p><span>Portkey proof nodes</span><strong>3</strong></p>
+      </article>
+    </section>
+
+    <footer>
+      packet: ia-agent-access-support-triage-v0 - graph: ia-proof-graph-support_triage_agent-4f619498deec8dd7-public-v0 - hash: sha256:4f619498deec8dd74dca10b7e6a703241add101b7de62ea33fbae7ed34605f4c
+    </footer>
+  </main>
+</body>
+</html>

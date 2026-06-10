@@ -47,6 +47,8 @@ from agent.portkey_guardrail import (
     write_portkey_guardrail_event,
 )
 from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loop
+from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO
+from agent.proof_graph_visual import build_proof_graph_visual
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.scenarios import ROOT_DIR, SCENARIOS, build_scenario_packet
 from agent.subscribers import (
@@ -2164,6 +2166,17 @@ def workbench_index() -> FileResponse:
 @app.get("/packet")
 def packet_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+@app.get("/proofgraph", response_class=HTMLResponse)
+def proofgraph_index(
+    fixture: str = Query(DEFAULT_PROOF_GRAPH_SCENARIO, description="Public access scenario to visualize."),
+) -> HTMLResponse:
+    try:
+        html_page = build_proof_graph_visual(fixture)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return HTMLResponse(html_page)
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

@@ -71,7 +71,7 @@ flowchart LR
 
 ## Review Paths
 
-- Run the Packet Workbench product path: `bash scripts/review_60.sh`
+- Run the Packet Workbench product path: `bash scripts/review_60.sh`; open the data-backed ProofGraph at `/proofgraph` or [examples/generated/proofgraph.html](examples/generated/proofgraph.html)
 - Ask the packet like a gateway: `python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json`
 - Preview the Portkey dry-run gate: `python3 -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json`
 - Read the walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)

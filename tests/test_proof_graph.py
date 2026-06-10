@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from agent.adapters.core import ADAPTER_CONTRACT_VERSION
 from agent.composio_dry_run_diff import COMPOSIO_DRY_RUN_DIFF_SCHEMA_VERSION
 from agent.proof_graph import (
     PACKET_ONLY_PROOF_FIELDS,
@@ -113,6 +114,15 @@ def test_proof_graph_schema_file_locks_contract() -> None:
     )
     assert schema["$defs"]["composio_blast_radius"]["properties"]["api_call_made"]["const"] is False
     assert schema["$defs"]["composio_blast_radius"]["properties"]["would_execute"]["const"] is False
+    assert schema["properties"]["openclaw_runtime_trace"]["$ref"] == (
+        "#/$defs/openclaw_runtime_trace"
+    )
+    assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["schema_version"]["const"] == (
+        ADAPTER_CONTRACT_VERSION
+    )
+    assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["api_call_made"]["const"] is False
+    assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["runtime_write_attempted"]["const"] is False
+    assert schema["$defs"]["openclaw_runtime_trace"]["properties"]["would_execute"]["const"] is False
     assert schema["$defs"]["invariants"]["properties"]["packet_remains_authority"]["const"] is True
     assert schema["$defs"]["invariants"]["properties"]["graph_can_change_verdict"]["const"] is False
     assert schema["$defs"]["safety_boundary"]["properties"]["executes_external_writes"]["const"] is False
@@ -130,6 +140,7 @@ def test_packet_only_proof_graph_is_deterministic_and_packet_backed() -> None:
     assert first["scenario_name"] == "support_triage_agent"
     assert first["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
     assert "composio_blast_radius" not in first
+    assert "openclaw_runtime_trace" not in first
 
 
 def test_composio_blast_radius_graph_layer_is_opt_in_and_non_mutating() -> None:
@@ -233,6 +244,129 @@ def test_composio_blast_radius_graph_layer_is_opt_in_and_non_mutating() -> None:
         assert edge["can_change_packet_verdict"] is False
 
 
+def test_openclaw_runtime_trace_graph_layer_is_opt_in_and_non_mutating() -> None:
+    graph = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_openclaw_runtime_trace=True,
+    )
+
+    assert graph["scenario_name"] == "support_triage_agent"
+    assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["invariants"] == {
+        "packet_remains_authority": True,
+        "graph_can_approve": False,
+        "graph_can_mutate_packet": False,
+        "graph_can_execute_external_write": False,
+        "graph_can_change_verdict": False,
+        "all_nodes_require_human_review": True,
+        "all_nodes_non_mutating": True,
+        "all_edges_non_mutating": True,
+    }
+
+    trace_summary = graph["openclaw_runtime_trace"]
+    assert trace_summary["schema_version"] == ADAPTER_CONTRACT_VERSION
+    assert trace_summary["provider"] == "openclaw"
+    assert trace_summary["mode"] == "deterministic_fallback"
+    assert trace_summary["status"] == "trace_contract_planned"
+    assert trace_summary["api_call_made"] is False
+    assert trace_summary["fallback_used"] is True
+    assert trace_summary["checkpoint_count"] == 3
+    assert trace_summary["attempted_action_count"] == 9
+    assert trace_summary["blocked_event_count"] == 9
+    assert trace_summary["write_like_blocked_count"] == 5
+    assert trace_summary["admin_like_blocked_count"] == 4
+    assert trace_summary["high_or_critical_action_count"] == 9
+    assert trace_summary["all_attempted_actions_blocked"] is True
+    assert trace_summary["runtime_write_attempted"] is False
+    assert trace_summary["human_review_boundary_preserved"] is True
+    assert trace_summary["would_execute"] is False
+    assert trace_summary["safety_impact"] == "none"
+
+    openclaw_nodes = [node for node in graph["proof_nodes"] if node["provider"] == "openclaw"]
+    assert len(openclaw_nodes) == (
+        trace_summary["checkpoint_count"]
+        + trace_summary["attempted_action_count"]
+        + trace_summary["blocked_event_count"]
+    )
+    assert graph["node_counts"] == {
+        "packet": 1,
+        "proof": len(PACKET_ONLY_PROOF_FIELDS) + len(openclaw_nodes),
+        "edge": len(graph["proof_edges"]),
+    }
+
+    checkpoint_nodes = [
+        node for node in openclaw_nodes if node["node_id"].startswith("proof:openclaw:checkpoint:")
+    ]
+    attempted_nodes = [
+        node
+        for node in openclaw_nodes
+        if node["node_id"].startswith("proof:openclaw:attempted_action:")
+    ]
+    blocked_nodes = [
+        node for node in openclaw_nodes if node["node_id"].startswith("proof:openclaw:blocked_event:")
+    ]
+    assert len(checkpoint_nodes) == trace_summary["checkpoint_count"]
+    assert len(attempted_nodes) == trace_summary["attempted_action_count"]
+    assert len(blocked_nodes) == trace_summary["blocked_event_count"]
+
+    for node in openclaw_nodes:
+        assert node["mode"] == "deterministic_fallback"
+        assert node["api_call_made"] is False
+        assert node["fallback_used"] is True
+        assert node["external_write_made"] is False
+        assert node["can_change_packet_verdict"] is False
+        assert node["human_review_required"] is True
+        assert node["attached_packet_field"] == "runtime_trace"
+
+    openclaw_node_ids = {node["node_id"] for node in openclaw_nodes}
+    packet_node_id = graph["packet_node"]["node_id"]
+    openclaw_packet_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"] in openclaw_node_ids and edge["to_node_id"] == packet_node_id
+    ]
+    observed_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"].startswith("proof:openclaw:attempted_action:")
+        and edge["edge_type"] == "observed_by_downstream"
+    ]
+    blocked_edges = [
+        edge
+        for edge in graph["proof_edges"]
+        if edge["from_node_id"].startswith("proof:openclaw:blocked_event:")
+        and edge["edge_type"] == "blocks_action"
+    ]
+
+    assert len(openclaw_packet_edges) == len(openclaw_nodes)
+    assert len(observed_edges) == trace_summary["attempted_action_count"]
+    assert len(blocked_edges) == trace_summary["blocked_event_count"]
+    for edge in graph["proof_edges"]:
+        assert edge["human_review_required"] is True
+        assert edge["can_change_packet_verdict"] is False
+
+
+def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
+    graph = build_proof_graph_for_scenario(
+        "support_triage_agent",
+        include_composio_blast_radius=True,
+        include_openclaw_runtime_trace=True,
+    )
+
+    assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
+    assert graph["composio_blast_radius"]["provider"] == "composio"
+    assert graph["openclaw_runtime_trace"]["provider"] == "openclaw"
+    assert {node["provider"] for node in graph["proof_nodes"]} == {
+        "ia_packet",
+        "composio",
+        "openclaw",
+    }
+    assert graph["invariants"]["packet_remains_authority"] is True
+    assert graph["invariants"]["graph_can_approve"] is False
+    assert graph["invariants"]["graph_can_execute_external_write"] is False
+    assert graph["invariants"]["graph_can_change_verdict"] is False
+
+
 def test_proof_graph_covers_public_access_scenarios_without_keys() -> None:
     expected_locks = {
         "support_triage_agent": "scoped_validation_only",
@@ -289,12 +423,45 @@ def test_proof_graph_cli_can_include_composio_blast_radius_layer() -> None:
     assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "composio"}
 
 
+def test_proof_graph_cli_can_include_openclaw_runtime_trace_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-openclaw-runtime-trace",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["openclaw_runtime_trace"]["provider"] == "openclaw"
+    assert payload["openclaw_runtime_trace"]["api_call_made"] is False
+    assert payload["openclaw_runtime_trace"]["runtime_write_attempted"] is False
+    assert payload["openclaw_runtime_trace"]["would_execute"] is False
+    assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "openclaw"}
+
+
 def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
     combined = "\n".join(
         [
             SCHEMA_PATH.read_text(encoding="utf-8"),
             (ROOT / "agent" / "proof_graph.py").read_text(encoding="utf-8"),
             json.dumps(build_proof_graph_for_scenario("support_triage_agent"), sort_keys=True),
+            json.dumps(
+                build_proof_graph_for_scenario(
+                    "support_triage_agent",
+                    include_openclaw_runtime_trace=True,
+                ),
+                sort_keys=True,
+            ),
         ]
     )
 

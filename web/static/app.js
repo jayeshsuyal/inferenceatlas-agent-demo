@@ -105,6 +105,15 @@ const drivePicker = document.getElementById("drive-picker");
 const driveFileSearch = document.getElementById("drive-file-search");
 const driveFileList = document.getElementById("drive-file-list");
 const drivePickerTabs = document.getElementById("drive-picker-tabs");
+const repoProofCockpit = document.getElementById("repo-proof-cockpit");
+const btnRunRepoProof = document.getElementById("btn-run-repo-proof");
+const btnExportRepoBrief = document.getElementById("btn-export-repo-brief");
+const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
+const repoCockpitStatus = document.getElementById("repo-cockpit-status");
+const repoProofResult = document.getElementById("repo-proof-result");
+const repoNextActionCard = document.getElementById("repo-next-action-card");
+const repoSponsorProofCard = document.getElementById("repo-sponsor-proof-card");
+const repoPortkeyCard = document.getElementById("repo-portkey-card");
 
 const SKILL_HINT_BY_ID = {
   decision_packet_generation: "What blocks production access for support triage?",
@@ -118,11 +127,9 @@ const SKILL_HINT_BY_ID = {
 };
 
 const EMPTY_PROOF_TILES = [
-  ["1 · Request", "Open one registered AI movement request."],
-  ["2 · IA Packet", "Inspect verdict, proof debt, owners, and hash."],
-  ["3 · Sponsor Proof", "Collect proof while the decision lock stays unchanged."],
-  ["4 · Portkey Proof Loop", "Show the downstream verdict, packet reference, and no-mutation state."],
-  ["5 · Export", "Copy the review brief or export the gate artifact."],
+  ["1 · Attach repo", "Use demo-support-incidents."],
+  ["2 · Run IA", "Generate the packet-backed review."],
+  ["3 · Act", "Follow the one named human action."],
 ];
 
 const SUBSCRIBER_LABELS = {
@@ -180,13 +187,14 @@ let selectedDriveFiles = [];
 let driveSearchTimer = null;
 let drivePickerKind = "all";
 
-const FIRST_RUN_PACKET_URL = "/packet?fixture=mcp_tool_blast_radius&autorun=1";
+const REPO_PROOF_FIXTURE = "support_triage_agent";
+const FIRST_RUN_PACKET_URL = "/packet?fixture=support_triage_agent&autorun=1";
 const FIRST_RUN_HEADING =
-  "Run IA Packet Review";
+  "Review GitHub access for an AI agent";
 const FIRST_RUN_BODY =
-  "Open one registered AI movement request. IA shows the packet, sponsor proof, Portkey proof loop, and exportable review artifact without writes.";
+  "Use the demo repo request. IA builds a packet, names the human action, previews Portkey, and opens ProofGraph without writes.";
 const FIRST_RUN_COACH_STATUS =
-  "Open the IA Packet first; Ask IA answers from the packet, not raw agent intent.";
+  "Run the repo access review first; Ask IA answers from the packet, not raw agent intent.";
 
 function setBusy(loading) {
   busy = loading;
@@ -361,7 +369,7 @@ function renderFirstRunWelcome() {
   const packetLink = document.createElement("a");
   packetLink.className = "btn-primary first-run-cta";
   packetLink.href = FIRST_RUN_PACKET_URL;
-  packetLink.textContent = "Run IA Packet Review";
+  packetLink.textContent = "Inspect packet";
 
   actions.append(packetLink);
   bubble.append(eyebrow, heading, body, actions);
@@ -2334,6 +2342,205 @@ function packetPortkeyExportName(payload) {
   return `${packetId}.portkey_gate.dry_run.json`;
 }
 
+function verdictTone(decision = {}) {
+  if (decision.approval_granted || decision.production_access || decision.permission_grants) {
+    return "approved";
+  }
+  if (decision.requires_human_review) {
+    return "review";
+  }
+  return "blocked";
+}
+
+function verdictLabel(decision = {}) {
+  const value = String(decision.verdict_class || "review_required").replace(/_/g, " ");
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function compactList(items = [], limit = 3) {
+  const visible = (items || []).slice(0, limit);
+  const rest = Math.max((items || []).length - visible.length, 0);
+  return [
+    ...visible.map((item) => `<li>${escapeHtml(String(item))}</li>`),
+    rest ? `<li>+${escapeHtml(String(rest))} more in packet</li>` : "",
+  ].join("");
+}
+
+function setRepoCockpitBusy(loading) {
+  if (btnRunRepoProof) {
+    btnRunRepoProof.disabled = loading;
+    btnRunRepoProof.textContent = loading ? "Reviewing access..." : "Review access";
+  }
+  if (repoCockpitStatus) {
+    repoCockpitStatus.classList.remove("error");
+    repoCockpitStatus.textContent = loading
+      ? "Collecting proof and building the IA Packet..."
+      : "No approval, no writes, no downstream mutation.";
+  }
+}
+
+async function fetchPortkeyProofForFixture(fixtureId) {
+  const [previewRes, proofRes] = await Promise.all([
+    fetch(packetPortkeyPreviewPath(fixtureId)),
+    fetch(packetPortkeyProofLoopPath(fixtureId)),
+  ]);
+  const previewData = await previewRes.json().catch(() => ({}));
+  const proofData = await proofRes.json().catch(() => ({}));
+  if (!previewRes.ok) throw new Error(previewData.detail || "Portkey gate preview failed");
+  if (!proofRes.ok) throw new Error(proofData.detail || "Portkey proof loop failed");
+  return {
+    payload: previewData.portkey || previewData,
+    proofLoop: proofData.portkey_guardrail_proof_loop || proofData,
+  };
+}
+
+async function fetchRepoSponsorTrace() {
+  const res = await fetch("/api/walkthrough");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || "Sponsor proof trace failed");
+  return data.sponsor_proof_trace || null;
+}
+
+function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
+  if (!repoProofCockpit) return;
+  const decision = packet.decision || {};
+  const trace = packet.sponsor_proof_trace || {};
+  const packetRef = packet.packet_reference || {};
+  const guardrail = portkeyPayload?.portkey_guardrail_response || {};
+  const policy = portkeyPayload?.usage_policy_plan?.request_body || {};
+  const proofCall = portkeyProofLoop?.portkey_call || {};
+  const tone = verdictTone(decision);
+
+  repoProofCockpit.dataset.loaded = "true";
+  if (repoProofResult) {
+    repoProofResult.hidden = false;
+  }
+  if (repoCockpitVerdict) {
+    repoCockpitVerdict.className = `repo-verdict-card ${tone}`;
+    repoCockpitVerdict.innerHTML = `
+      <span>IA verdict</span>
+      <strong>${escapeHtml(verdictLabel(decision))}</strong>
+    `;
+  }
+  if (repoCockpitStatus) {
+    repoCockpitStatus.classList.remove("error");
+    repoCockpitStatus.textContent = "Packet ready. Decision lock unchanged; downstream writes remain false.";
+  }
+  if (btnExportRepoBrief) {
+    btnExportRepoBrief.disabled = !packet.copy_review_brief;
+  }
+
+  if (repoNextActionCard) {
+    repoNextActionCard.innerHTML = `
+      <span class="repo-card-label">Next human action</span>
+      <h3>${escapeHtml(decision.next_human_action || "Human review required before access moves.")}</h3>
+      <div class="repo-outcome-grid">
+        <div class="repo-outcome ${decision.production_access ? "approved" : "blocked"}">
+          <span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong>
+        </div>
+        <div class="repo-outcome ${decision.permission_grants ? "approved" : "blocked"}">
+          <span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong>
+        </div>
+        <div class="repo-outcome ${decision.external_writes ? "approved" : "blocked"}">
+          <span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong>
+        </div>
+      </div>
+      <details class="repo-proof-details">
+        <summary>Why IA held the line</summary>
+        <ul>${compactList(packet.missing_proof || [], 3)}</ul>
+      </details>
+    `;
+  }
+
+  if (repoSponsorProofCard) {
+    repoSponsorProofCard.innerHTML = `
+      <summary>
+        <span class="repo-card-label">Sponsor proof</span>
+        <strong>${escapeHtml(String(trace.step_count || 0))} proof steps collected</strong>
+      </summary>
+      <div class="repo-accordion-body">
+        <p>${escapeHtml((trace.sponsor_order || ["Tavily", "Composio", "OpenClaw", "Nebius"]).join(" -> "))}</p>
+        <div class="repo-outcome-grid">
+          <div class="repo-outcome approved"><span>Decision lock</span><strong>${escapeHtml(String(trace.decision_lock_unchanged ?? true))}</strong></div>
+          <div class="repo-outcome ${trace.all_non_executing === false ? "blocked" : "approved"}"><span>Writes</span><strong>${escapeHtml(String(trace.all_non_executing === false))}</strong></div>
+          <div class="repo-outcome review"><span>Live keys</span><strong>${escapeHtml(String((trace.steps || []).some((step) => step.used_live_key)))}</strong></div>
+        </div>
+        <p class="repo-microcopy">Sponsors contribute proof only. IA keeps the packet authority locked.</p>
+      </div>
+    `;
+    repoSponsorProofCard.open = false;
+  }
+
+  if (repoPortkeyCard) {
+    repoPortkeyCard.innerHTML = `
+      <summary>
+        <span class="repo-card-label">Portkey</span>
+        <strong>${guardrail.verdict ? "Would allow" : "Would block"} this movement</strong>
+      </summary>
+      <div class="repo-accordion-body">
+        <p>Webhook ${escapeHtml(proofCall.path || "/api/portkey/guardrail")} returns the IA packet verdict before model or spend movement.</p>
+        <div class="repo-outcome-grid">
+          <div class="repo-outcome ${guardrail.verdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(String(guardrail.verdict ?? false))}</strong></div>
+          <div class="repo-outcome blocked"><span>Credit limit</span><strong>${escapeHtml(String(policy.credit_limit ?? 0))}</strong></div>
+          <div class="repo-outcome approved"><span>API mutation</span><strong>false</strong></div>
+        </div>
+        <code class="repo-packet-ref">${escapeHtml(packetRef.packet_id || "")}</code>
+      </div>
+    `;
+    repoPortkeyCard.open = false;
+  }
+}
+
+async function runRepoProofCockpit() {
+  setRepoCockpitBusy(true);
+  try {
+    const fixtureId = REPO_PROOF_FIXTURE;
+    const packetRes = await fetch(`/api/ia-packet?fixture=${encodeURIComponent(fixtureId)}`);
+    const packet = await packetRes.json().catch(() => ({}));
+    if (!packetRes.ok) throw new Error(packet.detail || "IA Packet load failed");
+    const [{ payload, proofLoop }, sponsorTrace] = await Promise.all([
+      fetchPortkeyProofForFixture(fixtureId),
+      fetchRepoSponsorTrace().catch(() => packet.sponsor_proof_trace || null),
+    ]);
+    const cockpitPacket = {
+      ...packet,
+      sponsor_proof_trace: sponsorTrace || packet.sponsor_proof_trace,
+    };
+    packetDetail = cockpitPacket;
+    packetPortkeyPreview = payload;
+    packetPortkeyProofLoop = proofLoop;
+    renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+  } catch (err) {
+    if (repoCockpitStatus) {
+      repoCockpitStatus.textContent = String(err.message || err);
+      repoCockpitStatus.classList.add("error");
+    }
+  } finally {
+    setRepoCockpitBusy(false);
+  }
+}
+
+async function copyRepoBrief() {
+  if (!packetDetail?.copy_review_brief) {
+    await runRepoProofCockpit();
+  }
+  const text = packetDetail?.copy_review_brief || "";
+  if (!text) {
+    if (repoCockpitStatus) {
+      repoCockpitStatus.textContent = "Review brief unavailable.";
+      repoCockpitStatus.classList.add("error");
+    }
+    return;
+  }
+  const copied = await copyTextWithFallback(text);
+  if (repoCockpitStatus) {
+    repoCockpitStatus.classList.toggle("error", !copied);
+    repoCockpitStatus.textContent = copied
+      ? "Review brief copied. Packet authority unchanged."
+      : "Clipboard unavailable. Inspect packet to export.";
+  }
+}
+
 async function copyTextWithFallback(text) {
   let copied = false;
   try {
@@ -2727,16 +2934,8 @@ async function loadPacketPortkeyPreview() {
   if (!fixtureId) {
     throw new Error("Load an IA Packet first.");
   }
-  const [previewRes, proofRes] = await Promise.all([
-    fetch(packetPortkeyPreviewPath(fixtureId)),
-    fetch(packetPortkeyProofLoopPath(fixtureId)),
-  ]);
-  const previewData = await previewRes.json().catch(() => ({}));
-  const proofData = await proofRes.json().catch(() => ({}));
-  if (!previewRes.ok) throw new Error(previewData.detail || "Portkey gate preview failed");
-  if (!proofRes.ok) throw new Error(proofData.detail || "Portkey proof loop failed");
-  const payload = previewData.portkey || previewData;
-  packetPortkeyProofLoop = proofData.portkey_guardrail_proof_loop || proofData;
+  const { payload, proofLoop } = await fetchPortkeyProofForFixture(fixtureId);
+  packetPortkeyProofLoop = proofLoop;
   packetPortkeyPreview = payload;
   updatePacketPortkeyGateCard(payload, packetPortkeyProofLoop);
   return payload;
@@ -3804,19 +4003,6 @@ async function loadMeta() {
       examplesList.appendChild(li);
     }
 
-    if (!health.deps_ok) {
-      appendMessage(
-        "assistant",
-        `Missing Python packages. ${health.deps_hint || "pip install -r agent/requirements.txt"}`,
-        "error"
-      );
-    } else if (!health.ok) {
-      appendMessage(
-        "assistant",
-        "Server has no LLM API key. Add NEBIUS_API_KEY or OPENAI_API_KEY to .env and restart.",
-        "error"
-      );
-    }
   } catch (_) {
     runtimeHealth = null;
     catalogInfo.textContent = "Could not reach API.";
@@ -4293,6 +4479,8 @@ packetInlineCoachPrompts?.addEventListener("click", (event) => {
   askPacketInlineCoach(btn.dataset.askPrompt || btn.textContent || "");
 });
 
+btnRunRepoProof?.addEventListener("click", () => runRepoProofCockpit());
+btnExportRepoBrief?.addEventListener("click", () => copyRepoBrief());
 btnReset.addEventListener("click", resetChat);
 btnMindInit.addEventListener("click", () => mindInit(false));
 btnMindStep.addEventListener("click", mindStep);
@@ -4359,17 +4547,5 @@ setupTabs();
   }
   if (window.location.pathname === "/walkthrough") {
     showWalkthroughPanel();
-  }
-  if (connectorsLoadError && uiConnectors.length) {
-    appendMessage("assistant", connectorsLoadError, "welcome");
-  }
-  if (skillsLoadError && uiSkills.length) {
-    appendMessage("assistant", skillsLoadError, "welcome");
-  } else if (skillsLoadError) {
-    appendMessage(
-      "assistant",
-      `Skills could not load: ${skillsLoadError}`,
-      "error"
-    );
   }
 })();

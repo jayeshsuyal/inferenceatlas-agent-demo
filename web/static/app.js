@@ -2636,6 +2636,9 @@ function packetPortkeyExportName(payload) {
 }
 
 function verdictTone(decision = {}) {
+  if (decision.verdict_class === "ready_with_gates") {
+    return "approved";
+  }
   if (decision.approval_granted || decision.production_access || decision.permission_grants) {
     return "approved";
   }
@@ -2685,6 +2688,22 @@ function attachedProofIds(packet) {
   return new Set((attached || []).map((item) => String(item?.id || "").trim()).filter(Boolean));
 }
 
+function reviewDeltaRows(packet) {
+  const delta = packet?.review_delta || {};
+  if (!delta.packet_changed) return [];
+  const proofLabels = (delta.new_proof || [])
+    .map((item) => item?.label || item?.id)
+    .filter(Boolean)
+    .join(" + ");
+  return [
+    ["Same request", delta.same_request ? "true" : "false"],
+    ["New proof", proofLabels || "attached"],
+    ["Packet", `${delta.packet_revision_before || "rev_1"} -> ${delta.packet_revision_after || "rev_2"}`],
+    ["Portkey", `${delta.portkey_before || "Block"} -> ${delta.portkey_after || "Allow with policy"}`],
+    ["Still blocked", (delta.still_blocked || []).join(", ") || "none"],
+  ];
+}
+
 function updateProofAttachButton() {
   if (!repoProofResolutionCard) return;
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
@@ -2698,16 +2717,24 @@ function renderRepoProofResolution(packet) {
   if (!repoProofResolutionCard) return;
   const proof = packet.proof_resolution || {};
   const readyForRerun = Boolean(proof.ready_for_rerun || packet?.review_run?.packet?.ready_for_rerun);
+  const rerunComplete = packet?.review_run?.stage === "ready_to_export" || Boolean(packet?.review_delta?.packet_changed);
   const attachedIds = attachedProofIds(packet);
   const proofItems = proofItemsForPacket(packet);
+  const deltaRows = reviewDeltaRows(packet);
   const checklist = repoProofResolutionCard.querySelector(".repo-proof-checklist");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
   const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
+  const delta = repoProofResolutionCard.querySelector(".repo-review-delta");
   repoProofResolutionCard.dataset.readyForRerun = String(readyForRerun);
+  repoProofResolutionCard.dataset.rerunComplete = String(rerunComplete);
 
   const title = repoProofResolutionCard.querySelector("h3");
   if (title) {
-    title.textContent = readyForRerun ? "Proof attached. Rerun required." : "Attach proof before rerun.";
+    title.textContent = rerunComplete
+      ? "Updated packet generated."
+      : readyForRerun
+        ? "Proof attached. Rerun required."
+        : "Attach proof before rerun.";
   }
   if (checklist) {
     checklist.innerHTML = proofItems
@@ -2715,7 +2742,7 @@ function renderRepoProofResolution(packet) {
         const checked = attachedIds.has(item.id);
         return `
           <label class="repo-proof-check${checked ? " attached" : ""}">
-            <input type="checkbox" data-proof-id="${escapeHtml(item.id)}" data-proof-label="${escapeHtml(item.label)}"${checked ? " checked" : ""}${readyForRerun ? " disabled" : ""} />
+            <input type="checkbox" data-proof-id="${escapeHtml(item.id)}" data-proof-label="${escapeHtml(item.label)}"${checked ? " checked" : ""}${readyForRerun || rerunComplete ? " disabled" : ""} />
             <span>${escapeHtml(item.label)}</span>
           </label>
         `;
@@ -2726,13 +2753,26 @@ function renderRepoProofResolution(packet) {
     });
   }
   if (button) {
-    button.disabled = true;
-    button.textContent = readyForRerun ? "Proof attached" : "Attach checked proof";
-    button.onclick = readyForRerun ? null : () => attachReviewRunProof();
+    button.disabled = rerunComplete || (!readyForRerun && !Array.from(repoProofResolutionCard.querySelectorAll('input[type="checkbox"]')).some((input) => input.checked && !input.disabled));
+    button.textContent = rerunComplete ? "Packet regenerated" : readyForRerun ? "Regenerate packet" : "Attach checked proof";
+    button.onclick = rerunComplete ? null : readyForRerun ? () => rerunReviewRunPacket() : () => attachReviewRunProof();
+  }
+  if (delta) {
+    if (deltaRows.length) {
+      delta.hidden = false;
+      delta.innerHTML = deltaRows
+        .map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`)
+        .join("");
+    } else {
+      delta.hidden = true;
+      delta.innerHTML = "";
+    }
   }
   if (status) {
     status.classList.remove("error");
-    status.textContent = readyForRerun
+    status.textContent = rerunComplete
+      ? "Same request. New proof changed packet state; Portkey can allow with policy."
+      : readyForRerun
       ? "Proof attached. Verdict unchanged; regenerate the packet before movement changes."
       : "No proof attached. Verdict unchanged.";
   }
@@ -2797,6 +2837,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const proofCall = portkeyProofLoop?.portkey_call || {};
   const tone = verdictTone(decision);
   const movement = packet.movement_classes || {};
+  const delta = packet.review_delta || {};
   const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
   repoProofCockpit.dataset.loaded = "true";
@@ -2813,8 +2854,9 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (repoCockpitStatus) {
     repoCockpitStatus.classList.remove("error");
     const repoName = currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo";
-    repoCockpitStatus.textContent =
-      `Packet ${packetRef.revision_id || "rev_1"} is tied to ${repoName}. Decision lock unchanged; downstream writes remain false.`;
+    repoCockpitStatus.textContent = delta.packet_changed
+      ? `Packet ${delta.packet_revision_before || "rev_1"} -> ${delta.packet_revision_after || packetRef.revision_id}. Same request; attached proof changed packet state.`
+      : `Packet ${packetRef.revision_id || "rev_1"} is tied to ${repoName}. Decision lock unchanged; downstream writes remain false.`;
   }
   if (btnExportRepoBrief) {
     btnExportRepoBrief.disabled = !packet.copy_review_brief;
@@ -2949,6 +2991,55 @@ async function attachReviewRunProof() {
     if (button) {
       button.disabled = false;
       button.textContent = "Attach checked proof";
+    }
+  }
+}
+
+async function rerunReviewRunPacket() {
+  if (!currentReviewRun?.run_id || !repoProofResolutionCard) return;
+  const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
+  const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Regenerating packet...";
+  }
+  if (status) {
+    status.classList.remove("error");
+    status.textContent = "Regenerating from the same request and attached proof...";
+  }
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/rerun`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ access_request: DEFAULT_REVIEW_ACCESS_REQUEST }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun rerun failed");
+    currentReviewRun = data.run || currentReviewRun;
+    packetPortkeyPreview = data.portkey || packetPortkeyPreview;
+    const nextPacket = {
+      ...(data.packet || {}),
+      sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
+    };
+    packetDetail = nextPacket;
+    renderRepoProofCockpit(nextPacket, packetPortkeyPreview, packetPortkeyProofLoop);
+    if (repoCockpitStatus) {
+      repoCockpitStatus.classList.remove("error");
+      repoCockpitStatus.textContent =
+        "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
+    }
+    if (repoCoachRead) {
+      repoCoachRead.textContent =
+        "Current read: proof changed the packet state. Portkey can allow scoped movement under policy while admin, org-wide write, and secrets stay blocked.";
+    }
+  } catch (err) {
+    if (status) {
+      status.textContent = String(err.message || err);
+      status.classList.add("error");
+    }
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Regenerate packet";
     }
   }
 }

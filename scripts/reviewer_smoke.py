@@ -152,6 +152,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Attach proof before rerun.",
         "Attach checked proof",
         "No proof attached. Verdict unchanged.",
+        "Review delta",
         "ProofGraph",
         "Packet authority map",
         "Gate preview",
@@ -195,10 +196,18 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/proof" in js,
         "root flow must attach proof from ReviewRun",
     )
+    _require(
+        "/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/rerun" in js,
+        "root flow must rerun ReviewRun after proof",
+    )
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
     _require("attachReviewRunProof" in js, "proof attach handler missing")
+    _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
+    _require("reviewDeltaRows" in js, "review delta renderer missing")
     _require("ready_for_rerun" in js, "proof attach ready-for-rerun state missing")
+    _require("Packet regenerated" in js, "rerun complete state missing")
+    _require("Portkey can allow with policy" in js, "rerun Portkey allow state missing")
     _require(
         "Proof attached. Verdict and Portkey state unchanged" in js,
         "proof attach must show unchanged verdict and Portkey state",
@@ -252,6 +261,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-proof-check.attached" in css, "repo proof attached item CSS missing")
     _require(".repo-proof-attach-action" in css, "repo proof attach CTA CSS missing")
     _require(".repo-proof-attach-status" in css, "repo proof attach status CSS missing")
+    _require(".repo-review-delta" in css, "review delta CSS missing")
     _require(".repo-proof-grid" in css, "repo proof grid CSS missing")
     _require(".repo-proof-accordion" in css, "repo proof accordion CSS missing")
     _require(".repo-accordion-body" in css, "repo accordion body CSS missing")
@@ -635,6 +645,18 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     )
     _require("raw agent request cannot change" in changed.get("detail", ""), "changed request must fail closed")
 
+    rerun_before_proof = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/rerun",
+        {"access_request": "support-triage-bot needs to read issues, comment, and create labels."},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "rerun requires proof_attached" in rerun_before_proof.get("detail", ""),
+        "rerun before proof must fail closed",
+    )
+
     empty_proof = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/proof",
@@ -739,6 +761,83 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(
         "proof attachment requires generated packet state" in repeated_proof.get("detail", ""),
         "second proof attach must fail closed until rerun",
+    )
+
+    changed_rerun = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/rerun",
+        {"access_request": "support-triage-bot now needs repo admin"},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "raw agent request cannot change before rerun" in changed_rerun.get("detail", ""),
+        "rerun with changed raw request must fail closed",
+    )
+
+    rerun = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/rerun",
+        {"access_request": "support-triage-bot needs to read issues, comment, and create labels."},
+        timeout=timeout,
+    )
+    _require(rerun["ok"] is True, "ReviewRun rerun failed")
+    _require(rerun["read_only"] is True, "ReviewRun rerun must stay read-only")
+    rerun_run = rerun["run"]
+    rerun_packet = rerun["packet"]
+    rerun_delta = rerun["review_delta"]
+    _require(rerun_run["stage"] == "ready_to_export", "rerun must move to ready_to_export")
+    _require(rerun_run["packet"]["previous_revision_id"] == proofed_run["packet"]["revision_id"], "rerun previous revision drifted")
+    _require(rerun_run["packet"]["revision_id"] != proofed_run["packet"]["revision_id"], "rerun did not create new revision")
+    _require(rerun_run["packet"]["revision_number"] == 2, "rerun must create packet revision 2")
+    _require(rerun_run["packet"]["verdict"] == "ready_with_gates", "rerun verdict must be ready_with_gates")
+    _require(rerun_run["packet"]["ready_for_rerun"] is False, "rerun must clear ready_for_rerun")
+    _require(
+        rerun_packet["compact_output"]["allowed"] == ["read issues", "comment", "create labels in selected repo"],
+        "rerun allowed movement drifted",
+    )
+    _require(rerun_packet["compact_output"]["review_required"] == [], "rerun review lane should be clear")
+    _require(
+        rerun_packet["compact_output"]["blocked"] == ["repo admin", "org-wide write", "secrets"],
+        "rerun still-blocked movement drifted",
+    )
+    _require(rerun_delta["same_request"] is True, "rerun must preserve raw request")
+    _require(rerun_delta["packet_changed"] is True, "rerun must show packet changed")
+    _require(rerun_delta["packet_revision_before"] == proofed_run["packet"]["revision_id"], "rerun delta before revision drifted")
+    _require(rerun_delta["packet_revision_after"] == rerun_run["packet"]["revision_id"], "rerun delta after revision drifted")
+    _require(rerun_delta["portkey_before"] == "Block", "rerun delta must start from Portkey block")
+    _require(rerun_delta["portkey_after"] == "Allow with policy", "rerun delta must end with Portkey allow with policy")
+    _require(rerun_delta["still_blocked"] == ["repo admin", "org-wide write", "secrets"], "rerun delta still-blocked drifted")
+    _require(rerun["portkey"]["state"] == "Allow with policy", "rerun Portkey state must allow with policy")
+    _require(rerun["portkey"]["portkey_guardrail_response"]["verdict"] is True, "rerun Portkey guardrail must allow")
+    _require(rerun["portkey"]["api_call_made"] is False, "rerun must not call Portkey API")
+    _require(rerun["portkey"]["policy_mutation_allowed"] is False, "rerun must not mutate Portkey policy")
+    _expect_false(
+        rerun_packet["safety_boundary"],
+        [
+            "approval_granted",
+            "production_access",
+            "permission_grants",
+            "external_writes",
+            "packet_mutated_without_rerun",
+            "proof_attachment_changes_verdict",
+            "portkey_api_call_made",
+            "portkey_policy_mutation_allowed",
+            "raw_agent_intent_trusted",
+        ],
+        prefix="review_run_rerun.safety_boundary",
+    )
+
+    repeated_rerun = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/rerun",
+        {"access_request": "support-triage-bot needs to read issues, comment, and create labels."},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "rerun requires proof_attached" in repeated_rerun.get("detail", ""),
+        "second rerun must fail closed",
     )
 
 

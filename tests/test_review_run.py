@@ -15,6 +15,7 @@ from agent.review_run import (
     attach_review_run_proof,
     classify_review_run_access_request,
     create_review_run,
+    generate_proof_resolved_review_run_packet,
     generate_initial_review_run_packet,
     load_review_run_record,
     record_review_run_access_request,
@@ -347,7 +348,23 @@ class ReviewRunContractTests(TestCase):
         self.assertEqual(delta["previous_revision_id"], "rev_1")
         self.assertEqual(delta["new_revision_id"], "rev_2")
         self.assertEqual(delta["portkey_state"], "Allow with policy")
+        self.assertEqual(delta["previous_portkey_state"], "Block")
+        self.assertEqual(delta["new_portkey_state"], "Allow with policy")
+        self.assertIs(delta["same_request"], True)
+        self.assertIs(delta["packet_changed"], True)
+        self.assertIs(delta["verdict_changed"], True)
+        self.assertIs(delta["portkey_changed"], True)
         self.assertEqual(delta["still_blocked"], ["repo admin", "org-wide write", "secrets"])
+        projection = review_run_packet_projection(rerun)
+        self.assertEqual(projection["decision"]["verdict_class"], "ready_with_gates")
+        self.assertFalse(projection["decision"]["requires_human_review"])
+        self.assertEqual(projection["review_delta"]["packet_revision_before"], "rev_1")
+        self.assertEqual(projection["review_delta"]["packet_revision_after"], "rev_2")
+        self.assertEqual(projection["review_delta"]["portkey_before"], "Block")
+        self.assertEqual(projection["review_delta"]["portkey_after"], "Allow with policy")
+        self.assertEqual(projection["review_delta"]["still_blocked"], ["repo admin", "org-wide write", "secrets"])
+        self.assertTrue(projection["proof_resolution"]["verdict_changed"])
+        self.assertTrue(projection["proof_resolution"]["portkey_changed"])
 
     def test_rerun_requires_proof_and_new_revision(self) -> None:
         run = _packet_run()
@@ -365,12 +382,62 @@ class ReviewRunContractTests(TestCase):
         proof_attached = attach_review_run_proof(run, [{"id": "repo_owner_approval"}])
         self.assertRaisesRegexMessage(
             ValueError,
-            "new packet revision",
+            "rerun requires all missing proof",
             rerun_review_run_packet,
             proof_attached,
+            revision_id="rev_2",
+            verdict="ready_with_gates",
+            movement_classes=_movement(),
+        )
+
+        full_proof_attached = attach_review_run_proof(
+            run,
+            [
+                {"id": "repo_owner_approval"},
+                {"id": "rollback_offswitch"},
+                {"id": "environment_boundary"},
+            ],
+        )
+        self.assertRaisesRegexMessage(
+            ValueError,
+            "new packet revision",
+            rerun_review_run_packet,
+            full_proof_attached,
             revision_id="rev_1",
             verdict="ready_with_gates",
             movement_classes=_movement(),
+        )
+
+    def test_generated_rerun_rejects_changed_raw_request(self) -> None:
+        run = _packet_run()
+        proof_attached = attach_review_run_proof(
+            run,
+            [
+                {"id": "repo_owner_approval"},
+                {"id": "rollback_offswitch"},
+                {"id": "environment_boundary"},
+            ],
+        )
+
+        self.assertRaisesRegexMessage(
+            ValueError,
+            "raw agent request cannot change before rerun",
+            generate_proof_resolved_review_run_packet,
+            proof_attached,
+            "support-triage-bot now wants repo admin",
+        )
+
+        rerun = generate_proof_resolved_review_run_packet(
+            proof_attached,
+            "support-triage-bot needs to read issues, comment, and create labels.",
+        )
+        self.assertEqual(rerun.stage, "ready_to_export")
+        self.assertEqual(rerun.packet["previous_revision_id"], "rev_1")
+        self.assertEqual(rerun.packet["revision_number"], 2)
+        self.assertEqual(rerun.packet["verdict"], "ready_with_gates")
+        self.assertEqual(
+            rerun.movement_classes["allowed"],
+            ["read issues", "comment", "create labels in selected repo"],
         )
 
     def test_review_run_store_persists_records_and_rejects_bad_run_id(self) -> None:

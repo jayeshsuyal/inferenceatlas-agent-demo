@@ -119,6 +119,7 @@ const repoSelectedName = document.getElementById("repo-selected-name");
 const repoIndexedState = document.getElementById("repo-indexed-state");
 const repoReviewRunId = document.getElementById("repo-review-run-id");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
+const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -855,6 +856,10 @@ function renderReviewRepoSummary(repo = null) {
   repoIndexSummary.hidden = !selected;
   if (!selected) {
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
+    if (repoCoachRead) {
+      repoCoachRead.textContent =
+        "Connect GitHub or use the demo repo. IA will answer from the current ReviewRun, not raw agent intent.";
+    }
     return;
   }
   if (repoSelectedName) {
@@ -874,6 +879,11 @@ function renderReviewRepoSummary(repo = null) {
   }
   if (repoReviewRunId) {
     repoReviewRunId.textContent = currentReviewRun?.run_id || "Creating...";
+  }
+  if (repoCoachRead) {
+    repoCoachRead.textContent = selected.indexing
+      ? `Indexing ${selected.full_name}. IA cannot generate the packet until this repo is ready.`
+      : `${selected.full_name} is indexed. Next human action: run the access review to generate a packet.`;
   }
   updateReviewCtaState();
 }
@@ -2657,6 +2667,15 @@ function setRepoCockpitBusy(loading) {
         : "Connect and index one repo before generating a packet.";
     }
   }
+  if (repoCoachRead) {
+    repoCoachRead.textContent =
+      "Current read: packet generated from the selected ReviewRun. Movement stays scoped until missing proof is attached and review is rerun.";
+  }
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.textContent =
+      "Packet ready. Ask IA for current read, blockers, next human action, downstream impact, or safety.";
+  }
 }
 
 async function fetchPortkeyProofForFixture(fixtureId) {
@@ -2738,8 +2757,8 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (repoSponsorProofCard) {
     repoSponsorProofCard.innerHTML = `
       <summary>
-        <span class="repo-card-label">Sponsor proof</span>
-        <strong>${escapeHtml(String(trace.step_count || 0))} proof steps collected</strong>
+        <span class="repo-card-label">ProofGraph</span>
+        <strong>${escapeHtml(String(trace.step_count || 0))} proof steps mapped</strong>
       </summary>
       <div class="repo-accordion-body">
         <p>${escapeHtml((trace.sponsor_order || ["Tavily", "Composio", "OpenClaw", "Nebius"]).join(" -> "))}</p>
@@ -2748,7 +2767,8 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
           <div class="repo-outcome ${trace.all_non_executing === false ? "blocked" : "approved"}"><span>Writes</span><strong>${escapeHtml(String(trace.all_non_executing === false))}</strong></div>
           <div class="repo-outcome review"><span>Live keys</span><strong>${escapeHtml(String((trace.steps || []).some((step) => step.used_live_key)))}</strong></div>
         </div>
-        <p class="repo-microcopy">Sponsors contribute proof only. IA keeps the packet authority locked.</p>
+        <p class="repo-microcopy">Generated from the ReviewRun. Sponsors contribute proof only. IA keeps the packet authority locked.</p>
+        <a class="btn-ghost repo-secondary-link" href="/proofgraph?fixture=support_triage_agent">Open ProofGraph</a>
       </div>
     `;
     repoSponsorProofCard.open = false;

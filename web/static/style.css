@@ -1959,8 +1959,7 @@ body[data-active-tab="start"] #btn-reset {
 }
 
 .composer-shell.first-run-locked .composer-toolbar,
-.composer-shell.first-run-locked .composer,
-.composer-shell.first-run-locked .packet-coach-label {
+.composer-shell.first-run-locked .composer {
   display: none;
 }
 
@@ -1969,10 +1968,6 @@ body[data-active-tab="start"] #btn-reset {
   flex-wrap: wrap;
   gap: 0.4rem;
   padding: 0.45rem 1.25rem 0;
-}
-
-.composer-shell.first-run-locked .packet-coach-quick-chips {
-  display: none;
 }
 
 .packet-coach-quick-chips button {
@@ -2014,11 +2009,6 @@ body[data-active-tab="start"] #btn-reset {
   margin: 0.35rem 1.25rem 0;
   color: var(--text-muted);
   font-size: 0.76rem;
-}
-
-.composer-shell.first-run-locked .packet-coach-status {
-  margin: 0;
-  line-height: 1.4;
 }
 
 .packet-coach-status[hidden] {
@@ -3242,15 +3232,15 @@ body[data-active-tab="start"] .messages {
 }
 
 .repo-proof-cockpit {
-  width: min(100%, 1060px);
+  width: min(100%, 1180px);
   margin: auto;
   display: grid;
-  gap: 1rem;
+  gap: 0.85rem;
   color: #0b0b0c;
 }
 
 .review-runway-hero {
-  max-width: 44rem;
+  max-width: 48rem;
 }
 
 .review-runway-hero h2 {
@@ -3269,58 +3259,93 @@ body[data-active-tab="start"] .messages {
   line-height: 1.48;
 }
 
-.review-lane-grid {
+.review-cockpit-shell {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1.12fr) minmax(19rem, 0.88fr);
+  gap: 0.85rem;
+  align-items: start;
 }
 
-.review-lane-card {
-  min-height: 7.75rem;
-  padding: 0.9rem;
+.repo-current-step {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.repo-ask-coach {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 1rem;
   border: 1px solid #dedede;
   border-radius: 8px;
   background: #ffffff;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.05);
+}
+
+.repo-ask-coach h3 {
+  margin: 0;
   color: #0b0b0c;
-  text-decoration: none;
-  transition:
-    background 0.16s ease,
-    border-color 0.16s ease,
-    box-shadow 0.16s ease,
-    color 0.16s ease,
-    transform 0.16s ease;
+  font-size: 1.05rem;
+  line-height: 1.22;
+  letter-spacing: 0;
 }
 
-.review-lane-card strong {
+.repo-ask-coach p {
+  margin: 0;
+  color: #62646b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.repo-coach-state-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.repo-coach-state-grid div {
+  min-width: 0;
+  padding: 0.58rem;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f7f7f5;
+}
+
+.repo-coach-state-grid span {
   display: block;
-  margin: 0.95rem 0 0.38rem;
-  font-size: 1.02rem;
-  line-height: 1.18;
+  color: #77797f;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  line-height: 1.3;
+  text-transform: uppercase;
 }
 
-.review-lane-card em {
+.repo-coach-state-grid strong {
   display: block;
-  color: #6f7177;
-  font-size: 0.8rem;
-  font-style: normal;
-  line-height: 1.42;
+  margin-top: 0.3rem;
+  color: #0b0b0c;
+  font-size: 0.76rem;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
 }
 
-.review-lane-card:hover,
-.review-lane-card.selected {
-  border-color: #0b0b0c;
-  background:
-    linear-gradient(135deg, #0b0b0c, #191a1d 58%, #050506);
-  box-shadow: 0 18px 44px rgba(11, 11, 12, 0.18);
-  color: #ffffff;
-  transform: translateY(-1px);
+.repo-coach-invariant {
+  padding-top: 0.65rem;
+  border-top: 1px solid #dedede;
 }
 
-.review-lane-card:hover .repo-card-label,
-.review-lane-card.selected .repo-card-label,
-.review-lane-card:hover em,
-.review-lane-card.selected em {
-  color: rgba(255, 255, 255, 0.68);
+.repo-ask-coach .packet-coach-label {
+  padding: 0;
+}
+
+.repo-ask-coach .packet-coach-quick-chips {
+  padding: 0;
+}
+
+.repo-ask-coach .packet-coach-status {
+  margin: 0;
 }
 
 .repo-verdict-card {
@@ -3523,12 +3548,10 @@ body[data-active-tab="start"] .messages {
 }
 
 .repo-proof-cockpit[data-loaded="true"] {
-  width: min(100%, 1080px);
+  width: min(100%, 1180px);
 }
 
-.repo-proof-cockpit[data-loaded="true"] .review-lane-grid,
 .repo-proof-cockpit[data-loaded="true"] .repo-connect-panel,
-.repo-proof-cockpit[data-loaded="true"] .repo-index-summary,
 .repo-proof-cockpit[data-loaded="true"] .repo-review-request {
   display: none;
 }
@@ -3747,6 +3770,19 @@ body[data-active-tab="start"] .messages {
   text-decoration: none;
 }
 
+.repo-secondary-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.repo-secondary-link-row .btn-ghost,
+.repo-secondary-link-row .repo-secondary-link {
+  min-height: 2.2rem;
+  align-items: center;
+  text-decoration: none;
+}
+
 body:not([data-active-tab]) .btn-ghost,
 body[data-active-tab="start"] .btn-ghost {
   border-color: #dedede;
@@ -3826,8 +3862,12 @@ body[data-active-tab="start"] .review-runway-hero p {
   color: rgba(255, 255, 255, 0.68);
 }
 
-body:not([data-active-tab]) .review-lane-card,
-body[data-active-tab="start"] .review-lane-card,
+body:not([data-active-tab]) .repo-connect-panel,
+body[data-active-tab="start"] .repo-connect-panel,
+body:not([data-active-tab]) .repo-index-summary,
+body[data-active-tab="start"] .repo-index-summary,
+body:not([data-active-tab]) .repo-ask-coach,
+body[data-active-tab="start"] .repo-ask-coach,
 body:not([data-active-tab]) .repo-review-request,
 body[data-active-tab="start"] .repo-review-request,
 body:not([data-active-tab]) .repo-card,
@@ -3844,21 +3884,10 @@ body[data-active-tab="start"] .repo-verdict-card {
   color: #ffffff;
 }
 
-body:not([data-active-tab]) .review-lane-card:hover,
-body:not([data-active-tab]) .review-lane-card.selected,
-body[data-active-tab="start"] .review-lane-card:hover,
-body[data-active-tab="start"] .review-lane-card.selected {
-  border-color: rgba(255, 255, 255, 0.48);
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.035) 42%),
-    linear-gradient(135deg, #050506, #111216 58%, #000000);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 24px 74px rgba(0, 0, 0, 0.52);
-}
-
-body:not([data-active-tab]) .review-lane-card strong,
-body[data-active-tab="start"] .review-lane-card strong,
+body:not([data-active-tab]) .repo-ask-coach h3,
+body[data-active-tab="start"] .repo-ask-coach h3,
+body:not([data-active-tab]) .repo-coach-state-grid strong,
+body[data-active-tab="start"] .repo-coach-state-grid strong,
 body:not([data-active-tab]) .repo-card h3,
 body[data-active-tab="start"] .repo-card h3,
 body:not([data-active-tab]) .repo-request-copy h3,
@@ -3870,8 +3899,8 @@ body[data-active-tab="start"] .repo-verdict-card strong {
   color: #ffffff;
 }
 
-body:not([data-active-tab]) .review-lane-card em,
-body[data-active-tab="start"] .review-lane-card em,
+body:not([data-active-tab]) .repo-ask-coach p,
+body[data-active-tab="start"] .repo-ask-coach p,
 body:not([data-active-tab]) .repo-card p,
 body[data-active-tab="start"] .repo-card p,
 body:not([data-active-tab]) .repo-request-copy p,
@@ -3961,7 +3990,11 @@ body[data-active-tab="start"] .repo-proof-grid {
 }
 
 body:not([data-active-tab]) .repo-outcome,
-body[data-active-tab="start"] .repo-outcome {
+body[data-active-tab="start"] .repo-outcome,
+body:not([data-active-tab]) .repo-coach-state-grid div,
+body[data-active-tab="start"] .repo-coach-state-grid div,
+body:not([data-active-tab]) .repo-index-summary div,
+body[data-active-tab="start"] .repo-index-summary div {
   border-color: rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
 }
@@ -3991,8 +4024,10 @@ body[data-active-tab="start"] .repo-outcome.blocked {
 
 body:not([data-active-tab]) .repo-proof-details,
 body:not([data-active-tab]) .repo-microcopy,
+body:not([data-active-tab]) .repo-coach-invariant,
 body[data-active-tab="start"] .repo-proof-details,
-body[data-active-tab="start"] .repo-microcopy {
+body[data-active-tab="start"] .repo-microcopy,
+body[data-active-tab="start"] .repo-coach-invariant {
   border-top-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -4262,10 +4297,11 @@ body[data-active-tab="start"] .repo-proof-details summary {
     margin: 0;
   }
 
-  .review-lane-grid,
+  .review-cockpit-shell,
   .repo-review-request,
   .repo-connect-panel,
   .repo-index-summary,
+  .repo-coach-state-grid,
   .repo-result-header,
   .repo-proof-grid,
   .repo-field-grid,
@@ -4440,22 +4476,8 @@ body[data-active-tab="start"] .repo-proof-details summary {
     font-size: 0.88rem;
   }
 
-  .review-lane-grid {
-    gap: 0.55rem;
-  }
-
-  .review-lane-card {
-    min-height: auto;
-    padding: 0.78rem 0.9rem;
-  }
-
-  .review-lane-card strong {
-    margin: 0.45rem 0 0;
-    font-size: 0.92rem;
-  }
-
-  .review-lane-card em {
-    display: none;
+  .repo-ask-coach {
+    padding: 0.85rem;
   }
 
   .repo-review-request {

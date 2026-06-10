@@ -18,6 +18,7 @@ from agent.proof_graph import (
     PROOF_GRAPH_SCHEMA_VERSION,
     build_proof_graph_for_scenario,
 )
+from agent.portkey_guardrail_proof_loop import PORTKEY_GUARDRAIL_PROOF_LOOP_SCHEMA_VERSION
 from agent.scenarios import SCENARIOS
 from agent.tavily_live_evidence import TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION
 from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
@@ -148,6 +149,23 @@ def test_proof_graph_schema_file_locks_contract() -> None:
         schema["$defs"]["nebius_reviewer_synthesis"]["properties"]["forbidden_phrases_present"]["maxItems"]
         == 0
     )
+    assert schema["properties"]["portkey_guardrail"]["$ref"] == "#/$defs/portkey_guardrail"
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["schema_version"]["const"] == (
+        PORTKEY_GUARDRAIL_PROOF_LOOP_SCHEMA_VERSION
+    )
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["provider"]["const"] == "portkey"
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["webhook_path"]["const"] == (
+        "/api/portkey/guardrail"
+    )
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["auth_required"]["const"] is True
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["api_call_made"]["const"] is False
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["portkey_api_call_made"]["const"] is False
+    assert (
+        schema["$defs"]["portkey_guardrail"]["properties"]["portkey_policy_mutation_allowed"]["const"]
+        is False
+    )
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["packet_remains_authority"]["const"] is True
+    assert schema["$defs"]["portkey_guardrail"]["properties"]["raw_agent_intent_trusted"]["const"] is False
     assert schema["$defs"]["invariants"]["properties"]["packet_remains_authority"]["const"] is True
     assert schema["$defs"]["invariants"]["properties"]["graph_can_change_verdict"]["const"] is False
     assert schema["$defs"]["safety_boundary"]["properties"]["executes_external_writes"]["const"] is False
@@ -585,6 +603,7 @@ def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
         include_composio_blast_radius=True,
         include_openclaw_runtime_trace=True,
         include_nebius_reviewer_synthesis=True,
+        include_portkey_guardrail=True,
     )
 
     assert graph["packet_reference"]["packet_id"] == "ia-agent-access-support-triage-v0"
@@ -592,12 +611,14 @@ def test_sponsor_graph_layers_compose_without_changing_authority() -> None:
     assert graph["composio_blast_radius"]["provider"] == "composio"
     assert graph["openclaw_runtime_trace"]["provider"] == "openclaw"
     assert graph["nebius_reviewer_synthesis"]["provider"] == "nebius"
+    assert graph["portkey_guardrail"]["provider"] == "portkey"
     assert {node["provider"] for node in graph["proof_nodes"]} == {
         "ia_packet",
         "tavily",
         "composio",
         "openclaw",
         "nebius",
+        "portkey",
     }
     assert graph["invariants"]["packet_remains_authority"] is True
     assert graph["invariants"]["graph_can_approve"] is False
@@ -616,16 +637,18 @@ def test_all_sponsor_proof_preset_matches_explicit_layers() -> None:
         include_composio_blast_radius=True,
         include_openclaw_runtime_trace=True,
         include_nebius_reviewer_synthesis=True,
+        include_portkey_guardrail=True,
     )
 
     assert preset == explicit
-    assert preset["node_counts"] == {"packet": 1, "proof": 77, "edge": 136}
+    assert preset["node_counts"] == {"packet": 1, "proof": 80, "edge": 141}
     assert {node["provider"] for node in preset["proof_nodes"]} == {
         "ia_packet",
         "tavily",
         "composio",
         "openclaw",
         "nebius",
+        "portkey",
     }
     assert preset["invariants"]["packet_remains_authority"] is True
     assert preset["invariants"]["graph_can_approve"] is False
@@ -769,6 +792,44 @@ def test_proof_graph_cli_can_include_nebius_reviewer_synthesis_layer() -> None:
     assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "nebius"}
 
 
+def test_proof_graph_cli_can_include_portkey_guardrail_layer() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "agent.proof_graph",
+            "support_triage_agent",
+            "--include-portkey-guardrail",
+            "--json",
+        ],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    portkey = payload["portkey_guardrail"]
+    assert portkey["provider"] == "portkey"
+    assert portkey["schema_version"] == PORTKEY_GUARDRAIL_PROOF_LOOP_SCHEMA_VERSION
+    assert portkey["webhook_path"] == "/api/portkey/guardrail"
+    assert portkey["auth_required"] is True
+    assert portkey["api_call_made"] is False
+    assert portkey["portkey_api_call_made"] is False
+    assert portkey["portkey_policy_mutation_allowed"] is False
+    assert portkey["packet_remains_authority"] is True
+    assert portkey["raw_agent_intent_trusted"] is False
+    assert portkey["preview_does_not_write_ledger"] is True
+    assert {node["provider"] for node in payload["proof_nodes"]} == {"ia_packet", "portkey"}
+    portkey_nodes = [node for node in payload["proof_nodes"] if node["provider"] == "portkey"]
+    assert {node["attached_packet_field"] for node in portkey_nodes} == {
+        "downstream_verdict",
+        "safety_invariants",
+    }
+
+
 def test_proof_graph_cli_can_include_all_sponsors_preset() -> None:
     result = subprocess.run(
         [
@@ -788,17 +849,19 @@ def test_proof_graph_cli_can_include_all_sponsors_preset() -> None:
 
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
-    assert payload["node_counts"] == {"packet": 1, "proof": 77, "edge": 136}
+    assert payload["node_counts"] == {"packet": 1, "proof": 80, "edge": 141}
     assert payload["tavily_evidence"]["provider"] == "tavily"
     assert payload["composio_blast_radius"]["provider"] == "composio"
     assert payload["openclaw_runtime_trace"]["provider"] == "openclaw"
     assert payload["nebius_reviewer_synthesis"]["provider"] == "nebius"
+    assert payload["portkey_guardrail"]["provider"] == "portkey"
     assert {node["provider"] for node in payload["proof_nodes"]} == {
         "ia_packet",
         "tavily",
         "composio",
         "openclaw",
         "nebius",
+        "portkey",
     }
     assert payload["invariants"]["packet_remains_authority"] is True
     assert payload["invariants"]["graph_can_change_verdict"] is False
@@ -828,6 +891,13 @@ def test_proof_graph_schema_and_module_preserve_private_boundary() -> None:
                 build_proof_graph_for_scenario(
                     "support_triage_agent",
                     include_nebius_reviewer_synthesis=True,
+                ),
+                sort_keys=True,
+            ),
+            json.dumps(
+                build_proof_graph_for_scenario(
+                    "support_triage_agent",
+                    include_portkey_guardrail=True,
                 ),
                 sort_keys=True,
             ),

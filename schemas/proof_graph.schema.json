@@ -81,6 +81,9 @@
     "nebius_reviewer_synthesis": {
       "$ref": "#/$defs/nebius_reviewer_synthesis"
     },
+    "portkey_guardrail": {
+      "$ref": "#/$defs/portkey_guardrail"
+    },
     "node_counts": {
       "type": "object",
       "required": ["packet", "proof", "edge"],
@@ -440,6 +443,65 @@
         "can_change_verdict": { "type": "boolean", "const": false },
         "can_mutate_packet": { "type": "boolean", "const": false },
         "human_review_required": { "type": "boolean", "const": true },
+        "safety_impact": { "type": "string", "const": "none" }
+      }
+    },
+    "portkey_guardrail": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "provider",
+        "mode",
+        "delivery_mode",
+        "webhook_path",
+        "auth_required",
+        "webhook_records_event",
+        "preview_written_to_ledger",
+        "response_verdict",
+        "reason",
+        "deny_reason_count",
+        "policy_preview_mode",
+        "api_call_made",
+        "portkey_api_call_made",
+        "portkey_policy_mutation_allowed",
+        "packet_remains_authority",
+        "raw_agent_intent_trusted",
+        "live_portkey_mutation_enabled",
+        "preview_does_not_write_ledger",
+        "human_review_required",
+        "docs_reference",
+        "safety_impact"
+      ],
+      "properties": {
+        "schema_version": { "type": "string", "const": "portkey_guardrail_proof_loop.v0" },
+        "provider": { "type": "string", "const": "portkey" },
+        "mode": { "type": "string", "const": "deterministic_fallback" },
+        "delivery_mode": { "type": "string", "const": "live_guardrail_webhook" },
+        "webhook_path": { "type": "string", "const": "/api/portkey/guardrail" },
+        "auth_required": { "type": "boolean", "const": true },
+        "webhook_records_event": { "type": "boolean", "const": true },
+        "preview_written_to_ledger": { "type": "boolean", "const": false },
+        "response_verdict": { "type": "boolean" },
+        "reason": { "type": ["string", "null"] },
+        "deny_reason_count": { "type": "integer", "minimum": 0 },
+        "policy_preview_mode": { "type": "string", "const": "dry-run" },
+        "api_call_made": { "type": "boolean", "const": false },
+        "portkey_api_call_made": { "type": "boolean", "const": false },
+        "portkey_policy_mutation_allowed": { "type": "boolean", "const": false },
+        "packet_remains_authority": { "type": "boolean", "const": true },
+        "raw_agent_intent_trusted": { "type": "boolean", "const": false },
+        "live_portkey_mutation_enabled": { "type": "boolean", "const": false },
+        "preview_does_not_write_ledger": { "type": "boolean", "const": true },
+        "human_review_required": { "type": "boolean", "const": true },
+        "docs_reference": {
+          "type": "object",
+          "required": ["guardrail_webhook", "guardrails_overview", "last_verified"],
+          "properties": {
+            "guardrail_webhook": { "type": "string", "minLength": 1 },
+            "guardrails_overview": { "type": "string", "minLength": 1 },
+            "last_verified": { "type": "string", "const": "2026-06-09" }
+          }
+        },
         "safety_impact": { "type": "string", "const": "none" }
       }
     },

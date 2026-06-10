@@ -29,6 +29,10 @@ from .packet_authority import (
     derive_decision_lock,
     stable_sha256,
 )
+from .portkey_guardrail_proof_loop import (
+    PORTKEY_GUARDRAIL_PROOF_LOOP_SCHEMA_VERSION,
+    build_portkey_guardrail_proof_loop,
+)
 from .scenarios import SCENARIOS, build_scenario_packet
 from .tavily_live_evidence import (
     TAVILY_LIVE_EVIDENCE_SCHEMA_VERSION,
@@ -865,6 +869,116 @@ def _tavily_evidence_nodes(
     return tuple(nodes), tuple(edges), _tavily_evidence_summary(tavily)
 
 
+def _portkey_guardrail_summary(proof_loop: dict[str, Any]) -> dict[str, Any]:
+    call = proof_loop["portkey_call"]
+    truth = proof_loop["packet_truth"]
+    policy = proof_loop["portkey_policy_preview"]
+    invariants = proof_loop["invariants"]
+    return {
+        "schema_version": PORTKEY_GUARDRAIL_PROOF_LOOP_SCHEMA_VERSION,
+        "provider": "portkey",
+        "mode": "deterministic_fallback",
+        "delivery_mode": proof_loop["delivery_mode"],
+        "webhook_path": call["path"],
+        "auth_required": bool(call["auth_required"]),
+        "webhook_records_event": bool(call["event_recording"]["webhook_records_event"]),
+        "preview_written_to_ledger": bool(call["event_recording"]["preview_written_to_ledger"]),
+        "response_verdict": bool(call["response_verdict"]),
+        "reason": truth.get("reason"),
+        "deny_reason_count": len(truth.get("deny_reasons", [])),
+        "policy_preview_mode": policy["mode"],
+        "api_call_made": bool(policy["api_call_made"]),
+        "portkey_api_call_made": bool(invariants["portkey_api_call_made"]),
+        "portkey_policy_mutation_allowed": bool(invariants["portkey_policy_mutation_allowed"]),
+        "packet_remains_authority": bool(invariants["packet_remains_authority"]),
+        "raw_agent_intent_trusted": bool(invariants["raw_agent_intent_trusted"]),
+        "live_portkey_mutation_enabled": bool(invariants["live_portkey_mutation_enabled"]),
+        "preview_does_not_write_ledger": bool(invariants["preview_does_not_write_ledger"]),
+        "human_review_required": True,
+        "docs_reference": proof_loop["docs_reference"],
+        "safety_impact": "none",
+    }
+
+
+def _portkey_guardrail_nodes(
+    *,
+    scenario_name: str,
+    next_human_action: str,
+) -> tuple[tuple[ProofNode, ...], tuple[ProofEdge, ...], dict[str, Any]]:
+    proof_loop = build_portkey_guardrail_proof_loop(
+        fixture=scenario_name,
+        requested_mode="model_request",
+    )
+    call = proof_loop["portkey_call"]
+    truth = proof_loop["packet_truth"]
+    policy = proof_loop["portkey_policy_preview"]
+    usage_policy = policy["usage_policy_plan"]["request_body"]
+
+    webhook_node = _sponsor_proof_node(
+        provider="portkey",
+        node_id="proof:portkey:byo_guardrail_webhook",
+        field="downstream_verdict",
+        label="Portkey BYO guardrail webhook",
+        summary=(
+            f"{call['method']} {call['path']} accepts {call['event_type']} with auth. "
+            f"IA returns a packet-backed verdict={call['response_verdict']}."
+        ),
+        source_refs=[
+            "portkey_guardrail_proof_loop.portkey_call",
+            proof_loop["docs_reference"]["guardrail_webhook"],
+        ],
+        next_human_action=next_human_action,
+    )
+    verdict_node = _sponsor_proof_node(
+        provider="portkey",
+        node_id="proof:portkey:packet_backed_verdict",
+        field="downstream_verdict",
+        label="Portkey packet-backed verdict",
+        summary=(
+            f"verdict={truth['verdict']}; reason={truth.get('reason')}; "
+            f"deny_reasons={len(truth.get('deny_reasons', []))}; "
+            "raw agent intent is not trusted."
+        ),
+        source_refs=[
+            "portkey_guardrail_proof_loop.packet_truth",
+            "portkey_guardrail_proof_loop.ia_packet_reference",
+        ],
+        next_human_action=next_human_action,
+    )
+    policy_node = _sponsor_proof_node(
+        provider="portkey",
+        node_id="proof:portkey:policy_preview",
+        field="safety_invariants",
+        label="Portkey policy preview",
+        summary=(
+            f"mode={policy['mode']}; api_call_made={policy['api_call_made']}; "
+            f"credit_limit={usage_policy['credit_limit']}; no Portkey policy mutation."
+        ),
+        source_refs=[
+            "portkey_guardrail_proof_loop.portkey_policy_preview",
+            "portkey_guardrail_proof_loop.invariants",
+        ],
+        next_human_action=next_human_action,
+    )
+    edges = (
+        ProofEdge(
+            edge_id=f"edge:{verdict_node.node_id}:to:{webhook_node.node_id}:observed_by_downstream",
+            edge_type="observed_by_downstream",
+            from_node_id=verdict_node.node_id,
+            to_node_id=webhook_node.node_id,
+            packet_field="downstream_verdict",
+        ),
+        ProofEdge(
+            edge_id=f"edge:{policy_node.node_id}:to:{webhook_node.node_id}:supports_review",
+            edge_type="supports_review",
+            from_node_id=policy_node.node_id,
+            to_node_id=webhook_node.node_id,
+            packet_field="safety_invariants",
+        ),
+    )
+    return (webhook_node, verdict_node, policy_node), edges, _portkey_guardrail_summary(proof_loop)
+
+
 def _edge_for_node(packet_node_id: str, node: ProofNode) -> ProofEdge:
     edge_type: EdgeType = "attaches_to_packet_field"
     if node.attached_packet_field == "blocked_claims":
@@ -905,6 +1019,7 @@ def build_proof_graph(
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
     include_nebius_reviewer_synthesis: bool = False,
+    include_portkey_guardrail: bool = False,
     include_all_sponsor_proof: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph from one DecisionPacket."""
@@ -913,6 +1028,7 @@ def build_proof_graph(
         include_composio_blast_radius = True
         include_openclaw_runtime_trace = True
         include_nebius_reviewer_synthesis = True
+        include_portkey_guardrail = True
 
     snapshot = build_packet_authority_snapshot_for_scenario(packet, scenario_name)
     next_action = _next_human_action(packet)
@@ -941,6 +1057,9 @@ def build_proof_graph(
     nebius_nodes: tuple[ProofNode, ...] = ()
     nebius_edges: tuple[ProofEdge, ...] = ()
     nebius_summary: dict[str, Any] | None = None
+    portkey_nodes: tuple[ProofNode, ...] = ()
+    portkey_edges: tuple[ProofEdge, ...] = ()
+    portkey_summary: dict[str, Any] | None = None
     if include_tavily_evidence:
         tavily_nodes, tavily_edges, tavily_summary = _tavily_evidence_nodes(
             packet,
@@ -963,15 +1082,28 @@ def build_proof_graph(
             scenario_name=scenario_name,
             next_human_action=next_action,
         )
+    if include_portkey_guardrail:
+        portkey_nodes, portkey_edges, portkey_summary = _portkey_guardrail_nodes(
+            scenario_name=scenario_name,
+            next_human_action=next_action,
+        )
     proof_nodes = (
         *packet_proof_nodes,
         *tavily_nodes,
         *composio_nodes,
         *openclaw_nodes,
         *nebius_nodes,
+        *portkey_nodes,
     )
     packet_edges = tuple(_edge_for_node(packet_node.node_id, node) for node in proof_nodes)
-    edges = (*packet_edges, *tavily_edges, *composio_edges, *openclaw_edges, *nebius_edges)
+    edges = (
+        *packet_edges,
+        *tavily_edges,
+        *composio_edges,
+        *openclaw_edges,
+        *nebius_edges,
+        *portkey_edges,
+    )
     base_payload = {
         "schema_version": PROOF_GRAPH_SCHEMA_VERSION,
         "scenario_name": scenario_name,
@@ -988,6 +1120,8 @@ def build_proof_graph(
         base_payload["openclaw_runtime_trace"] = openclaw_summary
     if nebius_summary:
         base_payload["nebius_reviewer_synthesis"] = nebius_summary
+    if portkey_summary:
+        base_payload["portkey_guardrail"] = portkey_summary
     digest = stable_sha256(base_payload)
     return {
         **base_payload,
@@ -1029,6 +1163,7 @@ def build_proof_graph_for_scenario(
     include_composio_blast_radius: bool = False,
     include_openclaw_runtime_trace: bool = False,
     include_nebius_reviewer_synthesis: bool = False,
+    include_portkey_guardrail: bool = False,
     include_all_sponsor_proof: bool = False,
 ) -> dict[str, Any]:
     """Build a ProofGraph for a registered public access scenario."""
@@ -1041,6 +1176,7 @@ def build_proof_graph_for_scenario(
         include_composio_blast_radius=include_composio_blast_radius,
         include_openclaw_runtime_trace=include_openclaw_runtime_trace,
         include_nebius_reviewer_synthesis=include_nebius_reviewer_synthesis,
+        include_portkey_guardrail=include_portkey_guardrail,
         include_all_sponsor_proof=include_all_sponsor_proof,
     )
 
@@ -1118,9 +1254,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Attach Nebius reviewer synthesis proof nodes without live calls or verdict ownership.",
     )
     parser.add_argument(
+        "--include-portkey-guardrail",
+        action="store_true",
+        help="Attach Portkey downstream guardrail proof nodes without Portkey API calls or policy mutation.",
+    )
+    parser.add_argument(
         "--include-all-sponsors",
         action="store_true",
-        help="Attach Tavily, Composio, OpenClaw, and Nebius proof nodes in one reviewer-friendly preset.",
+        help=(
+            "Attach Tavily, Composio, OpenClaw, Nebius, and Portkey proof nodes "
+            "in one reviewer-friendly preset."
+        ),
     )
     parser.add_argument("--json", action="store_true", help="Print the graph as JSON.")
     return parser
@@ -1135,6 +1279,7 @@ def main(argv: list[str] | None = None) -> int:
             include_composio_blast_radius=args.include_composio_blast_radius,
             include_openclaw_runtime_trace=args.include_openclaw_runtime_trace,
             include_nebius_reviewer_synthesis=args.include_nebius_reviewer_synthesis,
+            include_portkey_guardrail=args.include_portkey_guardrail,
             include_all_sponsor_proof=args.include_all_sponsors,
         )
     except (KeyError, ValueError) as exc:

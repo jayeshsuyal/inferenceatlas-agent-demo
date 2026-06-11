@@ -12,7 +12,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 
 from agent.connector_oauth import demo_sign_in
-from agent.portkey_guardrail import list_portkey_guardrail_events
+from agent.portkey_guardrail import PORTKEY_LOCAL_TEST_EVENT_KIND, list_portkey_guardrail_events
 
 from web.app import (
     GithubAttachRequest,
@@ -343,6 +343,8 @@ class ReviewRunApiTests(TestCase):
                 self.assertIs(rev1_test["invariants"]["portkey_api_call_made"], False)
                 self.assertIs(rev1_test["invariants"]["portkey_policy_mutation_allowed"], False)
                 self.assertTrue(rev1_test["event_id"].startswith("portkey-guardrail-"))
+                self.assertEqual(rev1_test["guardrail_event"]["kind"], PORTKEY_LOCAL_TEST_EVENT_KIND)
+                self.assertEqual(rev1_test["guardrail_event"]["delivery_mode"], "review_run_guardrail_test")
 
                 attach_review_run_proof_api(
                     run_id,
@@ -382,6 +384,8 @@ class ReviewRunApiTests(TestCase):
                 events = list_portkey_guardrail_events(ledger_dir=ledger_dir)
                 self.assertEqual(len(events), 2)
                 self.assertEqual({event["verdict"] for event in events}, {False, True})
+                self.assertEqual({event["kind"] for event in events}, {PORTKEY_LOCAL_TEST_EVENT_KIND})
+                self.assertEqual({event["delivery_mode"] for event in events}, {"review_run_guardrail_test"})
 
     def test_portkey_webhook_consumes_current_review_run_packet_revision(self) -> None:
         with TemporaryDirectory() as temp_dir:

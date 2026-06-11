@@ -45,6 +45,7 @@ from agent.portkey_guardrail import (
     PORTKEY_GUARDRAIL_SCHEMA_VERSION,
     PORTKEY_GUARDRAIL_TOKEN_HEADER,
     PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL,
+    PORTKEY_LOCAL_TEST_EVENT_KIND,
     PORTKEY_REHEARSAL_AUTH_ENV,
     PORTKEY_REHEARSAL_MODE_HEADER,
     SAFE_PORTKEY_REQUEST_MODES,
@@ -1138,6 +1139,7 @@ def review_run_portkey_guardrail_test_api(run_id: str) -> dict:
         body=test["portkey_request"],
         response=test["portkey_guardrail_response"],
         elapsed_ms=elapsed_ms,
+        kind=PORTKEY_LOCAL_TEST_EVENT_KIND,
     )
     event_path = write_portkey_guardrail_event(
         event,
@@ -1145,6 +1147,8 @@ def review_run_portkey_guardrail_test_api(run_id: str) -> dict:
     )
     event_summary = {
         "event_id": event["event_id"],
+        "kind": event["kind"],
+        "delivery_mode": event["delivery_mode"],
         "record_path": relative_event_path(event_path),
         "read_only": True,
         "api_call_made": False,

@@ -207,6 +207,10 @@
                 <p>Connect a repo, generate the IA Packet, then let downstream gates read the packet before movement.</p>
               </header>
 
+              <nav class="review-flow-progress" id="review-flow-progress" aria-label="ReviewRun progress">
+                <ol class="review-flow-steps" id="review-flow-steps"></ol>
+              </nav>
+
               <section class="repo-runway-panel" aria-label="Review cockpit">
                 <div class="repo-stage-status" aria-label="ReviewRun status">
                   <div>
@@ -637,8 +641,28 @@
       </main>
     </div>
 
+    <aside class="review-run-rail" id="review-run-rail" data-collapsed="true" aria-label="ReviewRun queue">
+      <div class="review-run-rail-head">
+        <div>
+          <span class="repo-card-label">Session</span>
+          <strong>Runs &amp; chats</strong>
+        </div>
+        <button type="button" class="review-run-rail-toggle" id="review-run-rail-toggle" aria-expanded="false" aria-controls="review-run-rail-body">
+          Open
+        </button>
+      </div>
+      <div class="review-run-rail-body" id="review-run-rail-body">
+        <p class="review-run-rail-session">
+          <span>Session id</span>
+          <code id="review-run-rail-session-id">—</code>
+        </p>
+        <p class="review-run-rail-hint">Each repo selection creates a durable ReviewRun. Switch runs without losing packet state on the server.</p>
+        <ul class="review-run-rail-list" id="review-run-rail-list" role="list"></ul>
+      </div>
+    </aside>
+
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/app.js?v=79"></script>
+    <script src="/static/app.js?v=80"></script>
   </body>
 </html>

@@ -104,7 +104,11 @@ from agent.repo_index_job import (
     get_session_review_context,
     start_background_full_index,
 )
-from agent.review_context import get_review_context_bundle, record_flow_event
+from agent.review_context import (
+    get_review_context_bundle,
+    list_review_runs_for_session,
+    record_flow_event,
+)
 from agent.session_metrics import (
     clear_metrics_session,
     get_session_metrics,
@@ -1127,6 +1131,18 @@ def get_review_run(run_id: str) -> dict:
         "record": review_run_record_summary(record),
         "suggestions": suggestions,
     }
+
+
+@app.get("/api/sessions/{session_id}/review-runs")
+def list_session_review_runs(session_id: str) -> dict:
+    """List ReviewRuns linked to this browser session (durable queue for the run rail)."""
+    if len(session_id.strip()) < 8:
+        raise HTTPException(status_code=400, detail="session_id too short")
+    try:
+        runs = list_review_runs_for_session(session_id, review_run_store_dir=REVIEW_RUN_STORE_DIR)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"ok": True, "read_only": True, "session_id": session_id, "runs": runs}
 
 
 @app.get("/api/review-runs/{run_id}/context")

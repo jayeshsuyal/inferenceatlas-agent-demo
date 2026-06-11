@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any, Mapping, Optional
 
-from .coach_session import format_coach_session_context, load_coach_session
+from .coach_session import DEFAULT_COACH_SESSION_DIR, format_coach_session_context, load_coach_session
 from .connector_runtime import load_session, save_session
 
 FLOW_STAGE_ORDER = (
@@ -124,6 +124,55 @@ def get_review_context_bundle(
         "coach_session": coach_session,
         "coach_context_markdown": coach_text,
     }
+
+
+def list_review_runs_for_session(
+    session_id: str,
+    *,
+    review_run_store_dir: Optional[Any] = None,
+) -> list[dict[str, Any]]:
+    """List ReviewRuns known to this connector session (newest first)."""
+    from .review_run import DEFAULT_REVIEW_RUN_STORE_DIR, load_review_run_record
+
+    store_dir = review_run_store_dir or DEFAULT_REVIEW_RUN_STORE_DIR
+    data = load_session(session_id)
+    contexts = data.get("review_contexts") or {}
+    items: list[dict[str, Any]] = []
+    for run_id, ctx in contexts.items():
+        ctx = dict(ctx or {})
+        record_run: dict[str, Any] = {}
+        try:
+            record = load_review_run_record(run_id, store_dir=store_dir)
+            if record:
+                record_run = dict(record.get("run") or {})
+        except ValueError:
+            record_run = {}
+        selected = record_run.get("selected_repo") or {}
+        packet = record_run.get("packet") or {}
+        items.append(
+            {
+                "run_id": run_id,
+                "session_id": session_id,
+                "repo_full_name": str(
+                    ctx.get("repo_full_name")
+                    or selected.get("full_name")
+                    or ""
+                ),
+                "stage": str(ctx.get("stage") or record_run.get("stage") or ""),
+                "ui_stage": str(ctx.get("stage") or record_run.get("stage") or ""),
+                "packet_id": str(packet.get("packet_id") or ""),
+                "revision_id": str(packet.get("revision_id") or ""),
+                "updated_at": str(
+                    ctx.get("updated_at")
+                    or record_run.get("updated_at")
+                    or ""
+                ),
+                "created_at": str(record_run.get("created_at") or ""),
+                "coach_turns": len(load_coach_session(run_id, store_dir=DEFAULT_COACH_SESSION_DIR).get("turns") or []),
+            }
+        )
+    items.sort(key=lambda row: row.get("updated_at") or row.get("created_at") or "", reverse=True)
+    return items
 
 
 def format_context_for_coach(bundle: Mapping[str, Any]) -> str:

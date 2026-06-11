@@ -3,6 +3,7 @@ const REVIEW_SCOPE_KEY = "ia_review_scope";
 const REVIEW_RUN_STORAGE_KEY = "ia_review_run_id";
 const SELECTED_REPO_STORAGE_KEY = "ia_selected_repo";
 const REVIEW_STAGE_STORAGE_KEY = "ia_review_stage";
+const REVIEW_SCREEN_STORAGE_KEY = "ia_review_screen";
 const INDEX_JOB_STORAGE_KEY = "ia_repo_index_job_id";
 
 const messagesEl = document.getElementById("messages");
@@ -142,6 +143,11 @@ const repoCoachMaximize = document.getElementById("repo-coach-maximize");
 const repoCoachBackdrop = document.getElementById("repo-coach-backdrop");
 const repoCoachIndexSummary = document.getElementById("repo-coach-index-summary");
 const repoCoachIndexSummaryBody = document.getElementById("repo-coach-index-summary-body");
+const reviewFlowSteps = document.getElementById("review-flow-steps");
+const reviewRunRail = document.getElementById("review-run-rail");
+const reviewRunRailToggle = document.getElementById("review-run-rail-toggle");
+const reviewRunRailList = document.getElementById("review-run-rail-list");
+const reviewRunRailSessionId = document.getElementById("review-run-rail-session-id");
 const repoIndexTracker = document.getElementById("repo-index-tracker");
 const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
 const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
@@ -249,7 +255,14 @@ const STAGE_REASSESS_PROMPTS = {
   portkey_tested: "Summarize the Portkey guardrail read for this ReviewRun.",
 };
 let currentReviewRunCoachSuggestions = [];
-let reviewRunScreenOverride = null;
+let reviewRunScreenOverride = localStorage.getItem(REVIEW_SCREEN_STORAGE_KEY) || null;
+const REVIEW_FLOW_STEPS = [
+  { id: "repo_setup", label: "Connect & index", detail: "Choose one GitHub repo" },
+  { id: "packet_decision", label: "IA Packet", detail: "Generate packet verdict" },
+  { id: "proof_workbench", label: "Attach proof", detail: "Human proof receipts" },
+  { id: "packet_rerun", label: "Regenerate", detail: "Rerun with proof" },
+  { id: "portkey_gate", label: "Portkey gate", detail: "Test guardrail locally" },
+];
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -1260,6 +1273,12 @@ function persistReviewRunState() {
     }
     const stage = reviewRunUiStage();
     localStorage.setItem(REVIEW_STAGE_STORAGE_KEY, stage);
+    const screen = reviewRunActiveScreen(stage);
+    if (screen && screen !== "repo_setup") {
+      localStorage.setItem(REVIEW_SCREEN_STORAGE_KEY, screen);
+    } else {
+      localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+    }
     if (currentRepoIndexJobId) {
       localStorage.setItem(INDEX_JOB_STORAGE_KEY, currentRepoIndexJobId);
     }
@@ -1365,9 +1384,14 @@ async function refreshReviewRunContextBundle() {
   }
 }
 
-async function restoreReviewRunSession() {
-  const runId = localStorage.getItem(REVIEW_RUN_STORAGE_KEY);
-  if (!runId) return false;
+async function restoreReviewRunSession({ preferredRunId = "" } = {}) {
+  const urlState = parseReviewRunFromUrl();
+  const runId = preferredRunId || urlState.runId || localStorage.getItem(REVIEW_RUN_STORAGE_KEY);
+  if (!runId) {
+    renderReviewFlowProgress();
+    void refreshReviewRunRail();
+    return false;
+  }
   try {
     const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}`);
     const data = await res.json().catch(() => ({}));
@@ -1396,6 +1420,12 @@ async function restoreReviewRunSession() {
       if (repoProofCockpit) repoProofCockpit.dataset.loaded = "true";
       renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
     }
+    const savedScreen = urlState.screen || localStorage.getItem(REVIEW_SCREEN_STORAGE_KEY) || "";
+    if (savedScreen && reviewRunScreenAccessible(savedScreen)) {
+      reviewRunScreenOverride = savedScreen;
+    }
+    setReviewRunUiStage(reviewRunUiStage(packetDetail), packetDetail);
+    syncReviewRunUrl({ screen: reviewRunActiveScreen(reviewRunUiStage(packetDetail)), runId, replace: true });
     if (packetDetail?.packet_reference?.packet_id) {
       setCoachForPacket(packetDetail, packetPortkeyPreview);
     } else {
@@ -1403,6 +1433,8 @@ async function restoreReviewRunSession() {
     }
     void refreshReviewRunCoachSuggestions();
     persistReviewRunState();
+    renderReviewFlowProgress();
+    void refreshReviewRunRail();
     return true;
   } catch (_) {
     return false;
@@ -1768,13 +1800,201 @@ function reviewRunVisibleScreens(stage) {
   return [reviewRunActiveScreen(stage)];
 }
 
+function reviewRunNaturalScreen(stage = reviewRunUiStage()) {
+  const saved = reviewRunScreenOverride;
+  reviewRunScreenOverride = null;
+  const screen = reviewRunActiveScreen(stage);
+  reviewRunScreenOverride = saved;
+  return screen;
+}
+
+function reviewRunFlowContext(packet = packetDetail) {
+  const packetRef = packet?.packet_reference || currentReviewRun?.packet || {};
+  const proof = packet?.proof_resolution || {};
+  const delta = packet?.review_delta || {};
+  return {
+    hasPacket: Boolean(packetRef.packet_id || packetRef.revision_id),
+    proofReady: Boolean(proof.ready_for_rerun || currentReviewRun?.packet?.ready_for_rerun),
+    rerunComplete: Boolean(delta.packet_changed || packet?.review_run?.stage === "ready_to_export"),
+    portkeyTested: Boolean(currentReviewRunPortkeyTest),
+  };
+}
+
+function reviewRunScreenAccessible(screenId, ctx = reviewRunFlowContext()) {
+  const stage = reviewRunUiStage();
+  switch (screenId) {
+    case "repo_setup":
+      return true;
+    case "packet_decision":
+      return ctx.hasPacket || !["repo_not_connected", "repo_connected"].includes(stage);
+    case "proof_workbench":
+      return ctx.hasPacket;
+    case "packet_rerun":
+      return ctx.rerunComplete || ctx.proofReady;
+    case "portkey_gate":
+      return ctx.hasPacket;
+    default:
+      return false;
+  }
+}
+
+function parseReviewRunFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    runId: String(params.get("run") || "").trim(),
+    screen: String(params.get("screen") || "").trim(),
+  };
+}
+
+function syncReviewRunUrl({ screen = "", runId = "", replace = false } = {}) {
+  if (document.body.dataset.activeTab !== "start") return;
+  const params = new URLSearchParams(window.location.search);
+  const rid = runId || currentReviewRun?.run_id || "";
+  const stage = reviewRunUiStage();
+  const scr = screen || reviewRunActiveScreen(stage) || "repo_setup";
+  if (rid) params.set("run", rid);
+  else params.delete("run");
+  if (scr && scr !== "repo_setup") params.set("screen", scr);
+  else params.delete("screen");
+  const query = params.toString();
+  const next = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  const state = { reviewRun: { run_id: rid, screen: scr } };
+  if (replace) history.replaceState(state, "", next);
+  else history.pushState(state, "", next);
+}
+
+function navigateReviewRunScreen(screenId, { pushHistory = true, force = false } = {}) {
+  const ctx = reviewRunFlowContext();
+  if (!force && !reviewRunScreenAccessible(screenId, ctx)) return false;
+  const stage = reviewRunUiStage();
+  if (screenId === reviewRunNaturalScreen(stage) && !force) {
+    clearReviewRunScreenOverride();
+  } else {
+    reviewRunScreenOverride = screenId;
+  }
+  setReviewRunUiStage(stage, packetDetail);
+  if (pushHistory) syncReviewRunUrl({ screen: reviewRunActiveScreen(stage) });
+  persistReviewRunState();
+  return true;
+}
+
 function focusReviewRunScreen(screenId) {
-  reviewRunScreenOverride = screenId;
-  setReviewRunUiStage(reviewRunUiStage(), packetDetail);
+  return navigateReviewRunScreen(screenId, { pushHistory: true });
 }
 
 function clearReviewRunScreenOverride() {
   reviewRunScreenOverride = null;
+  localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+}
+
+function renderReviewFlowProgress() {
+  if (!reviewFlowSteps) return;
+  const stage = reviewRunUiStage();
+  const activeScreen = reviewRunActiveScreen(stage);
+  const ctx = reviewRunFlowContext();
+  const naturalIdx = Math.max(
+    0,
+    REVIEW_FLOW_STEPS.findIndex((step) => step.id === reviewRunNaturalScreen(stage))
+  );
+  reviewFlowSteps.replaceChildren();
+  REVIEW_FLOW_STEPS.forEach((step, index) => {
+    const accessible = reviewRunScreenAccessible(step.id, ctx);
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "review-flow-step";
+    btn.dataset.screen = step.id;
+    if (step.id === activeScreen) btn.dataset.state = "current";
+    else if (index < naturalIdx) btn.dataset.state = "complete";
+    else if (accessible) btn.dataset.state = "available";
+    else btn.dataset.state = "locked";
+    btn.disabled = !accessible;
+    btn.innerHTML = `
+      <span class="review-flow-step-index">${index + 1}</span>
+      <span class="review-flow-step-copy">
+        <strong>${escapeHtml(step.label)}</strong>
+        <small>${escapeHtml(step.detail)}</small>
+      </span>
+    `;
+    btn.addEventListener("click", () => navigateReviewRunScreen(step.id));
+    li.appendChild(btn);
+    reviewFlowSteps.appendChild(li);
+  });
+}
+
+async function refreshReviewRunRail() {
+  if (reviewRunRailSessionId) {
+    reviewRunRailSessionId.textContent = sessionId ? `${sessionId.slice(0, 10)}…` : "—";
+  }
+  if (!reviewRunRailList || !sessionId) return;
+  try {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/review-runs`);
+    const data = await res.json().catch(() => ({}));
+    const runs = res.ok && data.ok ? data.runs || [] : [];
+    reviewRunRailList.replaceChildren();
+    if (!runs.length) {
+      const empty = document.createElement("li");
+      empty.className = "review-run-rail-empty";
+      empty.textContent = "No ReviewRuns yet. Connect a repo to start.";
+      reviewRunRailList.appendChild(empty);
+      return;
+    }
+    runs.forEach((run) => {
+      const li = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "review-run-rail-item";
+      if (run.run_id === currentReviewRun?.run_id) btn.dataset.active = "true";
+      const repo = (run.repo_full_name || "No repo").split("/").slice(-1)[0];
+      const shortId = String(run.run_id || "").replace("ia-review-run-", "").slice(0, 10);
+      btn.innerHTML = `
+        <strong>${escapeHtml(repo)}</strong>
+        <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}</span>
+        <code>${escapeHtml(shortId)}</code>
+      `;
+      btn.addEventListener("click", () => switchReviewRun(run.run_id));
+      li.appendChild(btn);
+      reviewRunRailList.appendChild(li);
+    });
+  } catch (_) {
+    reviewRunRailList.innerHTML = `<li class="review-run-rail-empty">Could not load runs</li>`;
+  }
+}
+
+async function switchReviewRun(runId) {
+  if (!runId || runId === currentReviewRun?.run_id) return;
+  localStorage.setItem(REVIEW_RUN_STORAGE_KEY, runId);
+  packetDetail = null;
+  packetPortkeyPreview = null;
+  packetPortkeyProofLoop = null;
+  currentReviewRunPortkeyTest = null;
+  currentReviewRunProofGraph = null;
+  reviewRunScreenOverride = null;
+  resetReviewRunCoachAnswer();
+  await restoreReviewRunSession({ preferredRunId: runId });
+}
+
+function initReviewRunFlowNavigation() {
+  window.addEventListener("popstate", (event) => {
+    if (document.body.dataset.activeTab !== "start") return;
+    const review = event.state?.reviewRun || parseReviewRunFromUrl();
+    if (review.runId && review.runId !== currentReviewRun?.run_id) {
+      void switchReviewRun(review.runId);
+      return;
+    }
+    if (review.screen && reviewRunScreenAccessible(review.screen)) {
+      navigateReviewRunScreen(review.screen, { pushHistory: false, force: true });
+    }
+  });
+
+  reviewRunRailToggle?.addEventListener("click", () => {
+    if (!reviewRunRail) return;
+    const collapsed = reviewRunRail.dataset.collapsed === "true";
+    reviewRunRail.dataset.collapsed = String(!collapsed);
+    reviewRunRailToggle.setAttribute("aria-expanded", String(collapsed));
+    reviewRunRailToggle.textContent = collapsed ? "Collapse" : "Open";
+    if (collapsed) void refreshReviewRunRail();
+  });
 }
 
 function openReviewRunPortkeyStage() {
@@ -1782,7 +2002,7 @@ function openReviewRunPortkeyStage() {
   const canOpen = Boolean(packetDetail?.packet_reference?.revision_id)
     && ["packet_generated", "proof_attached", "packet_regenerated", "portkey_tested"].includes(stage);
   if (!canOpen) return false;
-  focusReviewRunScreen("portkey_gate");
+  navigateReviewRunScreen("portkey_gate");
   if (repoPortkeyCard) repoPortkeyCard.open = true;
   return true;
 }
@@ -1842,6 +2062,7 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
   updateReviewRunStageScreens(stage);
   updateReviewRunStageStatus(stage, packet);
   updateReviewRunCoachChrome(stage);
+  renderReviewFlowProgress();
   return stage;
 }
 
@@ -2301,6 +2522,8 @@ async function createReviewRunForIndexedRepo(repo) {
   currentReviewRun = data.run;
   currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
   persistReviewRunState();
+  syncReviewRunUrl({ runId: currentReviewRun.run_id, screen: "repo_setup", replace: true });
+  void refreshReviewRunRail();
   return currentReviewRun;
 }
 
@@ -4552,7 +4775,7 @@ async function testReviewRunPortkeyGuardrail() {
     }
     return;
   }
-  clearReviewRunScreenOverride();
+  navigateReviewRunScreen("portkey_gate", { pushHistory: true, force: true });
   const button = repoPortkeyCard?.querySelector("[data-review-run-portkey-test]");
   if (button) {
     button.disabled = true;
@@ -4644,6 +4867,8 @@ async function attachReviewRunProof() {
         "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    navigateReviewRunScreen("proof_workbench", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
     await autoReassessReviewRunCoach("proof_attached", {
       fallbackPacket: nextPacket,
       fallbackPortkey: packetPortkeyPreview,
@@ -4662,7 +4887,7 @@ async function attachReviewRunProof() {
 
 async function rerunReviewRunPacket() {
   if (!currentReviewRun?.run_id || !repoProofResolutionCard) return;
-  clearReviewRunScreenOverride();
+  navigateReviewRunScreen("packet_rerun", { pushHistory: true, force: true });
   const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
   if (button) {
@@ -4697,6 +4922,8 @@ async function rerunReviewRunPacket() {
         "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    navigateReviewRunScreen("packet_rerun", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
     await autoReassessReviewRunCoach("packet_regenerated", {
       fallbackPacket: nextPacket,
       fallbackPortkey: packetPortkeyPreview,
@@ -4721,7 +4948,6 @@ async function runRepoProofCockpit() {
     }
     return;
   }
-  clearReviewRunScreenOverride();
   setRepoCockpitBusy(true);
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
@@ -4753,6 +4979,8 @@ async function runRepoProofCockpit() {
     packetPortkeyPreview = payload;
     packetPortkeyProofLoop = proofLoop;
     renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+    navigateReviewRunScreen("packet_decision", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
     await autoReassessReviewRunCoach("packet_generated", {
       fallbackPacket: cockpitPacket,
       fallbackPortkey: payload,
@@ -6824,12 +7052,15 @@ setupTabs();
 
 (async function initApp() {
   initCoachFloatingResize();
+  initReviewRunFlowNavigation();
   ensureCoachThreadWelcome();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();
   await loadMeta();
   loadGuide();
   await restoreReviewRunSession();
+  renderReviewFlowProgress();
+  void refreshReviewRunRail();
   if (window.location.pathname === "/workbench") {
     showWorkbenchPanel();
   }

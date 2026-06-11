@@ -4161,13 +4161,15 @@ body[data-active-tab="start"] .messages {
   justify-self: start;
 }
 
-.repo-review-delta {
+.repo-review-delta,
+.repo-rerun-delta {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.45rem;
 }
 
-.repo-review-delta div {
+.repo-review-delta div,
+.repo-rerun-delta div {
   min-width: 0;
   padding: 0.5rem;
   border: 1px solid rgba(21, 128, 61, 0.26);
@@ -4176,18 +4178,22 @@ body[data-active-tab="start"] .messages {
 }
 
 .repo-review-delta span,
-.repo-review-delta strong {
+.repo-review-delta strong,
+.repo-rerun-delta span,
+.repo-rerun-delta strong {
   display: block;
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.repo-review-delta span {
+.repo-review-delta span,
+.repo-rerun-delta span {
   color: #62646b;
   font-size: 0.68rem;
 }
 
-.repo-review-delta strong {
+.repo-review-delta strong,
+.repo-rerun-delta strong {
   margin-top: 0.18rem;
   color: #0b0b0c;
   font-size: 0.78rem;
@@ -7923,6 +7929,48 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_ga
   align-content: start;
 }
 
+body:not([data-active-tab]) .repo-rerun-card,
+body[data-active-tab="start"] .repo-rerun-card {
+  gap: 0.95rem;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(42, 185, 111, 0.11), transparent 13rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    rgba(0, 0, 0, 0.2) !important;
+  box-shadow: none !important;
+}
+
+body:not([data-active-tab]) .repo-rerun-delta,
+body[data-active-tab="start"] .repo-rerun-delta {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+body:not([data-active-tab]) .repo-rerun-delta div,
+body[data-active-tab="start"] .repo-rerun-delta div {
+  border-color: rgba(42, 185, 111, 0.2) !important;
+  border-radius: 12px !important;
+  background: rgba(42, 185, 111, 0.065) !important;
+}
+
+body:not([data-active-tab]) .repo-rerun-delta span,
+body[data-active-tab="start"] .repo-rerun-delta span {
+  color: rgba(255, 255, 255, 0.48) !important;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-rerun-delta strong,
+body[data-active-tab="start"] .repo-rerun-delta strong {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+body:not([data-active-tab]) .repo-rerun-portkey-action,
+body[data-active-tab="start"] .repo-rerun-portkey-action {
+  justify-self: start;
+}
+
 body:not([data-active-tab]) .repo-proof-cockpit[data-active-screen="proof_workbench"] .repo-proof-resolution-card,
 body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="proof_workbench"] .repo-proof-resolution-card {
   border-bottom: 0;
@@ -7942,6 +7990,11 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_ga
   body:not([data-active-tab]) .repo-stage-status div:nth-child(2),
   body[data-active-tab="start"] .repo-stage-status div:nth-child(2) {
     border-right: 0;
+  }
+
+  body:not([data-active-tab]) .repo-rerun-delta,
+  body[data-active-tab="start"] .repo-rerun-delta {
+    grid-template-columns: 1fr;
   }
 }
 

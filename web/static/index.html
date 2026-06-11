@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=51" />
+    <link rel="stylesheet" href="/static/style.css?v=52" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -29,12 +29,12 @@
 
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
-          <button type="button" class="tab active" data-tab="start">Start Here</button>
-          <button type="button" class="tab" data-tab="packet">IA Packet</button>
-          <button type="button" class="tab" data-tab="walkthrough">Sponsor Run</button>
+          <button type="button" class="tab primary-tab active" data-tab="start">ReviewRun</button>
           <details class="advanced-nav">
             <summary>Advanced</summary>
             <div class="advanced-tab-list">
+              <button type="button" class="tab advanced-tab" data-tab="packet">IA Packet</button>
+              <button type="button" class="tab advanced-tab" data-tab="walkthrough">Sponsor Run</button>
               <button type="button" class="tab advanced-tab" data-tab="workbench">Workbench</button>
               <button type="button" class="tab advanced-tab" data-tab="review">Access review</button>
               <button type="button" class="tab advanced-tab" data-tab="metrics">Metrics</button>
@@ -292,7 +292,7 @@
                   </div>
 
                   <section class="repo-proof-result" id="repo-proof-result" aria-label="Repo access review result" hidden>
-                    <div class="repo-result-header repo-stage-screen repo-stage-screen-decision" data-stage-screen="packet_decision">
+                    <div class="repo-result-header repo-stage-screen repo-stage-screen-decision" data-stage-screen="packet_decision" hidden>
                       <div class="repo-verdict-card review" id="repo-cockpit-verdict">
                         <span>IA verdict</span>
                         <strong>Review required</strong>
@@ -304,7 +304,7 @@
                       </article>
                     </div>
 
-                    <article class="repo-card repo-proof-resolution-card repo-stage-screen repo-stage-screen-proof" id="repo-proof-resolution-card" data-stage-screen="proof_workbench" aria-label="Missing proof checklist">
+                    <article class="repo-card repo-proof-resolution-card repo-stage-screen repo-stage-screen-proof" id="repo-proof-resolution-card" data-stage-screen="proof_workbench" aria-label="Missing proof checklist" hidden>
                       <div class="repo-proof-resolution-copy">
                         <span class="repo-card-label">Missing proof</span>
                         <h3>Use prepared proof before rerun.</h3>
@@ -316,7 +316,18 @@
                       <p class="repo-proof-attach-status" role="status" aria-live="polite">No prepared proof used yet. Verdict unchanged.</p>
                     </article>
 
-                    <div class="repo-infra-rows repo-stage-screen repo-stage-screen-downstream" data-stage-screen="downstream_outputs" aria-label="Downstream outputs">
+                    <article class="repo-card repo-rerun-card repo-stage-screen" id="repo-rerun-card" data-stage-screen="packet_rerun" aria-label="Updated packet review delta" hidden>
+                      <div>
+                        <span class="repo-card-label">Packet delta</span>
+                        <h3>Same request. New proof. Updated packet.</h3>
+                        <p>Proof changes packet state only after rerun. Portkey consumes the updated packet before movement.</p>
+                      </div>
+                      <div class="repo-rerun-delta" aria-label="Updated packet delta"></div>
+                      <button type="button" class="btn-primary repo-rerun-portkey-action" id="btn-open-portkey-stage">Test Portkey guardrail</button>
+                      <p class="repo-proof-attach-status" id="repo-rerun-status" role="status" aria-live="polite">Updated packet waits for downstream consumption.</p>
+                    </article>
+
+                    <div class="repo-infra-rows repo-stage-screen repo-stage-screen-downstream" data-stage-screen="portkey_gate" aria-label="Downstream outputs" hidden>
                       <details class="repo-card repo-proof-card repo-proof-accordion repo-infra-row" id="repo-sponsor-proof-card">
                         <summary>
                           <span class="repo-card-label">ProofGraph</span>
@@ -619,6 +630,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=71"></script>
+    <script src="/static/app.js?v=72"></script>
   </body>
 </html>

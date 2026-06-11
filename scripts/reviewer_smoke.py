@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=71", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=51", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=72", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=52", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -137,7 +137,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "data-stage-screen=\"repo_setup\"",
         "data-stage-screen=\"packet_decision\"",
         "data-stage-screen=\"proof_workbench\"",
-        "data-stage-screen=\"downstream_outputs\"",
+        "data-stage-screen=\"packet_rerun\"",
+        "data-stage-screen=\"portkey_gate\"",
+        "data-tab=\"start\">ReviewRun</button>",
+        "<summary>Advanced</summary>",
         "Repo access",
         "Connect GitHub",
         "Use demo repo",
@@ -181,6 +184,20 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Team lenses",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
+    primary_nav = html.split('<details class="advanced-nav">', 1)[0]
+    for forbidden in ('data-tab="packet"', 'data-tab="walkthrough"', 'data-tab="workbench"'):
+        _require(forbidden not in primary_nav, f"old tab still visible in primary nav: {forbidden}")
+    advanced_nav = html.split('<details class="advanced-nav">', 1)[1].split("</details>", 1)[0]
+    for expected in (
+        'data-tab="packet">IA Packet</button>',
+        'data-tab="walkthrough">Sponsor Run</button>',
+        'data-tab="workbench">Workbench</button>',
+        'data-tab="review">Access review</button>',
+        'data-tab="metrics">Metrics</button>',
+    ):
+        _require(expected in advanced_nav, f"advanced nav missing legacy surface: {expected}")
+    visible_stage_count = len(re.findall(r'data-stage-screen="[^"]+"(?![^>]*hidden)', html))
+    _require(visible_stage_count == 1, f"first-run must expose one visible ReviewRun stage, got {visible_stage_count}")
 
     _require('aria-label="Connect repo"' in html, "repo access row must be the selected entry point")
     _require('aria-current="step"' in html, "repo access row must show selected step state")

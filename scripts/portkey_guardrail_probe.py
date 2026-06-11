@@ -27,6 +27,7 @@ DEFAULT_REQUESTED_MODE = "model_request"
 DEFAULT_EXPECT_VERDICT = False
 PORTKEY_GUARDRAIL_TOKEN_ENV = "PORTKEY_GUARDRAIL_TOKEN"
 PORTKEY_GUARDRAIL_TOKEN_HEADER = "x-ia-portkey-guardrail-token"
+PORTKEY_REHEARSAL_MODE_HEADER = "X-IA-Rehearsal-Mode"
 PORTKEY_DOC_URL = "https://portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails"
 PORTKEY_DOCS_LAST_CHECKED = "2026-06-09"
 
@@ -87,17 +88,30 @@ def build_portkey_probe_payload(
     *,
     fixture: str = DEFAULT_FIXTURE,
     requested_mode: str = DEFAULT_REQUESTED_MODE,
+    review_run_id: str | None = None,
+    packet_id: str | None = None,
+    revision_id: str | None = None,
 ) -> dict[str, Any]:
     """Build a Portkey BYO Guardrails beforeRequestHook payload."""
+    metadata = {
+        "ia_fixture": fixture,
+        "ia_requested_mode": requested_mode,
+    }
+    if review_run_id:
+        metadata = {
+            "ia_review_run_id": review_run_id,
+            "ia_packet_id": packet_id or "",
+            "ia_revision_id": revision_id or "",
+            "ia_requested_mode": requested_mode,
+            "ia_source_of_truth": "ReviewRun",
+        }
     return {
         "eventType": "beforeRequestHook",
         "provider": "openai",
         "requestType": "chatComplete",
-        "metadata": {
-            "ia_fixture": fixture,
-            "ia_requested_mode": requested_mode,
-        },
+        "metadata": metadata,
         "request": {
+            "metadata": metadata,
             "json": {
                 "model": "demo-model",
                 "stream": False,
@@ -121,12 +135,21 @@ def build_portkey_probe_payload(
     }
 
 
-def _auth_headers(token: str, *, header_mode: str) -> dict[str, str]:
+def _auth_headers(
+    token: str,
+    *,
+    header_mode: str,
+    rehearsal_token: str | None = None,
+) -> dict[str, str]:
     if header_mode == "authorization":
-        return {"Authorization": f"Bearer {token}"}
-    if header_mode == "x-ia":
-        return {PORTKEY_GUARDRAIL_TOKEN_HEADER: token}
-    raise PortkeyProbeFailure(f"unsupported header mode: {header_mode}")
+        headers = {"Authorization": f"Bearer {token}"}
+    elif header_mode == "x-ia":
+        headers = {PORTKEY_GUARDRAIL_TOKEN_HEADER: token}
+    else:
+        raise PortkeyProbeFailure(f"unsupported header mode: {header_mode}")
+    if rehearsal_token:
+        headers[PORTKEY_REHEARSAL_MODE_HEADER] = rehearsal_token
+    return headers
 
 
 def _assert_response_safe(
@@ -200,18 +223,33 @@ def run_portkey_guardrail_probe(
     timeout: float = 10.0,
     max_response_ms: int = 150,
     header_mode: str = "authorization",
+    review_run_id: str | None = None,
+    packet_id: str | None = None,
+    revision_id: str | None = None,
+    rehearsal_token_env: str | None = None,
 ) -> dict[str, Any]:
     """Run the Portkey-shaped webhook probe and return a safe summary."""
     token = os.getenv(PORTKEY_GUARDRAIL_TOKEN_ENV, "").strip()
     _require(bool(token), f"{PORTKEY_GUARDRAIL_TOKEN_ENV} must be configured for the Portkey probe")
 
-    payload = build_portkey_probe_payload(fixture=fixture, requested_mode=requested_mode)
+    rehearsal_token = ""
+    if rehearsal_token_env:
+        rehearsal_token = os.getenv(rehearsal_token_env, "").strip()
+        _require(bool(rehearsal_token), f"{rehearsal_token_env} must be configured for rehearsal mode")
+
+    payload = build_portkey_probe_payload(
+        fixture=fixture,
+        requested_mode=requested_mode,
+        review_run_id=review_run_id,
+        packet_id=packet_id,
+        revision_id=revision_id,
+    )
     status, response, client_elapsed_ms = _json_request(
         base_url,
         "/api/portkey/guardrail",
         method="POST",
         payload=payload,
-        headers=_auth_headers(token, header_mode=header_mode),
+        headers=_auth_headers(token, header_mode=header_mode, rehearsal_token=rehearsal_token or None),
         timeout=timeout,
     )
     _require(status == 200, f"guardrail webhook returned {status}, expected 200")
@@ -235,8 +273,10 @@ def run_portkey_guardrail_probe(
         "probe": {
             "event_type": payload["eventType"],
             "fixture": fixture,
+            "review_run_id": review_run_id,
             "requested_mode": requested_mode,
             "header_mode": header_mode,
+            "rehearsal_header_sent": bool(rehearsal_token),
             "client_elapsed_ms": round(client_elapsed_ms, 2),
             "server_elapsed_ms": data["elapsed_ms"],
             "expected_verdict": expect_verdict,
@@ -254,6 +294,8 @@ def run_portkey_guardrail_probe(
             "recorded": True,
             "recorded_verdict": event["verdict"],
             "read_only": event["read_only"],
+            "kind": event.get("kind"),
+            "review_run_id": event.get("review_run_id"),
         },
         "safety": {
             "read_only": True,
@@ -301,6 +343,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL, help="Local or public IA web base URL.")
     parser.add_argument("--fixture", default=DEFAULT_FIXTURE, help="IA fixture to attach as Portkey metadata.")
     parser.add_argument("--requested-mode", default=DEFAULT_REQUESTED_MODE, help="Requested movement mode metadata.")
+    parser.add_argument("--review-run-id", default=None, help="Optional ReviewRun id for current-packet probing.")
+    parser.add_argument("--packet-id", default=None, help="Expected IA packet id for ReviewRun probing.")
+    parser.add_argument("--revision-id", default=None, help="Expected IA revision id for ReviewRun probing.")
+    parser.add_argument(
+        "--rehearsal-token-env",
+        default=None,
+        help="Optional env var whose value is sent as X-IA-Rehearsal-Mode.",
+    )
     parser.add_argument(
         "--expect-verdict",
         choices=("true", "false"),
@@ -330,6 +380,10 @@ def main(argv: list[str] | None = None) -> int:
             timeout=args.timeout,
             max_response_ms=args.max_response_ms,
             header_mode=args.header_mode,
+            review_run_id=args.review_run_id,
+            packet_id=args.packet_id,
+            revision_id=args.revision_id,
+            rehearsal_token_env=args.rehearsal_token_env,
         )
     except PortkeyProbeFailure as exc:
         print(f"Portkey guardrail probe failed: {exc}", file=sys.stderr)

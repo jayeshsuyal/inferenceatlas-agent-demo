@@ -46,10 +46,17 @@ def test_portkey_setup_builds_dashboard_config_without_printing_token(monkeypatc
         "Authorization": "Bearer <PORTKEY_GUARDRAIL_TOKEN>",
         "Content-Type": "application/json",
     }
-    assert config["metadata_json"]["ia_fixture"] == "ai_spend_budget_overrun"
-    assert config["metadata_json"]["ia_packet_id"] == "ia-spend-review-ai_spend_budget_overrun-v0"
-    assert config["metadata_json"]["ia_revision_id"] == "rev_47f8ff3775dec3c5"
-    assert config["metadata_json"]["ia_requested_mode"] == "model_request"
+    assert config["metadata_json"] == {
+        "ia_review_run_id": "<review_run_id>",
+        "ia_packet_id": "<packet_id>",
+        "ia_revision_id": "<revision_id>",
+        "ia_requested_mode": "scoped_validation",
+        "ia_source_of_truth": "ReviewRun",
+    }
+    assert config["fallback_fixture_metadata_json"]["ia_fixture"] == "ai_spend_budget_overrun"
+    assert config["fallback_fixture_metadata_json"]["ia_packet_id"] == "ia-spend-review-ai_spend_budget_overrun-v0"
+    assert config["fallback_fixture_metadata_json"]["ia_revision_id"] == "rev_47f8ff3775dec3c5"
+    assert config["fallback_fixture_metadata_json"]["ia_requested_mode"] == "model_request"
     assert config["expected_response_shape"]["verdict"] == "boolean"
 
     serialized = json.dumps(payload, sort_keys=True)
@@ -70,7 +77,9 @@ def test_portkey_setup_markdown_is_operator_ready_and_secret_safe(monkeypatch) -
     assert "https://ia-demo.example.com/api/portkey/guardrail" in rendered
     assert "Authorization" in rendered
     assert "Bearer <PORTKEY_GUARDRAIL_TOKEN>" in rendered
+    assert "<review_run_id>" in rendered
     assert "ia_packet_id" in rendered
+    assert "Fixture fallback metadata JSON" in rendered
     assert "Portkey timeout default verdict: `true`" in rendered
     assert "No Admin API mutation" in rendered
     assert "real-demo-secret" not in rendered
@@ -101,6 +110,7 @@ def test_portkey_setup_cli_emits_json_and_rejects_bad_base_url(monkeypatch) -> N
     assert payload["portkey_dashboard_config"]["headers_json"]["Authorization"] == (
         "Bearer <PORTKEY_GUARDRAIL_TOKEN>"
     )
+    assert payload["portkey_dashboard_config"]["metadata_json"]["ia_source_of_truth"] == "ReviewRun"
     assert "real-demo-secret" not in proc.stdout
 
     bad = subprocess.run(

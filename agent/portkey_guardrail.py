@@ -29,9 +29,13 @@ PORTKEY_GUARDRAIL_SCHEMA_VERSION = "portkey_byo_guardrail.v0"
 PORTKEY_GUARDRAIL_EVENT_SCHEMA_VERSION = "portkey_guardrail_event.v0"
 PORTKEY_GUARDRAIL_AUTH_ENV = "PORTKEY_GUARDRAIL_TOKEN"
 PORTKEY_GUARDRAIL_TOKEN_HEADER = "x-ia-portkey-guardrail-token"
+PORTKEY_REHEARSAL_AUTH_ENV = "PORTKEY_REHEARSAL_TOKEN"
+PORTKEY_REHEARSAL_MODE_HEADER = "x-ia-rehearsal-mode"
 PORTKEY_GUARDRAIL_DOC_URL = "https://portkey.ai/docs/product/guardrails/bring-your-own-guardrails"
 PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL = "https://portkey.ai/docs/product/guardrails"
 PORTKEY_GUARDRAIL_DELIVERY_MODE = "live_guardrail_webhook"
+PORTKEY_EVENT_KIND = "portkey_byo_guardrail"
+PORTKEY_REHEARSAL_EVENT_KIND = "rehearsal_probe"
 SAFE_PORTKEY_REQUEST_MODES = {
     "dry_run",
     "dry-run",
@@ -69,6 +73,19 @@ def validate_portkey_guardrail_token(
         raise PortkeyGuardrailAuthError("portkey_guardrail_token_not_configured")
     if not hmac.compare_digest(bearer_or_token(provided_token), expected):
         raise PortkeyGuardrailAuthError("invalid_portkey_guardrail_token")
+
+
+def resolve_portkey_guardrail_event_kind(
+    *,
+    rehearsal_token: str | None,
+    expected_rehearsal_token: str | None,
+) -> str:
+    """Classify a webhook event without weakening auth."""
+    expected = (expected_rehearsal_token or "").strip()
+    provided = rehearsal_token.strip() if isinstance(rehearsal_token, str) else ""
+    if expected and hmac.compare_digest(provided, expected):
+        return PORTKEY_REHEARSAL_EVENT_KIND
+    return PORTKEY_EVENT_KIND
 
 
 def _stable_digest(payload: dict[str, Any]) -> str:
@@ -148,6 +165,11 @@ def _requested_mode(metadata: dict[str, Any]) -> str:
         or ""
     )
     return str(value).strip().lower().replace(" ", "_")
+
+
+def extract_portkey_requested_mode(metadata: dict[str, Any]) -> str:
+    """Return the normalized Portkey movement mode metadata."""
+    return _requested_mode(metadata)
 
 
 def _deny_reasons(result: dict[str, Any], reason: str) -> list[str]:
@@ -291,12 +313,15 @@ def build_portkey_guardrail_event(
     body: dict[str, Any],
     response: dict[str, Any],
     elapsed_ms: int,
+    kind: str = PORTKEY_EVENT_KIND,
     generated_at: str | None = None,
 ) -> dict[str, Any]:
     """Build a local proof event for the webhook call."""
     timestamp = generated_at or _utc_now()
     data = response.get("data", {})
+    metadata = extract_portkey_metadata(body if isinstance(body, dict) else {})
     packet_ref = data.get("ia_packet_reference")
+    packet_ref = packet_ref if isinstance(packet_ref, dict) else {}
     digest_payload = {
         "packet_reference": packet_ref,
         "verdict": response.get("verdict"),
@@ -308,6 +333,7 @@ def build_portkey_guardrail_event(
     return {
         "schema_version": PORTKEY_GUARDRAIL_EVENT_SCHEMA_VERSION,
         "event_id": event_id,
+        "kind": kind,
         "generated_at": timestamp,
         "delivery_mode": PORTKEY_GUARDRAIL_DELIVERY_MODE,
         "read_only": True,
@@ -315,8 +341,14 @@ def build_portkey_guardrail_event(
         "verdict": bool(response.get("verdict")),
         "elapsed_ms": elapsed_ms,
         "packet_reference": packet_ref,
+        "review_run_id": metadata.get("ia_review_run_id") or packet_ref.get("run_id"),
+        "packet_id": metadata.get("ia_packet_id") or packet_ref.get("packet_id"),
+        "revision_id": metadata.get("ia_revision_id") or packet_ref.get("revision_id"),
         "reason": data.get("reason"),
         "requested_mode": data.get("requested_mode"),
+        "api_mutation": False,
+        "policy_mutation": False,
+        "external_writes": False,
         "safety": data.get("safety", _safety_payload()),
         "private_boundary": {
             "private_source_exposed": False,

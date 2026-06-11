@@ -108,6 +108,7 @@ class PortkeyGuardrailProbeTests(unittest.TestCase):
         self.assertEqual(payload["requestType"], "chatComplete")
         self.assertEqual(payload["metadata"]["ia_fixture"], "ai_spend_budget_overrun")
         self.assertEqual(payload["metadata"]["ia_requested_mode"], "model_request")
+        self.assertEqual(payload["request"]["metadata"]["ia_fixture"], "ai_spend_budget_overrun")
         self.assertIn("Authorization", headers)
         self.assertNotIn("demo-token", str(summary))
         self.assertEqual(summary["status"], "passed")
@@ -116,6 +117,80 @@ class PortkeyGuardrailProbeTests(unittest.TestCase):
         self.assertEqual(summary["safety"]["portkey_api_call_made"], False)
         self.assertEqual(summary["safety"]["secrets_printed"], False)
         self.assertIn("packet-backed verdict only", module.render_summary(summary))
+
+    def test_probe_can_send_review_run_metadata_and_rehearsal_header(self) -> None:
+        module = _load_module()
+        captured: dict[str, object] = {}
+
+        def fake_json_request(
+            base_url: str,
+            path: str,
+            *,
+            method: str = "GET",
+            payload: dict | None = None,
+            headers: dict | None = None,
+            timeout: float,
+        ) -> tuple[int, object, float]:
+            if path == "/api/portkey/guardrail":
+                captured["payload"] = payload
+                captured["headers"] = headers
+                response = _fake_guardrail_response()
+                response["data"]["ia_packet_reference"]["packet_id"] = "ia-review-run-packet-demo-v0"
+                response["data"]["ia_packet_reference"]["revision_id"] = "rev_current"
+                response["data"]["verdict_class"] = "ready_with_gates"
+                response["verdict"] = True
+                return 200, response, 7.1
+            if path == "/api/portkey/guardrail/events":
+                return (
+                    200,
+                    {
+                        "ok": True,
+                        "read_only": True,
+                        "events": [
+                            {
+                                "event_id": "portkey-guardrail-demo-12345678",
+                                "verdict": True,
+                                "read_only": True,
+                                "kind": "rehearsal_probe",
+                                "review_run_id": "ia-review-run-demo",
+                            }
+                        ],
+                    },
+                    2.1,
+                )
+            raise AssertionError(path)
+
+        with patch.dict(
+            os.environ,
+            {
+                "PORTKEY_GUARDRAIL_TOKEN": "demo-token",
+                "PORTKEY_REHEARSAL_TOKEN": "demo-rehearsal",
+            },
+            clear=False,
+        ):
+            with patch.object(module, "_json_request", fake_json_request):
+                summary = module.run_portkey_guardrail_probe(
+                    "http://unit.test",
+                    requested_mode="scoped_validation",
+                    expect_verdict=True,
+                    review_run_id="ia-review-run-demo",
+                    packet_id="ia-review-run-packet-demo-v0",
+                    revision_id="rev_current",
+                    rehearsal_token_env="PORTKEY_REHEARSAL_TOKEN",
+                )
+
+        payload = captured["payload"]
+        headers = captured["headers"]
+        assert isinstance(payload, dict)
+        assert isinstance(headers, dict)
+        self.assertEqual(payload["metadata"]["ia_review_run_id"], "ia-review-run-demo")
+        self.assertEqual(payload["metadata"]["ia_packet_id"], "ia-review-run-packet-demo-v0")
+        self.assertEqual(payload["metadata"]["ia_revision_id"], "rev_current")
+        self.assertEqual(payload["metadata"]["ia_source_of_truth"], "ReviewRun")
+        self.assertEqual(headers["X-IA-Rehearsal-Mode"], "demo-rehearsal")
+        self.assertTrue(summary["probe"]["rehearsal_header_sent"])
+        self.assertEqual(summary["guardrail_event"]["kind"], "rehearsal_probe")
+        self.assertEqual(summary["guardrail_event"]["review_run_id"], "ia-review-run-demo")
 
     def test_probe_requires_token_and_expected_verdict(self) -> None:
         module = _load_module()
@@ -174,6 +249,8 @@ class PortkeyGuardrailProbeTests(unittest.TestCase):
         self.assertIn("--fixture", result.stdout)
         self.assertIn("--requested-mode", result.stdout)
         self.assertIn("--expect-verdict", result.stdout)
+        self.assertIn("--review-run-id", result.stdout)
+        self.assertIn("--rehearsal-token-env", result.stdout)
 
 
 if __name__ == "__main__":

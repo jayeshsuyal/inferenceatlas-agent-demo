@@ -1,6 +1,7 @@
 """Web file registry and mind API smoke tests."""
 
 import json
+import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -142,7 +143,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('data-stage-screen="repo_setup"', html)
         self.assertIn('data-stage-screen="packet_decision"', html)
         self.assertIn('data-stage-screen="proof_workbench"', html)
-        self.assertIn('data-stage-screen="downstream_outputs"', html)
+        self.assertIn('data-stage-screen="packet_rerun"', html)
+        self.assertIn('data-stage-screen="portkey_gate"', html)
+        self.assertEqual(len(re.findall(r'data-stage-screen="[^"]+"(?![^>]*hidden)', html)), 1)
         self.assertIn('aria-label="Connect repo"', html)
         self.assertIn('aria-current="step"', html)
         self.assertIn("Repo access", html)
@@ -179,6 +182,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("Portkey", html)
         self.assertIn("repo-infra-rows", html)
         self.assertIn("Open ProofGraph", html)
+        self.assertIn('id="repo-rerun-card"', html)
+        self.assertIn("Same request. New proof. Updated packet.", html)
         self.assertIn('id="repo-proof-resolution-card"', html)
         self.assertIn("Use prepared proof before rerun.", html)
         self.assertIn(
@@ -218,8 +223,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('rel="icon"', html)
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
-        self.assertIn('/static/style.css?v=51', html)
-        self.assertIn('/static/app.js?v=71', html)
+        self.assertIn('/static/style.css?v=52', html)
+        self.assertIn('/static/app.js?v=72', html)
         self.assertIn("REPO_PROOF_FIXTURE", js)
         self.assertIn('const REPO_PROOF_FIXTURE = "support_triage_agent";', js)
         self.assertIn("btnRootConnectGithub", js)
@@ -241,6 +246,11 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("reviewRunUiStage", js)
         self.assertIn("reviewRunActiveScreen", js)
         self.assertIn("reviewRunVisibleScreens", js)
+        self.assertIn("return [reviewRunActiveScreen(stage)];", js)
+        self.assertNotIn('return ["packet_decision", "proof_workbench"]', js)
+        self.assertNotIn('return ["packet_decision", "proof_workbench", "downstream_outputs"]', js)
+        self.assertIn("focusReviewRunScreen", js)
+        self.assertIn('focusReviewRunScreen("proof_workbench")', js)
         self.assertIn("updateReviewRunStageScreens", js)
         self.assertIn("updateReviewRunStageStatus", js)
         self.assertIn("setReviewRunUiStage", js)
@@ -333,7 +343,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("<span>BYO Guardrail</span>", js)
         self.assertIn("<span>Portkey</span>", js)
         self.assertIn("portkeyRunwayReady", js)
-        self.assertIn("repoPortkeyCard.open = portkeyTested || portkeyRunwayReady", js)
+        self.assertIn("btnOpenPortkeyStage", js)
+        self.assertIn("repo-rerun-delta", js)
         self.assertIn("effectivePortkeyDecisionLabel", js)
         self.assertIn('effectivePortkeyVerdict ? "allow" : "block"', js)
         self.assertEqual(
@@ -702,8 +713,15 @@ class WebFilesTests(unittest.TestCase):
 
         self.assertIn("<title>InferenceAtlas — Packet Authority Review</title>", html)
         self.assertIn("Packet authority for AI access and spend review", html)
-        self.assertIn('data-tab="start">Start Here</button>', html)
+        self.assertIn('data-tab="start">ReviewRun</button>', html)
         self.assertIn("<summary>Advanced</summary>", html)
+        primary_nav = html.split('<details class="advanced-nav">', 1)[0]
+        self.assertNotIn('data-tab="packet"', primary_nav)
+        self.assertNotIn('data-tab="walkthrough"', primary_nav)
+        self.assertNotIn('data-tab="workbench"', primary_nav)
+        advanced_nav = html.split('<details class="advanced-nav">', 1)[1].split("</details>", 1)[0]
+        self.assertIn('data-tab="packet">IA Packet</button>', advanced_nav)
+        self.assertIn('data-tab="walkthrough">Sponsor Run</button>', advanced_nav)
         self.assertIn('data-tab="workbench">Workbench</button>', html)
         self.assertIn('data-tab="walkthrough"', html)
         self.assertIn("Sponsor Run", html)

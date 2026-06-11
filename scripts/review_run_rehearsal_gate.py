@@ -96,9 +96,26 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "Test downstream gate",
         'aria-label="Ask IA"',
         'id="repo-coach-answer"',
+        'data-tab="start">ReviewRun</button>',
+        '<summary>Advanced</summary>',
         "Ask IA guides this run. It does not approve or write.",
     ):
         _require(expected in html, f"root missing first-run contract text: {expected}")
+
+    primary_nav = html.split('<details class="advanced-nav">', 1)[0]
+    for forbidden in ('data-tab="packet"', 'data-tab="walkthrough"', 'data-tab="workbench"'):
+        _require(forbidden not in primary_nav, f"old tab still visible in primary nav: {forbidden}")
+    advanced_nav = html.split('<details class="advanced-nav">', 1)[1].split("</details>", 1)[0]
+    for expected in (
+        'data-tab="packet">IA Packet</button>',
+        'data-tab="walkthrough">Sponsor Run</button>',
+        'data-tab="workbench">Workbench</button>',
+        'data-tab="review">Access review</button>',
+        'data-tab="metrics">Metrics</button>',
+    ):
+        _require(expected in advanced_nav, f"advanced nav missing legacy surface: {expected}")
+    visible_stage_count = len(re.findall(r'data-stage-screen="[^"]+"(?![^>]*hidden)', html))
+    _require(visible_stage_count == 1, f"root must start with one visible stage screen, got {visible_stage_count}")
 
     for forbidden in (
         'class="review-lane-grid"',
@@ -126,13 +143,23 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "fetchReviewRunProofGraph",
         "proofOwnerSummaryForPacket",
         "Use prepared receipt",
+        "return [reviewRunActiveScreen(stage)];",
+        "focusReviewRunScreen(\"proof_workbench\")",
+        "repo-rerun-delta",
         "repo-portkey-runway",
         "repoPortkeyCard.open = portkeyTested || portkeyRunwayReady",
     ):
         _require(expected in app_js, f"root JS missing ReviewRun flow hook: {expected}")
 
+    for forbidden in (
+        'return ["packet_decision", "proof_workbench"]',
+        'return ["packet_decision", "proof_workbench", "downstream_outputs"]',
+    ):
+        _require(forbidden not in app_js, f"root JS leaked stacked stage routing: {forbidden}")
+
     return {
         "root_action_count": root_action_count,
+        "visible_stage_screen_count": visible_stage_count,
         "no_chip_wall": True,
         "no_raw_packet_dump": True,
         "accordions_hide_advanced_detail": True,

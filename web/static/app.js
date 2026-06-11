@@ -139,8 +139,10 @@ const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
 const repoNextActionCard = document.getElementById("repo-next-action-card");
 const repoProofResolutionCard = document.getElementById("repo-proof-resolution-card");
+const repoRerunCard = document.getElementById("repo-rerun-card");
 const repoSponsorProofCard = document.getElementById("repo-sponsor-proof-card");
 const repoPortkeyCard = document.getElementById("repo-portkey-card");
+const btnOpenPortkeyStage = document.getElementById("btn-open-portkey-stage");
 
 const SKILL_HINT_BY_ID = {
   decision_packet_generation: "What blocks production access for support triage?",
@@ -204,6 +206,7 @@ let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
 let currentReviewRunCoachSuggestions = [];
+let reviewRunScreenOverride = null;
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -1198,6 +1201,12 @@ function reviewRunUiStage(packet = packetDetail) {
 }
 
 function reviewRunActiveScreen(stage) {
+  if (reviewRunScreenOverride === "proof_workbench" && (stage === "packet_generated" || stage === "proof_attached")) {
+    return "proof_workbench";
+  }
+  if (reviewRunScreenOverride === "portkey_gate" && (stage === "packet_regenerated" || stage === "portkey_tested")) {
+    return "portkey_gate";
+  }
   if (stage === "portkey_tested") return "portkey_gate";
   if (stage === "packet_regenerated" || stage === "export_ready") return "packet_rerun";
   if (stage === "proof_attached") return "proof_workbench";
@@ -1206,11 +1215,16 @@ function reviewRunActiveScreen(stage) {
 }
 
 function reviewRunVisibleScreens(stage) {
-  const active = reviewRunActiveScreen(stage);
-  if (active === "packet_decision") return ["packet_decision", "proof_workbench"];
-  if (active === "packet_rerun") return ["packet_decision", "proof_workbench", "downstream_outputs"];
-  if (active === "portkey_gate") return ["downstream_outputs"];
-  return [active];
+  return [reviewRunActiveScreen(stage)];
+}
+
+function focusReviewRunScreen(screenId) {
+  reviewRunScreenOverride = screenId;
+  setReviewRunUiStage(reviewRunUiStage(), packetDetail);
+}
+
+function clearReviewRunScreenOverride() {
+  reviewRunScreenOverride = null;
 }
 
 function updateReviewRunStageScreens(stage) {
@@ -1564,6 +1578,7 @@ function renderReviewRepoSummary(repo = null) {
     repoReviewRequest.hidden = !selected;
   }
   if (!selected) {
+    clearReviewRunScreenOverride();
     currentReviewRunProofGraph = null;
     currentReviewRunPortkeyTest = null;
     resetReviewRunCoachAnswer();
@@ -1684,6 +1699,7 @@ async function createReviewRunForIndexedRepo(repo) {
 
 async function attachReviewRepo(repo) {
   const fullName = repo.full_name;
+  clearReviewRunScreenOverride();
   currentReviewRun = null;
   currentReviewRunProofGraph = null;
   currentReviewRunPortkeyTest = null;
@@ -3797,7 +3813,27 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
         ${movementLane("Review required", movement.review_required || packet.review_required || [], "review")}
         ${movementLane("Blocked", movement.blocked || packet.blocked || [], "blocked")}
       </div>
+      <button type="button" class="btn-primary repo-primary-action" data-open-proof-workbench>Use prepared proof</button>
     `;
+    repoNextActionCard.querySelector("[data-open-proof-workbench]")?.addEventListener("click", () => {
+      focusReviewRunScreen("proof_workbench");
+    });
+  }
+
+  if (repoRerunCard) {
+    const rows = reviewDeltaRows(packet);
+    const deltaEl = repoRerunCard.querySelector(".repo-rerun-delta");
+    const statusEl = repoRerunCard.querySelector("#repo-rerun-status");
+    if (deltaEl) {
+      deltaEl.innerHTML = rows.length
+        ? rows
+            .map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value))}</strong></div>`)
+            .join("")
+        : `<div><span>Packet</span><strong>${escapeHtml(packetRef.revision_id || "Updated")}</strong></div>`;
+    }
+    if (statusEl) {
+      statusEl.textContent = "Updated packet is ready. Test the Portkey guardrail before any downstream movement.";
+    }
   }
 
   if (repoSponsorProofCard) {
@@ -3871,6 +3907,7 @@ async function testReviewRunPortkeyGuardrail() {
     }
     return;
   }
+  clearReviewRunScreenOverride();
   const button = repoPortkeyCard?.querySelector("[data-review-run-portkey-test]");
   if (button) {
     button.disabled = true;
@@ -3976,6 +4013,7 @@ async function attachReviewRunProof() {
 
 async function rerunReviewRunPacket() {
   if (!currentReviewRun?.run_id || !repoProofResolutionCard) return;
+  clearReviewRunScreenOverride();
   const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
   if (button) {
@@ -4030,6 +4068,7 @@ async function runRepoProofCockpit() {
     }
     return;
   }
+  clearReviewRunScreenOverride();
   setRepoCockpitBusy(true);
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
@@ -6048,6 +6087,7 @@ packetInlineCoachPrompts?.addEventListener("click", (event) => {
 
 btnRunRepoProof?.addEventListener("click", () => runRepoProofCockpit());
 btnExportRepoBrief?.addEventListener("click", () => copyRepoBrief());
+btnOpenPortkeyStage?.addEventListener("click", () => testReviewRunPortkeyGuardrail());
 btnReset.addEventListener("click", resetChat);
 btnMindInit.addEventListener("click", () => mindInit(false));
 btnMindStep.addEventListener("click", mindStep);

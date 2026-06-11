@@ -3504,6 +3504,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
       : null;
   const effectivePortkeyVerdict =
     typeof portkeyTest?.verdict === "boolean" ? portkeyTest.verdict : Boolean(guardrail.verdict);
+  const effectivePortkeyDecisionLabel = effectivePortkeyVerdict ? "allow" : "block";
   const effectivePortkeyState =
     portkeyTest?.portkey_state || (effectivePortkeyVerdict ? "Allow with policy" : "Block");
   const graphPortkeyState = portkeyTest?.portkey_state || graph?.portkey_state || effectivePortkeyState;
@@ -3582,7 +3583,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
       <div class="repo-accordion-body">
         <p>Test the local BYO Guardrails handoff against this ReviewRun packet. No Portkey admin write, no policy mutation.</p>
         <div class="repo-outcome-grid">
-          <div class="repo-outcome ${effectivePortkeyVerdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(String(effectivePortkeyVerdict))}</strong></div>
+          <div class="repo-outcome ${effectivePortkeyVerdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>
           <div class="repo-outcome ${portkeyTested ? "approved" : "review"}"><span>Latency</span><strong>${escapeHtml(latencyLabel)}</strong></div>
           <div class="repo-outcome approved"><span>API mutation</span><strong>false</strong></div>
         </div>

@@ -7629,3 +7629,186 @@ body:not([data-active-tab]) .repo-coach-answer-row strong,
 body[data-active-tab="start"] .repo-coach-answer-row strong {
   color: rgba(255, 255, 255, 0.9) !important;
 }
+
+/* PR 137: recording-ready visual polish for the single ReviewRun loop. */
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"],
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] {
+  max-width: 1220px !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel {
+  grid-template-columns: minmax(0, 1fr) minmax(21rem, 0.42fr) !important;
+  min-height: min(30rem, calc(100vh - 9rem));
+  max-height: none;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-column,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-column {
+  overflow: hidden;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-result-header,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-result-header {
+  grid-template-columns: minmax(11rem, 0.36fr) minmax(0, 1.64fr) !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-verdict-card,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-verdict-card {
+  padding: 1rem 1.1rem !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-verdict-card strong,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-verdict-card strong {
+  font-size: clamp(1rem, 1.2vw, 1.18rem) !important;
+  line-height: 1.15;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-action-card,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-action-card {
+  padding: 0.95rem 1.1rem !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-action-card h3,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-action-card h3 {
+  max-width: 58ch;
+  font-size: clamp(0.92rem, 1.15vw, 1.08rem) !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-movement-grid,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-movement-grid {
+  grid-template-columns: repeat(3, minmax(8rem, 1fr));
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-movement-lane,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-movement-lane {
+  padding: 0.5rem 0.58rem;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-movement-lane strong,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-movement-lane strong {
+  font-size: 0.74rem !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
+  padding: 0.9rem 1.1rem !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card h3,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card h3 {
+  font-size: 0.96rem !important;
+  line-height: 1.2;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card p,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-resolution-card p,
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-attach-status,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-attach-status {
+  max-width: 76ch;
+  font-size: 0.76rem !important;
+  line-height: 1.4 !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-attach-action,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-attach-action {
+  justify-self: start;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-checklist,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-checklist {
+  grid-template-columns: repeat(3, minmax(9rem, 1fr));
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-check,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-check {
+  padding: 0.5rem 0.56rem;
+  font-size: 0.74rem !important;
+  line-height: 1.25;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-delta,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(7.4rem, 1fr));
+  gap: 0.5rem;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-delta-item,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta-item {
+  min-width: 0;
+  padding: 0.58rem 0.64rem;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-delta-item strong,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta-item strong {
+  font-size: 0.78rem;
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-infra-row summary,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-infra-row summary {
+  min-height: 2.55rem;
+  grid-template-columns: minmax(6rem, 0.38fr) minmax(0, 1fr) auto;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar {
+  min-height: min(30rem, calc(100vh - 9rem));
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar h3,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar h3 {
+  font-size: clamp(1.18rem, 1.7vw, 1.5rem) !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] #repo-coach-read,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] #repo-coach-read {
+  font-size: 0.9rem !important;
+  line-height: 1.42 !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-coach-form input,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-coach-form input {
+  min-height: 2.55rem !important;
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-coach-answer,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-coach-answer {
+  max-height: min(18rem, calc(100vh - 29rem));
+  overflow: auto;
+}
+
+@media (max-width: 980px) {
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar {
+    min-height: 0;
+  }
+
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-delta,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-result-header,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-result-header,
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-movement-grid,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-movement-grid,
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-proof-checklist,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-proof-checklist,
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-review-delta,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta {
+    grid-template-columns: 1fr !important;
+  }
+}

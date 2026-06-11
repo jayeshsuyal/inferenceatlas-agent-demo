@@ -119,7 +119,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=68", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=69", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=49", timeout=timeout)
 
     for expected in (
@@ -272,6 +272,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require('data-ask-prompt="What proof is missing?"' in html, "Ask IA proof prompt missing")
     _require('data-ask-prompt="What will Portkey do?"' in html, "Ask IA Portkey prompt missing")
     _require("reviewDeltaRows" in js, "review delta renderer missing")
+    _require('delta.same_request ? "unchanged" : "changed"' in js, "review delta must use human-readable same-request copy")
+    _require('["Same request", delta.same_request ? "true" : "false"]' not in js, "review delta must not expose raw boolean copy")
     _require("ready_for_rerun" in js, "proof attach ready-for-rerun state missing")
     _require("Packet regenerated" in js, "rerun complete state missing")
     _require("Portkey can allow with policy" in js, "rerun Portkey allow state missing")

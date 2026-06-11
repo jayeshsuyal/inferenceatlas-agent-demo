@@ -3308,7 +3308,7 @@ function reviewDeltaRows(packet) {
     .filter(Boolean)
     .join(" + ");
   return [
-    ["Same request", delta.same_request ? "true" : "false"],
+    ["Same request", delta.same_request ? "unchanged" : "changed"],
     ["New proof", proofLabels || "attached"],
     ["Packet", `${delta.packet_revision_before || "rev_1"} -> ${delta.packet_revision_after || "rev_2"}`],
     ["Portkey", `${delta.portkey_before || "Block"} -> ${delta.portkey_after || "Allow with policy"}`],

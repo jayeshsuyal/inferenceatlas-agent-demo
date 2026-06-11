@@ -1267,6 +1267,16 @@ def _review_run_repo_name(run: ReviewRun) -> str:
     return str(repo.get("full_name") or repo.get("name") or "no repo selected")
 
 
+def _review_run_verdict_label(verdict: Any) -> str:
+    value = str(verdict or "not_generated")
+    labels = {
+        "not_generated": "not generated",
+        "scoped_validation_only": "Scoped validation only",
+        "ready_with_gates": "Ready with gates",
+    }
+    return labels.get(value, value.replace("_", " "))
+
+
 def _review_run_coach_prompt_kind(prompt: str) -> str:
     text = " ".join(str(prompt or "").lower().split())
     if not text or text in {"hi", "hey", "hello", "yo"}:
@@ -1331,7 +1341,7 @@ def _review_run_coach_current_read(run: ReviewRun) -> str:
     repo_name = _review_run_repo_name(run)
     packet = run.packet or {}
     revision = packet.get("revision_id") or "not generated"
-    verdict = packet.get("verdict") or "not_generated"
+    verdict = _review_run_verdict_label(packet.get("verdict"))
     if run.stage == "repo_not_connected":
         return "No GitHub repo is selected yet; Ask IA is waiting for one ReviewRun."
     if run.stage == "repo_selected":

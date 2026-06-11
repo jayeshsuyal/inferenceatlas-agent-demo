@@ -282,6 +282,8 @@ class ReviewRunContractTests(TestCase):
         self.assertEqual(portkey["stage"], "ready_to_export")
         self.assertEqual(portkey["prompt_kind"], "portkey")
         self.assertEqual(portkey["portkey_state"], "Allow with policy")
+        self.assertIn("Ready with gates", portkey["sections"]["current_read"])
+        self.assertNotIn("ready_with_gates", portkey["sections"]["current_read"])
         self.assertIn("Allow with policy", portkey["sections"]["downstream_impact"])
         self.assertIn("Still blocked downstream: repo admin, org-wide write, secrets", portkey["sections"]["downstream_impact"])
 

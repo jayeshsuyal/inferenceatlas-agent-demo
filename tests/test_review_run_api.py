@@ -621,6 +621,8 @@ class ReviewRunApiTests(TestCase):
                 portkey = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what will Portkey do?"))
                 self.assertEqual(portkey["answer"]["stage"], "ready_to_export")
                 self.assertEqual(portkey["answer"]["portkey_state"], "Allow with policy")
+                self.assertIn("Ready with gates", portkey["answer"]["sections"]["current_read"])
+                self.assertNotIn("ready_with_gates", portkey["answer"]["sections"]["current_read"])
                 self.assertIn("Still blocked downstream", portkey["answer"]["sections"]["downstream_impact"])
 
                 _review_runs.clear()

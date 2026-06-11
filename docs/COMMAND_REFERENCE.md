@@ -67,6 +67,18 @@ This renders the secret-safe Portkey dashboard setup sheet: webhook URL, `Author
 
 Portkey's BYO Guardrails timeout can proceed with a default `verdict: true`, so the live demo claim must be precise: IA fails closed for requests it receives, and the webhook should stay within the local latency budget.
 
+The preferred live metadata is ReviewRun-bound:
+
+```json
+{
+  "ia_review_run_id": "<review_run_id>",
+  "ia_packet_id": "<packet_id>",
+  "ia_revision_id": "<revision_id>",
+  "ia_requested_mode": "scoped_validation",
+  "ia_source_of_truth": "ReviewRun"
+}
+```
+
 ## Optional Portkey BYO Guardrail Probe
 
 ```bash
@@ -79,7 +91,9 @@ PORTKEY_GUARDRAIL_TOKEN="local-demo-token" \
 
 This sends a Portkey-shaped `beforeRequestHook` payload to IA, verifies the packet-backed boolean `verdict`, checks the read-only safety boundary, and confirms the local guardrail event was recorded. It does not call Portkey APIs, push policies, transform requests, execute writes, or print the shared token.
 
-For a real Portkey account demo, configure the Portkey BYO Guardrails webhook URL to point at the public IA URL ending in `/api/portkey/guardrail`, set the webhook header to `Authorization: Bearer <same token>`, and pass metadata such as `{"ia_fixture":"ai_spend_budget_overrun","ia_requested_mode":"model_request"}`. Portkey documents webhook metadata and the required boolean `verdict` response here: `https://portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails`.
+To probe a current ReviewRun packet, pass `--review-run-id`, `--packet-id`, `--revision-id`, and `--requested-mode scoped_validation`. To rehearse the receipt path without claiming a real Portkey dashboard call, set `PORTKEY_REHEARSAL_TOKEN` and pass `--rehearsal-token-env PORTKEY_REHEARSAL_TOKEN`; the recorded event kind is `rehearsal_probe`.
+
+For a real Portkey account demo, configure the Portkey BYO Guardrails webhook URL to point at the public IA URL ending in `/api/portkey/guardrail`, set the webhook header to `Authorization: Bearer <same token>`, and pass the current ReviewRun metadata above. Fixture fallback metadata such as `{"ia_fixture":"ai_spend_budget_overrun","ia_requested_mode":"model_request"}` remains available for local no-key proof. Portkey documents webhook metadata and the required boolean `verdict` response here: `https://portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails`.
 
 ## Portkey Guardrail Proof Loop
 

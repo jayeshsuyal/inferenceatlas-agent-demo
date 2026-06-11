@@ -71,6 +71,13 @@ def build_portkey_guardrail_setup(
     webhook_path = "/api/portkey/guardrail"
     webhook_url = f"{base_url}{webhook_path}"
     token_placeholder = f"<{token_env}>"
+    review_run_metadata = {
+        "ia_review_run_id": "<review_run_id>",
+        "ia_packet_id": "<packet_id>",
+        "ia_revision_id": "<revision_id>",
+        "ia_requested_mode": "scoped_validation",
+        "ia_source_of_truth": "ReviewRun",
+    }
 
     return {
         "schema_version": PORTKEY_GUARDRAIL_SETUP_SCHEMA_VERSION,
@@ -93,7 +100,8 @@ def build_portkey_guardrail_setup(
                 "Content-Type": "application/json",
             },
             "timeout_ms": timeout_ms,
-            "metadata_json": metadata,
+            "metadata_json": review_run_metadata,
+            "fallback_fixture_metadata_json": metadata,
             "expected_response_shape": {
                 "verdict": "boolean",
                 "data": "optional IA packet reference, deny reasons, safety, and event id",
@@ -112,6 +120,12 @@ def build_portkey_guardrail_setup(
         "local_verification": {
             "start_command": f'{token_env}="<shared-token>" python3 -m web',
             "probe_command": (
+                f'{token_env}="<shared-token>" python3 scripts/portkey_guardrail_probe.py '
+                f"--base-url {base_url} --review-run-id <review_run_id> "
+                "--packet-id <packet_id> --revision-id <revision_id> "
+                "--requested-mode scoped_validation --json"
+            ),
+            "fallback_fixture_probe_command": (
                 f'{token_env}="<shared-token>" python3 scripts/portkey_guardrail_probe.py '
                 f"--base-url {base_url} --json"
             ),
@@ -165,6 +179,11 @@ def render_portkey_guardrail_setup_markdown(payload: dict[str, Any]) -> str:
             json.dumps(config["metadata_json"], indent=2, sort_keys=True),
             "```",
             "",
+            "Fixture fallback metadata JSON:",
+            "```json",
+            json.dumps(config["fallback_fixture_metadata_json"], indent=2, sort_keys=True),
+            "```",
+            "",
             "Expected response:",
             "```json",
             json.dumps(config["expected_response_shape"], indent=2, sort_keys=True),
@@ -173,6 +192,7 @@ def render_portkey_guardrail_setup_markdown(payload: dict[str, Any]) -> str:
             "Verification:",
             f"- start IA: `{payload['local_verification']['start_command']}`",
             f"- probe: `{payload['local_verification']['probe_command']}`",
+            f"- fixture fallback probe: `{payload['local_verification']['fallback_fixture_probe_command']}`",
             f"- events: `{payload['local_verification']['events_url']}`",
             "",
             "Safety:",

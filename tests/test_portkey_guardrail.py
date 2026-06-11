@@ -8,7 +8,10 @@ from pathlib import Path
 from fastapi import HTTPException
 
 from agent.portkey_guardrail import (
+    PORTKEY_EVENT_KIND,
+    PORTKEY_REHEARSAL_EVENT_KIND,
     PORTKEY_GUARDRAIL_SCHEMA_VERSION,
+    resolve_portkey_guardrail_event_kind,
     build_portkey_guardrail_response,
     list_portkey_guardrail_events,
     validate_portkey_guardrail_token,
@@ -45,6 +48,7 @@ def _post_guardrail(body: dict, *, token: str | None = None, authorization: str 
             request=_FakeRequest(body),
             authorization=authorization,
             x_ia_portkey_guardrail_token=token,
+            x_ia_rehearsal_mode=None,
         )
     )
 
@@ -124,6 +128,30 @@ def test_portkey_guardrail_auth_accepts_header_or_bearer_token() -> None:
     validate_portkey_guardrail_token(provided_token="Bearer demo-token", expected_token="demo-token")
 
 
+def test_portkey_guardrail_event_kind_requires_rehearsal_secret() -> None:
+    assert (
+        resolve_portkey_guardrail_event_kind(
+            rehearsal_token=None,
+            expected_rehearsal_token="demo-rehearsal",
+        )
+        == PORTKEY_EVENT_KIND
+    )
+    assert (
+        resolve_portkey_guardrail_event_kind(
+            rehearsal_token="wrong",
+            expected_rehearsal_token="demo-rehearsal",
+        )
+        == PORTKEY_EVENT_KIND
+    )
+    assert (
+        resolve_portkey_guardrail_event_kind(
+            rehearsal_token="demo-rehearsal",
+            expected_rehearsal_token="demo-rehearsal",
+        )
+        == PORTKEY_REHEARSAL_EVENT_KIND
+    )
+
+
 def test_portkey_guardrail_auth_uses_constant_time_comparison() -> None:
     source = (Path(__file__).resolve().parents[1] / "agent" / "portkey_guardrail.py").read_text(
         encoding="utf-8"
@@ -172,8 +200,14 @@ def test_portkey_guardrail_api_records_read_only_event(monkeypatch, tmp_path: Pa
 
     events = list_portkey_guardrail_events(ledger_dir=tmp_path)
     assert len(events) == 1
+    assert events[0]["kind"] == PORTKEY_EVENT_KIND
     assert events[0]["verdict"] is False
     assert events[0]["read_only"] is True
+    assert events[0]["packet_id"] == "ia-spend-review-ai_spend_budget_overrun-v0"
+    assert events[0]["revision_id"] == "rev_47f8ff3775dec3c5"
+    assert events[0]["api_mutation"] is False
+    assert events[0]["policy_mutation"] is False
+    assert events[0]["external_writes"] is False
     assert events[0]["safety"]["portkey_policy_mutation_allowed"] is False
     assert events[0]["safety"]["portkey_api_call_made"] is False
 

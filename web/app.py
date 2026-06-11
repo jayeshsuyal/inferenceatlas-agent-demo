@@ -1,10 +1,12 @@
 """FastAPI server for the InferenceAtlas Intelligence Agent."""
 
+import copy
 import json
 import os
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -38,12 +40,22 @@ from agent.pilot_memo import PILOT_MEMO_SAFETY_ANCHOR, build_pilot_memo, render_
 from agent.portkey_adapter import build_portkey_adapter_payload
 from agent.portkey_guardrail import (
     PORTKEY_GUARDRAIL_AUTH_ENV,
+    PORTKEY_GUARDRAIL_DELIVERY_MODE,
+    PORTKEY_GUARDRAIL_DOC_URL,
+    PORTKEY_GUARDRAIL_SCHEMA_VERSION,
     PORTKEY_GUARDRAIL_TOKEN_HEADER,
+    PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL,
+    PORTKEY_REHEARSAL_AUTH_ENV,
+    PORTKEY_REHEARSAL_MODE_HEADER,
+    SAFE_PORTKEY_REQUEST_MODES,
     PortkeyGuardrailAuthError,
     build_portkey_guardrail_event,
     build_portkey_guardrail_response,
+    extract_portkey_metadata,
+    extract_portkey_requested_mode,
     list_portkey_guardrail_events,
     relative_event_path,
+    resolve_portkey_guardrail_event_kind,
     validate_portkey_guardrail_token,
     write_portkey_guardrail_event,
 )
@@ -654,11 +666,175 @@ def portkey_guardrail_proof_loop(
     }
 
 
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _portkey_webhook_safety_payload() -> dict[str, bool]:
+    return {
+        "read_only": True,
+        "packet_mutation_allowed": False,
+        "portkey_policy_mutation_allowed": False,
+        "portkey_api_call_made": False,
+        "approves_access": False,
+        "approves_spend": False,
+        "executes_external_writes": False,
+        "mutates_production": False,
+        "raw_agent_intent_trusted": False,
+    }
+
+
+def _review_run_portkey_failure_response(
+    *,
+    reason: str,
+    metadata: dict[str, Any],
+    requested_mode: str,
+    packet_reference: Optional[dict[str, Any]] = None,
+    verdict_class: Optional[str] = None,
+    next_human_action: str = "Use current ReviewRun packet metadata before Portkey allows movement.",
+    elapsed_ms: int = 0,
+) -> dict:
+    data: dict[str, Any] = {
+        "schema_version": PORTKEY_GUARDRAIL_SCHEMA_VERSION,
+        "delivery_mode": PORTKEY_GUARDRAIL_DELIVERY_MODE,
+        "portkey_surface": "BYO Guardrails webhook",
+        "docs_reference": {
+            "guardrail_webhook": PORTKEY_GUARDRAIL_DOC_URL,
+            "guardrails_overview": PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL,
+            "last_verified": "2026-06-11",
+        },
+        "generated_at": _utc_now(),
+        "elapsed_ms": elapsed_ms,
+        "metadata_resolved_by": "ia_review_run_id",
+        "review_run_id": metadata.get("ia_review_run_id"),
+        "requested_mode": requested_mode or None,
+        "reason": reason,
+        "deny_reasons": [reason],
+        "next_human_action": next_human_action,
+        "safety": _portkey_webhook_safety_payload(),
+    }
+    if packet_reference:
+        data["ia_packet_reference"] = packet_reference
+    if verdict_class:
+        data["verdict_class"] = verdict_class
+    return {"verdict": False, "data": data}
+
+
+def _packet_reference_for_run(run: ReviewRun) -> Optional[dict[str, Any]]:
+    packet = run.packet or {}
+    packet_id = packet.get("packet_id")
+    revision_id = packet.get("revision_id")
+    if not packet_id or not revision_id:
+        return None
+    return {
+        "packet_id": str(packet_id),
+        "revision_id": str(revision_id),
+        "revision_number": int(packet.get("revision_number") or 0),
+        "content_hash": packet.get("content_hash"),
+        "run_id": run.run_id,
+        "source_of_truth": "ReviewRun",
+    }
+
+
+def _build_review_run_portkey_guardrail_response(body: Any, *, elapsed_ms: int = 0) -> Optional[dict]:
+    if not isinstance(body, dict):
+        return None
+    metadata = extract_portkey_metadata(body)
+    review_run_id = str(metadata.get("ia_review_run_id") or "").strip()
+    if not review_run_id:
+        return None
+
+    requested_mode = extract_portkey_requested_mode(metadata)
+    if requested_mode not in SAFE_PORTKEY_REQUEST_MODES:
+        return _review_run_portkey_failure_response(
+            reason="requested_mode_not_packet_scoped",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            elapsed_ms=elapsed_ms,
+        )
+
+    try:
+        record = load_review_run_record(review_run_id, store_dir=REVIEW_RUN_STORE_DIR)
+    except ValueError:
+        return _review_run_portkey_failure_response(
+            reason="invalid_review_run_id",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            elapsed_ms=elapsed_ms,
+        )
+    if record is None:
+        return _review_run_portkey_failure_response(
+            reason="review_run_not_found",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            elapsed_ms=elapsed_ms,
+        )
+
+    run = ReviewRun.from_dict(record["run"])
+    packet_reference = _packet_reference_for_run(run)
+    if packet_reference is None:
+        return _review_run_portkey_failure_response(
+            reason="review_run_packet_not_generated",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            elapsed_ms=elapsed_ms,
+        )
+
+    supplied_packet_id = str(metadata.get("ia_packet_id") or "").strip()
+    supplied_revision_id = str(metadata.get("ia_revision_id") or "").strip()
+    if not supplied_packet_id or not supplied_revision_id:
+        return _review_run_portkey_failure_response(
+            reason="packet_metadata_missing",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            packet_reference=packet_reference,
+            verdict_class=run.packet.get("verdict"),
+            elapsed_ms=elapsed_ms,
+        )
+    if supplied_packet_id != packet_reference["packet_id"]:
+        return _review_run_portkey_failure_response(
+            reason="packet_id_mismatch",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            packet_reference=packet_reference,
+            verdict_class=run.packet.get("verdict"),
+            elapsed_ms=elapsed_ms,
+        )
+    if supplied_revision_id != packet_reference["revision_id"]:
+        return _review_run_portkey_failure_response(
+            reason="stale_packet_revision",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            packet_reference=packet_reference,
+            verdict_class=run.packet.get("verdict"),
+            next_human_action="Send the current ReviewRun packet revision before Portkey allows movement.",
+            elapsed_ms=elapsed_ms,
+        )
+
+    try:
+        test = build_review_run_portkey_guardrail_test(run, elapsed_ms=elapsed_ms)
+    except ValueError:
+        return _review_run_portkey_failure_response(
+            reason="review_run_packet_not_generated",
+            metadata=metadata,
+            requested_mode=requested_mode,
+            elapsed_ms=elapsed_ms,
+        )
+
+    response = copy.deepcopy(test["portkey_guardrail_response"])
+    response["data"]["delivery_mode"] = PORTKEY_GUARDRAIL_DELIVERY_MODE
+    response["data"]["metadata_resolved_by"] = "ia_review_run_id"
+    response["data"]["review_run_id"] = run.run_id
+    response["data"]["requested_mode"] = requested_mode
+    return response
+
+
 @app.post("/api/portkey/guardrail")
 async def portkey_guardrail_webhook(
     request: Request,
     authorization: Optional[str] = Header(default=None),
     x_ia_portkey_guardrail_token: Optional[str] = Header(default=None, alias=PORTKEY_GUARDRAIL_TOKEN_HEADER),
+    x_ia_rehearsal_mode: Optional[str] = Header(default=None, alias=PORTKEY_REHEARSAL_MODE_HEADER),
 ) -> dict:
     """Read-only Portkey BYO Guardrails webhook backed by IA Packet truth."""
     provided_token = x_ia_portkey_guardrail_token or authorization
@@ -677,8 +853,15 @@ async def portkey_guardrail_webhook(
     except Exception:
         body = {}
 
+    event_kind = resolve_portkey_guardrail_event_kind(
+        rehearsal_token=x_ia_rehearsal_mode,
+        expected_rehearsal_token=os.getenv(PORTKEY_REHEARSAL_AUTH_ENV),
+    )
+
     started = time.perf_counter()
-    response = build_portkey_guardrail_response(body, elapsed_ms=0)
+    response = _build_review_run_portkey_guardrail_response(body, elapsed_ms=0)
+    if response is None:
+        response = build_portkey_guardrail_response(body, elapsed_ms=0)
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     response["data"]["elapsed_ms"] = elapsed_ms
 
@@ -686,6 +869,7 @@ async def portkey_guardrail_webhook(
         body=body if isinstance(body, dict) else {},
         response=response,
         elapsed_ms=elapsed_ms,
+        kind=event_kind,
     )
     record_path = write_portkey_guardrail_event(
         event,

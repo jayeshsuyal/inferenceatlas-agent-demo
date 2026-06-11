@@ -133,6 +133,7 @@ const repoCoachBody = document.getElementById("repo-coach-body");
 const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
 const repoCoachThread = document.getElementById("repo-coach-thread");
+const repoCoachThreadScroll = document.getElementById("repo-coach-thread-scroll");
 const repoCoachFollowupChips = document.getElementById("repo-coach-followup-chips");
 const repoCoachResizeW = document.getElementById("repo-coach-resize-w");
 const repoCoachResizeH = document.getElementById("repo-coach-resize-h");
@@ -227,10 +228,16 @@ let pendingIndexSummary = "";
 const COACH_CHIP_MAX_LABEL = 28;
 const COACH_FLOAT_WIDTH_KEY = "ia_coach_float_width_px";
 const COACH_FLOAT_HEIGHT_KEY = "ia_coach_float_height_px";
+const COACH_MAXIMIZED_WIDTH_KEY = "ia_coach_max_width_px";
+const COACH_MAXIMIZED_HEIGHT_KEY = "ia_coach_max_height_px";
 const COACH_FLOAT_WIDTH_MIN = 280;
 const COACH_FLOAT_WIDTH_MAX = 560;
 const COACH_FLOAT_HEIGHT_MIN = 220;
 const COACH_FLOAT_HEIGHT_MAX = 720;
+const COACH_MAXIMIZED_WIDTH_DEFAULT = 720;
+const COACH_MAXIMIZED_HEIGHT_DEFAULT = 680;
+const COACH_MAXIMIZED_WIDTH_MAX = 1200;
+const COACH_MAXIMIZED_HEIGHT_MAX = 960;
 const STAGE_REASSESS_PROMPTS = {
   repo_not_connected: "What should I do first to start a ReviewRun?",
   repo_selected: "What will IA review when I generate the packet for this repo?",
@@ -1136,15 +1143,23 @@ function setCoachFloatingExpanded(expanded) {
   repoAskCoach.classList.toggle("repo-coach-expanded", Boolean(expanded));
 }
 
-function applyCoachFloatingSize(widthPx, heightPx) {
+function applyCoachFloatingSize(widthPx, heightPx, { maximized = false } = {}) {
   if (!repoAskCoach) return;
-  const width = Math.min(COACH_FLOAT_WIDTH_MAX, Math.max(COACH_FLOAT_WIDTH_MIN, Math.round(widthPx)));
-  const height = Math.min(COACH_FLOAT_HEIGHT_MAX, Math.max(COACH_FLOAT_HEIGHT_MIN, Math.round(heightPx)));
+  const widthMax = maximized ? COACH_MAXIMIZED_WIDTH_MAX : COACH_FLOAT_WIDTH_MAX;
+  const heightMax = maximized ? COACH_MAXIMIZED_HEIGHT_MAX : COACH_FLOAT_HEIGHT_MAX;
+  const width = Math.min(widthMax, Math.max(COACH_FLOAT_WIDTH_MIN, Math.round(widthPx)));
+  const height = Math.min(heightMax, Math.max(COACH_FLOAT_HEIGHT_MIN, Math.round(heightPx)));
   repoAskCoach.style.setProperty("--ia-coach-float-width", `${width}px`);
+  repoAskCoach.style.setProperty("--ia-coach-float-height", `${height}px`);
   repoAskCoach.style.setProperty("--ia-coach-float-max-height", `${height}px`);
   try {
-    localStorage.setItem(COACH_FLOAT_WIDTH_KEY, String(width));
-    localStorage.setItem(COACH_FLOAT_HEIGHT_KEY, String(height));
+    if (maximized) {
+      localStorage.setItem(COACH_MAXIMIZED_WIDTH_KEY, String(width));
+      localStorage.setItem(COACH_MAXIMIZED_HEIGHT_KEY, String(height));
+    } else {
+      localStorage.setItem(COACH_FLOAT_WIDTH_KEY, String(width));
+      localStorage.setItem(COACH_FLOAT_HEIGHT_KEY, String(height));
+    }
   } catch (_) {
     /* ignore storage errors */
   }
@@ -1188,7 +1203,8 @@ function initCoachFloatingResize() {
       if (mode === "height" || mode === "corner") {
         height = rect.bottom - event.clientY;
       }
-      applyCoachFloatingSize(width, height);
+      const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+      applyCoachFloatingSize(width, height, { maximized });
     };
     handle.addEventListener("pointerdown", (event) => {
       event.preventDefault();
@@ -1220,12 +1236,16 @@ function setReviewCoachMaximized(maximized) {
   if (on) {
     setReviewCoachCollapsed(false);
     setCoachFloatingExpanded(true);
-    if (pendingIndexSummary && repoCoachIndexSummary && repoCoachIndexSummaryBody) {
-      repoCoachIndexSummary.hidden = false;
-      repoCoachIndexSummaryBody.textContent = coachPlainText(pendingIndexSummary);
+    try {
+      const width = Number(localStorage.getItem(COACH_MAXIMIZED_WIDTH_KEY)) || COACH_MAXIMIZED_WIDTH_DEFAULT;
+      const height = Number(localStorage.getItem(COACH_MAXIMIZED_HEIGHT_KEY)) || COACH_MAXIMIZED_HEIGHT_DEFAULT;
+      applyCoachFloatingSize(width, height, { maximized: true });
+    } catch (_) {
+      applyCoachFloatingSize(COACH_MAXIMIZED_WIDTH_DEFAULT, COACH_MAXIMIZED_HEIGHT_DEFAULT, { maximized: true });
     }
-  } else if (repoCoachIndexSummary && !pendingIndexSummary) {
-    repoCoachIndexSummary.hidden = true;
+    if (pendingIndexSummary) appendCoachIndexSummaryToThread(pendingIndexSummary);
+  } else {
+    restoreCoachFloatingSize();
   }
 }
 
@@ -1270,6 +1290,7 @@ function renderRepoIndexTracker(job) {
   }
   if (status === "completed" && job.summary) {
     pendingIndexSummary = job.summary;
+    appendCoachIndexSummaryToThread(job.summary);
     persistReviewRunState();
   }
 }
@@ -1389,14 +1410,65 @@ async function restoreReviewRunSession() {
 }
 
 function scrollCoachThread() {
-  const wrap = repoCoachThread?.closest(".repo-coach-thread-wrap");
-  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+  const scrollEl = repoCoachThreadScroll || repoCoachThread?.closest(".repo-coach-thread-scroll");
+  if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+}
+
+function appendCoachThreadSystemMessage(title, body, { marker = "", replace = true } = {}) {
+  if (!repoCoachThread || !body) return null;
+  if (marker && replace) {
+    repoCoachThread.querySelector(`[data-coach-marker="${marker}"]`)?.remove();
+  }
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-system";
+  if (marker) row.dataset.coachMarker = marker;
+  row.innerHTML = `
+    <span class="coach-system-label">${escapeHtml(title)}</span>
+    <div class="coach-system-body">${escapeHtml(coachPlainText(body))}</div>
+  `;
+  repoCoachThread.appendChild(row);
+  setCoachFloatingExpanded(true);
+  scrollCoachThread();
+  return row;
+}
+
+function appendCoachIndexSummaryToThread(summary) {
+  if (!summary) return;
+  appendCoachThreadSystemMessage("Repository index", summary, { marker: "index-summary" });
 }
 
 function updateCoachPinnedRead(text) {
-  if (repoCoachRead && text) {
-    repoCoachRead.textContent = coachPlainText(text);
-  }
+  if (!text) return;
+  appendCoachThreadSystemMessage("Current read", text, { marker: "pinned-read" });
+}
+
+function clearCoachContextBubble() {
+  repoCoachThread?.querySelector('[data-coach-marker="context"]')?.remove();
+}
+
+function upsertCoachContextBubble(sections) {
+  if (!repoCoachThread || !sections || reviewRunCoachBusy) return;
+  clearCoachContextBubble();
+  const { row, sectionsEl } = createCoachAssistantBubble();
+  row.classList.add("coach-thread-context");
+  row.dataset.coachMarker = "context";
+  appendCoachSectionCard(sectionsEl, "Current read", sections.current_read);
+  appendCoachSectionCard(sectionsEl, "What blocks movement", sections.what_blocks_movement);
+  appendCoachSectionCard(sectionsEl, "Next human action", sections.next_human_action);
+  appendCoachSectionCard(sectionsEl, "Downstream impact", sections.downstream_impact);
+  appendCoachSectionCard(sectionsEl, "Safety", sections.safety);
+  repoCoachThread.appendChild(row);
+  setCoachFloatingExpanded(true);
+  scrollCoachThread();
+}
+
+function ensureCoachThreadWelcome() {
+  if (!repoCoachThread || repoCoachThread.children.length) return;
+  appendCoachThreadSystemMessage(
+    "Ask IA",
+    "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
+    { marker: "welcome", replace: false }
+  );
 }
 
 function appendCoachThreadUserMessage(text) {
@@ -1465,7 +1537,6 @@ function appendCoachAssistantMessage(answer) {
     answer.governance_narration ||
     (answer.narration_live ? answer.narration : "") ||
     "";
-  updateCoachPinnedRead(sections.current_read);
   const { row, narrationEl, sectionsEl } = createCoachAssistantBubble();
   if (narration) {
     narrationEl.hidden = false;
@@ -1525,46 +1596,11 @@ function removeCoachThreadNode(parts) {
 
 function renderReviewRunCoachAnswer(answer) {
   const sections = answer?.sections || {};
-  const promptKind = String(answer?.prompt_kind || "current_read").trim() || "current_read";
-  if (repoCoachRead && sections.current_read) {
-    repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
-  }
-  if (!repoCoachAnswer) return;
-  const includeCurrentRead = repoAskCoach?.dataset.userTurn === "true" && sections.current_read;
-  const rows = [
-    includeCurrentRead ? ["Current read", sections.current_read] : null,
-    ["What blocks movement", sections.what_blocks_movement],
-    ["Next human action", sections.next_human_action],
-    ["Downstream impact", sections.downstream_impact],
-    ["Safety", sections.safety],
-  ].filter((row) => row && row[1]);
-  repoCoachAnswer.hidden = !rows.length;
-  repoCoachAnswer.dataset.promptKind = promptKind;
-  repoCoachAnswer.innerHTML = rows
-    .map(
-      ([label, value]) => `
-        <div class="repo-coach-answer-row">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(String(value).replace(/`/g, ""))}</strong>
-        </div>
-      `
-    )
-    .join("");
-  repoCoachAnswer.insertAdjacentHTML(
-    "afterbegin",
-    `
-      <div class="repo-coach-assistant-head">
-        <span>IA answered</span>
-        <strong>${escapeHtml(coachPromptKindLabel(promptKind))}</strong>
-      </div>
-    `
-  );
-  if (repoCoachBody && repoAskCoach?.dataset.userTurn === "true") {
-    repoCoachInput?.blur();
-    repoCoachBody.scrollTop = 0;
-    window.requestAnimationFrame(() => {
-      repoCoachBody.scrollTop = 0;
-    });
+  if (Object.keys(sections).length) upsertCoachContextBubble(sections);
+  if (repoCoachAnswer) {
+    repoCoachAnswer.hidden = true;
+    repoCoachAnswer.innerHTML = "";
+    repoCoachAnswer.removeAttribute("data-prompt-kind");
   }
 }
 
@@ -1810,7 +1846,7 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
 }
 
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
-  renderReviewRunCoachAnswer({ sections });
+  if (sections && !reviewRunCoachBusy) upsertCoachContextBubble(sections);
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
     packetCoachStatus.classList.remove("error");
@@ -1971,6 +2007,7 @@ function resetReviewRunCoachAnswer() {
     repoCoachFollowupChips.replaceChildren();
   }
   setCoachFloatingExpanded(false);
+  ensureCoachThreadWelcome();
 }
 
 function renderLocalReviewRunCoach(sections) {
@@ -2034,6 +2071,7 @@ async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false
     ? `↻ Reassess · ${String(reassessTrigger || "stage change").replace(/_/g, " ")}`
     : message;
   if (!reassess) setReviewRunCoachUserPrompt(message);
+  clearCoachContextBubble();
   appendCoachThreadUserMessage(userLabel);
 
   setReviewRunCoachBusy(true);
@@ -6718,10 +6756,7 @@ repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false
 
 btnShowIndexSummary?.addEventListener("click", () => {
   setReviewCoachMaximized(true);
-  if (pendingIndexSummary && repoCoachIndexSummaryBody) {
-    repoCoachIndexSummary.hidden = false;
-    repoCoachIndexSummaryBody.textContent = coachPlainText(pendingIndexSummary);
-  }
+  if (pendingIndexSummary) appendCoachIndexSummaryToThread(pendingIndexSummary);
 });
 
 packetInlineCoachPrompts?.addEventListener("click", (event) => {
@@ -6789,6 +6824,7 @@ setupTabs();
 
 (async function initApp() {
   initCoachFloatingResize();
+  ensureCoachThreadWelcome();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();
   await loadMeta();

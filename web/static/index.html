@@ -378,31 +378,22 @@
                     <strong id="repo-coach-stage">Connect repo</strong>
                   </div>
                   <div class="repo-coach-body" id="repo-coach-body">
-                    <div class="repo-coach-index-summary" id="repo-coach-index-summary" hidden>
-                      <span>Repository index</span>
-                      <div class="repo-coach-index-summary-body" id="repo-coach-index-summary-body"></div>
+                    <div class="repo-coach-thread-scroll" id="repo-coach-thread-scroll" aria-live="polite">
+                      <div class="repo-coach-thread" id="repo-coach-thread"></div>
                     </div>
-                    <div class="repo-coach-current-read">
-                      <span>Current read</span>
-                      <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
-                    </div>
-                    <div class="repo-coach-chat" id="repo-coach-chat" aria-live="polite">
-                      <div class="repo-coach-thread-wrap">
-                        <div class="repo-coach-thread" id="repo-coach-thread"></div>
+                    <div class="repo-coach-composer">
+                      <form class="repo-coach-form" id="repo-coach-form">
+                        <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
+                        <button type="submit" class="btn-primary">Ask</button>
+                      </form>
+                      <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
+                        <button type="button" data-ask-prompt="What now?">What now?</button>
+                        <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
+                        <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
                       </div>
-                      <div class="repo-coach-answer repo-coach-assistant" id="repo-coach-answer" hidden></div>
+                      <div class="coach-chip-followup" id="repo-coach-followup-chips" hidden aria-label="Follow-up prompts"></div>
+                      <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
                     </div>
-                    <form class="repo-coach-form" id="repo-coach-form">
-                      <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
-                      <button type="submit" class="btn-primary">Ask</button>
-                    </form>
-                    <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
-                      <button type="button" data-ask-prompt="What now?">What now?</button>
-                      <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
-                      <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
-                    </div>
-                    <div class="coach-chip-followup" id="repo-coach-followup-chips" hidden aria-label="Follow-up prompts"></div>
-                    <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
                   </div>
                 </aside>
               </section>
@@ -648,6 +639,6 @@
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/app.js?v=78"></script>
+    <script src="/static/app.js?v=79"></script>
   </body>
 </html>

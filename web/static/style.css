@@ -8579,3 +8579,104 @@ body.coach-resize-active-nwse,
 body.coach-resize-active-nwse * {
   cursor: nwse-resize !important;
 }
+
+/* Unified Ask IA coach — single scroll thread, resizable shell, centered maximize */
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating,
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating {
+  position: fixed !important;
+  right: clamp(0.85rem, 2vw, 1.4rem) !important;
+  bottom: clamp(0.85rem, 2vw, 1.4rem) !important;
+  left: auto !important;
+  top: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(var(--ia-coach-float-width, 24rem), calc(100vw - 1.7rem)) !important;
+  height: min(var(--ia-coach-float-height, 26rem), calc(100vh - 1.7rem)) !important;
+  max-height: none !important;
+  min-height: 220px !important;
+  overflow: hidden !important;
+  padding: 0.95rem !important;
+}
+
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating .repo-coach-body,
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating .repo-coach-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden !important;
+  max-height: none !important;
+  padding-right: 0;
+}
+
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating[data-coach-maximized="true"],
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-maximized="true"] {
+  left: 50% !important;
+  top: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(var(--ia-coach-float-width, 52rem), 92vw) !important;
+  height: min(var(--ia-coach-float-height, min(86vh, 880px)), calc(100vh - 2rem)) !important;
+  max-height: none !important;
+  z-index: 81;
+}
+
+.repo-coach-thread-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.repo-coach-composer {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.55rem;
+  margin-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.coach-thread-system {
+  padding: 0.5rem 0.62rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.coach-system-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coach-system-body {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.coach-thread-context .coach-assistant-bubble {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 760px) {
+  body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating,
+  body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating {
+    right: 0.55rem !important;
+    bottom: 0.55rem !important;
+    width: calc(100vw - 1.1rem) !important;
+    height: min(var(--ia-coach-float-height, 42vh), calc(100vh - 1.1rem)) !important;
+  }
+}

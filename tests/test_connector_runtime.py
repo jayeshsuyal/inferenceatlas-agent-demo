@@ -42,6 +42,35 @@ class ConnectorRuntimeTests(unittest.TestCase):
             result = finish_github_callback("fake-code", state)
         self.assertIn("ok", result)
 
+    def test_github_live_oauth_overwrites_stale_demo_mode(self) -> None:
+        from agent.connector_oauth import _encode_state, finish_github_callback
+        from agent.connector_runtime import _set_connection
+
+        sid = "sess-gh-live-over-demo"
+        nonce = "test-nonce-live"
+        _set_connection(
+            sid,
+            "github",
+            {
+                "status": "pending",
+                "mode": "demo_session",
+                "oauth_state": nonce,
+            },
+        )
+
+        with patch("agent.connector_oauth.GITHUB_CLIENT_SECRET", "secret"), patch(
+            "agent.connector_oauth._http_form_post",
+            return_value={"access_token": "gho_live", "scope": "read:user,repo"},
+        ), patch("agent.connector_oauth._github_user_login", return_value="octo"):
+            result = finish_github_callback("live-code", _encode_state(sid, "github", nonce))
+
+        self.assertTrue(result["ok"])
+        github = load_session(sid)["connections"]["github"]
+        self.assertEqual(github["status"], "connected")
+        self.assertEqual(github["mode"], "live_oauth")
+        self.assertEqual(github["account"], "octo")
+        self.assertTrue(github["access_token"])
+
     def test_demo_import_github(self) -> None:
         demo_sign_in("test-session-import-1", "github")
         sid = "test-session-import-1"

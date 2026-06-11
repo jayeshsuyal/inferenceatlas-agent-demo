@@ -98,5 +98,6 @@ fi
 
 "$PYTHON_BIN" scripts/reviewer_smoke.py --base-url "$BASE_URL"
 "$PYTHON_BIN" scripts/reviewer_stress_smoke.py --base-url "$BASE_URL" --session-id "reviewer-stress-gate"
+"$PYTHON_BIN" scripts/review_run_rehearsal_gate.py --base-url "$BASE_URL" --json
 
 printf '\nReviewer smoke gate passed at %s.\n' "$BASE_URL"

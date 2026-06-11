@@ -24,6 +24,13 @@
           </div>
         </div>
         <div class="stack" id="stack-pills"></div>
+        <div class="repo-index-tracker" id="repo-index-tracker" hidden aria-live="polite">
+          <span class="repo-index-tracker-label" id="repo-index-tracker-label">Indexing repo…</span>
+          <progress id="repo-index-tracker-bar" max="100" value="0"></progress>
+          <button type="button" class="btn-ghost btn-index-summary" id="btn-show-index-summary" hidden>
+            Show summary
+          </button>
+        </div>
         <button type="button" class="btn-ghost" id="btn-reset">New chat</button>
       </header>
 
@@ -352,20 +359,29 @@
                   </section>
                 </div>
 
-                <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false">
-                  <div class="repo-coach-resize-handle" id="repo-coach-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize Ask IA chat" tabindex="0"></div>
+                <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false" data-coach-maximized="false">
+                  <div class="repo-coach-resize-handle repo-coach-resize-w" id="repo-coach-resize-w" role="separator" aria-orientation="vertical" aria-label="Resize width" tabindex="0"></div>
+                  <div class="repo-coach-resize-handle repo-coach-resize-h" id="repo-coach-resize-h" role="separator" aria-orientation="horizontal" aria-label="Resize height" tabindex="0"></div>
+                  <div class="repo-coach-resize-handle repo-coach-resize-corner" id="repo-coach-resize-corner" role="separator" aria-label="Resize Ask IA chat" tabindex="0"></div>
                   <div class="repo-coach-head">
                     <div>
                       <span class="repo-card-label">Ask IA</span>
                       <h3>Chat coach</h3>
                     </div>
-                    <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Minimize Ask IA chat">Minimize</button>
+                    <div class="repo-coach-head-actions">
+                      <button type="button" class="repo-coach-toggle" id="repo-coach-maximize" aria-label="Maximize Ask IA chat">Maximize</button>
+                      <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Minimize Ask IA chat">Minimize</button>
+                    </div>
                   </div>
                   <div class="repo-coach-stage-line" aria-live="polite">
                     <span>Stage</span>
                     <strong id="repo-coach-stage">Connect repo</strong>
                   </div>
                   <div class="repo-coach-body" id="repo-coach-body">
+                    <div class="repo-coach-index-summary" id="repo-coach-index-summary" hidden>
+                      <span>Repository index</span>
+                      <div class="repo-coach-index-summary-body" id="repo-coach-index-summary-body"></div>
+                    </div>
                     <div class="repo-coach-current-read">
                       <span>Current read</span>
                       <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
@@ -631,6 +647,7 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=77"></script>
+    <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
+    <script src="/static/app.js?v=78"></script>
   </body>
 </html>

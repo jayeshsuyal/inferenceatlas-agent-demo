@@ -74,6 +74,7 @@ def enrich_review_run_coach_answer(
     *,
     prompt: str = "",
     chip_entities: Optional[Mapping[str, Any]] = None,
+    session_id: str = "",
     store_dir: Optional[Path] = None,
 ) -> dict[str, Any]:
     """Layer session checkpoints, optional v1 governance, and optional LLM narration."""
@@ -107,6 +108,23 @@ def enrich_review_run_coach_answer(
         if config.COACH_SESSION_ENABLED
         else ""
     )
+    if session_id:
+        from .review_context import format_context_for_coach, get_review_context_bundle, record_flow_event
+
+        trigger = str(entities.get("reassess_trigger") or entities.get("trigger") or "").strip()
+        previous_stage = str(entities.get("previous_stage") or "").strip()
+        repo_name = str((run.selected_repo or {}).get("full_name") or "")
+        record_flow_event(
+            session_id,
+            run.run_id,
+            stage=run.stage,
+            previous_stage=previous_stage,
+            trigger=trigger or prompt_kind or "coach",
+            summary=coach_session_summary(base_answer, trigger=trigger),
+            repo_full_name=repo_name,
+        )
+        bundle = get_review_context_bundle(session_id, run.run_id, coach_store_dir=store_dir)
+        session_context = format_context_for_coach(bundle)
     enriched["session_context_included"] = bool(session_context)
 
     providers = [str(base_answer.get("coach_provider") or "review_run_state_coach")]

@@ -98,6 +98,13 @@ from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
 from agent.coach_enrichment import enrich_review_run_coach_answer
 from agent.coach_session import DEFAULT_COACH_SESSION_DIR
+from agent.repo_index_job import (
+    bind_index_job_to_context,
+    get_index_job,
+    get_session_review_context,
+    start_background_full_index,
+)
+from agent.review_context import get_review_context_bundle, record_flow_event
 from agent.session_metrics import (
     clear_metrics_session,
     get_session_metrics,
@@ -370,6 +377,13 @@ class ReviewRunCoachRequest(BaseModel):
     entities: Optional[dict[str, Any]] = None
     chip_entities: Optional[dict[str, Any]] = None
     reassess_trigger: Optional[str] = Field(default=None, max_length=80)
+    session_id: Optional[str] = Field(default=None, max_length=160)
+    previous_stage: Optional[str] = Field(default=None, max_length=80)
+
+
+class ReviewRunIndexStartRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    full_name: str = Field(..., min_length=3, max_length=200)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -765,6 +779,19 @@ def create_review_run_api(body: ReviewRunCreateRequest) -> dict:
     with _review_runs_lock:
         _review_runs[run.run_id] = run_payload
 
+    if body.session_id and body.selected_repo:
+        repo_name = str((body.selected_repo or {}).get("full_name") or "")
+        if repo_name:
+            record_flow_event(
+                body.session_id,
+                run.run_id,
+                stage=run.stage,
+                previous_stage="repo_not_connected",
+                trigger="review_run_created",
+                summary=f"ReviewRun created for {repo_name}.",
+                repo_full_name=repo_name,
+            )
+
     return {
         "ok": True,
         "read_only": True,
@@ -919,6 +946,8 @@ def _build_review_run_coach_response(
         chip_entities.update(dict(body.chip_entities or {}))
         if body.reassess_trigger:
             chip_entities.setdefault("reassess_trigger", body.reassess_trigger)
+        if body.previous_stage:
+            chip_entities.setdefault("previous_stage", body.previous_stage)
         base_answer = build_review_run_coach_answer(
             run,
             prompt,
@@ -929,6 +958,7 @@ def _build_review_run_coach_response(
             base_answer,
             prompt=prompt,
             chip_entities=chip_entities or None,
+            session_id=str(body.session_id or "").strip(),
             store_dir=COACH_SESSION_DIR,
         )
         suggestions = list(answer.get("suggestions") or suggestions_for_review_run(run))
@@ -1097,6 +1127,43 @@ def get_review_run(run_id: str) -> dict:
         "record": review_run_record_summary(record),
         "suggestions": suggestions,
     }
+
+
+@app.get("/api/review-runs/{run_id}/context")
+def get_review_run_context_api(
+    run_id: str,
+    session_id: str = Query(..., min_length=8),
+) -> dict:
+    """Return OpenClaw-style session bundle: flow events, coach checkpoints, index summary."""
+    try:
+        bundle = get_review_context_bundle(session_id, run_id, coach_store_dir=COACH_SESSION_DIR)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return bundle
+
+
+@app.post("/api/review-runs/{run_id}/repo-index/start")
+def start_review_run_repo_index_api(run_id: str, body: ReviewRunIndexStartRequest) -> dict:
+    """Start async full-repo indexing after quick attach; binds job to ReviewRun context."""
+    _load_review_run_or_404(run_id)
+    try:
+        started = start_background_full_index(body.session_id, body.full_name.strip(), run_id=run_id)
+        if not started.get("ok"):
+            raise HTTPException(status_code=400, detail=started.get("message", "index start failed"))
+        bind_index_job_to_context(body.session_id, run_id, started["job_id"], body.full_name.strip())
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    return {"ok": True, "run_id": run_id, **started}
+
+
+@app.get("/api/index-jobs/{job_id}")
+def get_repo_index_job_api(job_id: str) -> dict:
+    result = get_index_job(job_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="unknown index job")
+    return result
 
 
 def _public_request_path(request_path: str) -> Path:

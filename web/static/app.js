@@ -1,5 +1,9 @@
 const STORAGE_KEY = "ia_session_id";
 const REVIEW_SCOPE_KEY = "ia_review_scope";
+const REVIEW_RUN_STORAGE_KEY = "ia_review_run_id";
+const SELECTED_REPO_STORAGE_KEY = "ia_selected_repo";
+const REVIEW_STAGE_STORAGE_KEY = "ia_review_stage";
+const INDEX_JOB_STORAGE_KEY = "ia_repo_index_job_id";
 
 const messagesEl = document.getElementById("messages");
 const chatView = document.getElementById("chat-view");
@@ -132,7 +136,17 @@ const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
 const repoCoachThread = document.getElementById("repo-coach-thread");
 const repoCoachFollowupChips = document.getElementById("repo-coach-followup-chips");
-const repoCoachResizeHandle = document.getElementById("repo-coach-resize-handle");
+const repoCoachResizeW = document.getElementById("repo-coach-resize-w");
+const repoCoachResizeH = document.getElementById("repo-coach-resize-h");
+const repoCoachResizeCorner = document.getElementById("repo-coach-resize-corner");
+const repoCoachMaximize = document.getElementById("repo-coach-maximize");
+const repoCoachBackdrop = document.getElementById("repo-coach-backdrop");
+const repoCoachIndexSummary = document.getElementById("repo-coach-index-summary");
+const repoCoachIndexSummaryBody = document.getElementById("repo-coach-index-summary-body");
+const repoIndexTracker = document.getElementById("repo-index-tracker");
+const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
+const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
+const btnShowIndexSummary = document.getElementById("btn-show-index-summary");
 const repoStageRepoStatus = document.getElementById("repo-stage-repo-status");
 const repoStagePacketStatus = document.getElementById("repo-stage-packet-status");
 const repoStageProofStatus = document.getElementById("repo-stage-proof-status");
@@ -208,6 +222,10 @@ let currentReviewRunPortkeyTest = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
+let currentRepoIndexJobId = localStorage.getItem(INDEX_JOB_STORAGE_KEY) || "";
+let repoIndexPollTimer = null;
+let lastReviewRunStage = localStorage.getItem(REVIEW_STAGE_STORAGE_KEY) || "";
+let pendingIndexSummary = "";
 const COACH_CHIP_MAX_LABEL = 28;
 const COACH_FLOAT_WIDTH_KEY = "ia_coach_float_width_px";
 const COACH_FLOAT_HEIGHT_KEY = "ia_coach_float_height_px";
@@ -1147,51 +1165,229 @@ function restoreCoachFloatingSize() {
 }
 
 function initCoachFloatingResize() {
-  if (!repoCoachResizeHandle || !repoAskCoach) return;
+  if (!repoAskCoach) return;
   restoreCoachFloatingSize();
 
-  let dragging = false;
-  const stopDrag = () => {
-    dragging = false;
-    repoCoachResizeHandle.classList.remove("is-dragging");
-    document.body.classList.remove("coach-resize-active");
-    window.removeEventListener("pointermove", onPointerMove);
-    window.removeEventListener("pointerup", stopDrag);
-    window.removeEventListener("pointercancel", stopDrag);
-  };
-  const onPointerMove = (event) => {
-    if (!dragging) return;
-    const rect = repoAskCoach.getBoundingClientRect();
-    const nextWidth = rect.right - event.clientX;
-    const nextHeight = Math.min(
-      COACH_FLOAT_HEIGHT_MAX,
-      Math.max(COACH_FLOAT_HEIGHT_MIN, rect.bottom - event.clientY + 120)
-    );
-    applyCoachFloatingSize(nextWidth, nextHeight);
+  const bindResize = (handle, mode) => {
+    if (!handle) return;
+    let dragging = false;
+    const stopDrag = () => {
+      dragging = false;
+      handle.classList.remove("is-dragging");
+      document.body.classList.remove("coach-resize-active", "coach-resize-active-ns", "coach-resize-active-nwse");
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("pointercancel", stopDrag);
+    };
+    const onPointerMove = (event) => {
+      if (!dragging) return;
+      const rect = repoAskCoach.getBoundingClientRect();
+      let width = rect.width;
+      let height = rect.height;
+      if (mode === "width" || mode === "corner") {
+        width = rect.right - event.clientX;
+      }
+      if (mode === "height" || mode === "corner") {
+        height = rect.bottom - event.clientY;
+      }
+      applyCoachFloatingSize(width, height);
+    };
+    handle.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      dragging = true;
+      handle.classList.add("is-dragging");
+      document.body.classList.add(
+        mode === "height" ? "coach-resize-active-ns" : mode === "corner" ? "coach-resize-active-nwse" : "coach-resize-active"
+      );
+      handle.setPointerCapture(event.pointerId);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDrag);
+      window.addEventListener("pointercancel", stopDrag);
+    });
   };
 
-  repoCoachResizeHandle.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    dragging = true;
-    repoCoachResizeHandle.classList.add("is-dragging");
-    document.body.classList.add("coach-resize-active");
-    repoCoachResizeHandle.setPointerCapture(event.pointerId);
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", stopDrag);
-    window.addEventListener("pointercancel", stopDrag);
-  });
+  bindResize(repoCoachResizeW, "width");
+  bindResize(repoCoachResizeH, "height");
+  bindResize(repoCoachResizeCorner, "corner");
+}
 
-  repoCoachResizeHandle.addEventListener("keydown", (event) => {
-    const rect = repoAskCoach.getBoundingClientRect();
-    const step = event.shiftKey ? 48 : 16;
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      applyCoachFloatingSize(rect.width + step, rect.height);
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      applyCoachFloatingSize(rect.width - step, rect.height);
+function setReviewCoachMaximized(maximized) {
+  const on = Boolean(maximized);
+  if (repoAskCoach) repoAskCoach.dataset.coachMaximized = String(on);
+  if (repoCoachBackdrop) repoCoachBackdrop.hidden = !on;
+  if (repoCoachMaximize) {
+    repoCoachMaximize.textContent = on ? "Restore" : "Maximize";
+    repoCoachMaximize.setAttribute("aria-label", on ? "Restore Ask IA chat size" : "Maximize Ask IA chat");
+  }
+  if (on) {
+    setReviewCoachCollapsed(false);
+    setCoachFloatingExpanded(true);
+    if (pendingIndexSummary && repoCoachIndexSummary && repoCoachIndexSummaryBody) {
+      repoCoachIndexSummary.hidden = false;
+      repoCoachIndexSummaryBody.textContent = coachPlainText(pendingIndexSummary);
     }
-  });
+  } else if (repoCoachIndexSummary && !pendingIndexSummary) {
+    repoCoachIndexSummary.hidden = true;
+  }
+}
+
+function persistReviewRunState() {
+  try {
+    if (currentReviewRun?.run_id) {
+      localStorage.setItem(REVIEW_RUN_STORAGE_KEY, currentReviewRun.run_id);
+    }
+    const repo = selectedReviewRepo();
+    if (repo) {
+      localStorage.setItem(SELECTED_REPO_STORAGE_KEY, JSON.stringify(repo));
+    }
+    const stage = reviewRunUiStage();
+    localStorage.setItem(REVIEW_STAGE_STORAGE_KEY, stage);
+    if (currentRepoIndexJobId) {
+      localStorage.setItem(INDEX_JOB_STORAGE_KEY, currentRepoIndexJobId);
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function renderRepoIndexTracker(job) {
+  if (!repoIndexTracker) return;
+  const status = job?.status || "idle";
+  if (!job || status === "idle") {
+    repoIndexTracker.hidden = true;
+    return;
+  }
+  repoIndexTracker.hidden = false;
+  const pct = Number(job.progress_pct || 0);
+  if (repoIndexTrackerBar) repoIndexTrackerBar.value = pct;
+  const phase = job.phase ? job.phase.replace(/_/g, " ") : "indexing";
+  if (repoIndexTrackerLabel) {
+    repoIndexTrackerLabel.textContent =
+      status === "completed"
+        ? `Indexed ${job.files_indexed || 0} files · ${(job.digest_chars || 0).toLocaleString()} chars`
+        : `${phase}… ${pct}%`;
+  }
+  if (btnShowIndexSummary) {
+    btnShowIndexSummary.hidden = status !== "completed" || !job.summary;
+  }
+  if (status === "completed" && job.summary) {
+    pendingIndexSummary = job.summary;
+    persistReviewRunState();
+  }
+}
+
+async function pollRepoIndexJob(jobId) {
+  if (!jobId) return;
+  try {
+    const res = await fetch(`/api/index-jobs/${encodeURIComponent(jobId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return;
+    renderRepoIndexTracker(data.job);
+    if (data.job?.status === "completed" || data.job?.status === "failed") {
+      if (repoIndexPollTimer) {
+        clearInterval(repoIndexPollTimer);
+        repoIndexPollTimer = null;
+      }
+      if (currentReviewRun?.run_id) {
+        await refreshReviewRunContextBundle();
+      }
+    }
+  } catch (_) {
+    /* polling is best-effort */
+  }
+}
+
+function startRepoIndexPolling(jobId) {
+  currentRepoIndexJobId = jobId || "";
+  if (!jobId) return;
+  localStorage.setItem(INDEX_JOB_STORAGE_KEY, jobId);
+  if (repoIndexPollTimer) clearInterval(repoIndexPollTimer);
+  void pollRepoIndexJob(jobId);
+  repoIndexPollTimer = setInterval(() => pollRepoIndexJob(jobId), 1800);
+}
+
+async function startBackgroundRepoIndex(fullName) {
+  if (!currentReviewRun?.run_id || !fullName) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/repo-index/start`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, full_name: fullName }),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    startRepoIndexPolling(data.job_id);
+    renderRepoIndexTracker({ status: "queued", phase: "queued", progress_pct: 2 });
+    return data.job_id;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function refreshReviewRunContextBundle() {
+  if (!currentReviewRun?.run_id) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/context?session_id=${encodeURIComponent(sessionId)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    if (data.index_summary) {
+      pendingIndexSummary = data.index_summary;
+      if (btnShowIndexSummary) btnShowIndexSummary.hidden = false;
+    }
+    if (data.stage) lastReviewRunStage = data.stage;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function restoreReviewRunSession() {
+  const runId = localStorage.getItem(REVIEW_RUN_STORAGE_KEY);
+  if (!runId) return false;
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return false;
+    currentReviewRun = data.run;
+    const repoJson = localStorage.getItem(SELECTED_REPO_STORAGE_KEY);
+    if (repoJson) {
+      selectedGithubRepos = [JSON.parse(repoJson)];
+      renderGithubChips();
+      renderReviewRepoSummary(selectedGithubRepos[0]);
+    }
+    lastReviewRunStage = localStorage.getItem(REVIEW_STAGE_STORAGE_KEY) || currentReviewRun.stage || "";
+    const jobId = localStorage.getItem(INDEX_JOB_STORAGE_KEY);
+    if (jobId) startRepoIndexPolling(jobId);
+    await refreshReviewRunContextBundle();
+    const runPacket = currentReviewRun?.packet;
+    if (runPacket?.packet_id && !packetDetail?.packet_reference?.packet_id) {
+      packetDetail = {
+        packet_reference: {
+          packet_id: runPacket.packet_id,
+          revision_id: runPacket.revision_id,
+        },
+        decision: { verdict: runPacket.verdict },
+        review_run: currentReviewRun,
+      };
+      if (repoProofCockpit) repoProofCockpit.dataset.loaded = "true";
+      renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+    }
+    if (packetDetail?.packet_reference?.packet_id) {
+      setCoachForPacket(packetDetail, packetPortkeyPreview);
+    } else {
+      void autoReassessReviewRunCoach(currentReviewRun.stage || "repo_selected");
+    }
+    void refreshReviewRunCoachSuggestions();
+    persistReviewRunState();
+    return true;
+  } catch (_) {
+    return false;
+  }
 }
 
 function scrollCoachThread() {
@@ -1856,6 +2052,8 @@ async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false
     const body = {
       prompt: routedMessage,
       message: routedMessage,
+      session_id: sessionId,
+      previous_stage: lastReviewRunStage || reviewRunUiStage(packetDetail),
     };
     if (entities) {
       body.entities = entities;
@@ -1886,6 +2084,8 @@ async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false
       renderCoachSuggestionSets(suggestions, { followUp: true });
     }
     if (wantsPortkeyStage) openReviewRunPortkeyStage();
+    lastReviewRunStage = currentReviewRun?.stage || reviewRunUiStage(packetDetail);
+    persistReviewRunState();
     ok = true;
   } catch (err) {
     removeCoachThreadNode(thinkingUi);
@@ -2070,6 +2270,7 @@ async function createReviewRunForIndexedRepo(repo) {
   if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
   currentReviewRun = data.run;
   currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
+  persistReviewRunState();
   return currentReviewRun;
 }
 
@@ -2112,9 +2313,12 @@ async function attachReviewRepo(repo) {
       chatAttachmentIds.push(data.file_id);
     }
     await createReviewRunForIndexedRepo(indexedRepo);
+    void startBackgroundRepoIndex(fullName);
     renderGithubChips();
     renderReviewRepoSummary(indexedRepo);
-    setRepoConnectStatus(`Repo connected and indexed: ${fullName}. ReviewRun is ready.`);
+    setRepoConnectStatus(
+      `Quick index ready for ${fullName}. Full repo indexing continues in the background.`
+    );
   } catch (err) {
     selectedGithubRepos = [];
     currentReviewRun = null;
@@ -6513,6 +6717,21 @@ repoCoachToggle?.addEventListener("click", () => {
   setReviewCoachCollapsed(!collapsed);
 });
 
+repoCoachMaximize?.addEventListener("click", () => {
+  const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+  setReviewCoachMaximized(!maximized);
+});
+
+repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false));
+
+btnShowIndexSummary?.addEventListener("click", () => {
+  setReviewCoachMaximized(true);
+  if (pendingIndexSummary && repoCoachIndexSummaryBody) {
+    repoCoachIndexSummary.hidden = false;
+    repoCoachIndexSummaryBody.textContent = coachPlainText(pendingIndexSummary);
+  }
+});
+
 packetInlineCoachPrompts?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn) return;
@@ -6582,6 +6801,7 @@ setupTabs();
   await handleConnectorOAuthReturn();
   await loadMeta();
   loadGuide();
+  await restoreReviewRunSession();
   if (window.location.pathname === "/workbench") {
     showWorkbenchPanel();
   }

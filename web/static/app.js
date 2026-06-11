@@ -1246,14 +1246,30 @@ function initCoachFloatingResize() {
   bindResize(repoCoachResizeCorner, "corner");
 }
 
+function syncReviewCoachControlLabels() {
+  const collapsed = repoAskCoach?.dataset.coachCollapsed === "true";
+  const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+  if (repoCoachToggle) {
+    repoCoachToggle.setAttribute("aria-expanded", String(!collapsed));
+    repoCoachToggle.setAttribute(
+      "aria-label",
+      collapsed ? "Expand chat coach" : "Minimize chat coach to header"
+    );
+    repoCoachToggle.textContent = collapsed ? "Expand" : "Minimize";
+  }
+  if (repoCoachMaximize) {
+    repoCoachMaximize.textContent = maximized ? "Exit maximize" : "Maximize";
+    repoCoachMaximize.setAttribute(
+      "aria-label",
+      maximized ? "Exit maximize and dock chat coach" : "Maximize chat coach"
+    );
+  }
+}
+
 function setReviewCoachMaximized(maximized) {
   const on = Boolean(maximized);
   if (repoAskCoach) repoAskCoach.dataset.coachMaximized = String(on);
   if (repoCoachBackdrop) repoCoachBackdrop.hidden = !on;
-  if (repoCoachMaximize) {
-    repoCoachMaximize.textContent = on ? "Restore" : "Maximize";
-    repoCoachMaximize.setAttribute("aria-label", on ? "Restore Ask IA chat size" : "Maximize Ask IA chat");
-  }
   if (on) {
     setReviewCoachCollapsed(false);
     setCoachFloatingExpanded(true);
@@ -1268,6 +1284,7 @@ function setReviewCoachMaximized(maximized) {
   } else {
     restoreCoachFloatingSize();
   }
+  syncReviewCoachControlLabels();
 }
 
 function persistReviewRunState() {
@@ -1760,16 +1777,12 @@ function updateReviewRunCoachChrome(stage) {
 
 function setReviewCoachCollapsed(collapsed) {
   const isCollapsed = Boolean(collapsed);
+  if (isCollapsed && repoAskCoach?.dataset.coachMaximized === "true") {
+    setReviewCoachMaximized(false);
+  }
   if (repoAskCoach) repoAskCoach.dataset.coachCollapsed = String(isCollapsed);
   if (repoCoachBody) repoCoachBody.hidden = isCollapsed;
-  if (repoCoachToggle) {
-    repoCoachToggle.setAttribute("aria-expanded", String(!isCollapsed));
-    repoCoachToggle.setAttribute(
-      "aria-label",
-      isCollapsed ? "Open Ask IA chat" : "Minimize Ask IA chat"
-    );
-    repoCoachToggle.textContent = isCollapsed ? "Open Ask IA" : "Minimize";
-  }
+  syncReviewCoachControlLabels();
 }
 
 function reviewRunUiStage(packet = packetDetail) {
@@ -7212,7 +7225,12 @@ repoCoachToggle?.addEventListener("click", () => {
 
 repoCoachMaximize?.addEventListener("click", () => {
   const maximized = repoAskCoach?.dataset.coachMaximized === "true";
-  setReviewCoachMaximized(!maximized);
+  if (maximized) {
+    setReviewCoachMaximized(false);
+    return;
+  }
+  setReviewCoachCollapsed(false);
+  setReviewCoachMaximized(true);
 });
 
 repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false));
@@ -7288,6 +7306,7 @@ setupTabs();
 (async function initApp() {
   initCoachFloatingResize();
   initReviewRunFlowNavigation();
+  syncReviewCoachControlLabels();
   ensureCoachThreadWelcome();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();

@@ -153,7 +153,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Connect and index one repo before generating a packet.",
         "Ask IA",
         "Chat coach",
-        "Minimize Ask IA chat",
+        "Minimize chat coach to header",
         'data-coach-mode="floating"',
         "repo-coach-thread-scroll",
         "repo-coach-thread",
@@ -362,8 +362,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("repoCoachStage" in js, "Ask IA stage label missing")
     _require("REVIEW_RUN_STAGE_CHROME" in js, "Ask IA stage chrome map missing")
     _require("setReviewCoachCollapsed" in js, "Ask IA close/open controller missing")
-    _require("Open Ask IA chat" in js, "Ask IA reopen label missing")
-    _require("Minimize Ask IA chat" in js, "Ask IA minimize label missing")
+    _require("Expand chat coach" in js, "Ask IA expand label missing")
+    _require("Minimize chat coach to header" in js, "Ask IA minimize label missing")
+    _require("Exit maximize" in js, "Ask IA exit maximize label missing")
+    _require("syncReviewCoachControlLabels" in js, "Ask IA control label sync missing")
     _require(
         'function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {\n  clearReviewRunCoachUserPrompt();'
         not in js,

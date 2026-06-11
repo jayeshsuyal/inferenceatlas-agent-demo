@@ -8610,6 +8610,29 @@ body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating .repo-coach-body
   padding-right: 0;
 }
 
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating .repo-coach-body[hidden],
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating .repo-coach-body[hidden] {
+  display: none !important;
+}
+
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"],
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"] {
+  height: auto !important;
+  min-height: 0 !important;
+  width: min(17rem, calc(100vw - 1.7rem)) !important;
+  padding: 0.78rem 0.84rem !important;
+}
+
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"] .repo-coach-stage-line,
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"] .repo-coach-stage-line {
+  display: none !important;
+}
+
+body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"] .repo-coach-resize-handle,
+body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-collapsed="true"] .repo-coach-resize-handle {
+  display: none !important;
+}
+
 body:not([data-active-tab]) #repo-ask-coach.repo-ask-floating[data-coach-maximized="true"],
 body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-maximized="true"] {
   left: 50% !important;

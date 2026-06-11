@@ -202,6 +202,8 @@ let currentReviewRunProofGraph = null;
 let currentReviewRunPortkeyTest = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
+let reviewRunCoachSuggestionRefreshSeq = 0;
+let currentReviewRunCoachSuggestions = [];
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -957,6 +959,59 @@ function setReviewRunCoachBusy(loading, statusText = "") {
   }
 }
 
+function fallbackReviewRunCoachSuggestions() {
+  return [
+    {
+      label: "What now?",
+      message: "idk what to do next",
+      entities: { source: "review_run", prompt_kind: "next_action", stage: "repo_not_connected" },
+    },
+    {
+      label: "Missing proof",
+      message: "For this ReviewRun, explain the missing proof and who owns it.",
+      entities: { source: "review_run", prompt_kind: "proof", stage: "repo_not_connected" },
+    },
+    {
+      label: "Portkey impact",
+      message: "What will Portkey do?",
+      entities: { source: "review_run", prompt_kind: "portkey", stage: "repo_not_connected", subscriber: "portkey" },
+    },
+  ];
+}
+
+function safeCoachSuggestions(suggestions = []) {
+  const values = Array.isArray(suggestions) && suggestions.length
+    ? suggestions
+    : fallbackReviewRunCoachSuggestions();
+  return values
+    .filter((suggestion) => suggestion && typeof suggestion === "object")
+    .slice(0, 3)
+    .map((suggestion) => {
+      const label = String(suggestion.label || suggestion.message || "What now?").trim().slice(0, 46) || "What now?";
+      const message = String(suggestion.message || suggestion.label || "idk what to do next").trim().slice(0, 1200) || "idk what to do next";
+      const entities = suggestion.entities && typeof suggestion.entities === "object" ? suggestion.entities : {};
+      return { ...suggestion, label, message, entities };
+    });
+}
+
+function renderReviewRunCoachSuggestions(suggestions = []) {
+  if (!packetCoachQuickChips) return;
+  currentReviewRunCoachSuggestions = safeCoachSuggestions(suggestions);
+  packetCoachQuickChips.replaceChildren();
+  packetCoachQuickChips.dataset.suggestionMode = "contract";
+  currentReviewRunCoachSuggestions.forEach((suggestion, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.askPrompt = suggestion.message;
+    button.dataset.suggestionIndex = String(index);
+    button.setAttribute("aria-label", suggestion.message);
+    button.textContent = suggestion.label;
+    button.disabled = reviewRunCoachBusy;
+    button.setAttribute("aria-disabled", String(reviewRunCoachBusy));
+    packetCoachQuickChips.appendChild(button);
+  });
+}
+
 function renderReviewRunCoachAnswer(answer) {
   const sections = answer?.sections || {};
   const promptKind = String(answer?.prompt_kind || "current_read").trim() || "current_read";
@@ -1228,6 +1283,7 @@ function setReviewRunCoachStage(sections, statusText = "Ask IA guides this Revie
 
 function setCoachForNoRepo(expanded = false) {
   setReviewRunUiStage();
+  reviewRunCoachSuggestionRefreshSeq += 1;
   const liveSignedIn = isGithubLiveSignedIn();
   const demoSignedIn = isGithubDemoSignedIn();
   const liveAuthConfigured = isGithubLiveAuthConfigured();
@@ -1260,6 +1316,7 @@ function setCoachForNoRepo(expanded = false) {
           ? "Ask IA is ready to guide repo selection."
           : "Live GitHub OAuth env missing in this server."
   );
+  renderReviewRunCoachSuggestions();
   if (expanded) setReviewCoachCollapsed(false);
 }
 
@@ -1285,6 +1342,7 @@ function setCoachForSelectedRepo(repo) {
       ? "Repo indexing. Ask IA will update after the repo is ready."
       : "Repo selected. Ask IA is coaching packet generation."
   );
+  void refreshReviewRunCoachSuggestions(indexing ? "Current read" : "idk what to do next");
 }
 
 function setCoachForReviewLoading() {
@@ -1332,6 +1390,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Updated packet ready. No approval, no writes."
     );
+    void refreshReviewRunCoachSuggestions("what will Portkey do?");
     return;
   }
 
@@ -1346,6 +1405,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Proof attached. Verdict unchanged; no approval, no writes."
     );
+    void refreshReviewRunCoachSuggestions("what next");
     return;
   }
 
@@ -1359,6 +1419,7 @@ function setCoachForPacket(packet, portkeyPayload) {
     },
     "Packet generated. IA did not approve or write."
   );
+  void refreshReviewRunCoachSuggestions("idk what to do next");
 }
 
 function resetReviewRunCoachAnswer() {
@@ -1378,7 +1439,41 @@ function renderLocalReviewRunCoach(sections) {
   }
 }
 
-async function askReviewRunCoach(prompt) {
+async function refreshReviewRunCoachSuggestions(prompt = "Current read") {
+  const refreshSeq = ++reviewRunCoachSuggestionRefreshSeq;
+  if (!currentReviewRun?.run_id) {
+    renderReviewRunCoachSuggestions();
+    return;
+  }
+  try {
+    const routedMessage = routeReviewRunCoachPrompt(prompt);
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: routedMessage,
+        message: routedMessage,
+        entities: {
+          source: "review_run",
+          prompt_kind: "current_read",
+          run_id: currentReviewRun.run_id,
+          stage: currentReviewRun.stage || reviewRunUiStage(),
+        },
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (refreshSeq !== reviewRunCoachSuggestionRefreshSeq) return;
+    if (res.ok && data.ok) {
+      renderReviewRunCoachSuggestions(data.suggestions || []);
+    }
+  } catch (_) {
+    if (refreshSeq === reviewRunCoachSuggestionRefreshSeq) {
+      renderReviewRunCoachSuggestions(currentReviewRunCoachSuggestions);
+    }
+  }
+}
+
+async function askReviewRunCoach(prompt, entities = null) {
   if (reviewRunCoachBusy) return;
   const message = String(prompt || "Current read").trim() || "Current read";
   const routedMessage = routeReviewRunCoachPrompt(message);
@@ -1392,14 +1487,20 @@ async function askReviewRunCoach(prompt) {
   setReviewRunCoachBusy(true);
   let ok = false;
   try {
+    const payload = {
+      prompt: routedMessage,
+      message: routedMessage,
+    };
+    if (entities && typeof entities === "object") payload.entities = entities;
     const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: routedMessage }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
     renderReviewRunCoachAnswer(data.answer || {});
+    renderReviewRunCoachSuggestions(data.suggestions || []);
     ok = true;
   } catch (err) {
     resetReviewRunCoachAnswer();
@@ -3788,6 +3889,7 @@ async function testReviewRunPortkeyGuardrail() {
       },
       "Portkey guardrail test recorded locally. No approval, no writes."
     );
+    void refreshReviewRunCoachSuggestions("what will Portkey do?");
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -5912,8 +6014,9 @@ form.addEventListener("submit", (e) => {
 packetCoachQuickChips?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn || busy || reviewRunCoachBusy) return;
+  const suggestion = currentReviewRunCoachSuggestions[Number(btn.dataset.suggestionIndex || -1)];
   setReviewCoachCollapsed(false);
-  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
+  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "", suggestion?.entities || null);
 });
 
 repoCoachForm?.addEventListener("submit", (event) => {

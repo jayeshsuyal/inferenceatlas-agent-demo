@@ -8014,6 +8014,11 @@ body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .packet-c
   display: none !important;
 }
 
+body:not([data-active-tab]) .repo-ask-sidecar[data-user-turn="true"] .packet-coach-quick-chips[data-suggestion-mode="contract"],
+body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .packet-coach-quick-chips[data-suggestion-mode="contract"] {
+  display: grid !important;
+}
+
 body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer,
 body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer {
   max-height: min(27rem, calc(100vh - 16rem));

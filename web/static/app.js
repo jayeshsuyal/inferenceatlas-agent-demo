@@ -224,8 +224,15 @@ const DEFAULT_REVIEW_PROOF_LENSES = [
     owner_group: "Support Ops",
     review_focus: "Repo/workflow owner approval",
     missing_proof: [{ id: "repo_owner_approval", label: "Repo owner approval" }],
-    prepared_proof_items: [{ id: "repo_owner_approval", label: "Repo owner approval" }],
-    next_human_action: "Attach repo-owner approval from Support Ops.",
+    prepared_proof_items: [{
+      id: "repo_owner_approval",
+      label: "Repo owner approval",
+      evidence_note: "Support Ops confirmed repo-owner approval for selected repo only.",
+      approves_access: false,
+      grants_permissions: false,
+      mutates_downstream_policy: false,
+    }],
+    next_human_action: "Use the Support Ops repo-owner approval receipt before rerun.",
   },
   {
     lens_id: "engineering",
@@ -233,8 +240,15 @@ const DEFAULT_REVIEW_PROOF_LENSES = [
     owner_group: "Engineering",
     review_focus: "Rollback/off-switch proof",
     missing_proof: [{ id: "rollback_offswitch", label: "Rollback/off-switch proof" }],
-    prepared_proof_items: [{ id: "rollback_offswitch", label: "Rollback/off-switch proof" }],
-    next_human_action: "Attach rollback/off-switch proof from Engineering.",
+    prepared_proof_items: [{
+      id: "rollback_offswitch",
+      label: "Rollback/off-switch proof",
+      evidence_note: "Engineering provided rollback/off-switch proof for support-triage-bot.",
+      approves_access: false,
+      grants_permissions: false,
+      mutates_downstream_policy: false,
+    }],
+    next_human_action: "Use the Engineering rollback/off-switch receipt before rerun.",
   },
   {
     lens_id: "security",
@@ -242,8 +256,15 @@ const DEFAULT_REVIEW_PROOF_LENSES = [
     owner_group: "Security",
     review_focus: "Secrets/org-wide boundary",
     missing_proof: [{ id: "environment_boundary", label: "Environment boundary" }],
-    prepared_proof_items: [{ id: "environment_boundary", label: "Environment boundary" }],
-    next_human_action: "Attach environment-boundary proof from Security.",
+    prepared_proof_items: [{
+      id: "environment_boundary",
+      label: "Environment boundary",
+      evidence_note: "Security confirmed selected-repo boundary; secrets and org-wide access remain blocked.",
+      approves_access: false,
+      grants_permissions: false,
+      mutates_downstream_policy: false,
+    }],
+    next_human_action: "Use the Security environment-boundary receipt before rerun.",
   },
 ];
 const FIRST_RUN_PACKET_URL = "/packet?fixture=support_triage_agent&autorun=1";
@@ -3194,6 +3215,28 @@ function attachedProofIds(packet) {
   return new Set((attached || []).map((item) => String(item?.id || "").trim()).filter(Boolean));
 }
 
+function proofReceiptTimestamp(packet) {
+  const raw =
+    currentReviewRun?.updated_at ||
+    currentReviewRun?.created_at ||
+    packet?.review_run?.updated_at ||
+    packet?.review_run?.created_at ||
+    packet?.generated_at ||
+    "";
+  if (!raw) return "prepared for this ReviewRun";
+  return String(raw).replace("T", " ").replace(/\.\d+Z$/, "Z").replace(/Z$/, " UTC");
+}
+
+function proofReceiptSafetyPills(item) {
+  const proofOnly =
+    item?.approves_access === false &&
+    item?.grants_permissions === false &&
+    item?.mutates_downstream_policy === false;
+  return proofOnly
+    ? ["not approval", "no writes", "rerun required"]
+    : ["proof only", "packet locked", "rerun required"];
+}
+
 function reviewDeltaRows(packet) {
   const delta = packet?.review_delta || {};
   if (!delta.packet_changed) return [];
@@ -3213,10 +3256,19 @@ function reviewDeltaRows(packet) {
 function updateProofAttachButton() {
   if (!repoProofResolutionCard) return;
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
+  const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
+  const readyForRerun = repoProofResolutionCard.dataset.readyForRerun === "true";
+  const rerunComplete = repoProofResolutionCard.dataset.rerunComplete === "true";
   const checked = Array.from(repoProofResolutionCard.querySelectorAll('input[type="checkbox"]')).filter(
     (input) => input.checked && !input.disabled
   );
   if (button) button.disabled = checked.length === 0;
+  if (status && !readyForRerun && !rerunComplete) {
+    status.classList.remove("error");
+    status.textContent = checked.length
+      ? `${checked.length} prepared proof receipt${checked.length === 1 ? "" : "s"} selected. Verdict unchanged until you use them and rerun.`
+      : "No prepared proof used yet. Verdict unchanged.";
+  }
 }
 
 function renderRepoProofResolution(packet) {
@@ -3226,6 +3278,7 @@ function renderRepoProofResolution(packet) {
   const rerunComplete = packet?.review_run?.stage === "ready_to_export" || Boolean(packet?.review_delta?.packet_changed);
   const attachedIds = attachedProofIds(packet);
   const proofLenses = proofLensesForPacket(packet);
+  const receiptTimestamp = proofReceiptTimestamp(packet);
   const deltaRows = reviewDeltaRows(packet);
   const checklist = repoProofResolutionCard.querySelector(".repo-proof-checklist");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
@@ -3251,18 +3304,40 @@ function renderRepoProofResolution(packet) {
         const proofId = String(item.id || "").trim();
         const proofLabel = String(item.label || proofId || lens.review_focus || lens.label || "").trim();
         const preparedMatch = prepared.find((candidate) => String(candidate?.id || "") === proofId) || {};
+        const receiptTitle = String(preparedMatch.label || proofLabel || "Prepared proof receipt").trim();
+        const evidenceNote = String(
+          preparedMatch.evidence_note ||
+          item.evidence_note ||
+          "Prepared human proof receipt for this ReviewRun."
+        ).trim();
+        const ownerGroup = String(lens.owner_group || lens.label || "Human owner").trim();
+        const safetyPills = proofReceiptSafetyPills(preparedMatch);
         const checked = proofId && attachedIds.has(proofId);
         const disabled = readyForRerun || rerunComplete || !proofId;
         return `
           <section class="repo-proof-lens${checked ? " attached" : ""}" data-owner-lens="${escapeHtml(lens.lens_id || lens.label || "")}">
             <div class="repo-proof-lens-head">
-              <span>${escapeHtml(lens.owner_group || lens.label || "Human owner")}</span>
+              <span>${escapeHtml(ownerGroup)}</span>
               <strong>${escapeHtml(lens.review_focus || proofLabel || "Required proof")}</strong>
             </div>
             <label class="repo-proof-check${checked ? " attached" : ""}">
-              <input type="checkbox" data-proof-id="${escapeHtml(proofId)}" data-proof-label="${escapeHtml(proofLabel)}" data-proof-owner="${escapeHtml(lens.owner_group || lens.label || "")}" data-evidence-note="${escapeHtml(preparedMatch.evidence_note || "Human checked this proof item in the ReviewRun cockpit.")}"${checked ? " checked" : ""}${disabled ? " disabled" : ""} />
-              <span>${escapeHtml(proofLabel)}</span>
+              <input type="checkbox" data-proof-id="${escapeHtml(proofId)}" data-proof-label="${escapeHtml(proofLabel)}" data-proof-owner="${escapeHtml(ownerGroup)}" data-evidence-note="${escapeHtml(evidenceNote)}" data-proof-timestamp="${escapeHtml(receiptTimestamp)}"${checked ? " checked" : ""}${disabled ? " disabled" : ""} />
+              <span>${checked ? "Receipt attached" : "Use receipt"}</span>
             </label>
+            <div class="repo-proof-receipt" data-proof-receipt="${escapeHtml(proofId)}">
+              <div class="repo-proof-receipt-head">
+                <span>${escapeHtml(checked ? "Attached receipt" : "Prepared receipt")}</span>
+                <strong>${escapeHtml(receiptTitle)}</strong>
+              </div>
+              <p>${escapeHtml(evidenceNote)}</p>
+              <div class="repo-proof-receipt-meta">
+                <span>Owner: ${escapeHtml(ownerGroup)}</span>
+                <span>Timestamp: ${escapeHtml(receiptTimestamp)}</span>
+              </div>
+              <div class="repo-proof-receipt-safety" aria-label="Proof receipt safety">
+                ${safetyPills.map((pill) => `<span>${escapeHtml(pill)}</span>`).join("")}
+              </div>
+            </div>
             <p>${escapeHtml(lens.next_human_action || "Use prepared proof from this owner before rerun.")}</p>
           </section>
         `;

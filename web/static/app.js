@@ -3631,7 +3631,7 @@ function renderRepoProofResolution(packet) {
             </div>
             <label class="repo-proof-check${checked ? " attached" : ""}">
               <input type="checkbox" data-proof-id="${escapeHtml(proofId)}" data-proof-label="${escapeHtml(proofLabel)}" data-proof-owner="${escapeHtml(ownerGroup)}" data-evidence-note="${escapeHtml(evidenceNote)}" data-proof-timestamp="${escapeHtml(receiptTimestamp)}"${checked ? " checked" : ""}${disabled ? " disabled" : ""} />
-              <span>${checked ? "Receipt attached" : "Use receipt"}</span>
+              <span>${checked ? "Receipt attached" : "Use prepared receipt"}</span>
             </label>
             <div class="repo-proof-receipt" data-proof-receipt="${escapeHtml(proofId)}">
               <div class="repo-proof-receipt-head">
@@ -3640,7 +3640,7 @@ function renderRepoProofResolution(packet) {
               </div>
               <p>${escapeHtml(evidenceNote)}</p>
               <div class="repo-proof-receipt-meta">
-                <span>Owner: ${escapeHtml(ownerGroup)}</span>
+                <span>Supplied by: ${escapeHtml(ownerGroup)}</span>
                 <span>Timestamp: ${escapeHtml(receiptTimestamp)}</span>
               </div>
               <div class="repo-proof-receipt-safety" aria-label="Proof receipt safety">

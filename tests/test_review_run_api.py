@@ -10,6 +10,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 
 from agent.connector_oauth import demo_sign_in
+from agent.portkey_guardrail import list_portkey_guardrail_events
 
 from web.app import (
     GithubAttachRequest,
@@ -29,6 +30,7 @@ from web.app import (
     github_list_repos,
     get_review_run,
     proofgraph_index,
+    review_run_portkey_guardrail_test_api,
     rerun_review_run_packet_api,
 )
 
@@ -110,6 +112,26 @@ class ReviewRunApiTests(TestCase):
                 self.assertFalse(packet["safety_boundary"]["approval_granted"])
                 self.assertFalse(packet["safety_boundary"]["external_writes"])
                 self.assertFalse(packet["safety_boundary"]["portkey_api_call_made"])
+                proof_lenses = packet["proof_resolution"]["owner_lenses"]
+                self.assertEqual(proof_lenses["schema_version"], "review_run_proof_lenses.v0")
+                self.assertEqual(proof_lenses["packet_reference"], packet["packet_reference"])
+                self.assertEqual(proof_lenses["active_lane"], "agent_access_review")
+                self.assertEqual(
+                    {lens["lens_id"] for lens in proof_lenses["lenses"] if lens["active"]},
+                    {"support_ops", "engineering", "security"},
+                )
+                self.assertEqual(
+                    {lens["lens_id"] for lens in proof_lenses["lenses"] if not lens["active"]},
+                    {"finance_procurement", "legal"},
+                )
+                self.assertTrue(proof_lenses["guardrails"]["does_not_approve"])
+                self.assertFalse(proof_lenses["guardrails"]["proof_attachment_changes_verdict"])
+                for lens in proof_lenses["lenses"]:
+                    self.assertIn("does not approve", lens["safety_note"])
+                    for item in lens["prepared_proof_items"]:
+                        self.assertFalse(item["approves_access"])
+                        self.assertFalse(item["grants_permissions"])
+                        self.assertFalse(item["mutates_downstream_policy"])
 
                 fetched = get_review_run(run["run_id"])
                 self.assertEqual(fetched["run"]["stage"], "packet_generated")
@@ -227,6 +249,91 @@ class ReviewRunApiTests(TestCase):
                     get_review_run_proofgraph_api("ia-review-run-missing")
                 self.assertEqual(missing.exception.status_code, 404)
 
+    def test_review_run_portkey_guardrail_test_tracks_packet_revision_delta(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            ledger_dir = store_dir / "ledger"
+            with (
+                patch("web.app.REVIEW_RUN_STORE_DIR", store_dir),
+                patch("web.app.SPONSOR_PROOF_RUN_LEDGER_DIR", ledger_dir),
+            ):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+
+                with self.assertRaises(HTTPException) as before_packet:
+                    review_run_portkey_guardrail_test_api(run_id)
+                self.assertEqual(before_packet.exception.status_code, 400)
+                self.assertIn("no generated packet", before_packet.exception.detail)
+
+                generated = generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev1 = review_run_portkey_guardrail_test_api(run_id)
+                rev1_test = rev1["portkey_guardrail_test"]
+                self.assertIs(rev1["read_only"], True)
+                self.assertEqual(rev1_test["schema_version"], "review_run_portkey_guardrail_test.v0")
+                self.assertEqual(rev1_test["stage"], "packet_generated")
+                self.assertEqual(rev1_test["portkey_state"], "Block")
+                self.assertIs(rev1_test["verdict"], False)
+                self.assertEqual(
+                    rev1_test["packet_reference"]["revision_id"],
+                    generated["run"]["packet"]["revision_id"],
+                )
+                self.assertIn("blocked_scope:create labels", rev1_test["deny_reasons"])
+                self.assertIs(rev1_test["invariants"]["portkey_api_call_made"], False)
+                self.assertIs(rev1_test["invariants"]["portkey_policy_mutation_allowed"], False)
+                self.assertTrue(rev1_test["event_id"].startswith("portkey-guardrail-"))
+
+                attach_review_run_proof_api(
+                    run_id,
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                            {"id": "environment_boundary", "label": "Environment boundary"},
+                        ]
+                    ),
+                )
+                rerun = rerun_review_run_packet_api(
+                    run_id,
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev2 = review_run_portkey_guardrail_test_api(run_id)
+                rev2_test = rev2["portkey_guardrail_test"]
+                self.assertEqual(rev2_test["stage"], "ready_to_export")
+                self.assertEqual(rev2_test["portkey_state"], "Allow with policy")
+                self.assertIs(rev2_test["verdict"], True)
+                self.assertEqual(rev2_test["deny_reasons"], [])
+                self.assertEqual(
+                    rev2_test["packet_reference"]["revision_id"],
+                    rerun["run"]["packet"]["revision_id"],
+                )
+                self.assertEqual(
+                    rev2_test["allowed_scope"],
+                    ["read issues", "comment", "create labels in selected repo"],
+                )
+                self.assertEqual(rev2_test["still_blocked_scope"], ["repo admin", "org-wide write", "secrets"])
+                self.assertIs(rev2_test["invariants"]["packet_remains_authority"], True)
+                self.assertIs(rev2_test["invariants"]["approval_granted"], False)
+                self.assertIs(rev2_test["invariants"]["external_writes"], False)
+
+                events = list_portkey_guardrail_events(ledger_dir=ledger_dir)
+                self.assertEqual(len(events), 2)
+                self.assertEqual({event["verdict"] for event in events}, {False, True})
+
     def test_review_run_proof_api_stress_cases_fail_closed(self) -> None:
         with TemporaryDirectory() as temp_dir:
             store_dir = Path(temp_dir)
@@ -310,6 +417,16 @@ class ReviewRunApiTests(TestCase):
                 self.assertFalse(proofed_packet["proof_resolution"]["verdict_changed"])
                 self.assertFalse(proofed_packet["proof_resolution"]["portkey_changed"])
                 self.assertFalse(proofed_packet["safety_boundary"]["proof_attachment_changes_verdict"])
+                proofed_lenses = proofed_packet["proof_resolution"]["owner_lenses"]
+                self.assertEqual(
+                    {lens["lens_id"] for lens in proofed_lenses["lenses"] if lens["active"]},
+                    {"support_ops", "engineering", "security"},
+                )
+                for lens in proofed_lenses["lenses"]:
+                    if lens["active"]:
+                        self.assertEqual(len(lens["missing_proof"]), 0)
+                        self.assertEqual(len(lens["attached_proof"]), 1)
+                self.assertFalse(proofed_lenses["guardrails"]["proof_attachment_changes_verdict"])
 
                 fetched = get_review_run(before_run["run_id"])
                 self.assertEqual(fetched["run"]["stage"], "proof_attached")
@@ -463,8 +580,11 @@ class ReviewRunApiTests(TestCase):
                 next_step = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="idk what to do next"))
                 self.assertEqual(next_step["answer"]["stage"], "packet_generated")
                 self.assertEqual(next_step["answer"]["prompt_kind"], "next_action")
-                self.assertIn("Attach repo-owner approval", next_step["answer"]["sections"]["next_human_action"])
+                self.assertIn("Support Ops repo-owner approval", next_step["answer"]["sections"]["next_human_action"])
+                self.assertIn("Engineering rollback/off-switch proof", next_step["answer"]["sections"]["next_human_action"])
+                self.assertIn("Security environment-boundary proof", next_step["answer"]["sections"]["next_human_action"])
                 self.assertIn("Missing proof", next_step["answer"]["sections"]["what_blocks_movement"])
+                self.assertIn("Support Ops brings repo-owner approval", next_step["answer"]["sections"]["what_blocks_movement"])
                 suggestions = next_step["answer"]["suggestions"]
                 self.assertGreaterEqual(len(suggestions), 2)
                 self.assertIn("label", suggestions[0])
@@ -520,6 +640,8 @@ class ReviewRunApiTests(TestCase):
                 portkey = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what will Portkey do?"))
                 self.assertEqual(portkey["answer"]["stage"], "ready_to_export")
                 self.assertEqual(portkey["answer"]["portkey_state"], "Allow with policy")
+                self.assertIn("Ready with gates", portkey["answer"]["sections"]["current_read"])
+                self.assertNotIn("ready_with_gates", portkey["answer"]["sections"]["current_read"])
                 self.assertIn("Still blocked downstream", portkey["answer"]["sections"]["downstream_impact"])
 
                 _review_runs.clear()

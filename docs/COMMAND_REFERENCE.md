@@ -35,6 +35,16 @@ python3 scripts/demo_rehearsal.py --json
 
 This checks the recording-critical path: no-key review preflight, four Ask IA prompts, Portkey dry-run gate, Sponsor Proof Run safety locks, and artifact integrity. It does not use live keys or enable writes.
 
+## ReviewRun Final Rehearsal Gate
+
+```bash
+python3 -m web
+python3 scripts/review_run_rehearsal_gate.py --base-url http://127.0.0.1:8080
+python3 scripts/review_run_rehearsal_gate.py --base-url http://127.0.0.1:8080 --json
+```
+
+This checks the actual cockpit recording loop: connect/use demo repo, generate the ReviewRun packet, ask IA for the next action, attach human proof, rerun the packet, test the Portkey guardrail handoff, open the dynamic ProofGraph, and confirm the review brief is export-ready. It does not approve access, enable external writes, or mutate Portkey policy.
+
 ## Optional Keyed Sponsor Rehearsal
 
 ```bash

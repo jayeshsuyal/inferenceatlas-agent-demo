@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=33" />
+    <link rel="stylesheet" href="/static/style.css?v=49" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -195,149 +195,161 @@
           <div class="messages" id="messages" role="log" aria-live="polite">
             <section class="repo-proof-cockpit" id="repo-proof-cockpit" data-fixture="support_triage_agent" aria-label="InferenceAtlas review runway">
               <header class="review-runway-hero">
-                <p class="first-run-eyebrow">InferenceAtlas runway</p>
-                <h2>What should IA review?</h2>
-                <p>Generate the proof packet downstream systems trust before an AI agent moves.</p>
+                <p class="first-run-eyebrow">ReviewRun</p>
+                <h2>One review. One packet. One coach.</h2>
+                <p>Connect a repo, generate the IA Packet, then let downstream gates read the packet before movement.</p>
               </header>
 
-              <div class="review-cockpit-shell" aria-label="Review cockpit">
-                <div class="repo-current-step" aria-label="Current review step">
-                  <section class="repo-connect-panel" id="repo-connect-panel" aria-label="Connect GitHub repository">
-                    <div class="repo-connect-copy">
-                      <span class="repo-card-label">Current step</span>
-                      <h3>Connect GitHub</h3>
-                      <p>Sign in to choose a repo, or use the safe demo repo when OAuth is not configured. IA indexes only the repo you select.</p>
-                    </div>
-                    <div class="repo-connect-actions">
-                      <button type="button" class="btn-primary" id="btn-root-connect-github">Connect GitHub</button>
-                      <button type="button" class="btn-ghost" id="btn-root-demo-github">Use demo repo</button>
-                    </div>
-                    <p class="repo-status-line repo-connect-status" id="repo-connect-status" role="status" aria-live="polite">Repo not connected. No approval, no writes, no downstream mutation.</p>
-                    <div class="repo-inline-picker" id="repo-inline-picker" hidden>
-                      <input
-                        type="search"
-                        id="repo-inline-search"
-                        class="github-repo-search"
-                        placeholder="Search repositories..."
-                        autocomplete="off"
-                      />
-                      <div class="repo-inline-list" id="repo-inline-list" role="listbox" aria-label="Choose one GitHub repository"></div>
-                    </div>
-                  </section>
+              <section class="repo-runway-panel" aria-label="Review cockpit">
+                <div class="repo-review-column">
+                  <div class="repo-setup-flow" aria-label="Review setup">
+                    <div class="repo-option-stack" aria-label="Review options">
+                      <section class="repo-connect-panel repo-option-row repo-option-row-primary" id="repo-connect-panel" aria-label="Connect repo" aria-current="step">
+                        <div class="repo-connect-copy">
+                          <span class="repo-card-label">Repo access</span>
+                          <h3>Connect repo</h3>
+                          <p>Select one GitHub repo. IA indexes only that repo for this ReviewRun.</p>
+                        </div>
+                        <div class="repo-connect-actions">
+                          <button type="button" class="btn-primary" id="btn-root-connect-github">Connect GitHub</button>
+                          <button type="button" class="btn-ghost" id="btn-root-demo-github">Use demo repo</button>
+                        </div>
+                        <p class="repo-status-line repo-connect-status" id="repo-connect-status" role="status" aria-live="polite">Connect GitHub or use the demo repo to start. No approval, no writes.</p>
+                        <div class="repo-inline-picker" id="repo-inline-picker" hidden>
+                          <input
+                            type="search"
+                            id="repo-inline-search"
+                            class="github-repo-search"
+                            placeholder="Search repositories..."
+                            autocomplete="off"
+                          />
+                          <div class="repo-inline-list" id="repo-inline-list" role="listbox" aria-label="Choose one GitHub repository"></div>
+                        </div>
+                      </section>
 
-                  <section class="repo-index-summary" id="repo-index-summary" aria-label="Selected repository index summary" hidden>
-                    <div>
-                      <span class="repo-card-label">Repo connected</span>
-                      <strong id="repo-selected-name">No repo selected</strong>
-                    </div>
-                    <div>
-                      <span class="repo-card-label">Indexed</span>
-                      <strong id="repo-indexed-state">Waiting</strong>
-                    </div>
-                    <div>
-                      <span class="repo-card-label">ReviewRun</span>
-                      <strong id="repo-review-run-id">Not created</strong>
-                    </div>
-                  </section>
+                      <a class="repo-option-row repo-option-row-secondary" href="/packet?fixture=ai_spend_budget_overrun&autorun=1">
+                        <span class="repo-card-label">Spend</span>
+                        <strong>Review AI spend</strong>
+                        <small>Budget movement packet preview</small>
+                      </a>
 
-                  <section class="repo-review-request" id="repo-review-request" aria-label="Repo access request">
-                    <div class="repo-request-copy">
-                      <span class="repo-card-label">Selected request</span>
-                      <h3>support-triage-bot wants repo access</h3>
-                      <p>Customer repo: <strong id="repo-request-repo-name">Choose a GitHub repo first.</strong> IA will decide what stays scoped, what is blocked, and who must review next.</p>
+                      <a class="repo-option-row repo-option-row-secondary" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">
+                        <span class="repo-card-label">Gate</span>
+                        <strong>Test downstream gate</strong>
+                        <small>Portkey and ProofGraph preview</small>
+                      </a>
                     </div>
-                    <div class="permission-row compact" aria-label="Requested permissions">
-                      <span class="permission-pill allowed">read issues</span>
-                      <span class="permission-pill review">comment</span>
-                      <span class="permission-pill blocked">create labels</span>
-                    </div>
-                    <button type="button" class="btn-primary repo-primary-action" id="btn-run-repo-proof" disabled>
-                      Review access
-                    </button>
-                    <p class="repo-status-line" id="repo-cockpit-status">Connect and index one repo before generating a packet.</p>
-                  </section>
-                </div>
 
-                <aside class="repo-ask-coach" id="repo-ask-coach" aria-label="Ask IA Coach">
-                  <span class="repo-card-label">Ask IA Coach</span>
-                  <h3>Current read</h3>
-                  <p id="repo-coach-read">Connect GitHub or use the demo repo. IA will answer from the current ReviewRun, not raw agent intent.</p>
-                  <div class="repo-coach-state-grid" aria-label="Ask IA safety state">
-                    <div><span>Truth source</span><strong>ReviewRun</strong></div>
-                    <div><span>Approval</span><strong>false</strong></div>
-                    <div><span>Writes</span><strong>false</strong></div>
-                  </div>
-                  <p class="repo-coach-invariant">Raw agent intent is not trusted. Proof changes packet state.</p>
-                  <div class="repo-coach-answer" id="repo-coach-answer" aria-live="polite" hidden></div>
-                  <div class="packet-coach-quick-chips coach-chip-followup" id="repo-coach-followup-chips" aria-label="Follow-up Ask IA suggestions" hidden></div>
-                  <p class="packet-coach-label">Ask IA about this review</p>
-                  <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Contextual Ask IA suggestions"></div>
-                  <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Run the repo access review first; Ask IA answers from the packet, not raw agent intent.</p>
-                </aside>
-              </div>
-
-              <section class="repo-proof-result" id="repo-proof-result" aria-label="Repo access review result" hidden>
-                <div class="repo-result-header">
-                  <div class="repo-verdict-card review" id="repo-cockpit-verdict">
-                    <span>IA verdict</span>
-                    <strong>Review required</strong>
-                  </div>
-                  <article class="repo-card repo-action-card" id="repo-next-action-card">
-                    <span class="repo-card-label">Next human action</span>
-                    <h3>Run IA to name the review path.</h3>
-                    <p>IA will show what can stay scoped, what remains blocked, and who needs to review before access moves.</p>
-                  </article>
-                </div>
-
-                <article class="repo-card repo-proof-resolution-card" id="repo-proof-resolution-card" aria-label="Missing proof checklist">
-                  <span class="repo-card-label">Missing proof</span>
-                  <h3>Attach proof before rerun.</h3>
-                  <p>Checking proof does not approve access. It marks human evidence as attached and requires a packet rerun.</p>
-                  <div class="repo-proof-checklist" aria-label="Human proof items"></div>
-                  <button type="button" class="btn-primary repo-proof-attach-action" disabled>Attach checked proof</button>
-                  <div class="repo-review-delta" aria-label="Review delta" hidden></div>
-                  <p class="repo-proof-attach-status" role="status" aria-live="polite">No proof attached. Verdict unchanged.</p>
-                </article>
-
-                <div class="repo-proof-grid" aria-label="Packet-backed review outputs">
-                  <details class="repo-card repo-proof-card repo-proof-accordion" id="repo-sponsor-proof-card">
-                    <summary>
-                      <span class="repo-card-label">ProofGraph</span>
-                      <strong>Packet authority map</strong>
-                    </summary>
-                    <div class="repo-accordion-body">
-                      <p>Generated from the current ReviewRun. Sponsors contribute proof only; IA keeps the decision locked.</p>
-                      <a class="btn-ghost repo-secondary-link" id="repo-proofgraph-link" href="/proofgraph?fixture=support_triage_agent">Open ProofGraph</a>
-                    </div>
-                  </details>
-
-                  <details class="repo-card repo-proof-card repo-proof-accordion" id="repo-portkey-card">
-                    <summary>
-                      <span class="repo-card-label">Portkey</span>
-                      <strong>Gate preview</strong>
-                    </summary>
-                    <div class="repo-accordion-body">
-                      <p>Portkey asks IA for the packet-backed verdict before model or spend movement.</p>
-                    </div>
-                  </details>
-
-                  <details class="repo-card repo-graph-card repo-proof-accordion" id="repo-advanced-card">
-                    <summary>
-                      <span class="repo-card-label">Advanced</span>
-                      <strong>Packet and tools</strong>
-                    </summary>
-                    <div class="repo-accordion-body">
-                      <p>Raw packet and workbench surfaces stay behind this advanced drawer.</p>
-                      <div class="repo-secondary-link-row">
-                        <button type="button" class="btn-ghost" id="btn-export-repo-brief" disabled>Copy review brief</button>
-                        <a class="btn-ghost repo-secondary-link" href="/packet?fixture=support_triage_agent&autorun=1">Inspect packet</a>
-                        <a class="btn-ghost repo-secondary-link" href="/workbench?fixture=support_triage_agent&autorun=1">Open workbench</a>
-                        <a class="btn-ghost repo-secondary-link" href="/packet?fixture=ai_spend_budget_overrun&autorun=1">Review AI spend</a>
-                        <a class="btn-ghost repo-secondary-link" href="/packet?fixture=mcp_tool_blast_radius&autorun=1">Review tool access</a>
+                    <section class="repo-index-summary" id="repo-index-summary" aria-label="Selected repository index summary" hidden>
+                      <div>
+                        <span class="repo-card-label">Selected repo</span>
+                        <strong id="repo-selected-name">No repo selected</strong>
                       </div>
+                      <div>
+                        <span class="repo-card-label">Index</span>
+                        <strong id="repo-indexed-state">Waiting</strong>
+                      </div>
+                      <div>
+                        <span class="repo-card-label">ReviewRun</span>
+                        <strong id="repo-review-run-id">Not created</strong>
+                      </div>
+                    </section>
+
+                    <section class="repo-review-request" id="repo-review-request" aria-label="Repo access request" hidden>
+                      <div class="repo-request-copy">
+                        <span class="repo-card-label">Access request</span>
+                        <h3>support-triage-bot wants repo access</h3>
+                        <p><strong id="repo-request-repo-name">Choose a GitHub repo first.</strong> · read issues is allowed, comment needs review, create labels stays blocked.</p>
+                      </div>
+                      <div class="permission-row compact" aria-label="Requested permissions">
+                        <span class="permission-pill allowed">Allowed: read issues</span>
+                        <span class="permission-pill review">Review: comment</span>
+                        <span class="permission-pill blocked">Blocked: create labels</span>
+                      </div>
+                      <button type="button" class="btn-primary repo-primary-action" id="btn-run-repo-proof" disabled>
+                        Review access
+                      </button>
+                      <p class="repo-status-line" id="repo-cockpit-status">Connect and index one repo before generating a packet.</p>
+                    </section>
+                  </div>
+
+                  <section class="repo-proof-result" id="repo-proof-result" aria-label="Repo access review result" hidden>
+                    <div class="repo-result-header">
+                      <div class="repo-verdict-card review" id="repo-cockpit-verdict">
+                        <span>IA verdict</span>
+                        <strong>Review required</strong>
+                      </div>
+                      <article class="repo-card repo-action-card" id="repo-next-action-card">
+                        <span class="repo-card-label">Next human action</span>
+                        <h3>Run IA to name the review path.</h3>
+                        <p>IA will show what can stay scoped, what remains blocked, and who needs to review before access moves.</p>
+                      </article>
                     </div>
-                  </details>
+
+                    <article class="repo-card repo-proof-resolution-card" id="repo-proof-resolution-card" aria-label="Missing proof checklist">
+                      <div class="repo-proof-resolution-copy">
+                        <span class="repo-card-label">Missing proof</span>
+                        <h3>Use prepared proof before rerun.</h3>
+                        <p>Review prepared human proof receipts. Using them attaches evidence only; it does not approve access.</p>
+                      </div>
+                      <div class="repo-proof-checklist" aria-label="Human proof items"></div>
+                      <button type="button" class="btn-primary repo-proof-attach-action" disabled>Use prepared proof for demo</button>
+                      <div class="repo-review-delta" aria-label="Review delta" hidden></div>
+                      <p class="repo-proof-attach-status" role="status" aria-live="polite">No prepared proof used yet. Verdict unchanged.</p>
+                    </article>
+
+                    <div class="repo-infra-rows" aria-label="Downstream outputs">
+                      <details class="repo-card repo-proof-card repo-proof-accordion repo-infra-row" id="repo-sponsor-proof-card">
+                        <summary>
+                          <span class="repo-card-label">ProofGraph</span>
+                          <strong>Waiting for packet</strong>
+                        </summary>
+                        <div class="repo-accordion-body">
+                          <p>Generated from the current ReviewRun. Sponsors contribute proof only; IA keeps the decision locked.</p>
+                          <a class="btn-ghost repo-secondary-link" id="repo-proofgraph-link" href="/proofgraph?fixture=support_triage_agent">Open ProofGraph</a>
+                        </div>
+                      </details>
+
+                      <details class="repo-card repo-proof-card repo-proof-accordion repo-infra-row" id="repo-portkey-card">
+                        <summary>
+                          <span class="repo-card-label">Portkey</span>
+                          <strong>Waiting for packet</strong>
+                        </summary>
+                        <div class="repo-accordion-body">
+                          <p>Portkey asks IA for the packet-backed verdict before model or spend movement.</p>
+                        </div>
+                      </details>
+                    </div>
+                  </section>
                 </div>
+
+                <aside class="repo-ask-sidecar" id="repo-ask-coach" aria-label="Ask IA" data-coach-collapsed="false">
+                  <div class="repo-coach-head">
+                    <div>
+                      <span class="repo-card-label">Ask IA</span>
+                      <h3>Review coach</h3>
+                    </div>
+                    <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Collapse Ask IA coach">Hide</button>
+                  </div>
+                  <div class="repo-coach-stage-line" aria-live="polite">
+                    <span>Stage</span>
+                    <strong id="repo-coach-stage">Connect repo</strong>
+                  </div>
+                  <div class="repo-coach-body" id="repo-coach-body">
+                    <div class="repo-coach-current-read">
+                      <span>Current read</span>
+                      <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
+                    </div>
+                    <div class="repo-coach-answer" id="repo-coach-answer" aria-live="polite" hidden></div>
+                    <div class="packet-coach-quick-chips coach-chip-followup" id="repo-coach-followup-chips" aria-label="Follow-up Ask IA suggestions" hidden></div>
+                    <form class="repo-coach-form" id="repo-coach-form">
+                      <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
+                      <button type="submit" class="btn-primary">Ask</button>
+                    </form>
+                    <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Contextual Ask IA suggestions"></div>
+                    <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
+                  </div>
+                </aside>
               </section>
             </section>
           </div>
@@ -575,6 +587,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=55"></script>
+    <script src="/static/app.js?v=70"></script>
   </body>
 </html>

@@ -32,6 +32,8 @@ REVIEW_RUN_RECORD_SCHEMA_VERSION = "review_run_record.v0"
 REVIEW_RUN_PACKET_SCHEMA_VERSION = "review_run_packet.v0"
 REVIEW_RUN_COACH_SCHEMA_VERSION = "review_run_coach_answer.v0"
 REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION = "review_run_proofgraph.v0"
+REVIEW_RUN_PORTKEY_GUARDRAIL_SCHEMA_VERSION = "review_run_portkey_guardrail_test.v0"
+REVIEW_RUN_PROOF_LENSES_SCHEMA_VERSION = "review_run_proof_lenses.v0"
 DEFAULT_REVIEW_RUN_STORE_DIR = ROOT_DIR / "state" / "review_runs"
 DEFAULT_REVIEW_RUN_ACCESS_REQUEST = "support-triage-bot needs to read issues, comment, and create labels."
 
@@ -163,6 +165,65 @@ def _default_missing_proof() -> list[dict[str, str]]:
     ]
 
 
+REVIEW_RUN_PROOF_LENS_DEFINITIONS = (
+    {
+        "lens_id": "support_ops",
+        "label": "Support Ops",
+        "owner_group": "Support Ops",
+        "applies_to": "agent_access_review",
+        "proof_item_ids": ("repo_owner_approval",),
+        "review_focus": "Repo/workflow owner approval",
+        "unblocks_scope": ("comment/create labels in selected repo",),
+        "prepared_evidence_note": "Support Ops confirmed repo-owner approval for selected repo only.",
+        "next_human_action": "Attach repo-owner approval from the workflow owner.",
+    },
+    {
+        "lens_id": "engineering",
+        "label": "Engineering",
+        "owner_group": "Engineering",
+        "applies_to": "agent_access_review",
+        "proof_item_ids": ("rollback_offswitch",),
+        "review_focus": "Rollback/off-switch proof",
+        "unblocks_scope": ("comment/create labels in selected repo",),
+        "prepared_evidence_note": "Engineering provided rollback/off-switch proof for support-triage-bot.",
+        "next_human_action": "Attach rollback/off-switch proof before rerun.",
+    },
+    {
+        "lens_id": "security",
+        "label": "Security",
+        "owner_group": "Security",
+        "applies_to": "agent_access_review",
+        "proof_item_ids": ("environment_boundary",),
+        "review_focus": "Secrets/org-wide boundary",
+        "unblocks_scope": ("selected-repo scoped movement only",),
+        "prepared_evidence_note": "Security confirmed selected-repo boundary; secrets and org-wide access remain blocked.",
+        "next_human_action": "Attach environment-boundary proof; secrets and org-wide access stay blocked.",
+    },
+    {
+        "lens_id": "finance_procurement",
+        "label": "Finance / Procurement",
+        "owner_group": "Finance / Procurement",
+        "applies_to": "spend_review",
+        "proof_item_ids": (),
+        "review_focus": "Budget owner and vendor-spend evidence",
+        "unblocks_scope": (),
+        "prepared_evidence_note": "",
+        "next_human_action": "Not required for this repo-access lane.",
+    },
+    {
+        "lens_id": "legal",
+        "label": "Legal",
+        "owner_group": "Legal",
+        "applies_to": "data_class_review",
+        "proof_item_ids": (),
+        "review_focus": "Data-class and retention evidence",
+        "unblocks_scope": (),
+        "prepared_evidence_note": "",
+        "next_human_action": "Not required for this repo-access lane.",
+    },
+)
+
+
 def _proof_lookup(run: "ReviewRun") -> dict[str, dict[str, Any]]:
     lookup: dict[str, dict[str, Any]] = {}
     for item in run.missing_proof or _default_missing_proof():
@@ -183,6 +244,78 @@ def _attached_proof_ids(run: "ReviewRun") -> set[str]:
         if proof_id:
             proof_ids.add(proof_id)
     return proof_ids
+
+
+def build_review_run_proof_lenses(run: "ReviewRun", packet_reference: Mapping[str, Any]) -> dict[str, Any]:
+    """Project missing proof into human owner lenses without approving access."""
+    proof_lookup = _proof_lookup(run)
+    attached_ids = _attached_proof_ids(run)
+    movement = normalize_movement_classes(run.movement_classes)
+    lenses: list[dict[str, Any]] = []
+    active_lane = "agent_access_review"
+    for definition in REVIEW_RUN_PROOF_LENS_DEFINITIONS:
+        proof_item_ids = tuple(definition["proof_item_ids"])
+        applies_to = str(definition["applies_to"])
+        active = applies_to == active_lane and bool(proof_item_ids)
+        missing_items = [
+            proof_lookup[proof_id]
+            for proof_id in proof_item_ids
+            if proof_id in proof_lookup and proof_id not in attached_ids
+        ]
+        attached_items = [
+            proof_lookup.get(proof_id, {"id": proof_id, "label": proof_id})
+            for proof_id in proof_item_ids
+            if proof_id in attached_ids
+        ]
+        prepared_items = [
+            {
+                "id": proof_id,
+                "label": proof_lookup.get(proof_id, {"label": proof_id})["label"],
+                "evidence_note": definition["prepared_evidence_note"],
+                "approves_access": False,
+                "grants_permissions": False,
+                "mutates_downstream_policy": False,
+            }
+            for proof_id in proof_item_ids
+            if proof_id in proof_lookup
+        ]
+        lenses.append(
+            {
+                "lens_id": definition["lens_id"],
+                "label": definition["label"],
+                "owner_group": definition["owner_group"],
+                "active": active,
+                "applies_to": applies_to,
+                "review_focus": definition["review_focus"],
+                "proof_item_ids": list(proof_item_ids),
+                "missing_proof": missing_items,
+                "attached_proof": attached_items,
+                "blocked_claims": movement["blocked"] if active else [],
+                "unblocks_scope": list(definition["unblocks_scope"]),
+                "prepared_proof_items": prepared_items,
+                "next_human_action": definition["next_human_action"],
+                "safety_note": "This lens names human proof only. It does not approve, grant, write, mutate, or dispatch.",
+            }
+        )
+    return _sanitize_public_value(
+        {
+            "schema_version": REVIEW_RUN_PROOF_LENSES_SCHEMA_VERSION,
+            "run_id": run.run_id,
+            "stage": run.stage,
+            "active_lane": active_lane,
+            "selected_repo": (run.selected_repo or {}).get("full_name") or (run.selected_repo or {}).get("name"),
+            "packet_reference": dict(packet_reference),
+            "lenses": lenses,
+            "guardrails": {
+                "read_only": True,
+                "does_not_approve": True,
+                "proof_attachment_changes_verdict": False,
+                "rerun_required_for_verdict_change": True,
+                "portkey_policy_mutation_allowed": False,
+                "external_writes": False,
+            },
+        }
+    )
 
 
 def _default_safety_invariants() -> dict[str, bool]:
@@ -206,7 +339,7 @@ def _ask_ia_state(stage: str, *, run_id: str, selected_repo: Optional[dict[str, 
     repo_name = (selected_repo or {}).get("full_name") or (selected_repo or {}).get("name") or None
     next_actions = {
         "repo_not_connected": "Connect GitHub or use the demo repo.",
-        "repo_selected": "Describe what the agent wants to do in this repo.",
+        "repo_selected": "Click Review access to generate the packet for this selected repo.",
         "request_entered": "Generate the IA Packet.",
         "packet_generated": "Collect sponsor proof.",
         "sponsor_proof_collected": "Preview the Portkey gate.",
@@ -880,12 +1013,16 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
         "run_id": run.run_id,
         "source_of_truth": "ReviewRun",
     }
+    proof_lenses = build_review_run_proof_lenses(run, packet_reference)
     next_action = (
         "Export the updated packet brief and route the scoped allow-with-policy review."
         if ready_to_export
         else "Proof attached. Regenerate the packet before any verdict or Portkey state can change."
         if ready_for_rerun
-        else "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+        else (
+            "Attach Support Ops repo-owner approval, Engineering rollback/off-switch proof, "
+            "and Security environment-boundary proof, then rerun review."
+        )
     )
     brief_lines = [
         f"ReviewRun `{run.run_id}` generated packet `{packet.get('packet_id')}` for `{repo_name}`.",
@@ -956,7 +1093,9 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
             "verdict_changed": bool(review_delta.get("verdict_changed")),
             "portkey_changed": bool(review_delta.get("portkey_changed")),
             "next_human_action": next_action,
+            "owner_lenses": proof_lenses,
         },
+        "proof_lenses": proof_lenses,
         "review_delta": {
             "schema_version": "review_run_delta.v0",
             "same_request": bool(review_delta.get("same_request")),
@@ -991,9 +1130,157 @@ def review_run_packet_projection(run: ReviewRun) -> dict[str, Any]:
     }
 
 
+def build_review_run_portkey_guardrail_test(
+    run: ReviewRun,
+    *,
+    elapsed_ms: int = 0,
+    generated_at: Optional[str] = None,
+) -> dict[str, Any]:
+    """Build a read-only Portkey guardrail test from the current ReviewRun packet."""
+    packet_projection = review_run_packet_projection(run)
+    packet = run.packet or {}
+    packet_id = packet.get("packet_id")
+    revision_id = packet.get("revision_id")
+    if not packet_id or not revision_id:
+        raise ValueError("Portkey guardrail test requires a generated packet")
+
+    timestamp = generated_at or _utcnow()
+    movement = normalize_movement_classes(run.movement_classes)
+    missing_labels = _missing_proof_labels(run.missing_proof)
+    requested_mode = "scoped_validation"
+    packet_ready = run.stage == "ready_to_export" and packet.get("verdict") == "ready_with_gates"
+    preview_verdict = (run.portkey_preview or {}).get("portkey_guardrail_response", {}).get("verdict")
+    allowed = bool(packet_ready and preview_verdict is True)
+    reason = (
+        "packet_allows_scoped_review_with_policy"
+        if allowed
+        else "packet_not_ready_for_portkey_movement"
+    )
+    deny_reasons = (
+        []
+        if allowed
+        else [
+            reason,
+            *[f"missing_proof:{label}" for label in missing_labels[:4]],
+            *[f"blocked_scope:{scope}" for scope in movement["blocked"][:4]],
+        ]
+    )
+    packet_reference = {
+        "packet_id": str(packet_id),
+        "revision_id": str(revision_id),
+        "revision_number": int(packet.get("revision_number") or 0),
+        "content_hash": packet.get("content_hash"),
+        "run_id": run.run_id,
+        "source_of_truth": "ReviewRun",
+    }
+    safety = {
+        "read_only": True,
+        "approves_access": False,
+        "approves_spend": False,
+        "executes_external_writes": False,
+        "mutates_production": False,
+        "raw_agent_intent_trusted": False,
+        "packet_mutation_allowed": False,
+        "portkey_api_call_made": False,
+        "portkey_policy_mutation_allowed": False,
+    }
+    response = {
+        "verdict": allowed,
+        "data": {
+            "schema_version": "portkey_byo_guardrail.v0",
+            "delivery_mode": "review_run_guardrail_test",
+            "portkey_surface": "BYO Guardrails webhook",
+            "generated_at": timestamp,
+            "elapsed_ms": elapsed_ms,
+            "requested_mode": requested_mode,
+            "ia_packet_reference": packet_reference,
+            "verdict_class": packet.get("verdict"),
+            "reason": reason,
+            "deny_reasons": deny_reasons,
+            "allowed_scope": list(movement["allowed"]),
+            "review_required_scope": list(movement["review_required"]),
+            "still_blocked_scope": list(movement["blocked"]),
+            "next_human_action": packet_projection["decision"]["next_human_action"],
+            "safety": safety,
+        },
+    }
+    request_body = {
+        "eventType": "beforeRequestHook",
+        "metadata": {
+            "ia_review_run_id": run.run_id,
+            "ia_packet_id": packet_reference["packet_id"],
+            "ia_revision_id": packet_reference["revision_id"],
+            "ia_content_hash": packet_reference["content_hash"],
+            "ia_requested_mode": requested_mode,
+            "ia_source_of_truth": "ReviewRun",
+        },
+        "request": {
+            "metadata": {
+                "ia_review_run_id": run.run_id,
+                "ia_packet_id": packet_reference["packet_id"],
+                "ia_revision_id": packet_reference["revision_id"],
+            },
+            "model": "packet-gated-model",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Portkey asks IA whether this packet-backed movement can proceed.",
+                }
+            ],
+        },
+    }
+
+    return _sanitize_public_value(
+        {
+            "schema_version": REVIEW_RUN_PORTKEY_GUARDRAIL_SCHEMA_VERSION,
+            "run_id": run.run_id,
+            "stage": run.stage,
+            "read_only": True,
+            "dry_run": True,
+            "mode": "review_run_guardrail_test",
+            "api_call_made": False,
+            "policy_mutation_allowed": False,
+            "generated_at": timestamp,
+            "elapsed_ms": elapsed_ms,
+            "portkey_state": "Allow with policy" if allowed else "Block",
+            "verdict": allowed,
+            "reason": reason,
+            "packet_reference": packet_reference,
+            "allowed_scope": list(movement["allowed"]),
+            "review_required_scope": list(movement["review_required"]),
+            "still_blocked_scope": list(movement["blocked"]),
+            "deny_reasons": deny_reasons,
+            "next_human_action": packet_projection["decision"]["next_human_action"],
+            "portkey_request": request_body,
+            "portkey_guardrail_response": response,
+            "invariants": {
+                "read_only": True,
+                "raw_agent_intent_trusted": False,
+                "packet_remains_authority": True,
+                "packet_mutation_allowed": False,
+                "portkey_api_call_made": False,
+                "portkey_policy_mutation_allowed": False,
+                "approval_granted": False,
+                "external_writes": False,
+            },
+            "safety_anchor": "Portkey receives a packet-backed verdict. IA does not approve, write, or mutate Portkey.",
+        }
+    )
+
+
 def _review_run_repo_name(run: ReviewRun) -> str:
     repo = run.selected_repo or {}
     return str(repo.get("full_name") or repo.get("name") or "no repo selected")
+
+
+def _review_run_verdict_label(verdict: Any) -> str:
+    value = str(verdict or "not_generated")
+    labels = {
+        "not_generated": "not generated",
+        "scoped_validation_only": "Scoped validation only",
+        "ready_with_gates": "Ready with gates",
+    }
+    return labels.get(value, value.replace("_", " "))
 
 
 def _review_run_coach_prompt_kind(prompt: str) -> str:
@@ -1037,8 +1324,17 @@ def _review_run_coach_prompt_kind(prompt: str) -> str:
 
 
 def _review_run_coach_next_action(run: ReviewRun) -> str:
+    if run.stage == "repo_not_connected":
+        return "Connect GitHub or use the demo repo."
+    if run.stage == "repo_selected":
+        return "Click Review access to generate the packet for this selected repo."
+    if run.stage == "request_entered":
+        return "Generate the IA Packet."
     if run.stage in {"packet_generated", "sponsor_proof_collected", "portkey_previewed"}:
-        return "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+        return (
+            "Attach Support Ops repo-owner approval, Engineering rollback/off-switch proof, "
+            "and Security environment-boundary proof, then rerun review."
+        )
     if run.stage == "proof_attached":
         return "Regenerate the packet from the same request and attached proof."
     if run.stage == "ready_to_export":
@@ -1051,7 +1347,7 @@ def _review_run_coach_current_read(run: ReviewRun) -> str:
     repo_name = _review_run_repo_name(run)
     packet = run.packet or {}
     revision = packet.get("revision_id") or "not generated"
-    verdict = packet.get("verdict") or "not_generated"
+    verdict = _review_run_verdict_label(packet.get("verdict"))
     if run.stage == "repo_not_connected":
         return "No GitHub repo is selected yet; Ask IA is waiting for one ReviewRun."
     if run.stage == "repo_selected":
@@ -1069,15 +1365,22 @@ def _review_run_coach_blockers(run: ReviewRun) -> str:
     movement = normalize_movement_classes(run.movement_classes)
     missing_labels = _missing_proof_labels(run.missing_proof)
     still_blocked = movement["blocked"]
+    owner_summary = (
+        "Owners: Support Ops brings repo-owner approval; Engineering brings rollback/off-switch proof; "
+        "Security brings the secrets/org-wide boundary."
+    )
     if run.stage in {"repo_not_connected", "repo_selected", "request_entered"}:
         return "Movement cannot be evaluated until IA generates a packet for the selected repo."
     if run.stage == "proof_attached":
-        return "Proof is attached, but movement is still blocked until a human reruns review and creates a new packet revision."
+        return (
+            "Proof is attached, but movement is still blocked until a human reruns review and creates a new packet revision. "
+            f"{owner_summary}"
+        )
     if run.stage == "ready_to_export":
         return f"No proof debt blocks scoped movement. Still blocked: {', '.join(still_blocked) or 'none'}."
     return (
         f"Missing proof: {', '.join(missing_labels) or 'none'}. "
-        f"Blocked claims: {', '.join(still_blocked) or 'none'}."
+        f"Blocked claims: {', '.join(still_blocked) or 'none'}. {owner_summary}"
     )
 
 
@@ -1266,7 +1569,8 @@ def build_review_run_proofgraph(
         graph_state = "packet_generated"
         status_label = "Packet generated"
         next_human_action = (
-            "Attach repo-owner approval, rollback/off-switch proof, and environment boundary, then rerun review."
+            "Attach Support Ops repo-owner approval, Engineering rollback/off-switch proof, "
+            "and Security environment-boundary proof, then rerun review."
         )
 
     portkey_state = _portkey_state(run.portkey_preview, default="Block" if packet_id else "No packet")

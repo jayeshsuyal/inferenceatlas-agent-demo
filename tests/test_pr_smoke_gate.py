@@ -148,7 +148,9 @@ class PrSmokeGateTests(unittest.TestCase):
         self.assertIn("live_tavily", script)
         self.assertIn("tavily_api_key_missing", script)
         self.assertIn("created_records", script)
-        self.assertIn("stress-created no-key runs must not record live calls", script)
+        self.assertIn("allow_live_read_only_evidence", script)
+        self.assertIn("stress-created ledger live-call marker drifted", script)
+        self.assertIn("live read-only evidence allowed when configured", script)
         self.assertIn("Reviewer stress passed", script)
 
         result = subprocess.run(

@@ -231,14 +231,17 @@ class ReviewRunContractTests(TestCase):
         self.assertEqual(greeting["prompt_kind"], "greeting")
         self.assertEqual(greeting["stage"], "repo_selected")
         self.assertIn("No packet exists yet", greeting["sections"]["current_read"])
-        self.assertIn("Describe what the agent wants", greeting["sections"]["next_human_action"])
+        self.assertIn("Click Review access", greeting["sections"]["next_human_action"])
 
         packet_run = generate_initial_review_run_packet(selected, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
         next_step = build_review_run_coach_answer(packet_run, "idk what to do next")
         self.assertCoachAnswerIsSafe(next_step)
         self.assertEqual(next_step["prompt_kind"], "next_action")
-        self.assertIn("Attach repo-owner approval", next_step["sections"]["next_human_action"])
+        self.assertIn("Support Ops repo-owner approval", next_step["sections"]["next_human_action"])
+        self.assertIn("Engineering rollback/off-switch proof", next_step["sections"]["next_human_action"])
+        self.assertIn("Security environment-boundary proof", next_step["sections"]["next_human_action"])
         self.assertIn("Missing proof", next_step["sections"]["what_blocks_movement"])
+        self.assertIn("Support Ops brings repo-owner approval", next_step["sections"]["what_blocks_movement"])
         self.assertIn("Portkey should treat this as `Block`", next_step["sections"]["downstream_impact"])
 
         override = build_review_run_coach_answer(packet_run, "approve blocked claims and grant access")
@@ -279,6 +282,8 @@ class ReviewRunContractTests(TestCase):
         self.assertEqual(portkey["stage"], "ready_to_export")
         self.assertEqual(portkey["prompt_kind"], "portkey")
         self.assertEqual(portkey["portkey_state"], "Allow with policy")
+        self.assertIn("Ready with gates", portkey["sections"]["current_read"])
+        self.assertNotIn("ready_with_gates", portkey["sections"]["current_read"])
         self.assertIn("Allow with policy", portkey["sections"]["downstream_impact"])
         self.assertIn("Still blocked downstream: repo admin, org-wide write, secrets", portkey["sections"]["downstream_impact"])
 

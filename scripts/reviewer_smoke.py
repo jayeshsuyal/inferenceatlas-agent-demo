@@ -119,62 +119,69 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=38", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=22", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=70", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=49", timeout=timeout)
 
     for expected in (
-        "InferenceAtlas runway",
-        "What should IA review?",
-        "Generate the proof packet downstream systems trust before an AI agent moves.",
+        "ReviewRun",
+        "One review. One packet. One coach.",
+        "Connect a repo, generate the IA Packet, then let downstream gates read the packet before movement.",
         "Review cockpit",
-        "Current review step",
-        "Current step",
+        "repo-runway-panel",
+        "repo-option-stack",
+        "Repo access",
         "Connect GitHub",
         "Use demo repo",
-        "IA indexes only the repo you select.",
-        "Repo connected",
-        "Indexed",
+        "Connect repo",
+        "IA indexes only that repo for this ReviewRun.",
+        "Selected repo",
+        "Index",
         "ReviewRun",
         "Choose one GitHub repository",
         "Connect and index one repo before generating a packet.",
-        "Ask IA Coach",
-        "Current read",
-        "Truth source",
-        "Raw agent intent is not trusted. Proof changes packet state.",
+        "Ask IA",
+        "Review coach",
+        "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
+        "Collapse Ask IA coach",
+        "Ask what to do next...",
         "Review AI spend",
-        "Review tool access",
+        "Test downstream gate",
         "support-triage-bot wants repo access",
         "Choose a GitHub repo first.",
         "support-triage-bot",
         "Review access",
         "Next human action",
         "Missing proof",
-        "Attach proof before rerun.",
-        "Attach checked proof",
-        "No proof attached. Verdict unchanged.",
+        "Use prepared proof before rerun.",
+        "Review prepared human proof receipts. Using them attaches evidence only; it does not approve access.",
+        "Use prepared proof for demo",
+        "No prepared proof used yet. Verdict unchanged.",
         "Review delta",
         "ProofGraph",
-        "Packet authority map",
-        "Gate preview",
-        "Advanced",
-        "Packet and tools",
-        "Raw packet and workbench surfaces stay behind this advanced drawer.",
+        "Waiting for packet",
+        "Portkey",
+        "repo-infra-rows",
         "Open ProofGraph",
         "Sponsor Run",
         "composer-shell first-run-locked",
-        "Ask IA about this review",
-        "Run the repo access review first; Ask IA answers from the packet, not raw agent intent.",
+        "Ask IA guides this run. It does not approve or write.",
         "Export Portkey gate",
         "Team lenses",
     ):
         _require(expected in html, f"first-run surface missing: {expected}")
 
+    _require('aria-label="Connect repo"' in html, "repo access row must be the selected entry point")
+    _require('aria-current="step"' in html, "repo access row must show selected step state")
+    _require('class="repo-ask-sidecar"' in html, "Ask IA must be a right-side coach")
+    _require('class="repo-ask-coach repo-infra-row"' not in html, "Ask IA returned to downstream drawer")
     _require("Should this AI agent get repo access?" not in html, "old cockpit-first heading returned")
     _require("Run proof check" not in html, "old cockpit-first CTA returned")
     _require("Run IA Packet Review" not in html, "old packet-document-first CTA returned")
     _require("Open one registered AI movement request. IA shows the packet" not in html, "old first-run body returned")
     _require('class="review-lane-grid"' not in html, "old root lane selector returned")
     _require('class="review-lane-card' not in html, "old root lane cards returned")
+    _require('class="repo-proof-grid"' not in html, "root proof card grid returned")
+    _require('id="repo-advanced-card"' not in html, "root advanced drawer returned")
     _require("Welcome. Compare AI inference costs" not in js, "old noisy welcome copy returned")
     _require('const REPO_PROOF_FIXTURE = "support_triage_agent";' in js, "repo proof fixture is not locked")
     _require("loadReviewRepoList" in js, "root GitHub repo list loader missing")
@@ -205,18 +212,58 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "root Ask IA must answer from ReviewRun coach endpoint",
     )
     _require(
+        'window.open(data.redirect_url, "ia_oauth", "width=520,height=720")' in js,
+        "OAuth popup must keep opener so callback can notify the app",
+    )
+    _require(
+        "width=520,height=720,noopener" not in js,
+        "OAuth popup cannot use noopener; it breaks callback postMessage",
+    )
+    _require("handleConnectorOAuthReturn" in js, "same-tab OAuth return handler missing")
+    _require(
+        'localStorage.getItem("ia_connector_oauth_result")' in js,
+        "same-tab OAuth localStorage fallback missing",
+    )
+    _require('params.get("connector_oauth")' in js, "same-tab OAuth URL fallback missing")
+    _require('params.get("session_id")' in js, "same-tab OAuth session handoff missing")
+    _require(
+        "payload.session_id && payload.session_id !== sessionId" in js,
+        "same-tab OAuth must adopt callback session id",
+    )
+    _require('if (connectorId === "github")' in js, "OAuth poll must special-case GitHub repo loading")
+    _require('await loadReviewRepoList("");' in js, "OAuth poll must load repo list after GitHub connects")
+    _require(
         "/api/review-runs/${encodeURIComponent(runId)}/proofgraph" in js,
         "root flow must fetch dynamic ReviewRun ProofGraph",
     )
     _require("fetchReviewRunProofGraph" in js, "ReviewRun ProofGraph fetcher missing")
     _require("reviewRunProofGraphUrl" in js, "ReviewRun ProofGraph URL helper missing")
     _require("/proofgraph?review_run_id=" in js, "ProofGraph link must carry review_run_id")
-    _require("repo-proofgraph-map" in js, "ProofGraph cockpit summary missing")
+    _require("repo-proofgraph-map" not in js, "ProofGraph cockpit summary returned as text panel")
     _require("Generated from run_id" in js, "ProofGraph cockpit must show run_id source")
     _require("zero writes" in js, "ProofGraph cockpit must show zero writes")
+    _require("Open generated ProofGraph" in js, "ProofGraph must stay behind generated graph action")
     _require("sponsor_proof_trace: sponsorTrace || undefined" in js, "ReviewRun packet must preserve sponsor trace when available")
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
+    _require("proofReceiptTimestamp" in js, "proof receipt timestamp helper missing")
+    _require("proofReceiptSafetyPills" in js, "proof receipt safety helper missing")
+    _require("proofLensesForPacket" in js, "proof owner lens renderer missing")
+    _require("owner_lenses" in js, "proof owner lens payload missing")
+    _require("data-owner-lens" in js, "proof owner lens DOM hook missing")
+    _require("data-proof-owner" in js, "proof owner attach metadata missing")
+    _require("data-proof-receipt" in js, "proof receipts must expose receipt metadata")
+    _require("data-proof-timestamp" in js, "proof receipts must expose timestamp metadata")
+    _require("Prepared receipt" in js, "prepared receipt label missing")
+    _require("Attached receipt" in js, "attached receipt label missing")
+    _require("Owner: ${escapeHtml(ownerGroup)}" in js, "proof receipt owner metadata missing")
+    _require("Timestamp: ${escapeHtml(receiptTimestamp)}" in js, "proof receipt timestamp metadata missing")
+    _require("not approval" in js, "proof receipt no-approval safety chip missing")
+    _require("no writes" in js, "proof receipt no-writes safety chip missing")
+    _require("rerun required" in js, "proof receipt rerun safety chip missing")
+    _require("prepared proof receipt${checked.length === 1 ? \"\" : \"s\"} selected" in js, "proof selected-count feedback missing")
+    for owner in ("Support Ops", "Engineering", "Security"):
+        _require(owner in js, f"proof owner lens missing: {owner}")
     _require("attachReviewRunProof" in js, "proof attach handler missing")
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
     _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
@@ -226,8 +273,12 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("chip_entities" in js, "coach chip entity pinning missing")
     _require('aria-label="Contextual Ask IA suggestions"' in html, "Runway contextual coach chips missing")
     _require('aria-label="Contextual packet coach suggestions"' in html, "Packet contextual coach chips missing")
+    _require('id="repo-coach-form"' in html, "Ask IA coach form missing")
+    _require('class="repo-ask-sidecar"' in html, "Ask IA sidecar missing")
     _require("data-ask-prompt=" not in html, "static Ask IA prompt chips must be removed")
     _require("reviewDeltaRows" in js, "review delta renderer missing")
+    _require('delta.same_request ? "unchanged" : "changed"' in js, "review delta must use human-readable same-request copy")
+    _require('["Same request", delta.same_request ? "true" : "false"]' not in js, "review delta must not expose raw boolean copy")
     _require("ready_for_rerun" in js, "proof attach ready-for-rerun state missing")
     _require("Packet regenerated" in js, "rerun complete state missing")
     _require("Portkey can allow with policy" in js, "rerun Portkey allow state missing")
@@ -237,10 +288,52 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     )
     _require("source_of_truth" in js, "ReviewRun packet source of truth missing")
     _require("repoCoachRead" in js, "Ask IA Coach read state missing")
-    _require("packet generated from the selected ReviewRun" in js, "Ask IA Coach must read from ReviewRun")
-    _require("proof steps mapped" in js, "ProofGraph summary must map proof steps")
+    _require("repoCoachStage" in js, "Ask IA stage label missing")
+    _require("REVIEW_RUN_STAGE_CHROME" in js, "Ask IA stage chrome map missing")
+    _require("setReviewCoachCollapsed" in js, "Ask IA close/open controller missing")
+    _require('placeholder: "Ask what proof is missing..."' in js, "Ask IA stage placeholder missing")
+    _require(
+        "You selected ${name}. I can generate a repo-access packet next." in js,
+        "Ask IA must coach after repo selection",
+    )
+    _require(
+        "Click Review access to generate the packet for this selected repo." in js,
+        "Ask IA must name Review access as the selected-repo next action",
+    )
+    _require("GitHub live connected. Choose one repo to index." in js, "GitHub live state must match the repo picker CTA")
+    _require("Demo GitHub connected. Use demo repo, or connect live GitHub after OAuth env is loaded." in js, "demo GitHub state must not masquerade as live OAuth")
+    _require("Live GitHub OAuth env missing in this server." in js, "missing GitHub OAuth env must be visible")
+    _require("Packet ${packetName} is generated for ${selectedReviewRepoName()}. Verdict:" in js, "Ask IA must coach after packet generation")
+    _require("proofOwnerSummaryForPacket" in js, "Ask IA must summarize proof owners")
+    _require(
+        "Use prepared proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve blocked claims from chat." in js,
+        "Ask IA must explain owner-lensed proof resolution without approving",
+    )
+    _require("sponsor proof steps" in js, "ProofGraph reveal copy must preserve sponsor proof count")
+    _require("Use prepared proof for demo" in js, "proof action must disclose prepared proof behavior")
+    _require("Attach checked proof" not in js, "misleading proof attach label returned")
     _require("runRepoProofCockpit" in js, "repo proof cockpit runner missing")
     _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
+    _require("fetchReviewRunPortkeyGuardrailTest" in js, "ReviewRun Portkey guardrail test helper missing")
+    _require("/portkey/guardrail-test" in js, "ReviewRun Portkey guardrail endpoint missing in UI")
+    _require("Test Portkey guardrail" in js, "ReviewRun Portkey test CTA missing")
+    _require("effectivePortkeyDecisionLabel" in js, "Portkey verdict display label missing")
+    _require(
+        'effectivePortkeyVerdict ? "allow" : "block"' in js,
+        "Portkey verdict must render as a user-facing decision label",
+    )
+    _require(
+        js.count("<span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>") == 1,
+        "Portkey verdict outcome must render once",
+    )
+    _require(
+        "<span>Verdict</span><strong>${escapeHtml(String(effectivePortkeyVerdict))}</strong></div>" not in js,
+        "Portkey verdict must not expose raw boolean text",
+    )
+    _require(
+        "Portkey guardrail test recorded locally. No approval, no writes." in js,
+        "ReviewRun Portkey test must disclose local read-only event",
+    )
     _require("fetchRepoSponsorTrace" in js, "repo sponsor trace fetch helper missing")
     _require("renderPacketCoachReply" in js, "Ask IA packet coach renderer missing")
     _require("renderPacketTeamLenses" in js, "Team Lenses renderer missing")
@@ -259,15 +352,27 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".reply-section-heading" in css, "reply section heading CSS missing")
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(".repo-proof-cockpit" in css, "repo proof cockpit CSS missing")
-    _require(".review-cockpit-shell" in css, "review cockpit layout CSS missing")
-    _require(".repo-current-step" in css, "current review step CSS missing")
-    _require(".repo-ask-coach" in css, "Ask IA Coach CSS missing")
-    _require(".repo-coach-state-grid" in css, "Ask IA safety state CSS missing")
-    _require(".repo-coach-invariant" in css, "Ask IA invariant CSS missing")
+    _require(".repo-runway-panel" in css, "one-run runway panel CSS missing")
+    _require(".repo-option-stack" in css, "review option stack CSS missing")
+    _require(".repo-option-row" in css, "Render-style option row CSS missing")
+    _require(".repo-infra-rows" in css, "downstream infrastructure rows CSS missing")
+    _require(".repo-infra-row" in css, "downstream infrastructure row CSS missing")
+    _require(
+        ".repo-infra-row:not([open]) .repo-accordion-body" in css,
+        "downstream infrastructure rows must stay collapsed until opened",
+    )
+    _require(".repo-portkey-handoff" in css, "ReviewRun Portkey handoff CSS missing")
+    _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
+    _require(".repo-ask-sidecar" in css, "Ask IA sidecar CSS missing")
     _require(".repo-coach-answer" in css, "Ask IA answer surface CSS missing")
     _require(".repo-coach-answer-row" in css, "Ask IA answer row CSS missing")
-    _require(".repo-ask-coach .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
-    _require(".repo-ask-coach .packet-coach-status" in css, "Ask IA status must live in coach CSS")
+    _require(".repo-coach-toggle" in css, "Ask IA close/open CSS missing")
+    _require(".repo-coach-stage-line" in css, "Ask IA stage line CSS missing")
+    _require('.repo-ask-sidecar[data-coach-collapsed="true"]' in css, "Ask IA collapsed sidecar CSS missing")
+    _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in sidecar CSS")
+    _require("max-height: min(34rem, calc(100vh - 8rem));" in css, "Ask IA sidecar must stay compact")
+    _require("PR 137: recording-ready visual polish" in css, "recording polish CSS missing")
+    _require("calc(100vh - 9rem)" in css, "loaded ReviewRun recording viewport guard missing")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")
     _require(".repo-movement-grid" in css, "movement class grid CSS missing")
     _require(".repo-movement-lane.allowed" in css, "allowed movement lane CSS missing")
@@ -283,15 +388,30 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-proof-result[hidden]" in css, "repo proof result hidden state CSS missing")
     _require(".repo-proof-resolution-card" in css, "repo proof resolution card CSS missing")
     _require(".repo-proof-checklist" in css, "repo proof checklist CSS missing")
+    _require(".repo-proof-lens" in css, "repo proof owner lens CSS missing")
+    _require(".repo-proof-lens-head" in css, "repo proof owner lens heading CSS missing")
+    _require(".repo-proof-receipt" in css, "repo proof receipt CSS missing")
+    _require(".repo-proof-receipt-head" in css, "repo proof receipt heading CSS missing")
+    _require(".repo-proof-receipt-meta" in css, "repo proof receipt metadata CSS missing")
+    _require(".repo-proof-receipt-safety" in css, "repo proof receipt safety CSS missing")
     _require(".repo-proof-check.attached" in css, "repo proof attached item CSS missing")
     _require(".repo-proof-attach-action" in css, "repo proof attach CTA CSS missing")
     _require(".repo-proof-attach-status" in css, "repo proof attach status CSS missing")
     _require(".repo-review-delta" in css, "review delta CSS missing")
-    _require(".repo-proof-grid" in css, "repo proof grid CSS missing")
     _require(".repo-proof-accordion" in css, "repo proof accordion CSS missing")
     _require(".repo-accordion-body" in css, "repo accordion body CSS missing")
     _require(".repo-verdict-card.review" in css, "repo review verdict CSS missing")
-    _require("grid-template-columns: 1fr;" in css, "repo proof outputs must stack vertically")
+    _require("One-run minimal ReviewRun cockpit" in css, "one-run cockpit contract missing")
+    _require("--gloss-panel" in css, "glossy cockpit variables missing")
+    _require(
+        "body:not([data-active-tab]) .permission-pill" in css,
+        "permission pills must use the dark cockpit treatment",
+    )
+    _require(
+        "body:not([data-active-tab]) .btn-primary" in css and "#050506" in css,
+        "primary cockpit action must be glossy black",
+    )
+    _require('data-repo-selected="true"' not in html, "repo selected state must be runtime-only")
     _require('body[data-active-tab="start"] .stack' in css, "start tab must hide status pill cluster")
     _require('body[data-active-tab="start"] #btn-reset' in css, "start tab must hide reset button")
     _require(re.search(r"/static/app\.js\?v=\d+", html) is not None, "app.js cache marker missing")
@@ -652,6 +772,18 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         prefix="review_run_proofgraph_waiting.safety_boundary",
     )
 
+    portkey_before_packet = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/portkey/guardrail-test",
+        {},
+        timeout=timeout,
+        expected_status=400,
+    )
+    _require(
+        "no generated packet" in portkey_before_packet.get("detail", ""),
+        "Portkey test before packet must fail closed",
+    )
+
     selected_coach = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
@@ -706,6 +838,26 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
         ["approval_granted", "production_access", "permission_grants", "external_writes"],
         prefix="review_run_packet.safety_boundary",
     )
+    proof_lenses = packet["proof_resolution"]["owner_lenses"]
+    _require(proof_lenses["schema_version"] == "review_run_proof_lenses.v0", "ReviewRun proof lens schema drifted")
+    _require(proof_lenses["packet_reference"] == packet["packet_reference"], "proof lenses must read same packet reference")
+    active_lenses = {lens["lens_id"] for lens in proof_lenses["lenses"] if lens["active"]}
+    inactive_lenses = {lens["lens_id"] for lens in proof_lenses["lenses"] if not lens["active"]}
+    _require(active_lenses == {"support_ops", "engineering", "security"}, "active proof owner lenses drifted")
+    _require(inactive_lenses == {"finance_procurement", "legal"}, "dormant proof owner lenses drifted")
+    _require(proof_lenses["guardrails"]["does_not_approve"] is True, "proof lenses must not approve")
+    _require(
+        proof_lenses["guardrails"]["proof_attachment_changes_verdict"] is False,
+        "proof lenses cannot let proof attachment change verdict",
+    )
+    for lens in proof_lenses["lenses"]:
+        for item in lens["prepared_proof_items"]:
+            _require(item["approves_access"] is False, f"{lens['lens_id']} prepared proof approved access")
+            _require(item["grants_permissions"] is False, f"{lens['lens_id']} prepared proof granted permissions")
+            _require(
+                item["mutates_downstream_policy"] is False,
+                f"{lens['lens_id']} prepared proof mutated downstream policy",
+            )
 
     rev1_graph = _json_get(
         base_url,
@@ -723,6 +875,29 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(rev1_graph["zero_writes"] is True, "ProofGraph rev_1 must show zero writes")
     rev1_graph_hash = rev1_graph["content_hash"]
 
+    rev1_portkey = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/portkey/guardrail-test",
+        {},
+        timeout=timeout,
+    )
+    rev1_portkey_test = rev1_portkey["portkey_guardrail_test"]
+    _require(rev1_portkey["read_only"] is True, "ReviewRun Portkey test must be read-only")
+    _require(rev1_portkey_test["stage"] == "packet_generated", "rev_1 Portkey test stage drifted")
+    _require(rev1_portkey_test["portkey_state"] == "Block", "rev_1 Portkey test must block")
+    _require(rev1_portkey_test["verdict"] is False, "rev_1 Portkey verdict must be false")
+    _require(
+        rev1_portkey_test["packet_reference"]["revision_id"] == packet_run["packet"]["revision_id"],
+        "rev_1 Portkey test must use current packet revision",
+    )
+    _require("blocked_scope:create labels" in rev1_portkey_test["deny_reasons"], "rev_1 Portkey test must name blocked label scope")
+    _require(rev1_portkey_test["event_id"].startswith("portkey-guardrail-"), "rev_1 Portkey test event missing")
+    _require(rev1_portkey_test["invariants"]["portkey_api_call_made"] is False, "rev_1 Portkey test called API")
+    _require(
+        rev1_portkey_test["invariants"]["portkey_policy_mutation_allowed"] is False,
+        "rev_1 Portkey test allowed policy mutation",
+    )
+
     next_coach = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/coach",
@@ -732,12 +907,24 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(next_coach["answer"]["stage"] == "packet_generated", "coach packet stage drifted")
     _require(next_coach["answer"]["prompt_kind"] == "next_action", "coach next-step classification drifted")
     _require(
-        "Attach repo-owner approval" in next_coach["answer"]["sections"]["next_human_action"],
-        "coach next human action must name missing proof",
+        "Support Ops repo-owner approval" in next_coach["answer"]["sections"]["next_human_action"],
+        "coach next human action must name Support Ops proof owner",
+    )
+    _require(
+        "Engineering rollback/off-switch proof" in next_coach["answer"]["sections"]["next_human_action"],
+        "coach next human action must name Engineering proof owner",
+    )
+    _require(
+        "Security environment-boundary proof" in next_coach["answer"]["sections"]["next_human_action"],
+        "coach next human action must name Security proof owner",
     )
     _require(
         "Missing proof" in next_coach["answer"]["sections"]["what_blocks_movement"],
         "coach blocker must name proof debt",
+    )
+    _require(
+        "Support Ops brings repo-owner approval" in next_coach["answer"]["sections"]["what_blocks_movement"],
+        "coach blocker must map proof debt to owners",
     )
 
     override_coach = _json_post(
@@ -860,6 +1047,19 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     )
     _require(proofed_packet["proof_resolution"]["verdict_changed"] is False, "proof projection changed verdict")
     _require(proofed_packet["proof_resolution"]["portkey_changed"] is False, "proof projection changed Portkey")
+    proofed_lenses = proofed_packet["proof_resolution"]["owner_lenses"]
+    _require(
+        {lens["lens_id"] for lens in proofed_lenses["lenses"] if lens["active"]} == {"support_ops", "engineering", "security"},
+        "proofed active proof owner lenses drifted",
+    )
+    for lens in proofed_lenses["lenses"]:
+        if lens["active"]:
+            _require(len(lens["missing_proof"]) == 0, f"{lens['lens_id']} did not clear missing proof after attach")
+            _require(len(lens["attached_proof"]) == 1, f"{lens['lens_id']} did not show attached proof")
+    _require(
+        proofed_lenses["guardrails"]["proof_attachment_changes_verdict"] is False,
+        "proofed lenses allowed proof attachment to change verdict",
+    )
     _require(
         proofed_packet["compact_output"]["ready_for_rerun"] is True,
         "compact output missing ready_for_rerun",
@@ -1004,6 +1204,36 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(rev2_graph["portkey_state"] == "Allow with policy", "ProofGraph rev_2 Portkey state drifted")
     _require(rev2_graph["content_hash"] != rev1_graph_hash, "ProofGraph content hash did not change from rev_1 to rev_2")
     _require(rev2_graph["zero_writes"] is True, "ProofGraph rev_2 must show zero writes")
+
+    rev2_portkey = _json_post(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/portkey/guardrail-test",
+        {},
+        timeout=timeout,
+    )
+    rev2_portkey_test = rev2_portkey["portkey_guardrail_test"]
+    _require(rev2_portkey_test["stage"] == "ready_to_export", "rev_2 Portkey test stage drifted")
+    _require(rev2_portkey_test["portkey_state"] == "Allow with policy", "rev_2 Portkey test must allow with policy")
+    _require(rev2_portkey_test["verdict"] is True, "rev_2 Portkey verdict must be true")
+    _require(rev2_portkey_test["deny_reasons"] == [], "rev_2 Portkey test must have no deny reasons")
+    _require(
+        rev2_portkey_test["packet_reference"]["revision_id"] == rerun_run["packet"]["revision_id"],
+        "rev_2 Portkey test must use updated packet revision",
+    )
+    _require(
+        rev2_portkey_test["allowed_scope"] == ["read issues", "comment", "create labels in selected repo"],
+        "rev_2 Portkey allowed scope drifted",
+    )
+    _require(
+        rev2_portkey_test["still_blocked_scope"] == ["repo admin", "org-wide write", "secrets"],
+        "rev_2 Portkey still-blocked scope drifted",
+    )
+    _require(rev2_portkey_test["invariants"]["packet_remains_authority"] is True, "rev_2 Portkey test lost packet authority")
+    _require(rev2_portkey_test["invariants"]["portkey_api_call_made"] is False, "rev_2 Portkey test called API")
+    _require(
+        rev2_portkey_test["invariants"]["portkey_policy_mutation_allowed"] is False,
+        "rev_2 Portkey test allowed policy mutation",
+    )
 
     proofgraph_html = _read(
         base_url,

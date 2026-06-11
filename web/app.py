@@ -56,6 +56,7 @@ from agent.review_run import (
     ReviewRun,
     attach_review_run_proof,
     build_review_run_coach_answer,
+    build_review_run_portkey_guardrail_test,
     build_review_run_proofgraph,
     create_review_run,
     generate_proof_resolved_review_run_packet,
@@ -938,6 +939,47 @@ def get_review_run_proofgraph_api(run_id: str) -> dict:
     }
 
 
+@app.post("/api/review-runs/{run_id}/portkey/guardrail-test")
+def review_run_portkey_guardrail_test_api(run_id: str) -> dict:
+    """Run a read-only Portkey guardrail test against the current ReviewRun packet."""
+    run, _record = _load_review_run_or_404(run_id)
+    start = time.perf_counter()
+    try:
+        test = build_review_run_portkey_guardrail_test(run, elapsed_ms=0)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    elapsed_ms = int((time.perf_counter() - start) * 1000)
+    test["elapsed_ms"] = elapsed_ms
+    test["portkey_guardrail_response"]["data"]["elapsed_ms"] = elapsed_ms
+    event = build_portkey_guardrail_event(
+        body=test["portkey_request"],
+        response=test["portkey_guardrail_response"],
+        elapsed_ms=elapsed_ms,
+    )
+    event_path = write_portkey_guardrail_event(
+        event,
+        ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR,
+    )
+    event_summary = {
+        "event_id": event["event_id"],
+        "record_path": relative_event_path(event_path),
+        "read_only": True,
+        "api_call_made": False,
+        "policy_mutation_allowed": False,
+    }
+    test["event_id"] = event["event_id"]
+    test["guardrail_event"] = event_summary
+    test["portkey_guardrail_response"]["data"]["guardrail_event"] = event_summary
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "portkey_guardrail_test": test,
+    }
+
+
 @app.get("/api/review-runs/{run_id}")
 def get_review_run(run_id: str) -> dict:
     """Return a previously created local ReviewRun."""
@@ -1102,7 +1144,12 @@ def connector_oauth_callback_github(
         return HTMLResponse(oauth_close_html("github", False, msg))
     result = finish_github_callback(code, state)
     return HTMLResponse(
-        oauth_close_html("github", bool(result.get("ok")), result.get("message", ""))
+        oauth_close_html(
+            "github",
+            bool(result.get("ok")),
+            result.get("message", ""),
+            result.get("session_id", ""),
+        )
     )
 
 
@@ -1120,7 +1167,12 @@ def connector_oauth_callback_google(
         return HTMLResponse(oauth_close_html("google_drive", False, msg))
     result = finish_google_callback(code, state)
     return HTMLResponse(
-        oauth_close_html("google_drive", bool(result.get("ok")), result.get("message", ""))
+        oauth_close_html(
+            "google_drive",
+            bool(result.get("ok")),
+            result.get("message", ""),
+            result.get("session_id", ""),
+        )
     )
 
 
@@ -2472,11 +2524,13 @@ def proofgraph_index(
     fixture: str = Query(DEFAULT_PROOF_GRAPH_SCENARIO, description="Public access scenario to visualize."),
     review_run_id: Optional[str] = Query(None, description="Local ReviewRun id to visualize."),
 ) -> HTMLResponse:
-    if review_run_id:
-        run, _record = _load_review_run_or_404(review_run_id)
+    fixture_id = fixture if isinstance(fixture, str) else DEFAULT_PROOF_GRAPH_SCENARIO
+    run_id = review_run_id if isinstance(review_run_id, str) and review_run_id.strip() else None
+    if run_id:
+        run, _record = _load_review_run_or_404(run_id)
         return HTMLResponse(render_review_run_proof_graph_html(build_review_run_proofgraph(run)))
     try:
-        html_page = build_proof_graph_visual(fixture)
+        html_page = build_proof_graph_visual(fixture_id)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return HTMLResponse(html_page)

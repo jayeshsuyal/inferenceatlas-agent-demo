@@ -238,6 +238,7 @@ def finish_github_callback(code: str, state: str) -> dict[str, Any]:
         "github",
         {
             "status": "connected",
+            "mode": "live_oauth",
             "access_token": access,
             "scope": token_payload.get("scope", ""),
             "connected_at": _now_iso(),
@@ -284,6 +285,7 @@ def finish_google_callback(code: str, state: str) -> dict[str, Any]:
         "google_drive",
         {
             "status": "connected",
+            "mode": "live_oauth",
             "access_token": access,
             "refresh_token": token_payload.get("refresh_token", ""),
             "token_expires_at": time.time() + max(expires_in - 60, 300),
@@ -518,16 +520,28 @@ def google_access_denied_html() -> str:
     </script></body></html>"""
 
 
-def oauth_close_html(connector_id: str, ok: bool, message: str = "") -> str:
+def oauth_close_html(connector_id: str, ok: bool, message: str = "", session_id: str = "") -> str:
     cid = connector_id.replace("'", "")
     msg = (message or ("Connected!" if ok else "Sign-in failed.")).replace("<", "").replace(">", "")
+    sid = session_id.replace("<", "").replace(">", "")
     return f"""<!DOCTYPE html><html><body style="font-family:system-ui;background:#0b0e14;color:#e2e8f0;padding:2rem;max-width:420px">
     <p style="font-weight:600">{"Connected" if ok else "Sign-in failed"} — {cid}</p>
     <p style="font-size:0.85rem;color:#94a3b8">{msg}</p>
     <script>
+      const payload = {{type:"connector-oauth",connector_id:"{cid}",ok:{str(ok).lower()},
+        message:{json.dumps(msg)},session_id:{json.dumps(sid)}}};
       if (window.opener) {{
-        window.opener.postMessage({{type:"connector-oauth",connector_id:"{cid}",ok:{str(ok).lower()},
-          message:{json.dumps(msg)}}}, "*");
+        window.opener.postMessage(payload, "*");
+        setTimeout(() => window.close(), {8000 if not ok else 600});
+      }} else {{
+        try {{
+          localStorage.setItem("ia_connector_oauth_result", JSON.stringify(payload));
+        }} catch (_) {{}}
+        const qs = new URLSearchParams({{
+          connector_oauth: "{cid}",
+          ok: String({str(ok).lower()}),
+        }});
+        if ({json.dumps(sid)}) qs.set("session_id", {json.dumps(sid)});
+        setTimeout(() => window.location.replace("/?" + qs.toString()), {2500 if not ok else 700});
       }}
-      setTimeout(() => window.close(), {8000 if not ok else 600});
     </script></body></html>"""

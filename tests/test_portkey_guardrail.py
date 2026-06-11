@@ -124,6 +124,13 @@ def test_portkey_guardrail_auth_accepts_header_or_bearer_token() -> None:
     validate_portkey_guardrail_token(provided_token="Bearer demo-token", expected_token="demo-token")
 
 
+def test_portkey_guardrail_auth_uses_constant_time_comparison() -> None:
+    source = (Path(__file__).resolve().parents[1] / "agent" / "portkey_guardrail.py").read_text(
+        encoding="utf-8"
+    )
+    assert "hmac.compare_digest" in source
+
+
 def test_portkey_guardrail_api_requires_configured_auth(monkeypatch) -> None:
     monkeypatch.delenv("PORTKEY_GUARDRAIL_TOKEN", raising=False)
 

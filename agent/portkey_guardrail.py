@@ -14,6 +14,7 @@ Docs verified: 2026-06-09
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import uuid
 from datetime import datetime, timezone
@@ -66,7 +67,7 @@ def validate_portkey_guardrail_token(
     expected = (expected_token or "").strip()
     if not expected:
         raise PortkeyGuardrailAuthError("portkey_guardrail_token_not_configured")
-    if bearer_or_token(provided_token) != expected:
+    if not hmac.compare_digest(bearer_or_token(provided_token), expected):
         raise PortkeyGuardrailAuthError("invalid_portkey_guardrail_token")
 
 

@@ -144,10 +144,18 @@ const repoCoachBackdrop = document.getElementById("repo-coach-backdrop");
 const repoCoachIndexSummary = document.getElementById("repo-coach-index-summary");
 const repoCoachIndexSummaryBody = document.getElementById("repo-coach-index-summary-body");
 const reviewFlowSteps = document.getElementById("review-flow-steps");
-const reviewRunRail = document.getElementById("review-run-rail");
-const reviewRunRailToggle = document.getElementById("review-run-rail-toggle");
-const reviewRunRailList = document.getElementById("review-run-rail-list");
-const reviewRunRailSessionId = document.getElementById("review-run-rail-session-id");
+const reviewFlowReadonlyBanner = document.getElementById("review-flow-readonly-banner");
+const reviewFlowReadonlyLabel = document.getElementById("review-flow-readonly-label");
+const btnBranchReviewRunStep = document.getElementById("btn-branch-review-run-step");
+const reviewSessionHub = document.getElementById("review-session-hub");
+const reviewSessionHubBubble = document.getElementById("review-session-hub-bubble");
+const reviewSessionHubPanel = document.getElementById("review-session-hub-panel");
+const reviewSessionHubBackdrop = document.getElementById("review-session-hub-backdrop");
+const reviewSessionHubClose = document.getElementById("review-session-hub-close");
+const reviewSessionHubBadge = document.getElementById("review-session-hub-badge");
+const reviewSessionHubList = document.getElementById("review-session-hub-list");
+const reviewSessionHubSessionId = document.getElementById("review-session-hub-session-id");
+const btnNewReviewRun = document.getElementById("btn-new-review-run");
 const repoIndexTracker = document.getElementById("repo-index-tracker");
 const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
 const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
@@ -256,6 +264,7 @@ const STAGE_REASSESS_PROMPTS = {
 };
 let currentReviewRunCoachSuggestions = [];
 let reviewRunScreenOverride = localStorage.getItem(REVIEW_SCREEN_STORAGE_KEY) || null;
+let reviewRunReadOnlyScreen = null;
 const REVIEW_FLOW_STEPS = [
   { id: "repo_setup", label: "Connect & index", detail: "Choose one GitHub repo" },
   { id: "packet_decision", label: "IA Packet", detail: "Generate packet verdict" },
@@ -1863,18 +1872,154 @@ function syncReviewRunUrl({ screen = "", runId = "", replace = false } = {}) {
   else history.pushState(state, "", next);
 }
 
+function reviewRunNaturalScreenIndex(stage = reviewRunUiStage()) {
+  return REVIEW_FLOW_STEPS.findIndex((step) => step.id === reviewRunNaturalScreen(stage));
+}
+
+function isReviewRunScreenReadOnly(screenId, stage = reviewRunUiStage()) {
+  const idx = REVIEW_FLOW_STEPS.findIndex((step) => step.id === screenId);
+  const naturalIdx = reviewRunNaturalScreenIndex(stage);
+  return idx >= 0 && naturalIdx >= 0 && idx < naturalIdx;
+}
+
+function updateReviewRunReadonlyChrome() {
+  const active = reviewRunActiveScreen(reviewRunUiStage());
+  const readOnly = Boolean(reviewRunReadOnlyScreen && reviewRunReadOnlyScreen === active);
+  if (repoProofCockpit) repoProofCockpit.dataset.flowReadonly = String(readOnly);
+  if (reviewFlowReadonlyBanner) reviewFlowReadonlyBanner.hidden = !readOnly;
+  if (reviewFlowReadonlyLabel && readOnly) {
+    const label = REVIEW_FLOW_STEPS.find((step) => step.id === reviewRunReadOnlyScreen)?.label || "step";
+    reviewFlowReadonlyLabel.textContent = `Viewing “${label}” (read-only). Edit to resume from here and discard later steps.`;
+  }
+  document
+    .querySelectorAll(
+      ".repo-primary-action, .repo-proof-attach-action, [data-review-run-portkey-test], #btn-run-repo-proof, #btn-root-connect-github, #btn-root-demo-github"
+    )
+    .forEach((el) => {
+      if (readOnly) {
+        el.dataset.flowDisabled = "true";
+        el.disabled = true;
+      } else if (el.dataset.flowDisabled === "true") {
+        delete el.dataset.flowDisabled;
+      }
+    });
+  if (!readOnly) updateReviewCtaState();
+}
+
+function discardFutureFlowAfter(screenId) {
+  const order = REVIEW_FLOW_STEPS.map((step) => step.id);
+  const idx = order.indexOf(screenId);
+  if (idx < 0) return;
+
+  if (idx < order.indexOf("portkey_gate")) {
+    currentReviewRunPortkeyTest = null;
+  }
+  if (idx < order.indexOf("packet_rerun")) {
+    if (packetDetail) {
+      packetDetail = {
+        ...packetDetail,
+        review_delta: {},
+        review_run: packetDetail.review_run
+          ? { ...packetDetail.review_run, stage: "proof_attached" }
+          : packetDetail.review_run,
+      };
+    }
+    if (currentReviewRun?.packet) {
+      currentReviewRun = {
+        ...currentReviewRun,
+        stage: "proof_attached",
+        packet: { ...currentReviewRun.packet, ready_for_rerun: true },
+      };
+    }
+  }
+  if (idx < order.indexOf("proof_workbench")) {
+    currentReviewRunPortkeyTest = null;
+    if (packetDetail) {
+      packetDetail = {
+        ...packetDetail,
+        proof_resolution: {
+          ...(packetDetail.proof_resolution || {}),
+          ready_for_rerun: false,
+          attached_proof_count: 0,
+          attached_proof: [],
+          missing_proof: packetDetail.proof_resolution?.missing_proof || [],
+        },
+        review_delta: {},
+      };
+    }
+    if (currentReviewRun) {
+      currentReviewRun = {
+        ...currentReviewRun,
+        stage: "packet_generated",
+        attached_proof: [],
+        packet: currentReviewRun.packet
+          ? { ...currentReviewRun.packet, ready_for_rerun: false }
+          : currentReviewRun.packet,
+      };
+    }
+  }
+  if (idx < order.indexOf("packet_decision")) {
+    packetDetail = null;
+    packetPortkeyPreview = null;
+    packetPortkeyProofLoop = null;
+    currentReviewRunPortkeyTest = null;
+    currentReviewRunProofGraph = null;
+    if (currentReviewRun) {
+      currentReviewRun = { ...currentReviewRun, stage: "repo_selected", packet: {} };
+    }
+    if (repoProofCockpit) repoProofCockpit.dataset.loaded = "false";
+    if (repoProofResult) repoProofResult.hidden = true;
+  }
+
+  if (packetDetail) {
+    renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+  } else if (selectedReviewRepo()) {
+    setCoachForSelectedRepo(selectedReviewRepo());
+  }
+}
+
+function branchReviewRunAtScreen(screenId) {
+  if (!screenId || !reviewRunScreenAccessible(screenId)) return false;
+  const naturalIdx = reviewRunNaturalScreenIndex();
+  const targetIdx = REVIEW_FLOW_STEPS.findIndex((step) => step.id === screenId);
+  reviewRunReadOnlyScreen = null;
+  if (targetIdx >= 0 && targetIdx < naturalIdx) {
+    discardFutureFlowAfter(screenId);
+  }
+  navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
+  updateReviewRunReadonlyChrome();
+  void refreshReviewRunRail();
+  return true;
+}
+
+function viewReviewRunScreen(screenId) {
+  if (!reviewRunScreenAccessible(screenId)) return false;
+  reviewRunReadOnlyScreen = isReviewRunScreenReadOnly(screenId) ? screenId : null;
+  const ok = navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
+  updateReviewRunReadonlyChrome();
+  renderReviewFlowProgress();
+  return ok;
+}
+
 function navigateReviewRunScreen(screenId, { pushHistory = true, force = false } = {}) {
   const ctx = reviewRunFlowContext();
   if (!force && !reviewRunScreenAccessible(screenId, ctx)) return false;
   const stage = reviewRunUiStage();
-  if (screenId === reviewRunNaturalScreen(stage) && !force) {
+  const naturalScreen = reviewRunNaturalScreen(stage);
+  if (screenId === naturalScreen && !force) {
     clearReviewRunScreenOverride();
+    reviewRunReadOnlyScreen = null;
   } else {
     reviewRunScreenOverride = screenId;
+    if (!force && !isReviewRunScreenReadOnly(screenId, stage)) {
+      reviewRunReadOnlyScreen = null;
+    }
   }
   setReviewRunUiStage(stage, packetDetail);
   if (pushHistory) syncReviewRunUrl({ screen: reviewRunActiveScreen(stage) });
   persistReviewRunState();
+  updateReviewRunReadonlyChrome();
+  renderReviewFlowProgress();
   return true;
 }
 
@@ -1908,6 +2053,7 @@ function renderReviewFlowProgress() {
     else if (index < naturalIdx) btn.dataset.state = "complete";
     else if (accessible) btn.dataset.state = "available";
     else btn.dataset.state = "locked";
+    if (reviewRunReadOnlyScreen === step.id) btn.dataset.viewing = "true";
     btn.disabled = !accessible;
     btn.innerHTML = `
       <span class="review-flow-step-index">${index + 1}</span>
@@ -1916,49 +2062,113 @@ function renderReviewFlowProgress() {
         <small>${escapeHtml(step.detail)}</small>
       </span>
     `;
-    btn.addEventListener("click", () => navigateReviewRunScreen(step.id));
+    btn.addEventListener("click", () => {
+      if (index < naturalIdx) {
+        viewReviewRunScreen(step.id);
+      } else {
+        reviewRunReadOnlyScreen = null;
+        navigateReviewRunScreen(step.id);
+      }
+    });
     li.appendChild(btn);
     reviewFlowSteps.appendChild(li);
   });
 }
 
+function setReviewSessionHubExpanded(expanded) {
+  if (!reviewSessionHub) return;
+  const on = Boolean(expanded);
+  reviewSessionHub.dataset.expanded = String(on);
+  if (reviewSessionHubPanel) reviewSessionHubPanel.hidden = !on;
+  if (reviewSessionHubBackdrop) reviewSessionHubBackdrop.hidden = !on;
+  if (reviewSessionHubBubble) reviewSessionHubBubble.setAttribute("aria-expanded", String(on));
+  if (on) void refreshReviewRunRail();
+}
+
 async function refreshReviewRunRail() {
-  if (reviewRunRailSessionId) {
-    reviewRunRailSessionId.textContent = sessionId ? `${sessionId.slice(0, 10)}…` : "—";
+  if (reviewSessionHubSessionId) {
+    reviewSessionHubSessionId.textContent = sessionId ? `${sessionId.slice(0, 10)}…` : "—";
   }
-  if (!reviewRunRailList || !sessionId) return;
+  if (!reviewSessionHubList || !sessionId) return;
   try {
     const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/review-runs`);
     const data = await res.json().catch(() => ({}));
     const runs = res.ok && data.ok ? data.runs || [] : [];
-    reviewRunRailList.replaceChildren();
+    if (reviewSessionHubBadge) reviewSessionHubBadge.textContent = String(runs.length);
+    reviewSessionHubList.replaceChildren();
     if (!runs.length) {
       const empty = document.createElement("li");
-      empty.className = "review-run-rail-empty";
-      empty.textContent = "No ReviewRuns yet. Connect a repo to start.";
-      reviewRunRailList.appendChild(empty);
+      empty.className = "review-session-hub-empty";
+      empty.textContent = "No ReviewRuns yet. Connect a repo or start a new run.";
+      reviewSessionHubList.appendChild(empty);
       return;
     }
     runs.forEach((run) => {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "review-run-rail-item";
+      btn.className = "review-session-hub-item";
       if (run.run_id === currentReviewRun?.run_id) btn.dataset.active = "true";
       const repo = (run.repo_full_name || "No repo").split("/").slice(-1)[0];
       const shortId = String(run.run_id || "").replace("ia-review-run-", "").slice(0, 10);
+      const coachNote = run.coach_turns ? ` · ${run.coach_turns} coach turns` : "";
       btn.innerHTML = `
         <strong>${escapeHtml(repo)}</strong>
-        <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}</span>
+        <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}${escapeHtml(coachNote)}</span>
         <code>${escapeHtml(shortId)}</code>
       `;
-      btn.addEventListener("click", () => switchReviewRun(run.run_id));
+      btn.addEventListener("click", () => {
+        setReviewSessionHubExpanded(false);
+        void switchReviewRun(run.run_id);
+      });
       li.appendChild(btn);
-      reviewRunRailList.appendChild(li);
+      reviewSessionHubList.appendChild(li);
     });
   } catch (_) {
-    reviewRunRailList.innerHTML = `<li class="review-run-rail-empty">Could not load runs</li>`;
+    reviewSessionHubList.innerHTML = `<li class="review-session-hub-empty">Could not load runs</li>`;
   }
+}
+
+function restartReviewRunInSession() {
+  reviewRunReadOnlyScreen = null;
+  localStorage.removeItem(REVIEW_RUN_STORAGE_KEY);
+  localStorage.removeItem(SELECTED_REPO_STORAGE_KEY);
+  localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+  localStorage.removeItem(REVIEW_STAGE_STORAGE_KEY);
+  localStorage.removeItem(INDEX_JOB_STORAGE_KEY);
+  currentReviewRun = null;
+  packetDetail = null;
+  packetPortkeyPreview = null;
+  packetPortkeyProofLoop = null;
+  currentReviewRunPortkeyTest = null;
+  currentReviewRunProofGraph = null;
+  currentRepoIndexJobId = "";
+  pendingIndexSummary = "";
+  if (repoIndexPollTimer) {
+    clearInterval(repoIndexPollTimer);
+    repoIndexPollTimer = null;
+  }
+  reviewRunScreenOverride = null;
+  selectedGithubRepos = [];
+  clearReviewRunScreenOverride();
+  resetReviewRunCoachAnswer();
+  renderGithubChips();
+  renderReviewRepoSummary(null);
+  if (repoProofCockpit) {
+    repoProofCockpit.dataset.loaded = "false";
+    delete repoProofCockpit.dataset.activeScreen;
+    repoProofCockpit.dataset.flowReadonly = "false";
+  }
+  if (repoProofResult) repoProofResult.hidden = true;
+  if (repoIndexTracker) repoIndexTracker.hidden = true;
+  if (repoReviewRequest) repoReviewRequest.hidden = true;
+  if (repoIndexSummary) repoIndexSummary.hidden = true;
+  setReviewRunUiStage("repo_not_connected");
+  setCoachForNoRepo(true);
+  syncReviewRunUrl({ replace: true });
+  updateReviewRunReadonlyChrome();
+  void refreshReviewRunRail();
+  setReviewSessionHubExpanded(false);
 }
 
 async function switchReviewRun(runId) {
@@ -1970,6 +2180,7 @@ async function switchReviewRun(runId) {
   currentReviewRunPortkeyTest = null;
   currentReviewRunProofGraph = null;
   reviewRunScreenOverride = null;
+  reviewRunReadOnlyScreen = null;
   resetReviewRunCoachAnswer();
   await restoreReviewRunSession({ preferredRunId: runId });
 }
@@ -1983,17 +2194,19 @@ function initReviewRunFlowNavigation() {
       return;
     }
     if (review.screen && reviewRunScreenAccessible(review.screen)) {
-      navigateReviewRunScreen(review.screen, { pushHistory: false, force: true });
+      viewReviewRunScreen(review.screen);
     }
   });
 
-  reviewRunRailToggle?.addEventListener("click", () => {
-    if (!reviewRunRail) return;
-    const collapsed = reviewRunRail.dataset.collapsed === "true";
-    reviewRunRail.dataset.collapsed = String(!collapsed);
-    reviewRunRailToggle.setAttribute("aria-expanded", String(collapsed));
-    reviewRunRailToggle.textContent = collapsed ? "Collapse" : "Open";
-    if (collapsed) void refreshReviewRunRail();
+  reviewSessionHubBubble?.addEventListener("click", () => {
+    const expanded = reviewSessionHub?.dataset.expanded === "true";
+    setReviewSessionHubExpanded(!expanded);
+  });
+  reviewSessionHubClose?.addEventListener("click", () => setReviewSessionHubExpanded(false));
+  reviewSessionHubBackdrop?.addEventListener("click", () => setReviewSessionHubExpanded(false));
+  btnNewReviewRun?.addEventListener("click", () => restartReviewRunInSession());
+  btnBranchReviewRunStep?.addEventListener("click", () => {
+    if (reviewRunReadOnlyScreen) branchReviewRunAtScreen(reviewRunReadOnlyScreen);
   });
 }
 

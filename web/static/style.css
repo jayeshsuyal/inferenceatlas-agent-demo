@@ -8759,63 +8759,129 @@ body[data-active-tab="start"] .review-flow-progress {
   color: rgba(255, 255, 255, 0.55);
 }
 
-.review-run-rail {
-  position: fixed;
-  top: 5.5rem;
-  right: 0;
-  z-index: 70;
-  display: grid;
-  width: min(15.5rem, 42vw);
-  max-height: calc(100vh - 6.5rem);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-right: 0;
-  border-radius: 14px 0 0 14px;
-  background: rgba(5, 5, 7, 0.94);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(14px);
-  transition: transform 0.2s ease, width 0.2s ease;
-}
-
-.review-run-rail[data-collapsed="true"] {
-  width: 2.65rem;
-  transform: translateX(0);
-}
-
-.review-run-rail[data-collapsed="true"] .review-run-rail-body,
-.review-run-rail[data-collapsed="true"] .review-run-rail-head strong,
-.review-run-rail[data-collapsed="true"] .review-run-rail-head .repo-card-label {
-  display: none;
-}
-
-.review-run-rail-head {
+.review-flow-readonly-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.35rem;
-  padding: 0.55rem 0.65rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.65rem;
+  margin-top: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.review-run-rail-toggle {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
-  border-radius: 999px;
-  padding: 0.2rem 0.55rem;
-  font-size: 0.72rem;
+.review-flow-readonly-label {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.review-flow-step[data-state="complete"] {
   cursor: pointer;
-  white-space: nowrap;
 }
 
-.review-run-rail-body {
-  min-height: 0;
-  overflow: auto;
-  padding: 0.55rem 0.65rem 0.75rem;
+.review-flow-step[data-viewing="true"] {
+  outline: 2px solid rgba(255, 255, 255, 0.22);
+  outline-offset: 1px;
+}
+
+.repo-proof-cockpit[data-flow-readonly="true"] .repo-primary-action,
+.repo-proof-cockpit[data-flow-readonly="true"] .repo-proof-attach-action,
+.repo-proof-cockpit[data-flow-readonly="true"] [data-review-run-portkey-test],
+.repo-proof-cockpit[data-flow-readonly="true"] #btn-run-repo-proof,
+.repo-proof-cockpit[data-flow-readonly="true"] #btn-root-connect-github,
+.repo-proof-cockpit[data-flow-readonly="true"] #btn-root-demo-github {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.review-session-hub {
+  position: fixed;
+  top: 5.35rem;
+  right: 1.15rem;
+  z-index: 76;
+}
+
+.review-session-hub-bubble {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.16), transparent 55%),
+    rgba(5, 5, 7, 0.96);
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+
+.review-session-hub-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.review-session-hub-badge {
+  position: absolute;
+  top: -0.15rem;
+  right: -0.15rem;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15rem;
+  text-align: center;
+  background: #fff;
+  color: #050506;
+}
+
+.review-session-hub-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 74;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+}
+
+.review-session-hub-panel {
+  position: absolute;
+  top: calc(100% + 0.55rem);
+  right: 0;
   display: grid;
   gap: 0.45rem;
+  width: min(18rem, calc(100vw - 2.3rem));
+  max-height: min(28rem, calc(100vh - 8rem));
+  overflow: auto;
+  padding: 0.65rem 0.7rem 0.8rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(5, 5, 7, 0.97);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.55);
 }
 
-.review-run-rail-session {
+.review-session-hub-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.review-session-hub-close {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.review-session-hub-session {
   display: grid;
   gap: 0.15rem;
   margin: 0;
@@ -8823,20 +8889,26 @@ body[data-active-tab="start"] .review-flow-progress {
   color: rgba(255, 255, 255, 0.65);
 }
 
-.review-run-rail-session code {
+.review-session-hub-session code {
   font-size: 0.68rem;
   color: rgba(255, 255, 255, 0.85);
   word-break: break-all;
 }
 
-.review-run-rail-hint {
+.review-session-hub-hint {
   margin: 0;
   font-size: 0.72rem;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.55);
 }
 
-.review-run-rail-list {
+.review-session-hub-new-run {
+  width: 100%;
+  font-size: 0.82rem !important;
+  padding: 0.45rem 0.65rem !important;
+}
+
+.review-session-hub-list {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -8844,7 +8916,7 @@ body[data-active-tab="start"] .review-flow-progress {
   gap: 0.35rem;
 }
 
-.review-run-rail-item {
+.review-session-hub-item {
   display: grid;
   gap: 0.12rem;
   width: 100%;
@@ -8857,27 +8929,27 @@ body[data-active-tab="start"] .review-flow-progress {
   cursor: pointer;
 }
 
-.review-run-rail-item[data-active="true"] {
+.review-session-hub-item[data-active="true"] {
   border-color: rgba(255, 255, 255, 0.28);
   background: rgba(255, 255, 255, 0.1);
 }
 
-.review-run-rail-item strong {
+.review-session-hub-item strong {
   font-size: 0.8rem;
 }
 
-.review-run-rail-item span {
+.review-session-hub-item span {
   font-size: 0.7rem;
   color: rgba(255, 255, 255, 0.58);
   text-transform: capitalize;
 }
 
-.review-run-rail-item code {
+.review-session-hub-item code {
   font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.45);
 }
 
-.review-run-rail-empty {
+.review-session-hub-empty {
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.55);
   padding: 0.35rem 0.1rem;
@@ -8888,18 +8960,12 @@ body[data-active-tab="start"] .review-flow-progress {
     grid-template-columns: 1fr;
   }
 
-  .review-run-rail {
-    top: auto;
-    bottom: 0;
-    max-height: 40vh;
-    width: 100%;
-    border-radius: 14px 14px 0 0;
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
+  .review-session-hub {
+    top: 4.85rem;
+    right: 0.65rem;
   }
 
-  .review-run-rail[data-collapsed="true"] {
-    width: 100%;
-    max-height: 2.75rem;
-    overflow: hidden;
+  .review-session-hub-panel {
+    width: min(18rem, calc(100vw - 1.3rem));
   }
 }

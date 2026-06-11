@@ -209,6 +209,10 @@
 
               <nav class="review-flow-progress" id="review-flow-progress" aria-label="ReviewRun progress">
                 <ol class="review-flow-steps" id="review-flow-steps"></ol>
+                <div class="review-flow-readonly-banner" id="review-flow-readonly-banner" hidden>
+                  <p class="review-flow-readonly-label" id="review-flow-readonly-label">Viewing a completed step (read-only).</p>
+                  <button type="button" class="btn-ghost" id="btn-branch-review-run-step">Edit this step</button>
+                </div>
               </nav>
 
               <section class="repo-runway-panel" aria-label="Review cockpit">
@@ -641,28 +645,39 @@
       </main>
     </div>
 
-    <aside class="review-run-rail" id="review-run-rail" data-collapsed="true" aria-label="ReviewRun queue">
-      <div class="review-run-rail-head">
-        <div>
-          <span class="repo-card-label">Session</span>
-          <strong>Runs &amp; chats</strong>
+    <div class="review-session-hub" id="review-session-hub" data-expanded="false">
+      <button
+        type="button"
+        class="review-session-hub-bubble"
+        id="review-session-hub-bubble"
+        aria-expanded="false"
+        aria-controls="review-session-hub-panel"
+        aria-label="Open session runs and chats"
+      >
+        <span class="review-session-hub-icon" aria-hidden="true">◈</span>
+        <span class="review-session-hub-badge" id="review-session-hub-badge">0</span>
+      </button>
+      <div class="review-session-hub-panel" id="review-session-hub-panel" hidden>
+        <div class="review-session-hub-head">
+          <div>
+            <span class="repo-card-label">Session</span>
+            <strong>Runs &amp; chats</strong>
+          </div>
+          <button type="button" class="review-session-hub-close" id="review-session-hub-close" aria-label="Close session panel">×</button>
         </div>
-        <button type="button" class="review-run-rail-toggle" id="review-run-rail-toggle" aria-expanded="false" aria-controls="review-run-rail-body">
-          Open
-        </button>
-      </div>
-      <div class="review-run-rail-body" id="review-run-rail-body">
-        <p class="review-run-rail-session">
+        <p class="review-session-hub-session">
           <span>Session id</span>
-          <code id="review-run-rail-session-id">—</code>
+          <code id="review-session-hub-session-id">—</code>
         </p>
-        <p class="review-run-rail-hint">Each repo selection creates a durable ReviewRun. Switch runs without losing packet state on the server.</p>
-        <ul class="review-run-rail-list" id="review-run-rail-list" role="list"></ul>
+        <p class="review-session-hub-hint">One session can hold many ReviewRuns. Each repo you connect starts a new run. Coach chats stay tied to the active run.</p>
+        <button type="button" class="btn-primary review-session-hub-new-run" id="btn-new-review-run">New run in session</button>
+        <ul class="review-session-hub-list" id="review-session-hub-list" role="list"></ul>
       </div>
-    </aside>
+      <div class="review-session-hub-backdrop" id="review-session-hub-backdrop" hidden></div>
+    </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/app.js?v=80"></script>
+    <script src="/static/app.js?v=81"></script>
   </body>
 </html>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=45" />
+    <link rel="stylesheet" href="/static/style.css?v=46" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -289,13 +289,13 @@
                     <article class="repo-card repo-proof-resolution-card" id="repo-proof-resolution-card" aria-label="Missing proof checklist">
                       <div class="repo-proof-resolution-copy">
                         <span class="repo-card-label">Missing proof</span>
-                        <h3>Attach proof before rerun.</h3>
-                        <p>Checking proof does not approve access. It marks human evidence as attached and requires a packet rerun.</p>
+                        <h3>Use prepared proof before rerun.</h3>
+                        <p>Select prepared human proof receipts. This does not approve access; it only marks evidence for a packet rerun.</p>
                       </div>
                       <div class="repo-proof-checklist" aria-label="Human proof items"></div>
-                      <button type="button" class="btn-primary repo-proof-attach-action" disabled>Attach checked proof</button>
+                      <button type="button" class="btn-primary repo-proof-attach-action" disabled>Use prepared proof for demo</button>
                       <div class="repo-review-delta" aria-label="Review delta" hidden></div>
-                      <p class="repo-proof-attach-status" role="status" aria-live="polite">No proof attached. Verdict unchanged.</p>
+                      <p class="repo-proof-attach-status" role="status" aria-live="polite">No prepared proof used yet. Verdict unchanged.</p>
                     </article>
 
                     <div class="repo-infra-rows" aria-label="Downstream outputs">
@@ -581,6 +581,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=64"></script>
+    <script src="/static/app.js?v=65"></script>
   </body>
 </html>

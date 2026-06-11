@@ -150,9 +150,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Review access",
         "Next human action",
         "Missing proof",
-        "Attach proof before rerun.",
-        "Attach checked proof",
-        "No proof attached. Verdict unchanged.",
+        "Use prepared proof before rerun.",
+        "Use prepared proof for demo",
+        "No prepared proof used yet. Verdict unchanged.",
         "Review delta",
         "ProofGraph",
         "Waiting for packet",
@@ -236,9 +236,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("fetchReviewRunProofGraph" in js, "ReviewRun ProofGraph fetcher missing")
     _require("reviewRunProofGraphUrl" in js, "ReviewRun ProofGraph URL helper missing")
     _require("/proofgraph?review_run_id=" in js, "ProofGraph link must carry review_run_id")
-    _require("repo-proofgraph-map" in js, "ProofGraph cockpit summary missing")
+    _require("repo-proofgraph-map" not in js, "ProofGraph cockpit summary returned as text panel")
     _require("Generated from run_id" in js, "ProofGraph cockpit must show run_id source")
     _require("zero writes" in js, "ProofGraph cockpit must show zero writes")
+    _require("Open generated ProofGraph" in js, "ProofGraph must stay behind generated graph action")
     _require("sponsor_proof_trace: sponsorTrace || undefined" in js, "ReviewRun packet must preserve sponsor trace when available")
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
@@ -265,17 +266,22 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     )
     _require("source_of_truth" in js, "ReviewRun packet source of truth missing")
     _require("repoCoachRead" in js, "Ask IA Coach read state missing")
-    _require("You selected ${name}. Next: click Review access to generate the IA Packet." in js, "Ask IA must coach after repo selection")
+    _require(
+        "You selected ${name}. Should I generate the repo-access packet next?" in js,
+        "Ask IA must coach after repo selection",
+    )
     _require("GitHub live connected. Choose one repo to index." in js, "GitHub live state must match the repo picker CTA")
     _require("Demo GitHub connected. Use demo repo, or connect live GitHub after OAuth env is loaded." in js, "demo GitHub state must not masquerade as live OAuth")
     _require("Live GitHub OAuth env missing in this server." in js, "missing GitHub OAuth env must be visible")
-    _require("Your packet is generated for ${selectedReviewRepoName()}. Verdict:" in js, "Ask IA must coach after packet generation")
+    _require("Packet ${packetName} is generated for ${selectedReviewRepoName()}. Verdict:" in js, "Ask IA must coach after packet generation")
     _require("proofOwnerSummaryForPacket" in js, "Ask IA must summarize proof owners")
     _require(
-        "To resolve blocked claims, attach proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve them from chat." in js,
+        "Use prepared proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve blocked claims from chat." in js,
         "Ask IA must explain owner-lensed proof resolution without approving",
     )
-    _require("proof steps mapped" in js, "ProofGraph summary must map proof steps")
+    _require("sponsor proof steps" in js, "ProofGraph reveal copy must preserve sponsor proof count")
+    _require("Use prepared proof for demo" in js, "proof action must disclose prepared proof behavior")
+    _require("Attach checked proof" not in js, "misleading proof attach label returned")
     _require("runRepoProofCockpit" in js, "repo proof cockpit runner missing")
     _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
     _require("fetchReviewRunPortkeyGuardrailTest" in js, "ReviewRun Portkey guardrail test helper missing")

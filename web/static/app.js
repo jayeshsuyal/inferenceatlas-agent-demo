@@ -963,6 +963,26 @@ function selectedReviewRepoName() {
   return currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo";
 }
 
+function reviewRunUiStage(packet = packetDetail) {
+  if (currentReviewRunPortkeyTest) return "portkey_tested";
+  if (packet?.review_run?.stage === "ready_to_export" || packet?.review_delta?.packet_changed) {
+    return "packet_regenerated";
+  }
+  if (packet?.proof_resolution?.ready_for_rerun || packet?.review_run?.packet?.ready_for_rerun) {
+    return "proof_attached";
+  }
+  if (packet?.packet_reference?.packet_id) return "packet_generated";
+  if (isReviewRepoReady()) return "repo_indexed";
+  if (selectedReviewRepo()) return "repo_selected";
+  if (isGithubLiveSignedIn() || isGithubDemoSignedIn()) return "repo_connected";
+  return "repo_not_connected";
+}
+
+function setReviewRunUiStage(stage = reviewRunUiStage()) {
+  if (repoProofCockpit) repoProofCockpit.dataset.reviewStage = stage;
+  return stage;
+}
+
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
   renderReviewRunCoachAnswer({ sections });
   if (packetCoachStatus) {
@@ -973,12 +993,13 @@ function setReviewRunCoachStage(sections, statusText = "Ask IA guides this Revie
 }
 
 function setCoachForNoRepo(expanded = false) {
+  setReviewRunUiStage();
   const liveSignedIn = isGithubLiveSignedIn();
   const demoSignedIn = isGithubDemoSignedIn();
   const liveAuthConfigured = isGithubLiveAuthConfigured();
   const sections = {
     current_read: liveSignedIn
-      ? "GitHub live OAuth is connected. Choose one repo to start the ReviewRun."
+      ? "GitHub live OAuth is connected. Choose one repo to index for this ReviewRun."
       : demoSignedIn
         ? "Demo GitHub is connected. Use the demo repo, or connect live GitHub for your repos."
         : liveAuthConfigured
@@ -1024,13 +1045,14 @@ function setCoachForNoRepo(expanded = false) {
 }
 
 function setCoachForSelectedRepo(repo) {
+  setReviewRunUiStage();
   const name = repo?.full_name || selectedReviewRepoName();
   const indexing = Boolean(repo?.indexing);
   resetReviewRunCoachAnswer();
   if (repoCoachRead) {
     repoCoachRead.textContent = indexing
       ? `You selected ${name}. IA is indexing this repo before it can generate a packet.`
-      : `You selected ${name}. Next: click Review access to generate the IA Packet.`;
+      : `You selected ${name}. Should I generate the repo-access packet next? It will name blocked claims, missing proof, and Portkey impact.`;
   }
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
@@ -1042,6 +1064,7 @@ function setCoachForSelectedRepo(repo) {
 }
 
 function setCoachForReviewLoading() {
+  setReviewRunUiStage("packet_generating");
   setReviewRunCoachStage(
     {
       current_read: `IA is reviewing ${selectedReviewRepoName()} and collecting proof for the packet.`,
@@ -1055,7 +1078,9 @@ function setCoachForReviewLoading() {
 }
 
 function setCoachForPacket(packet, portkeyPayload) {
+  setReviewRunUiStage(reviewRunUiStage(packet));
   const decision = packet?.decision || {};
+  const packetRef = packet?.packet_reference || {};
   const movement = packet?.movement_classes || {};
   const blocked = movement.blocked || packet?.blocked || [];
   const reviewRequired = movement.review_required || packet?.review_required || [];
@@ -1070,13 +1095,14 @@ function setCoachForPacket(packet, portkeyPayload) {
   const missingText = coachListText(missingProof, 4, "no missing proof");
   const proofOwnerText = proofOwnerSummaryForPacket(packet) || missingText;
   const reviewText = coachListText(reviewRequired, 3, "no review-only lanes");
+  const packetName = packetRef.packet_id || packetRef.revision_id || "current packet";
 
   if (rerunComplete) {
     setReviewRunCoachStage(
       {
-        current_read: `Updated packet generated for ${selectedReviewRepoName()}. Same request, new proof, verdict: ${verdictLabel(decision)}.`,
+        current_read: `Updated packet ${packetName} is ready for ${selectedReviewRepoName()}. Same request, new proof, verdict: ${verdictLabel(decision)}.`,
         what_blocks_movement: `Still blocked: ${blockedText}. Review lanes: ${reviewText}.`,
-        next_human_action: "Export the review brief or Portkey gate, then have the named human owners review the updated packet.",
+        next_human_action: "Export the review brief or test the Portkey guardrail, then route the updated packet to the named human owners.",
         downstream_impact: `Portkey can ${portkeyState} from the updated packet revision; IA still did not mutate Portkey.`,
         safety: "IA did not approve, dispatch, write, mutate access, or call Portkey live.",
       },
@@ -1101,9 +1127,9 @@ function setCoachForPacket(packet, portkeyPayload) {
 
   setReviewRunCoachStage(
     {
-      current_read: `Your packet is generated for ${selectedReviewRepoName()}. Verdict: ${verdictLabel(decision)}.`,
+      current_read: `Packet ${packetName} is generated for ${selectedReviewRepoName()}. Verdict: ${verdictLabel(decision)}.`,
       what_blocks_movement: `Blocked claims: ${blockedText}. Missing proof owners: ${proofOwnerText}.`,
-      next_human_action: `To resolve blocked claims, attach proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve them from chat.`,
+      next_human_action: `Use prepared proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve blocked claims from chat.`,
       downstream_impact: `Portkey reads this packet and will ${portkeyState} until the required proof changes the packet state.`,
       safety: "IA did not approve, dispatch, write, mutate access, or call Portkey live.",
     },
@@ -3214,7 +3240,7 @@ function renderRepoProofResolution(packet) {
       ? "Updated packet generated."
       : readyForRerun
         ? "Proof attached. Rerun required."
-        : "Attach proof before rerun.";
+        : "Use prepared proof before rerun.";
   }
   if (checklist) {
     checklist.innerHTML = proofLenses
@@ -3237,7 +3263,7 @@ function renderRepoProofResolution(packet) {
               <input type="checkbox" data-proof-id="${escapeHtml(proofId)}" data-proof-label="${escapeHtml(proofLabel)}" data-proof-owner="${escapeHtml(lens.owner_group || lens.label || "")}" data-evidence-note="${escapeHtml(preparedMatch.evidence_note || "Human checked this proof item in the ReviewRun cockpit.")}"${checked ? " checked" : ""}${disabled ? " disabled" : ""} />
               <span>${escapeHtml(proofLabel)}</span>
             </label>
-            <p>${escapeHtml(lens.next_human_action || "Attach proof from this owner before rerun.")}</p>
+            <p>${escapeHtml(lens.next_human_action || "Use prepared proof from this owner before rerun.")}</p>
           </section>
         `;
       })
@@ -3248,7 +3274,7 @@ function renderRepoProofResolution(packet) {
   }
   if (button) {
     button.disabled = rerunComplete || (!readyForRerun && !Array.from(repoProofResolutionCard.querySelectorAll('input[type="checkbox"]')).some((input) => input.checked && !input.disabled));
-    button.textContent = rerunComplete ? "Packet regenerated" : readyForRerun ? "Regenerate packet" : "Attach checked proof";
+    button.textContent = rerunComplete ? "Packet regenerated" : readyForRerun ? "Regenerate packet" : "Use prepared proof for demo";
     button.onclick = rerunComplete ? null : readyForRerun ? () => rerunReviewRunPacket() : () => attachReviewRunProof();
   }
   if (delta) {
@@ -3268,7 +3294,7 @@ function renderRepoProofResolution(packet) {
       ? "Same request. New proof changed packet state; Portkey can allow with policy."
       : readyForRerun
       ? "Proof attached. Verdict unchanged; regenerate the packet before movement changes."
-      : "No proof attached. Verdict unchanged.";
+      : "No prepared proof used yet. Verdict unchanged.";
   }
 }
 
@@ -3351,6 +3377,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const delta = packet.review_delta || {};
   const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
+  setReviewRunUiStage(reviewRunUiStage(packet));
   repoProofCockpit.dataset.loaded = "true";
   if (repoProofResult) {
     repoProofResult.hidden = false;
@@ -3391,21 +3418,13 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoSponsorProofCard.innerHTML = `
       <summary>
         <span class="repo-card-label">ProofGraph</span>
-        <strong>${escapeHtml(graphState)}</strong>
+        <strong>Open generated graph</strong>
       </summary>
       <div class="repo-accordion-body">
-        <p>${escapeHtml(String(graphSponsorProofCount))} proof steps mapped. ${escapeHtml(String(graphAttachedProofCount))} attached / ${escapeHtml(String(graphMissingProofCount))} missing.</p>
-        <p class="repo-proofgraph-run-ref">Generated from run_id <code>${escapeHtml(graphRunId || "local")}</code></p>
-        <div class="repo-proofgraph-map" aria-label="ReviewRun ProofGraph summary">
-          <div class="repo-proofgraph-row"><span>selected repo</span><strong>${escapeHtml(graph?.selected_repo || currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo")}</strong></div>
-          <div class="repo-proofgraph-row"><span>packet</span><strong>${escapeHtml(graphPacketRef.packet_id || "not generated")}</strong></div>
-          <div class="repo-proofgraph-row"><span>revision</span><strong>${escapeHtml(graphPacketRef.revision_id || "not generated")}</strong></div>
-          <div class="repo-proofgraph-row"><span>proof</span><strong>${escapeHtml(String(graphAttachedProofCount))} attached / ${escapeHtml(String(graphMissingProofCount))} missing / ${escapeHtml(String(graphSponsorProofCount))} sponsor</strong></div>
-          <div class="repo-proofgraph-row"><span>Portkey state</span><strong>${escapeHtml(graphPortkeyState)}</strong></div>
-          <div class="repo-proofgraph-row"><span>writes</span><strong>zero writes</strong></div>
-        </div>
-        <p class="repo-microcopy">Packet remains authority. Sponsors contribute proof only. No approval / no writes / no mutation.</p>
-        <a class="btn-ghost repo-secondary-link" href="${escapeHtml(reviewRunProofGraphUrl(graphRunId))}">Open ProofGraph</a>
+        <p>Generated from run_id <code>${escapeHtml(graphRunId || "local")}</code>. Open the graph when you want the visual proof path.</p>
+        <p>${escapeHtml(String(graphSponsorProofCount))} sponsor proof steps, ${escapeHtml(String(graphAttachedProofCount))} prepared proof receipts, ${escapeHtml(String(graphMissingProofCount))} missing.</p>
+        <p class="repo-microcopy">Packet remains authority. Sponsors contribute proof only. No approval / no writes / no mutation. zero writes.</p>
+        <a class="btn-ghost repo-secondary-link" href="${escapeHtml(reviewRunProofGraphUrl(graphRunId))}">Open generated ProofGraph</a>
       </div>
     `;
     repoSponsorProofCard.open = false;
@@ -3512,7 +3531,7 @@ async function attachReviewRunProof() {
 
   if (!selected.length) {
     if (status) {
-      status.textContent = "Select at least one proof item to attach.";
+      status.textContent = "Select at least one prepared proof receipt to use.";
       status.classList.add("error");
     }
     return;
@@ -3520,11 +3539,11 @@ async function attachReviewRunProof() {
 
   if (button) {
     button.disabled = true;
-    button.textContent = "Attaching proof...";
+    button.textContent = "Using prepared proof...";
   }
   if (status) {
     status.classList.remove("error");
-    status.textContent = "Attaching proof without changing verdict...";
+    status.textContent = "Using prepared proof without changing verdict...";
   }
   try {
     const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/proof`, {
@@ -3535,6 +3554,7 @@ async function attachReviewRunProof() {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.detail || "Proof attachment failed");
     currentReviewRun = data.run || currentReviewRun;
+    setReviewRunUiStage("proof_attached");
     currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
     const nextPacket = {
       ...(data.packet || {}),
@@ -3555,7 +3575,7 @@ async function attachReviewRunProof() {
     }
     if (button) {
       button.disabled = false;
-      button.textContent = "Attach checked proof";
+      button.textContent = "Use prepared proof for demo";
     }
   }
 }

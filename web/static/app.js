@@ -89,6 +89,7 @@ const skillsAnchor = document.getElementById("skills-anchor");
 const skillChipsEl = document.getElementById("skill-chips");
 const skillHintsEl = document.getElementById("skill-hints");
 const packetCoachQuickChips = document.getElementById("packet-coach-quick-chips");
+const repoCoachFollowupChips = document.getElementById("repo-coach-followup-chips");
 const packetCoachStatus = document.getElementById("packet-coach-status");
 const packetInlineCoachPrompts = document.getElementById("packet-inline-coach-prompts");
 const packetInlineCoachStatus = document.getElementById("packet-inline-coach-status");
@@ -231,7 +232,7 @@ function setBusy(loading) {
     packetCoachQuickChips.setAttribute("aria-busy", String(loading));
     packetCoachQuickChips.dataset.busy = String(loading);
     packetCoachQuickChips
-      .querySelectorAll("button[data-ask-prompt]")
+      .querySelectorAll("button.coach-chip")
       .forEach((button) => {
         button.disabled = loading;
         button.setAttribute("aria-disabled", String(loading));
@@ -270,12 +271,18 @@ function unlockPacketCoach() {
 
 function setPacketInlineCoachBusy(loading) {
   packetInlineCoachBusy = loading;
-  packetInlineCoachPrompts
-    ?.querySelectorAll("button[data-ask-prompt]")
-    .forEach((button) => {
+  if (packetInlineCoachPrompts) {
+    packetInlineCoachPrompts.setAttribute("aria-busy", String(loading));
+    packetInlineCoachPrompts.dataset.busy = String(loading);
+    packetInlineCoachPrompts.querySelectorAll("button.coach-chip").forEach((button) => {
       button.disabled = loading;
       button.setAttribute("aria-disabled", String(loading));
     });
+  }
+  packetInlineCoachOutput?.querySelectorAll("button.coach-chip").forEach((button) => {
+    button.disabled = loading;
+    button.setAttribute("aria-disabled", String(loading));
+  });
 }
 
 function setPacketInlineCoachStatus(text, isError = false) {
@@ -850,18 +857,21 @@ function updateReviewCtaState() {
   }
 }
 
+function setCoachChipContainersBusy(loading) {
+  [packetCoachQuickChips, repoCoachFollowupChips, packetInlineCoachPrompts].forEach((container) => {
+    if (!container) return;
+    container.setAttribute("aria-busy", String(loading));
+    container.dataset.busy = String(loading);
+    container.querySelectorAll("button.coach-chip").forEach((button) => {
+      button.disabled = loading;
+      button.setAttribute("aria-disabled", String(loading));
+    });
+  });
+}
+
 function setReviewRunCoachBusy(loading, statusText = "") {
   reviewRunCoachBusy = loading;
-  if (packetCoachQuickChips) {
-    packetCoachQuickChips.setAttribute("aria-busy", String(loading));
-    packetCoachQuickChips.dataset.busy = String(loading);
-    packetCoachQuickChips
-      .querySelectorAll("button[data-ask-prompt]")
-      .forEach((button) => {
-        button.disabled = loading;
-        button.setAttribute("aria-disabled", String(loading));
-      });
-  }
+  setCoachChipContainersBusy(loading);
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
     packetCoachStatus.classList.remove("error");
@@ -870,6 +880,101 @@ function setReviewRunCoachBusy(loading, statusText = "") {
       (loading
         ? "Reading the current ReviewRun..."
         : "Ask IA read current ReviewRun. Decision lock unchanged.");
+  }
+}
+
+const COACH_CHIP_MAX_LABEL = 28;
+
+function normalizeCoachSuggestion(input) {
+  if (typeof input === "string") {
+    const text = input.trim();
+    if (!text) return null;
+    return {
+      label: text.length > COACH_CHIP_MAX_LABEL ? `${text.slice(0, COACH_CHIP_MAX_LABEL - 1)}…` : text,
+      message: text,
+      entities: null,
+    };
+  }
+  if (input && typeof input === "object" && typeof input.message === "string" && input.message.trim()) {
+    const labelSource = String(input.label || input.message).trim();
+    return {
+      label:
+        labelSource.length > COACH_CHIP_MAX_LABEL
+          ? `${labelSource.slice(0, COACH_CHIP_MAX_LABEL - 1)}…`
+          : labelSource,
+      message: input.message.trim(),
+      entities:
+        input.entities && typeof input.entities === "object" ? input.entities : null,
+    };
+  }
+  return null;
+}
+
+function renderCoachChips(container, suggestions, onPick, { disabled = false, hiddenWhenEmpty = true } = {}) {
+  if (!container) return;
+  const chips = (Array.isArray(suggestions) ? suggestions : [])
+    .map(normalizeCoachSuggestion)
+    .filter(Boolean)
+    .slice(0, 3);
+  container.innerHTML = "";
+  if (!chips.length) {
+    container.hidden = hiddenWhenEmpty;
+    return;
+  }
+  container.hidden = false;
+  chips.forEach((chip) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "coach-chip";
+    button.textContent = chip.label;
+    button.title = chip.message;
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", String(disabled));
+    button.addEventListener("click", () => {
+      if (disabled) return;
+      onPick(chip.message, chip.entities || null);
+    });
+    container.appendChild(button);
+  });
+}
+
+function renderRunwayCoachSuggestions(answerOrSuggestions, { followUp = false, disabled = false } = {}) {
+  const suggestions = Array.isArray(answerOrSuggestions)
+    ? answerOrSuggestions
+    : answerOrSuggestions?.suggestions || [];
+  const idleContainer = packetCoachQuickChips;
+  const followContainer = repoCoachFollowupChips;
+  const onPick = (message, entities) => askReviewRunCoach(message, entities);
+  if (followUp) {
+    renderCoachChips(followContainer, suggestions, onPick, { disabled });
+    return;
+  }
+  renderCoachChips(idleContainer, suggestions, onPick, { disabled });
+}
+
+function renderPacketCoachSuggestions(suggestions, { container = packetInlineCoachPrompts, disabled = false } = {}) {
+  renderCoachChips(
+    container,
+    suggestions,
+    (message, entities) => askPacketInlineCoach(message, entities),
+    { disabled }
+  );
+}
+
+async function refreshRunwayCoachChips() {
+  if (!currentReviewRun?.run_id) {
+    renderCoachChips(packetCoachQuickChips, [], () => {}, { hiddenWhenEmpty: true });
+    renderCoachChips(repoCoachFollowupChips, [], () => {}, { hiddenWhenEmpty: true });
+    return;
+  }
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun fetch failed");
+    if (data.run) currentReviewRun = data.run;
+    renderRunwayCoachSuggestions(data.suggestions || []);
+  } catch (_) {
+    renderRunwayCoachSuggestions([]);
   }
 }
 
@@ -905,7 +1010,7 @@ function resetReviewRunCoachAnswer() {
   repoCoachAnswer.innerHTML = "";
 }
 
-async function askReviewRunCoach(prompt) {
+async function askReviewRunCoach(prompt, chipEntities = null) {
   if (reviewRunCoachBusy) return;
   const message = String(prompt || "Current read").trim() || "Current read";
   if (!currentReviewRun?.run_id) {
@@ -921,14 +1026,19 @@ async function askReviewRunCoach(prompt) {
   setReviewRunCoachBusy(true);
   let ok = false;
   try {
+    const body = { prompt: message };
+    if (chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length) {
+      body.chip_entities = chipEntities;
+    }
     const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: message }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
     renderReviewRunCoachAnswer(data.answer || {});
+    renderRunwayCoachSuggestions(data.answer || {}, { followUp: true });
     ok = true;
   } catch (err) {
     resetReviewRunCoachAnswer();
@@ -1084,6 +1194,7 @@ async function createReviewRunForIndexedRepo(repo) {
   if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
   currentReviewRun = data.run;
   currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
+  await refreshRunwayCoachChips();
   return currentReviewRun;
 }
 
@@ -3118,6 +3229,7 @@ async function attachReviewRunProof() {
       repoCoachRead.textContent =
         "Current read: proof is attached to the ReviewRun. IA still needs a rerun before the packet or Portkey state can change.";
     }
+    await refreshRunwayCoachChips();
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -3168,6 +3280,7 @@ async function rerunReviewRunPacket() {
       repoCoachRead.textContent =
         "Current read: proof changed the packet state. Portkey can allow scoped movement under policy while admin, org-wide write, and secrets stay blocked.";
     }
+    await refreshRunwayCoachChips();
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -3218,6 +3331,7 @@ async function runRepoProofCockpit() {
     packetPortkeyPreview = payload;
     packetPortkeyProofLoop = proofLoop;
     renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+    await refreshRunwayCoachChips();
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -3524,6 +3638,7 @@ function renderPacketDetail(data) {
   btnCopyPacketBrief.disabled = !data.copy_review_brief;
   btnExportPacket.disabled = !(data.output_files || []).length;
   btnExportPortkeyGate.disabled = !fixture.fixture_id;
+  renderPacketCoachSuggestions(data.suggestions || []);
 }
 
 async function loadPacketDetail() {
@@ -3553,7 +3668,7 @@ async function loadPacketDetail() {
   }
 }
 
-async function askPacketInlineCoach(prompt) {
+async function askPacketInlineCoach(prompt, chipEntities = null) {
   if (packetInlineCoachBusy) return;
   const message = String(prompt || "").trim();
   if (!message) return;
@@ -3573,14 +3688,18 @@ async function askPacketInlineCoach(prompt) {
       await loadPacketDetail();
     }
     const fixtureId = currentPacketFixtureForChat() || packetSelectedFixtureId();
+    const body = {
+      message,
+      session_id: sessionId,
+      current_fixture: fixtureId,
+    };
+    if (chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length) {
+      body.chip_entities = chipEntities;
+    }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message,
-        session_id: sessionId,
-        current_fixture: fixtureId,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Ask IA failed (${res.status})`);
@@ -3598,7 +3717,15 @@ async function askPacketInlineCoach(prompt) {
     renderAssistantMarkdown(bubble, data.reply || "");
     addDownloadButtons(bubble, (data.output_files || []).filter((f) => f.file_id));
     wrap.appendChild(bubble);
+    const followUp = document.createElement("div");
+    followUp.className = "packet-inline-coach-prompts coach-chip-followup";
+    wrap.appendChild(followUp);
     packetInlineCoachOutput.appendChild(wrap);
+    const suggestions = data.answer?.suggestions || [];
+    renderCoachChips(followUp, suggestions, (nextMessage, nextEntities) =>
+      askPacketInlineCoach(nextMessage, nextEntities)
+    );
+    renderPacketCoachSuggestions(suggestions);
     setPacketInlineCoachStatus("Packet-backed answer rendered. Decision lock unchanged.");
   } catch (err) {
     if (packetInlineCoachOutput) {
@@ -5174,18 +5301,6 @@ form.addEventListener("submit", (e) => {
   e.preventDefault();
   if (!slashMenu.hidden) return;
   sendMessage(input.value);
-});
-
-packetCoachQuickChips?.addEventListener("click", (event) => {
-  const btn = event.target.closest("button[data-ask-prompt]");
-  if (!btn || busy || reviewRunCoachBusy) return;
-  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
-});
-
-packetInlineCoachPrompts?.addEventListener("click", (event) => {
-  const btn = event.target.closest("button[data-ask-prompt]");
-  if (!btn) return;
-  askPacketInlineCoach(btn.dataset.askPrompt || btn.textContent || "");
 });
 
 btnRunRepoProof?.addEventListener("click", () => runRepoProofCockpit());

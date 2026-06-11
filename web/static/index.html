@@ -269,12 +269,9 @@
                   </div>
                   <p class="repo-coach-invariant">Raw agent intent is not trusted. Proof changes packet state.</p>
                   <div class="repo-coach-answer" id="repo-coach-answer" aria-live="polite" hidden></div>
+                  <div class="packet-coach-quick-chips coach-chip-followup" id="repo-coach-followup-chips" aria-label="Follow-up Ask IA suggestions" hidden></div>
                   <p class="packet-coach-label">Ask IA about this review</p>
-                  <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
-                    <button type="button" data-ask-prompt="Can this move?">Can this move?</button>
-                    <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
-                    <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
-                  </div>
+                  <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Contextual Ask IA suggestions"></div>
                   <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Run the repo access review first; Ask IA answers from the packet, not raw agent intent.</p>
                 </aside>
               </div>
@@ -537,12 +534,7 @@
               <h3>Packet-backed decision coach</h3>
               <p>Ask the packet what can move, what is blocked, who reviews, or how Portkey would read it.</p>
             </div>
-            <div class="packet-inline-coach-prompts" id="packet-inline-coach-prompts">
-              <button type="button" data-ask-prompt="Can this move?">Can it move?</button>
-              <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
-              <button type="button" data-ask-prompt="Who reviews this?">Review route</button>
-              <button type="button" data-ask-prompt="Can Portkey allow this spend?">Preview Portkey gate</button>
-            </div>
+            <div class="packet-inline-coach-prompts" id="packet-inline-coach-prompts" aria-label="Contextual packet coach suggestions"></div>
             <p class="packet-inline-coach-status" id="packet-inline-coach-status" role="status" aria-live="polite">
               Load an IA Packet, then ask a packet-backed follow-up. IA stays read-only.
             </p>
@@ -583,6 +575,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=54"></script>
+    <script src="/static/app.js?v=55"></script>
   </body>
 </html>

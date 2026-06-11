@@ -465,6 +465,25 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(next_step["answer"]["prompt_kind"], "next_action")
                 self.assertIn("Attach repo-owner approval", next_step["answer"]["sections"]["next_human_action"])
                 self.assertIn("Missing proof", next_step["answer"]["sections"]["what_blocks_movement"])
+                suggestions = next_step["answer"]["suggestions"]
+                self.assertGreaterEqual(len(suggestions), 2)
+                self.assertIn("label", suggestions[0])
+                self.assertIn("message", suggestions[0])
+                self.assertIn("entities", suggestions[0])
+                self.assertEqual(suggestions[0]["entities"]["source"], "review_run")
+
+                pinned = coach_review_run_api(
+                    run_id,
+                    ReviewRunCoachRequest(
+                        prompt="What proof is still missing for acme/demo-support-incidents?",
+                        chip_entities={"source": "review_run", "prompt_kind": "proof", "run_id": run_id},
+                    ),
+                )
+                self.assertEqual(pinned["answer"]["prompt_kind"], "proof")
+
+                fetched = get_review_run(run_id)
+                self.assertIn("suggestions", fetched)
+                self.assertGreaterEqual(len(fetched["suggestions"]), 1)
 
                 override = coach_review_run_api(
                     run_id,

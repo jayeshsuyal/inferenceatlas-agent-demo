@@ -1970,7 +1970,9 @@ body[data-active-tab="start"] #btn-reset {
   padding: 0.45rem 1.25rem 0;
 }
 
-.packet-coach-quick-chips button {
+.packet-coach-quick-chips button,
+.packet-inline-coach-prompts button.coach-chip,
+.coach-chip-followup button.coach-chip {
   min-height: 30px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -1983,13 +1985,18 @@ body[data-active-tab="start"] #btn-reset {
   padding: 0.25rem 0.65rem;
 }
 
-.packet-coach-quick-chips button:hover {
+.packet-coach-quick-chips button:hover,
+.packet-inline-coach-prompts button.coach-chip:hover,
+.coach-chip-followup button.coach-chip:hover {
   border-color: rgba(61, 156, 245, 0.55);
   background: rgba(61, 156, 245, 0.12);
 }
 
 .packet-coach-quick-chips[data-busy="true"] button,
-.packet-coach-quick-chips button:disabled {
+.packet-inline-coach-prompts[data-busy="true"] button.coach-chip,
+.coach-chip-followup button.coach-chip:disabled,
+.packet-coach-quick-chips button:disabled,
+.packet-inline-coach-prompts button.coach-chip:disabled {
   cursor: wait;
   opacity: 0.64;
 }
@@ -2000,7 +2007,13 @@ body[data-active-tab="start"] #btn-reset {
   background: rgba(255, 255, 255, 0.04);
 }
 
-.packet-coach-quick-chips button:focus-visible {
+.coach-chip-followup {
+  margin-top: 0.55rem;
+}
+
+.packet-coach-quick-chips button:focus-visible,
+.packet-inline-coach-prompts button.coach-chip:focus-visible,
+.coach-chip-followup button.coach-chip:focus-visible {
   outline: 2px solid rgba(61, 156, 245, 0.85);
   outline-offset: 2px;
 }

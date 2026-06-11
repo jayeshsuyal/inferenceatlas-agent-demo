@@ -18,6 +18,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
+from .coach_suggestions import (
+    build_follow_up_suggestions,
+    review_run_context_from_run,
+    suggestions_as_quick_actions,
+    suggestions_for_run,
+)
 from .scenarios import ROOT_DIR
 
 
@@ -1090,10 +1096,17 @@ def _review_run_coach_downstream_impact(run: ReviewRun) -> str:
     return "Portkey should treat this as `Block` while proof is missing; downstream systems consume the packet, not raw agent intent."
 
 
-def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str, Any]:
+def build_review_run_coach_answer(
+    run: ReviewRun,
+    prompt: str = "",
+    chip_entities: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
     """Build a compact, deterministic Ask IA answer from ReviewRun state only."""
     prompt_text = str(prompt or "").strip()
-    prompt_kind = _review_run_coach_prompt_kind(prompt_text)
+    pinned_kind = ""
+    if isinstance(chip_entities, Mapping):
+        pinned_kind = str(chip_entities.get("prompt_kind") or "").strip()
+    prompt_kind = pinned_kind or _review_run_coach_prompt_kind(prompt_text)
     movement = normalize_movement_classes(run.movement_classes)
     packet = run.packet or {}
     repo_name = _review_run_repo_name(run)
@@ -1144,6 +1157,19 @@ def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str,
     ):
         reply_lines.append(f"## {label}\n{sections[key]}")
 
+    ctx = review_run_context_from_run(run)
+    suggestions = suggestions_for_run(run, last_prompt_kind=prompt_kind if prompt_text else "")
+    if prompt_text and prompt_kind:
+        follow_ups = build_follow_up_suggestions(ctx, prompt_kind=prompt_kind)
+        if follow_ups:
+            seen = {str((item.get("entities") or {}).get("prompt_kind") or "") for item in suggestions}
+            for item in follow_ups:
+                kind = str((item.get("entities") or {}).get("prompt_kind") or "")
+                if kind and kind not in seen:
+                    suggestions.append(item)
+                    seen.add(kind)
+            suggestions = suggestions[:3]
+
     return _sanitize_public_value(
         {
             "schema_version": REVIEW_RUN_COACH_SCHEMA_VERSION,
@@ -1163,11 +1189,8 @@ def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str,
                 "review_required": movement["review_required"],
                 "blocked": movement["blocked"],
             },
-            "quick_actions": [
-                "Can this move?",
-                "What proof is missing?",
-                "What will Portkey do?",
-            ],
+            "suggestions": suggestions,
+            "quick_actions": suggestions_as_quick_actions(suggestions),
             "safety_boundary": {
                 "read_only": True,
                 "approval_granted": False,

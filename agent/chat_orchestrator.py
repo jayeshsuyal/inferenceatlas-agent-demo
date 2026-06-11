@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from .chat_answer import (
     ChatAnswer,
@@ -18,6 +18,7 @@ from .chat_salience import build_chat_salience_surface, render_chat_salience_mar
 from .config import V1_SLOT_FILLER_PROMPT
 from .cost_plan import AttachmentRoles, build_cost_plan, fetch_v1_copilot
 from .github_repo import build_github_chat_context, get_repo_index_status
+from .coach_suggestions import build_intake_suggestions
 from .packet_advisor import (
     build_packet_advisor_answer,
     select_fixture_for_question,
@@ -153,19 +154,15 @@ def _ask_ia_intake_reply(current_fixture: str = "") -> tuple[str, str, dict[str,
         if current_fixture
         else "the current IA Packet"
     )
-    suggestions = [
-        "Can this move?",
-        "What proof is missing?",
-        "Who reviews this?",
-        "Can Portkey allow this?",
-    ]
+    suggestions = build_intake_suggestions(current_fixture)
+    suggestion_lines = [str(item.get("message") or "") for item in suggestions if str(item.get("message") or "")]
     reply = "\n".join(
         [
             "Hey — I’m here.",
             "",
             f"Ask IA works best when you ask about {fixture_label}. Try one:",
             "",
-            *[f"- {question}" for question in suggestions],
+            *[f"- {question}" for question in suggestion_lines],
             "",
             "I’ll answer from packet truth, keep approval blocked, and name the next human action.",
         ]
@@ -177,7 +174,8 @@ def _ask_ia_intake_reply(current_fixture: str = "") -> tuple[str, str, dict[str,
             "schema_version": ASK_IA_INTAKE_SCHEMA_VERSION,
             "answer_kind": "intake",
             "current_fixture": current_fixture,
-            "suggested_questions": suggestions,
+            "suggested_questions": suggestion_lines,
+            "suggestions": suggestions,
             "invariants": {
                 "read_only": True,
                 "calls_v1": False,
@@ -528,8 +526,14 @@ def orchestrate_chat(
     file_blocks: List[Tuple[str, str]],
     attach_warnings: List[str],
     current_fixture: str = "",
+    chip_entities: Optional[dict[str, Any]] = None,
 ) -> OrchestratedChat:
     """Plan and assemble a full chat turn."""
+    if isinstance(chip_entities, dict):
+        fixture_pin = str(chip_entities.get("fixture") or "").strip()
+        if fixture_pin and not str(current_fixture or "").strip():
+            current_fixture = fixture_pin
+
     llm_message, skills_used, github_used, github_index, drive_used, drive_index = (
         assemble_orchestrated_message(
             message=message,

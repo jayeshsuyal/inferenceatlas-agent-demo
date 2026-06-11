@@ -8,6 +8,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any, Callable, Literal, Protocol
 
+from .coach_suggestions import build_packet_advisor_suggestions
 from .workbench import build_workbench_result
 
 
@@ -497,6 +498,16 @@ def build_packet_advisor_answer(
     )
     lowered = rendered_text.lower()
     forbidden = [phrase for phrase in FORBIDDEN_HEDGE_PHRASES if phrase in lowered]
+    suggestions = build_packet_advisor_suggestions(
+        {
+            "fixture": result["fixture"],
+            "packet_reference": _packet_reference(result),
+            "missing_proof": list(result["missing_proof"]),
+            "decision": result["decision"],
+            "blocked_claims": list(result["blocked_claims"]),
+            "reviewer_routing": list(result["reviewer_routing"]),
+        }
+    )
 
     return {
         "schema_version": PACKET_ADVISOR_SCHEMA_VERSION,
@@ -515,6 +526,7 @@ def build_packet_advisor_answer(
         "next_human_action": result["decision"]["next_human_action"],
         "downstream_gate": gate,
         "rendered_text": rendered_text,
+        "suggestions": suggestions,
         "tone_invariants": {
             "contains_does_not_approve": "does not approve" in lowered,
             "contains_human_review": "human review" in lowered,

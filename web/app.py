@@ -94,6 +94,7 @@ from agent.workbench import (
 )
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
+from agent.coach_suggestions import build_packet_idle_suggestions, suggestions_for_run
 from agent.session_metrics import (
     clear_metrics_session,
     get_session_metrics,
@@ -211,6 +212,7 @@ class ChatRequest(BaseModel):
     github_repos: List[str] = Field(default_factory=list)
     drive_file_ids: List[str] = Field(default_factory=list)
     current_fixture: str = Field(default="", max_length=120)
+    chip_entities: Optional[dict[str, Any]] = None
 
 
 class GithubAttachRequest(BaseModel):
@@ -360,6 +362,7 @@ class ReviewRunRerunRequest(BaseModel):
 
 class ReviewRunCoachRequest(BaseModel):
     prompt: str = Field(default="", max_length=1200)
+    chip_entities: Optional[dict[str, Any]] = None
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -903,7 +906,11 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         run_payload = record["run"]
     try:
         run = ReviewRun.from_dict(run_payload)
-        answer = build_review_run_coach_answer(run, body.prompt)
+        answer = build_review_run_coach_answer(
+            run,
+            body.prompt,
+            chip_entities=body.chip_entities,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -959,11 +966,18 @@ def get_review_run(run_id: str) -> dict:
                 "principle": "Private engine, public proof.",
             },
         }
+    try:
+        run_obj = ReviewRun.from_dict(run)
+        suggestions = suggestions_for_run(run_obj)
+    except ValueError:
+        suggestions = []
+
     return {
         "ok": True,
         "read_only": True,
         "run": run,
         "record": review_run_record_summary(record),
+        "suggestions": suggestions,
     }
 
 
@@ -1655,8 +1669,14 @@ def ia_packet_detail(fixture: str = Query(default="mcp_tool_blast_radius")) -> d
         label="IA Packet JSON",
         use_timestamp=False,
     )
+    try:
+        suggestions = build_packet_idle_suggestions(fixture_id)
+    except KeyError:
+        suggestions = []
+
     return {
         **detail,
+        "suggestions": suggestions,
         "output_files": [
             _file_ref(md["file_id"], md["label"]),
             _file_ref(js["file_id"], js["label"]),
@@ -1781,6 +1801,7 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
         file_blocks=file_blocks,
         attach_warnings=file_warnings,
         current_fixture=body.current_fixture.strip(),
+        chip_entities=body.chip_entities,
     )
 
     plain = (
@@ -1953,6 +1974,7 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                 file_blocks=file_blocks,
                 attach_warnings=file_warnings,
                 current_fixture=body.current_fixture.strip(),
+                chip_entities=body.chip_entities,
             )
 
             for line in orch.thinking_steps:

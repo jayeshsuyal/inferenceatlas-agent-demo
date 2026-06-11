@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inferenceatlas.dev/schemas/coach_suggestion.schema.json",
+  "title": "CoachSuggestion",
+  "description": "Short-label Ask IA chip with full message and pinned entities.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "label", "message", "entities"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "coach_suggestion.v0"
+    },
+    "label": {
+      "type": "string",
+      "maxLength": 28
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["source", "prompt_kind"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "enum": ["review_run", "packet_advisor", "intake"]
+        },
+        "prompt_kind": {
+          "type": "string"
+        },
+        "run_id": { "type": "string" },
+        "fixture": { "type": "string" },
+        "packet_id": { "type": "string" },
+        "revision_id": { "type": "string" },
+        "repo_full_name": { "type": "string" },
+        "stage": { "type": "string" },
+        "missing_proof_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "subscriber": { "type": "string" }
+      }
+    }
+  }
+}

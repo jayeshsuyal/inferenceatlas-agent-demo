@@ -64,6 +64,7 @@ json_check schemas/pilot_memo.schema.json /tmp/ia_pilot_memo_schema.checked.json
 json_check schemas/sponsor_proof_trace.schema.json /tmp/ia_sponsor_proof_trace_schema.checked.json
 json_check schemas/proof_graph.schema.json /tmp/ia_proof_graph_schema.checked.json
 json_check schemas/sponsor_value_receipts.schema.json /tmp/ia_sponsor_value_receipts_schema.checked.json
+json_check schemas/coach_suggestion.schema.json /tmp/ia_coach_suggestion_schema.checked.json
 
 command_json_check /tmp/ia_public_run.no_write.json bash scripts/run.sh --json
 command_json_check /tmp/ia_judge.no_write.json "$PYTHON_BIN" -m agent.judge --no-write --json

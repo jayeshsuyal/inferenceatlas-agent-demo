@@ -170,7 +170,8 @@ def test_ask_ia_greeting_uses_intake_not_packet_dump() -> None:
     assert orch.direct_answer["invariants"]["uses_packet_advisor"] is False
     assert orch.use_tools is False
     assert "Ask IA intake" in orch.context_manifest
-    assert "Can this move?" in orch.direct_reply
+    assert "Can fixture mcp_tool_blast_radius move" in orch.direct_reply
+    assert orch.direct_answer.get("suggestions")
     assert "What proof is missing?" in orch.direct_reply
     assert "packet_id" not in orch.direct_reply
     assert "Top blocker" not in orch.direct_reply

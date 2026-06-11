@@ -8805,6 +8805,7 @@ body[data-active-tab="start"] .review-flow-progress {
 
 .review-session-hub-bubble {
   position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -8841,18 +8842,18 @@ body[data-active-tab="start"] .review-flow-progress {
   color: #050506;
 }
 
-.review-session-hub-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 74;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(2px);
+.review-session-hub[data-expanded="true"] .review-session-hub-bubble {
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow:
+    0 10px 36px rgba(0, 0, 0, 0.5),
+    0 0 0 2px rgba(255, 255, 255, 0.12);
 }
 
 .review-session-hub-panel {
   position: absolute;
   top: calc(100% + 0.55rem);
   right: 0;
+  z-index: 1;
   display: grid;
   gap: 0.45rem;
   width: min(18rem, calc(100vw - 2.3rem));
@@ -8879,6 +8880,14 @@ body[data-active-tab="start"] .review-flow-progress {
   font-size: 1.25rem;
   line-height: 1;
   cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 8px;
+}
+
+.review-session-hub-close:hover,
+.review-session-hub-close:focus-visible {
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .review-session-hub-session {

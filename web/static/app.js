@@ -150,7 +150,6 @@ const btnBranchReviewRunStep = document.getElementById("btn-branch-review-run-st
 const reviewSessionHub = document.getElementById("review-session-hub");
 const reviewSessionHubBubble = document.getElementById("review-session-hub-bubble");
 const reviewSessionHubPanel = document.getElementById("review-session-hub-panel");
-const reviewSessionHubBackdrop = document.getElementById("review-session-hub-backdrop");
 const reviewSessionHubClose = document.getElementById("review-session-hub-close");
 const reviewSessionHubBadge = document.getElementById("review-session-hub-badge");
 const reviewSessionHubList = document.getElementById("review-session-hub-list");
@@ -2079,9 +2078,15 @@ function setReviewSessionHubExpanded(expanded) {
   if (!reviewSessionHub) return;
   const on = Boolean(expanded);
   reviewSessionHub.dataset.expanded = String(on);
+  reviewSessionHub.classList.toggle("is-open", on);
   if (reviewSessionHubPanel) reviewSessionHubPanel.hidden = !on;
-  if (reviewSessionHubBackdrop) reviewSessionHubBackdrop.hidden = !on;
-  if (reviewSessionHubBubble) reviewSessionHubBubble.setAttribute("aria-expanded", String(on));
+  if (reviewSessionHubBubble) {
+    reviewSessionHubBubble.setAttribute("aria-expanded", String(on));
+    reviewSessionHubBubble.setAttribute(
+      "aria-label",
+      on ? "Close session runs and chats" : "Open session runs and chats"
+    );
+  }
   if (on) void refreshReviewRunRail();
 }
 
@@ -2198,12 +2203,29 @@ function initReviewRunFlowNavigation() {
     }
   });
 
-  reviewSessionHubBubble?.addEventListener("click", () => {
+  reviewSessionHubBubble?.addEventListener("click", (event) => {
+    event.stopPropagation();
     const expanded = reviewSessionHub?.dataset.expanded === "true";
     setReviewSessionHubExpanded(!expanded);
   });
-  reviewSessionHubClose?.addEventListener("click", () => setReviewSessionHubExpanded(false));
-  reviewSessionHubBackdrop?.addEventListener("click", () => setReviewSessionHubExpanded(false));
+  reviewSessionHubPanel?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  reviewSessionHubClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setReviewSessionHubExpanded(false);
+  });
+  document.addEventListener("click", (event) => {
+    if (reviewSessionHub?.dataset.expanded !== "true") return;
+    if (reviewSessionHub.contains(event.target)) return;
+    setReviewSessionHubExpanded(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && reviewSessionHub?.dataset.expanded === "true") {
+      setReviewSessionHubExpanded(false);
+    }
+  });
   btnNewReviewRun?.addEventListener("click", () => restartReviewRunInSession());
   btnBranchReviewRunStep?.addEventListener("click", () => {
     if (reviewRunReadOnlyScreen) branchReviewRunAtScreen(reviewRunReadOnlyScreen);

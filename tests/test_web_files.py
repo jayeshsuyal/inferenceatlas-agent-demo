@@ -233,7 +233,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
         self.assertIn('/static/style.css?v=58', html)
-        self.assertIn('/static/app.js?v=81', html)
+        self.assertIn('/static/app.js?v=82', html)
         self.assertIn("REPO_PROOF_FIXTURE", js)
         self.assertIn('const REPO_PROOF_FIXTURE = "support_triage_agent";', js)
         self.assertIn("btnRootConnectGithub", js)

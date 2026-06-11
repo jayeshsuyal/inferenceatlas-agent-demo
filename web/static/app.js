@@ -1179,9 +1179,9 @@ function setReviewCoachCollapsed(collapsed) {
     repoCoachToggle.setAttribute("aria-expanded", String(!isCollapsed));
     repoCoachToggle.setAttribute(
       "aria-label",
-      isCollapsed ? "Open Ask IA coach" : "Collapse Ask IA coach"
+      isCollapsed ? "Open Ask IA chat" : "Minimize Ask IA chat"
     );
-    repoCoachToggle.textContent = isCollapsed ? "Open Ask IA" : "Hide";
+    repoCoachToggle.textContent = isCollapsed ? "Open Ask IA" : "Minimize";
   }
 }
 
@@ -1286,7 +1286,6 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
 }
 
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
-  clearReviewRunCoachUserPrompt();
   renderReviewRunCoachAnswer({ sections });
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
@@ -1444,7 +1443,6 @@ function resetReviewRunCoachAnswer() {
 }
 
 function renderLocalReviewRunCoach(sections) {
-  clearReviewRunCoachUserPrompt();
   renderReviewRunCoachAnswer({ sections });
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;

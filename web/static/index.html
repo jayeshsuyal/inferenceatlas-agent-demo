@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=52" />
+    <link rel="stylesheet" href="/static/style.css?v=53" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -352,13 +352,13 @@
                   </section>
                 </div>
 
-                <aside class="repo-ask-sidecar" id="repo-ask-coach" aria-label="Ask IA" data-coach-collapsed="false">
+                <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false">
                   <div class="repo-coach-head">
                     <div>
                       <span class="repo-card-label">Ask IA</span>
-                      <h3>Review coach</h3>
+                      <h3>Chat coach</h3>
                     </div>
-                    <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Collapse Ask IA coach">Hide</button>
+                    <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Minimize Ask IA chat">Minimize</button>
                   </div>
                   <div class="repo-coach-stage-line" aria-live="polite">
                     <span>Stage</span>
@@ -630,6 +630,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=72"></script>
+    <script src="/static/app.js?v=73"></script>
   </body>
 </html>

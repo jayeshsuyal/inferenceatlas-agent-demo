@@ -129,7 +129,8 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
     for expected in (
         "repo-infra-row:not([open]) .repo-accordion-body",
         ".repo-runway-panel",
-        ".repo-ask-sidecar",
+        ".repo-ask-floating",
+        "position: fixed !important;",
         ".repo-proof-result[hidden]",
         "One-run minimal ReviewRun cockpit",
     ):
@@ -163,7 +164,7 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "no_chip_wall": True,
         "no_raw_packet_dump": True,
         "accordions_hide_advanced_detail": True,
-        "ask_ia_sidecar_present": True,
+        "ask_ia_floating_present": True,
         "ask_ia_suggestions_contract": True,
         "proof_receipts_contract": True,
         "portkey_runway_contract": True,

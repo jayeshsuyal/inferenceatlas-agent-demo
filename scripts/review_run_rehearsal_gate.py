@@ -52,12 +52,18 @@ EXPECTED_STEPS = (
     "export brief",
 )
 SCREENSHOT_CHECKPOINTS = (
-    "root",
+    "repo_connect",
+    "repo_selected_indexed",
     "packet_generated",
-    "proof_attached",
-    "updated_packet",
-    "portkey_handoff",
+    "proof_workbench",
+    "rerun_delta",
+    "portkey_gate",
     "proofgraph",
+    "export_brief",
+)
+BROWSER_REHEARSALS = (
+    "desktop browser rehearsal",
+    "mobile browser rehearsal",
 )
 
 
@@ -115,9 +121,13 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
     for expected in (
         "askReviewRunCoach",
         "renderReviewRunCoachAnswer",
+        "renderReviewRunCoachSuggestions",
         "fetchReviewRunPortkeyGuardrailTest",
         "fetchReviewRunProofGraph",
         "proofOwnerSummaryForPacket",
+        "Use prepared receipt",
+        "repo-portkey-runway",
+        "repoPortkeyCard.open = portkeyTested || portkeyRunwayReady",
     ):
         _require(expected in app_js, f"root JS missing ReviewRun flow hook: {expected}")
 
@@ -127,6 +137,9 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "no_raw_packet_dump": True,
         "accordions_hide_advanced_detail": True,
         "ask_ia_sidecar_present": True,
+        "ask_ia_suggestions_contract": True,
+        "proof_receipts_contract": True,
+        "portkey_runway_contract": True,
     }
 
 
@@ -204,6 +217,8 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
         timeout=timeout,
     )
     _require(selected_coach["answer"]["stage"] == "repo_selected", "Ask IA selected-stage answer drifted")
+    _require(len(selected_coach["suggestions"]) <= 3, "Ask IA suggestions must stay capped")
+    _require(selected_coach["suggestions"][0]["entities"]["run_id"] == run["run_id"], "Ask IA suggestion lost run pin")
     _require("No packet exists yet" in selected_coach["answer"]["sections"]["current_read"], "Ask IA should not dump packet before generation")
 
     generated = _json_post(
@@ -239,6 +254,10 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
     next_action = next_coach["answer"]["sections"]["next_human_action"]
     for owner in ("Support Ops", "Engineering", "Security"):
         _require(owner in next_action, f"Ask IA next step must name {owner}")
+    _require(
+        [item["entities"]["prompt_kind"] for item in next_coach["suggestions"]] == ["next_action", "proof", "portkey"],
+        "Ask IA packet-stage suggestions drifted",
+    )
     _require(next_coach["answer"]["approves_access"] is False, "Ask IA must not approve access")
 
     proofed = _json_post(
@@ -355,6 +374,7 @@ def build_rehearsal_report(base_url: str, timeout: float) -> dict[str, Any]:
         "base_url": base_url.rstrip("/"),
         "steps": list(EXPECTED_STEPS),
         "screenshot_checkpoints": list(SCREENSHOT_CHECKPOINTS),
+        "browser_rehearsals": list(BROWSER_REHEARSALS),
         "first_run_contract": first_run,
         "review_run": loop,
         "safety": {
@@ -371,6 +391,7 @@ def build_rehearsal_report(base_url: str, timeout: float) -> dict[str, Any]:
 def render_markdown(report: dict[str, Any]) -> str:
     steps = "\n".join(f"- {step}" for step in report["steps"])
     shots = "\n".join(f"- {item}" for item in report["screenshot_checkpoints"])
+    browser = "\n".join(f"- {item}" for item in report.get("browser_rehearsals", ()))
     run = report["review_run"]
     return f"""# ReviewRun Final Rehearsal Gate
 
@@ -392,6 +413,10 @@ Private engine, public proof.
 ## Screenshot Checklist
 
 {shots}
+
+## Browser Rehearsals
+
+{browser}
 
 ## Safety
 

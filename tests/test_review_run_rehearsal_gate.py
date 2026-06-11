@@ -43,6 +43,12 @@ class ReviewRunRehearsalGateTests(unittest.TestCase):
         self.assertIn("copy_review_brief", script)
         self.assertIn("proof_attachment_changes_verdict", script)
         self.assertIn("portkey_policy_mutation_allowed", script)
+        self.assertIn("renderReviewRunCoachSuggestions", script)
+        self.assertIn("ask_ia_suggestions_contract", script)
+        self.assertIn("Use prepared receipt", script)
+        self.assertIn("proof_receipts_contract", script)
+        self.assertIn("repo-portkey-runway", script)
+        self.assertIn("portkey_runway_contract", script)
         self.assertIn("repo-option-row", script)
         self.assertIn("no_chip_wall", script)
         self.assertIn("no_raw_packet_dump", script)
@@ -67,6 +73,7 @@ class ReviewRunRehearsalGateTests(unittest.TestCase):
             "base_url": "http://127.0.0.1:8080",
             "steps": list(module.EXPECTED_STEPS),
             "screenshot_checkpoints": list(module.SCREENSHOT_CHECKPOINTS),
+            "browser_rehearsals": list(module.BROWSER_REHEARSALS),
             "review_run": {
                 "selected_repo": "inferenceatlas/support-triage-trial",
                 "packet_revision_before": "rev_1",
@@ -92,8 +99,16 @@ class ReviewRunRehearsalGateTests(unittest.TestCase):
         self.assertIn("Private engine, public proof.", rendered)
         self.assertIn("packet: `rev_1` -> `rev_2`", rendered)
         self.assertIn("Portkey: `Block` -> `Allow with policy`", rendered)
-        self.assertIn("- root", rendered)
+        self.assertIn("- repo_connect", rendered)
+        self.assertIn("- repo_selected_indexed", rendered)
+        self.assertIn("- proof_workbench", rendered)
+        self.assertIn("- rerun_delta", rendered)
+        self.assertIn("- portkey_gate", rendered)
         self.assertIn("- proofgraph", rendered)
+        self.assertIn("- export_brief", rendered)
+        self.assertIn("## Browser Rehearsals", rendered)
+        self.assertIn("- desktop browser rehearsal", rendered)
+        self.assertIn("- mobile browser rehearsal", rendered)
         self.assertIn("approval granted: `False`", rendered)
         self.assertIn("Portkey policy mutation allowed: `False`", rendered)
 

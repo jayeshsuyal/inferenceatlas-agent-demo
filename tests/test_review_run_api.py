@@ -576,6 +576,21 @@ class ReviewRunApiTests(TestCase):
                 self.assertFalse(greeting["answer"]["safety_boundary"]["external_writes"])
                 self.assertFalse(greeting["answer"]["safety_boundary"]["raw_packet_dumped"])
 
+                message_contract = coach_review_run_api(
+                    run_id,
+                    ReviewRunCoachRequest(
+                        message="idk what to do next",
+                        entities={
+                            "source": "review_run",
+                            "prompt_kind": "next_action",
+                            "run_id": run_id,
+                            "stage": "repo_selected",
+                        },
+                    ),
+                )
+                self.assertEqual(message_contract["answer"]["prompt_kind"], "next_action")
+                self.assertEqual(message_contract["suggestions"][0]["entities"]["run_id"], run_id)
+
                 generated = generate_review_run_packet_api(
                     run_id,
                     ReviewRunPacketRequest(

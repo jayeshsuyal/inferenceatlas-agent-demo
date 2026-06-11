@@ -362,6 +362,8 @@ class ReviewRunRerunRequest(BaseModel):
 
 class ReviewRunCoachRequest(BaseModel):
     prompt: str = Field(default="", max_length=1200)
+    message: Optional[str] = Field(default=None, max_length=1200)
+    entities: Optional[dict[str, Any]] = None
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -905,7 +907,7 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         run_payload = record["run"]
     try:
         run = ReviewRun.from_dict(run_payload)
-        answer = build_review_run_coach_answer(run, body.prompt)
+        answer = build_review_run_coach_answer(run, body.prompt or body.message or "")
         suggestions = suggestions_for_review_run(run)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -122,7 +122,7 @@ const repoReviewRunId = document.getElementById("repo-review-run-id");
 const repoReviewRequest = document.getElementById("repo-review-request");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
-const repoCoachAnswer = document.getElementById("repo-coach-answer");
+const repoCoachThread = document.getElementById("repo-coach-thread");
 const repoCoachForm = document.getElementById("repo-coach-form");
 const repoCoachInput = document.getElementById("repo-coach-input");
 const repoAskCoach = document.getElementById("repo-ask-coach");
@@ -1010,10 +1010,19 @@ function renderCoachChips(container, suggestions, onPick, { disabled = false, hi
     button.setAttribute("aria-disabled", String(disabled));
     button.addEventListener("click", () => {
       if (disabled) return;
-      onPick(chip.message, chip.entities || null);
+      onPick(chip);
     });
     container.appendChild(button);
   });
+}
+
+function handleCoachChipPick(chip) {
+  const entities = chip?.entities || null;
+  if (entities?.chip_action === "open_proofgraph") {
+    window.location.assign(reviewRunProofGraphUrl());
+    return;
+  }
+  askReviewRunCoach(chip?.message || chip?.label || "", entities);
 }
 
 function renderRunwayCoachSuggestions(answerOrSuggestions, { followUp = false, disabled = false } = {}) {
@@ -1022,22 +1031,43 @@ function renderRunwayCoachSuggestions(answerOrSuggestions, { followUp = false, d
     : answerOrSuggestions?.suggestions || [];
   const idleContainer = packetCoachQuickChips;
   const followContainer = repoCoachFollowupChips;
-  const onPick = (message, entities) => askReviewRunCoach(message, entities);
   if (followUp) {
-    renderCoachChips(followContainer, suggestions, onPick, { disabled });
+    renderCoachChips(followContainer, suggestions, handleCoachChipPick, { disabled });
+    if (idleContainer) {
+      idleContainer.hidden = true;
+      idleContainer.innerHTML = "";
+    }
     return;
   }
-  renderCoachChips(idleContainer, suggestions, onPick, { disabled });
+  renderCoachChips(idleContainer, suggestions, handleCoachChipPick, { disabled });
+  if (followContainer) {
+    followContainer.hidden = true;
+    followContainer.innerHTML = "";
+  }
 }
 
 function renderPacketCoachSuggestions(suggestions, { container = packetInlineCoachPrompts, disabled = false } = {}) {
   renderCoachChips(
     container,
     suggestions,
-    (message, entities) => askPacketInlineCoach(message, entities),
+    (chip) => askPacketInlineCoach(chip?.message || chip?.label || "", chip?.entities || null),
     { disabled }
   );
 }
+
+const PORTKEY_TEST_COACH_SAFETY =
+  "Portkey received packet metadata only. IA did not approve, write, mutate policy, or call a Portkey Admin API.";
+
+const STAGE_REASSESS_PROMPTS = {
+  repo_not_connected: "What should I do first to start a ReviewRun?",
+  repo_selected: "What will IA review when I generate the packet for this repo?",
+  packet_generating: "What is IA checking while the packet generates?",
+  packet_generated: "What proof is still missing before this review can move?",
+  proof_attached: "Proof is attached. What should change when I regenerate the packet?",
+  packet_regenerated: "What changed after the packet rerun?",
+  ready_to_export: "What changed in Portkey and blocked scope after rerun?",
+  portkey_tested: "Summarize the Portkey guardrail read for this ReviewRun.",
+};
 
 async function refreshRunwayCoachChips() {
   if (!currentReviewRun?.run_id) {
@@ -1056,29 +1086,142 @@ async function refreshRunwayCoachChips() {
   }
 }
 
-function renderReviewRunCoachAnswer(answer) {
-  const sections = answer?.sections || {};
-  if (repoCoachRead && sections.current_read) {
-    repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
+function coachPlainText(text) {
+  return String(text || "").replace(/`/g, "");
+}
+
+function scrollCoachThread() {
+  const wrap = repoCoachThread?.closest(".repo-coach-thread-wrap");
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+
+function updateCoachPinnedRead(text) {
+  if (repoCoachRead && text) {
+    repoCoachRead.textContent = coachPlainText(text);
   }
-  if (!repoCoachAnswer) return;
-  const rows = [
-    ["What blocks movement", sections.what_blocks_movement],
-    ["Next human action", sections.next_human_action],
-    ["Downstream impact", sections.downstream_impact],
-    ["Safety", sections.safety],
-  ].filter(([, value]) => value);
-  repoCoachAnswer.hidden = !rows.length;
-  repoCoachAnswer.innerHTML = rows
-    .map(
-      ([label, value]) => `
-        <div class="repo-coach-answer-row">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(String(value).replace(/`/g, ""))}</strong>
-        </div>
-      `
-    )
-    .join("");
+}
+
+function appendCoachThreadUserMessage(text) {
+  if (!repoCoachThread || !text) return;
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-user";
+  row.innerHTML = `<p>${escapeHtml(coachPlainText(text))}</p>`;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+function appendCoachThreadThinking() {
+  if (!repoCoachThread) return null;
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-thinking";
+  row.innerHTML = `
+    <p class="coach-thinking-title">Thinking…</p>
+    <ul class="coach-thinking-log"></ul>
+  `;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+  return { row, list: row.querySelector(".coach-thinking-log") };
+}
+
+function appendCoachThreadThinkingLine(listEl, line) {
+  if (!listEl || !line) return;
+  const li = document.createElement("li");
+  li.textContent = line;
+  listEl.appendChild(li);
+  scrollCoachThread();
+}
+
+function createCoachAssistantBubble() {
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-assistant";
+  const bubble = document.createElement("div");
+  bubble.className = "coach-assistant-bubble";
+  const narration = document.createElement("p");
+  narration.className = "coach-assistant-narration";
+  narration.hidden = true;
+  const sections = document.createElement("div");
+  sections.className = "coach-assistant-sections";
+  bubble.appendChild(narration);
+  bubble.appendChild(sections);
+  row.appendChild(bubble);
+  return { row, narrationEl: narration, sectionsEl: sections };
+}
+
+function appendCoachSectionCard(sectionsEl, label, value) {
+  if (!sectionsEl || !value) return;
+  const card = document.createElement("div");
+  card.className = "coach-section-card";
+  card.innerHTML = `
+    <span>${escapeHtml(label)}</span>
+    <p>${escapeHtml(coachPlainText(value))}</p>
+  `;
+  sectionsEl.appendChild(card);
+}
+
+function appendCoachAssistantMessage(answer) {
+  if (!repoCoachThread || !answer) return;
+  const sections = answer.sections || {};
+  const narration =
+    answer.display_narration ||
+    answer.governance_narration ||
+    (answer.narration_live ? answer.narration : "") ||
+    "";
+  updateCoachPinnedRead(sections.current_read);
+  const { row, narrationEl, sectionsEl } = createCoachAssistantBubble();
+  if (narration) {
+    narrationEl.hidden = false;
+    narrationEl.textContent = coachPlainText(narration);
+  }
+  appendCoachSectionCard(sectionsEl, "What blocks movement", sections.what_blocks_movement);
+  appendCoachSectionCard(sectionsEl, "Next human action", sections.next_human_action);
+  appendCoachSectionCard(sectionsEl, "Downstream impact", sections.downstream_impact);
+  appendCoachSectionCard(sectionsEl, "Safety", sections.safety);
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+function renderReviewRunCoachAnswer(answer) {
+  appendCoachAssistantMessage(answer || {});
+}
+
+async function consumeCoachStream(response, thinkingUi, assistantParts) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() || "";
+    for (const chunk of chunks) {
+      const line = chunk.trim();
+      if (!line.startsWith("data:")) continue;
+      let payload;
+      try {
+        payload = JSON.parse(line.slice(5).trim());
+      } catch {
+        continue;
+      }
+      if (payload.type === "thinking" && payload.line) {
+        appendCoachThreadThinkingLine(thinkingUi?.list, payload.line);
+      } else if (payload.type === "pinned" && payload.current_read) {
+        updateCoachPinnedRead(payload.current_read);
+      } else if (payload.type === "section" && payload.label && payload.value) {
+        appendCoachSectionCard(assistantParts.sectionsEl, payload.label, payload.value);
+        scrollCoachThread();
+      } else if (payload.type === "narration_chunk" && payload.text) {
+        assistantParts.narrationEl.hidden = false;
+        assistantParts.narrationEl.textContent += payload.text;
+        scrollCoachThread();
+      } else if (payload.type === "done") {
+        return payload;
+      } else if (payload.type === "error") {
+        throw new Error(payload.detail || "Coach stream failed");
+      }
+    }
+  }
+  throw new Error("Coach stream ended without a reply");
 }
 
 function coachListText(items = [], limit = 4, fallback = "none") {
@@ -1183,7 +1326,7 @@ function setReviewRunUiStage(stage = reviewRunUiStage()) {
 }
 
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
-  renderReviewRunCoachAnswer({ sections });
+  updateCoachPinnedRead(sections?.current_read);
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
     packetCoachStatus.classList.remove("error");
@@ -1326,10 +1469,12 @@ function setCoachForPacket(packet, portkeyPayload) {
   );
 }
 
+function removeCoachThreadNode(parts) {
+  if (parts?.row?.parentNode) parts.row.parentNode.removeChild(parts.row);
+}
+
 function resetReviewRunCoachAnswer() {
-  if (!repoCoachAnswer) return;
-  repoCoachAnswer.hidden = true;
-  repoCoachAnswer.innerHTML = "";
+  /* Thread history is preserved; errors remove only the in-flight thinking bubble. */
 }
 
 function renderLocalReviewRunCoach(sections) {
@@ -1341,33 +1486,70 @@ function renderLocalReviewRunCoach(sections) {
   }
 }
 
-async function askReviewRunCoach(prompt, chipEntities = null) {
-  if (reviewRunCoachBusy) return;
+async function autoReassessReviewRunCoach(trigger, { fallbackPacket, fallbackPortkey } = {}) {
+  const stage = trigger || reviewRunUiStage(fallbackPacket);
+  const prompt =
+    STAGE_REASSESS_PROMPTS[stage] ||
+    STAGE_REASSESS_PROMPTS[reviewRunUiStage(fallbackPacket)] ||
+    "Reassess the current ReviewRun state.";
+  if (!currentReviewRun?.run_id) {
+    if (fallbackPacket) setCoachForPacket(fallbackPacket, fallbackPortkey);
+    else setCoachForNoRepo();
+    return false;
+  }
+  return askReviewRunCoach(prompt, { source: "review_run", reassess_trigger: stage }, { reassess: true });
+}
+
+async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false } = {}) {
+  if (reviewRunCoachBusy) return false;
   const message = String(prompt || "Current read").trim() || "Current read";
   if (!currentReviewRun?.run_id) {
     setCoachForNoRepo(true);
-    return;
+    return false;
   }
 
+  const entities =
+    chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length ? chipEntities : null;
+  const reassessTrigger = entities?.reassess_trigger || (reassess ? reviewRunUiStage(packetDetail) : "");
+  const userLabel = reassess
+    ? `↻ Reassess · ${String(reassessTrigger || "stage change").replace(/_/g, " ")}`
+    : message;
+  appendCoachThreadUserMessage(userLabel);
+
   setReviewRunCoachBusy(true);
+  const thinkingUi = appendCoachThreadThinking();
+  const assistantParts = createCoachAssistantBubble();
   let ok = false;
   try {
     const body = { prompt: message };
-    if (chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length) {
-      body.chip_entities = chipEntities;
+    if (entities) body.chip_entities = entities;
+    if (reassessTrigger) body.reassess_trigger = reassessTrigger;
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach/stream`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Ask IA coach stream failed");
     }
-    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
-    renderReviewRunCoachAnswer(data.answer || {});
-    renderRunwayCoachSuggestions(data.answer || {}, { followUp: true });
+    const data = await consumeCoachStream(res, thinkingUi, assistantParts);
+    removeCoachThreadNode(thinkingUi);
+    repoCoachThread.appendChild(assistantParts.row);
+    scrollCoachThread();
+    const answer = data.answer || {};
+    if (reassess) {
+      renderRunwayCoachSuggestions(answer, { followUp: false });
+    } else {
+      renderRunwayCoachSuggestions(answer, { followUp: true });
+    }
     ok = true;
   } catch (err) {
-    resetReviewRunCoachAnswer();
+    removeCoachThreadNode(thinkingUi);
+    removeCoachThreadNode(assistantParts);
     if (packetCoachStatus) {
       packetCoachStatus.hidden = false;
       packetCoachStatus.classList.add("error");
@@ -1377,11 +1559,14 @@ async function askReviewRunCoach(prompt, chipEntities = null) {
     setReviewRunCoachBusy(
       false,
       ok
-        ? "Ask IA read current ReviewRun. Decision lock unchanged."
+        ? reassess
+          ? "Ask IA reassessed this ReviewRun. Decision lock unchanged."
+          : "Ask IA read current ReviewRun. Decision lock unchanged."
         : packetCoachStatus?.textContent || ""
     );
     if (!ok && packetCoachStatus) packetCoachStatus.classList.add("error");
   }
+  return ok;
 }
 
 function updateReviewRepoConnectUi() {
@@ -1456,6 +1641,7 @@ function renderReviewRepoSummary(repo = null) {
   }
   resetReviewRunCoachAnswer();
   setCoachForSelectedRepo(selected);
+  void autoReassessReviewRunCoach("repo_selected");
   updateReviewCtaState();
 }
 
@@ -3717,7 +3903,6 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     }
     repoPortkeyCard.open = portkeyTested;
   }
-  setCoachForPacket(packet, portkeyPayload);
 }
 
 async function testReviewRunPortkeyGuardrail() {
@@ -3744,16 +3929,12 @@ async function testReviewRunPortkeyGuardrail() {
       repoCockpitStatus.classList.remove("error");
       repoCockpitStatus.textContent = `Portkey guardrail tested ${test.packet_reference?.revision_id || "current revision"}: ${test.portkey_state}.`;
     }
-    setReviewRunCoachStage(
-      {
-        current_read: `Portkey tested packet revision ${test.packet_reference?.revision_id || "current"} for ${selectedReviewRepoName()}.`,
-        what_blocks_movement: test.verdict ? `Still blocked: ${stillBlocked}.` : `Portkey blocks movement. Reasons: ${(test.deny_reasons || []).slice(0, 3).join(", ") || "packet not ready"}.`,
-        next_human_action: test.next_human_action || "Follow the packet's named human action before movement.",
-        downstream_impact: `Portkey state: ${test.portkey_state}. Allowed scope: ${allowed}. IA did not mutate Portkey.`,
-        safety: "Portkey received packet metadata only. IA did not approve, write, mutate policy, or call a Portkey Admin API.",
-      },
-      "Portkey guardrail test recorded locally. No approval, no writes."
-    );
+    await autoReassessReviewRunCoach("portkey_tested", { fallbackPacket: packetDetail, fallbackPortkey: packetPortkeyPreview });
+    if (packetCoachStatus) {
+      packetCoachStatus.hidden = false;
+      packetCoachStatus.classList.remove("error");
+      packetCoachStatus.textContent = "Portkey guardrail test recorded locally. No approval, no writes.";
+    }
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -3817,7 +3998,10 @@ async function attachReviewRunProof() {
       repoCockpitStatus.textContent =
         "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
     }
-    setCoachForPacket(nextPacket, packetPortkeyPreview);
+    await autoReassessReviewRunCoach("proof_attached", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
     await refreshRunwayCoachChips();
   } catch (err) {
     if (status) {
@@ -3866,7 +4050,10 @@ async function rerunReviewRunPacket() {
       repoCockpitStatus.textContent =
         "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
     }
-    setCoachForPacket(nextPacket, packetPortkeyPreview);
+    await autoReassessReviewRunCoach("packet_regenerated", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
     await refreshRunwayCoachChips();
   } catch (err) {
     if (status) {
@@ -3919,6 +4106,10 @@ async function runRepoProofCockpit() {
     packetPortkeyPreview = payload;
     packetPortkeyProofLoop = proofLoop;
     renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+    await autoReassessReviewRunCoach("packet_generated", {
+      fallbackPacket: cockpitPacket,
+      fallbackPortkey: payload,
+    });
     await refreshRunwayCoachChips();
   } catch (err) {
     if (repoCockpitStatus) {
@@ -4310,8 +4501,8 @@ async function askPacketInlineCoach(prompt, chipEntities = null) {
     wrap.appendChild(followUp);
     packetInlineCoachOutput.appendChild(wrap);
     const suggestions = data.answer?.suggestions || [];
-    renderCoachChips(followUp, suggestions, (nextMessage, nextEntities) =>
-      askPacketInlineCoach(nextMessage, nextEntities)
+    renderCoachChips(followUp, suggestions, (chip) =>
+      askPacketInlineCoach(chip?.message || chip?.label || "", chip?.entities || null)
     );
     renderPacketCoachSuggestions(suggestions);
     setPacketInlineCoachStatus("Packet-backed answer rendered. Decision lock unchanged.");

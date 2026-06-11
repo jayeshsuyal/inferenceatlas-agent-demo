@@ -3650,6 +3650,11 @@ body[data-active-tab="start"] .messages {
   line-height: 1.32;
 }
 
+.repo-coach-narration-row strong {
+  color: #2f6fed;
+  font-weight: 600;
+}
+
 .repo-ask-coach .packet-coach-label {
   padding: 0;
 }
@@ -7824,4 +7829,174 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-coac
   body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-review-delta {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Ask IA coach — resizable sidecar, single scroll chat thread */
+body:not([data-active-tab]) .repo-runway-panel,
+body[data-active-tab="start"] .repo-runway-panel,
+body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel,
+body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel {
+  grid-template-columns: minmax(0, 1fr) clamp(22rem, 36vw, 40rem);
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar,
+body[data-active-tab="start"] .repo-ask-sidecar {
+  resize: horizontal;
+  overflow: hidden !important;
+  min-width: 22rem;
+  width: clamp(22rem, 34vw, 40rem);
+  max-width: min(44rem, 96vw);
+  max-height: min(72vh, 42rem);
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+}
+
+body:not([data-active-tab]) .repo-coach-body,
+body[data-active-tab="start"] .repo-coach-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.55rem;
+  overflow: hidden;
+}
+
+.repo-coach-pinned {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.55rem 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.repo-coach-pinned span {
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.repo-coach-pinned p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  line-height: 1.38;
+}
+
+.repo-coach-thread-wrap {
+  flex: 1 1 auto;
+  min-height: 11rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 0.15rem;
+}
+
+.repo-coach-compose {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.repo-coach-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-height: 2rem;
+}
+
+.coach-thread-msg {
+  max-width: 100%;
+}
+
+.coach-thread-user {
+  align-self: flex-end;
+  max-width: 92%;
+  padding: 0.48rem 0.62rem;
+  border-radius: 10px 10px 4px 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.coach-thread-user p {
+  margin: 0;
+}
+
+.coach-thread-thinking {
+  align-self: flex-start;
+  width: 100%;
+  padding: 0.55rem 0.62rem;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.coach-thinking-title {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.coach-thinking-log {
+  margin: 0;
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.coach-thread-assistant {
+  align-self: flex-start;
+  width: 100%;
+}
+
+.coach-assistant-bubble {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.coach-assistant-narration {
+  margin: 0;
+  padding: 0.55rem 0.62rem;
+  border-radius: 8px;
+  background: rgba(47, 111, 237, 0.14);
+  border: 1px solid rgba(47, 111, 237, 0.28);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.8rem;
+  line-height: 1.42;
+}
+
+.coach-assistant-sections {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.coach-section-card {
+  padding: 0.5rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.coach-section-card span {
+  display: block;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.coach-section-card p {
+  margin: 0.2rem 0 0;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.78rem;
+  line-height: 1.36;
 }

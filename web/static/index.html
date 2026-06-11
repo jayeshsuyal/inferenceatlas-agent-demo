@@ -336,18 +336,22 @@
                     <strong id="repo-coach-stage">Connect repo</strong>
                   </div>
                   <div class="repo-coach-body" id="repo-coach-body">
-                    <div class="repo-coach-current-read">
+                    <div class="repo-coach-pinned">
                       <span>Current read</span>
                       <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
                     </div>
-                    <div class="repo-coach-answer" id="repo-coach-answer" aria-live="polite" hidden></div>
-                    <div class="packet-coach-quick-chips coach-chip-followup" id="repo-coach-followup-chips" aria-label="Follow-up Ask IA suggestions" hidden></div>
-                    <form class="repo-coach-form" id="repo-coach-form">
-                      <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
-                      <button type="submit" class="btn-primary">Ask</button>
-                    </form>
-                    <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Contextual Ask IA suggestions"></div>
-                    <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
+                    <div class="repo-coach-thread-wrap">
+                      <div class="repo-coach-thread" id="repo-coach-thread" role="log" aria-live="polite" aria-label="Ask IA coach conversation"></div>
+                    </div>
+                    <div class="repo-coach-compose">
+                      <div class="packet-coach-quick-chips coach-chip-followup" id="repo-coach-followup-chips" aria-label="Follow-up Ask IA suggestions" hidden></div>
+                      <form class="repo-coach-form" id="repo-coach-form">
+                        <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
+                        <button type="submit" class="btn-primary">Ask</button>
+                      </form>
+                      <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Contextual Ask IA suggestions"></div>
+                      <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
+                    </div>
                   </div>
                 </aside>
               </section>
@@ -587,6 +591,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=70"></script>
+    <script src="/static/app.js?v=72"></script>
   </body>
 </html>

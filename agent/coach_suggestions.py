@@ -278,6 +278,7 @@ def build_review_run_suggestions(ctx: ReviewRunSuggestionContext) -> list[dict[s
                 message=f"Show me the ProofGraph path for ReviewRun {ctx.run_id} on {repo}.",
                 source="review_run",
                 prompt_kind="proofgraph",
+                chip_action="open_proofgraph",
                 **base,
             )
         )

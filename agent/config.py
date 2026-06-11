@@ -33,6 +33,11 @@ AGENT_MAX_STEPS = max(8, int(os.getenv("AGENT_MAX_STEPS", "10")))
 INFERENCEATLAS_V1_URL = os.getenv("INFERENCEATLAS_V1_URL", "").strip().rstrip("/")
 INFERENCEATLAS_V1_TIMEOUT = float(os.getenv("INFERENCEATLAS_V1_TIMEOUT", "25"))
 
+# ReviewRun Ask IA coach enrichment (deterministic skin, LLM bones)
+COACH_LLM_NARRATE = os.getenv("COACH_LLM_NARRATE", "0").strip() not in ("0", "false", "False")
+COACH_V1_GOVERNANCE = os.getenv("COACH_V1_GOVERNANCE", "0").strip() not in ("0", "false", "False")
+COACH_SESSION_ENABLED = os.getenv("COACH_SESSION_ENABLED", "1").strip() not in ("0", "false", "False")
+
 _LLM_PREFER = os.getenv("LLM_PROVIDER", "").strip().lower()
 
 

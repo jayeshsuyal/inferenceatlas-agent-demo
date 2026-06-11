@@ -7,15 +7,17 @@ ROOT = Path(__file__).resolve().parents[1]
 README = ROOT / "README.md"
 
 REQUIRED_BUYER_LINES = [
-    "[AI spend](examples/generated/ai_spend_budget_overrun.spend_packet.md) is becoming a governance problem",
-    "[Agent tool access](docs/LIVE_INTEGRATION_CONTRACT.md) is expanding through connectors, sandboxes, and managed-agent systems",
-    "[Supply-chain incidents](docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md) show why install, publish, CI, and credential-bearing scope need pre-permission review",
+    "[AI spend](examples/generated/ai_spend_budget_overrun.spend_packet.md) is now budgeted, metered, and governed",
+    "[Agents need identities, permissions, containment, and audit trails]",
+    "[Gateways need verdicts they can trust]",
+    "[AI infrastructure spend is becoming a financing and procurement layer]",
 ]
 
 REQUIRED_PRODUCT_LINKS = [
     "examples/generated/ai_spend_budget_overrun.spend_packet.md",
-    "docs/LIVE_INTEGRATION_CONTRACT.md",
-    "docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md",
+    "businessinsider.com/satya-nadella-microsoft-how-to-manage-ai-agents-human-employees",
+    "docs.portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails",
+    "apollo.com/insights-news/pressreleases/2026/06/apollo-leads-35-billion",
 ]
 
 NAME_DROP_PATTERNS = [
@@ -53,8 +55,6 @@ class ReadmeWhyNowTests(unittest.TestCase):
                 msg=f"Name-drop pattern {pattern} in Why Now; keep buyer-language",
             )
 
-        self.assertNotIn("http://", why_now)
-        self.assertNotIn("https://", why_now)
         self.assertIsNone(re.search(r"\$[\d,]+\s+(saved|wasted)", why_now))
 
     def test_why_now_stays_between_timeless_why_and_users(self) -> None:

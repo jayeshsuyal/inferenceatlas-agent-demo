@@ -1,28 +1,50 @@
-# InferenceAtlas — Public Agent-Access Review Harness
+# InferenceAtlas
+
+### The packet authority layer before AI moves.
 
 Private engine, public proof.
 
+![InferenceAtlas ProofGraph showing sponsor proof, IA Packet Authority, downstream gates, and zero writes](docs/assets/proofgraph_banner.png)
+
+Generated from a public packet. Every ReviewRun emits its own ProofGraph.
+
+`zero writes` · `public contract v0` · `sponsor proof wired` · `Portkey guardrail path`
+
+AI agents are getting repos, tools, budgets, models, and production paths faster than approval systems can keep up.
+
 Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
 
-![IA Packet surface showing verdict, verification, proof debt, and reviewer routing](docs/assets/ia_packet_surface.png)
-
-![tests](https://img.shields.io/badge/tests-passing-brightgreen)
-![CI](https://img.shields.io/badge/CI-smoke%20green-brightgreen)
-![public contract](https://img.shields.io/badge/public%20contract-v0-blue)
-![safety](https://img.shields.io/badge/safety-dry--run%20default-purple)
-
-InferenceAtlas turns an agent's request for tools, data, spend, or production access into a DecisionPacket before anything moves.
-Downstream systems do not trust raw agent intent. They trust the IA packet: packet id, revision, hash, verdict, proof debt, reviewer routing, and blocked claims.
+InferenceAtlas turns every AI movement request into one reviewable packet: what can move, what stays blocked, what proof is missing, who must review it, and what downstream gates like Portkey should enforce.
+Downstream systems do not trust raw agent intent. They trust the IA Packet.
 AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
 
-This repo is the Hack the High Seas public proof surface. It is not a private v1 code dump.
-This public harness does not approve access.
+## Try It In 60 Seconds
 
-## 60-Second Review Path
 ```bash
-bash scripts/review_60.sh
+python3 -m web
+python3 scripts/review_run_rehearsal_gate.py --base-url http://127.0.0.1:8080
 ```
-Opens `/packet?fixture=mcp_tool_blast_radius&autorun=1`: one public fixture becomes one IA Packet with verdict, proof debt, Sponsor Proof Trace, downstream consumers, verification hash, and export-ready review brief. Switch fixtures inside the IA Packet surface to inspect access, spend, admin, MCP, and supply-chain lanes. No keys required, dry-run by default, no v1 calls.
+
+Open `http://127.0.0.1:8080` for the visual path.
+
+The rehearsal gate checks the recording loop: connect or use a demo repo, generate the ReviewRun packet, ask IA for the next action, attach human proof, rerun the packet, test the Portkey guardrail handoff, open the dynamic ProofGraph, and confirm the review brief is export-ready.
+
+No keys are required for the public path. No approval, no external writes, no packet mutation, no Portkey policy mutation.
+
+## The Loop
+
+```text
+Connect repo
+-> Generate IA Packet
+-> Ask IA explains proof debt
+-> Attach human proof
+-> Rerun packet
+-> Portkey reads the packet verdict
+-> ProofGraph shows the authority path
+-> Export review brief
+```
+
+The important point is simple: raw agent intent is not trusted directly. The packet is the authority object humans and downstream systems can inspect before movement.
 
 ## Why It Exists
 
@@ -32,9 +54,10 @@ InferenceAtlas creates the pre-permission packet humans and downstream systems n
 
 ## Why Now
 
-- [AI spend](examples/generated/ai_spend_budget_overrun.spend_packet.md) is becoming a governance problem: teams need proof before model usage, vendor spend, or savings claims move.
-- [Agent tool access](docs/LIVE_INTEGRATION_CONTRACT.md) is expanding through connectors, sandboxes, and managed-agent systems, which increases blast radius.
-- [Supply-chain incidents](docs/case_studies/MIASMA_PRE_PERMISSION_PACKET.md) show why install, publish, CI, and credential-bearing scope need pre-permission review.
+- [AI spend](examples/generated/ai_spend_budget_overrun.spend_packet.md) is now budgeted, metered, and governed. Teams need proof before model usage, vendor spend, or savings claims move.
+- [Agents need identities, permissions, containment, and audit trails](https://www.businessinsider.com/satya-nadella-microsoft-how-to-manage-ai-agents-human-employees-2026-6). Access review has to happen before agents reach sensitive systems.
+- [Gateways need verdicts they can trust](https://docs.portkey.ai/docs/integrations/guardrails/bring-your-own-guardrails). Portkey's BYO guardrail shape lets a packet-backed endpoint return a verdict without trusting raw prompt intent.
+- [AI infrastructure spend is becoming a financing and procurement layer](https://www.apollo.com/insights-news/pressreleases/2026/06/apollo-leads-35-billion-capital-solution-for-broadcom-ai-xpv-platform-in-partnership-with-blackstone-and-leading-global-banks-3308896). Governance has to work across models, vendors, budgets, and gateways.
 
 ## Who Uses It
 
@@ -43,43 +66,87 @@ InferenceAtlas creates the pre-permission packet humans and downstream systems n
 - Finance and Procurement teams reviewing AI spend, vendor changes, caps, and savings claims.
 - Gateway, CI, review, and observability owners who need a packet reference before letting automation proceed.
 
-## Upstream Packet Authority
-
-InferenceAtlas is the packet authority layer upstream of tools, gateways, spend controls, CI, and human review.
+## How IA Works
 
 ```mermaid
 flowchart LR
-  A["Agent request<br/>tools / data / spend / production"] --> S["Sponsor proof collection"]
-  S -. "evidence search" .-> T["Tavily"]:::sponsor
-  S -. "dry-run tool planning" .-> C["Composio"]:::sponsor
-  S -. "runtime trace" .-> O["OpenClaw"]:::sponsor
-  S -. "packet narration" .-> N["Nebius"]:::sponsor
-  T --> P["IA Packet"]:::hero
-  C --> P
+  A["Repo, agent request, spend, or production movement"] --> R["ReviewRun"]
+  R --> P["IA Packet Authority"]:::hero
+  R --> C["Ask IA Coach"]:::coach
+  R --> G["Sponsor Proof"]:::proof
+  G -. "source evidence" .-> T["Tavily"]:::sponsor
+  G -. "permission blast radius" .-> M["Composio"]:::sponsor
+  G -. "runtime trace" .-> O["OpenClaw"]:::sponsor
+  G -. "reviewer synthesis" .-> N["Nebius"]:::sponsor
+  T --> P
+  M --> P
   O --> P
   N --> P
-  P --> V["Verification<br/>packet id / revision / hash / verdict"]
-  V --> PK["Portkey gate export"]
-  V --> CI["CI / deploy gates"]
-  V --> F["Finance / Procurement"]
-  V --> R["Security / Legal / CTO review"]
-  V --> OBS["Observability / audit logs"]
+  P --> V["Verification: id, revision, hash, verdict"]:::verify
+  V --> K["Portkey guardrail"]:::downstream
+  V --> F["Finance and procurement"]:::downstream
+  V --> S["Security, legal, CTO review"]:::downstream
+  V --> L["Audit and observability"]:::downstream
+
   classDef hero fill:#fef3c7,stroke:#d97706,stroke-width:3px,color:#78350f;
+  classDef coach fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e;
+  classDef proof fill:#ecfeff,stroke:#0891b2,color:#164e63;
   classDef sponsor fill:#dbeafe,stroke:#2563eb,color:#1e3a8a;
-  classDef default fill:#f1f5f9,stroke:#64748b,color:#0f172a;
+  classDef verify fill:#f1f5f9,stroke:#64748b,color:#0f172a;
+  classDef downstream fill:#dcfce7,stroke:#16a34a,color:#14532d;
 ```
 
-## Review Paths
+## Blast Radius ProofGraph
 
-- Run the Packet Workbench product path: `bash scripts/review_60.sh`; open the data-backed ProofGraph at `/proofgraph` or [examples/generated/proofgraph.html](examples/generated/proofgraph.html)
-- Ask the packet like a gateway: `python3 -m agent.packet_advisor --fixture ai_spend_budget_overrun --subscriber portkey_model_spend_gate --question "Can Portkey allow this spend?" --json`
-- Preview the Portkey dry-run gate: `python3 -m agent.portkey_adapter --fixture ai_spend_budget_overrun --mode dry-run --json`
-- Read the walkthrough: [Product Tour](docs/PRODUCT_TOUR.md)
-- Inspect the contract: [Public Conformance Contract](docs/CONTRACT.md)
-- Map the capability surface: [Agent Skills](docs/AGENT_SKILLS.md)
+Every ReviewRun emits a packet-bound ProofGraph: the repo, requested agent movement, sponsor proof, blocked claims, reviewer gates, and downstream guardrails all resolve back to one IA Packet.
 
-Deep references: [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), [Demo Recording Script](docs/DEMO_RECORDING_SCRIPT.md), [Command Reference](docs/COMMAND_REFERENCE.md), [Artifact Map](docs/ARTIFACT_MAP.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md), [Proof Health](examples/generated/support_triage_agent.proof_health.md), [V1 Capability Passport](docs/V1_CAPABILITY_PASSPORT.md), and [Agent Reviewer Instructions](AGENTS.md).
+In this public proof surface, the graph is generated from safe ReviewRun state and public fixtures.
 
-CLI fallback: `bash scripts/run.sh` stays offline, deterministic, dry-run, and no-write.
+In v1, the same graph expands across private customer context: real tool grants, workspace policy, reviewer systems, usage budgets, production routes, and audit trails.
 
-Private engine, public proof.
+## Sponsors And Downstream
+
+- **Tavily** adds source evidence.
+- **Composio** shows permission blast radius and dry-run tool planning.
+- **OpenClaw** records runtime trace and blocked action shape.
+- **Nebius** synthesizes reviewer-ready context over locked packet fields.
+- **Portkey** consumes the packet verdict through a BYO guardrail path.
+
+Sponsors contribute proof only. They do not approve, grant, write, spend, select providers, mutate packets, or replace human review.
+
+## Public Proof Surface, Private Engine
+
+This repository is not a v1 source dump.
+This repository is the public proof surface, not a private v1 code dump.
+This public harness does not approve access.
+
+It demonstrates the public packet authority contract: repo context, access request, proof debt, reviewer routing, Portkey guardrail handoff, ProofGraph, and zero-write safety boundaries.
+
+InferenceAtlas v1 extends the same contract across:
+
+- private policy and risk surface
+- reviewer workflows and approval routing
+- live customer environment context
+- production-grade integrations
+
+## Documentation
+
+- **Start:** [Command Reference](docs/COMMAND_REFERENCE.md) and [Demo Recording Script](docs/DEMO_RECORDING_SCRIPT.md)
+- **Understand:** [Public Conformance Contract](docs/CONTRACT.md)
+- **Integrate:** [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md)
+- **Deep proof:** [Product Tour](docs/PRODUCT_TOUR.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [Agent Skills](docs/AGENT_SKILLS.md), and [Artifact Map](docs/ARTIFACT_MAP.md)
+- **CTO path:** [CTO Handoff](docs/CTO_HANDOFF.md), [Architecture](docs/ARCHITECTURE.md), and [Proof Health](examples/generated/support_triage_agent.proof_health.md)
+- **Automated reviewer path:** [Judge Review Guide](docs/JUDGE_REVIEW_GUIDE.md), [Agentic Review Expected Output](docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md), and [Agent Reviewer Instructions](AGENTS.md)
+
+Advanced surface: Packet Workbench remains available for deterministic fixture inspection at `/workbench`.
+Legacy packet fixture review remains available with `bash scripts/review_60.sh`, which opens `/packet?fixture=mcp_tool_blast_radius&autorun=1`.
+
+CLI fallback:
+
+```bash
+bash scripts/run.sh
+```
+
+InferenceAtlas does not approve access, mutate packets, or push downstream policy.
+
+The packet is the authority. Humans review. Downstream gates enforce.

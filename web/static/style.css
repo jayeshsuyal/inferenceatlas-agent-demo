@@ -8322,3 +8322,161 @@ body[data-active-tab="start"] .repo-ask-floating .repo-coach-toggle {
     max-height: min(5rem, calc(36vh - 6.5rem));
   }
 }
+
+body:not([data-active-tab]) .repo-ask-floating,
+body[data-active-tab="start"] .repo-ask-floating {
+  position: fixed !important;
+  width: min(var(--ia-coach-float-width, 24rem), calc(100vw - 1.7rem)) !important;
+  max-height: min(var(--ia-coach-float-max-height, 18.5rem), calc(100vh - 1.7rem));
+}
+
+body:not([data-active-tab]) .repo-ask-floating.repo-coach-expanded,
+body[data-active-tab="start"] .repo-ask-floating.repo-coach-expanded {
+  max-height: min(var(--ia-coach-float-max-height, 30rem), calc(100vh - 1.7rem));
+}
+
+body:not([data-active-tab]) .repo-ask-floating.repo-coach-expanded .repo-coach-body,
+body[data-active-tab="start"] .repo-ask-floating.repo-coach-expanded .repo-coach-body {
+  max-height: min(calc(var(--ia-coach-float-max-height, 30rem) - 9rem), calc(100vh - 10rem));
+}
+
+body.coach-resize-active,
+body.coach-resize-active * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+.repo-coach-resize-handle {
+  position: absolute;
+  top: 0.75rem;
+  left: 0;
+  bottom: 0.75rem;
+  width: 0.55rem;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+.repo-coach-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0.15rem;
+  width: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transition: background 0.15s ease;
+}
+
+.repo-coach-resize-handle:hover::after,
+.repo-coach-resize-handle:focus-visible::after,
+.repo-coach-resize-handle.is-dragging::after {
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.repo-coach-thread-wrap {
+  max-height: min(12rem, 42vh);
+  overflow: auto;
+  padding-right: 0.15rem;
+}
+
+.repo-ask-floating.repo-coach-expanded .repo-coach-thread-wrap {
+  max-height: min(18rem, 52vh);
+}
+
+.repo-coach-thread {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.coach-thread-msg {
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.coach-thread-user {
+  justify-self: end;
+  max-width: 92%;
+  padding: 0.45rem 0.62rem;
+  border-radius: 12px 12px 4px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.coach-thread-thinking {
+  padding: 0.5rem 0.62rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.coach-thinking-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.coach-thinking-log {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.coach-thread-assistant .coach-assistant-bubble {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px 12px 12px 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.coach-assistant-narration {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.coach-assistant-sections {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.coach-section-card {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.coach-section-card span {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coach-section-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.packet-coach-quick-chips button.coach-chip,
+.coach-chip-followup button.coach-chip {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  padding: 0.28rem 0.62rem;
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.coach-chip-followup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}

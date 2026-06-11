@@ -1393,10 +1393,19 @@ def _review_run_coach_downstream_impact(run: ReviewRun) -> str:
     return "Portkey should treat this as `Block` while proof is missing; downstream systems consume the packet, not raw agent intent."
 
 
-def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str, Any]:
+def build_review_run_coach_answer(
+    run: ReviewRun,
+    prompt: str = "",
+    chip_entities: Optional[Mapping[str, Any]] = None,
+) -> dict[str, Any]:
     """Build a compact, deterministic Ask IA answer from ReviewRun state only."""
+    from .coach_suggestions import coach_answer_suggestions
+
     prompt_text = str(prompt or "").strip()
-    prompt_kind = _review_run_coach_prompt_kind(prompt_text)
+    pinned_kind = ""
+    if isinstance(chip_entities, Mapping):
+        pinned_kind = str(chip_entities.get("prompt_kind") or "").strip()
+    prompt_kind = pinned_kind or _review_run_coach_prompt_kind(prompt_text)
     movement = normalize_movement_classes(run.movement_classes)
     packet = run.packet or {}
     repo_name = _review_run_repo_name(run)
@@ -1447,6 +1456,12 @@ def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str,
     ):
         reply_lines.append(f"## {label}\n{sections[key]}")
 
+    suggestions = coach_answer_suggestions(
+        run,
+        prompt_kind=prompt_kind if prompt_text else "",
+        prompt_text=prompt_text,
+    )
+
     return _sanitize_public_value(
         {
             "schema_version": REVIEW_RUN_COACH_SCHEMA_VERSION,
@@ -1461,6 +1476,7 @@ def build_review_run_coach_answer(run: ReviewRun, prompt: str = "") -> dict[str,
             "portkey_state": _portkey_state(run.portkey_preview, default="Block"),
             "answer_shape": list(REVIEW_RUN_COACH_ANSWER_SHAPE),
             "sections": sections,
+            "suggestions": suggestions,
             "movement_classes": {
                 "allowed": movement["allowed"],
                 "review_required": movement["review_required"],

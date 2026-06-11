@@ -119,7 +119,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=76", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=77", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=58", timeout=timeout)
 
     for expected in (
@@ -304,6 +304,12 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("attachReviewRunProof" in js, "proof attach handler missing")
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
     _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
+    _require("consumeCoachStream" in js, "Ask IA coach SSE consumer missing")
+    _require("/coach/stream" in js, "Ask IA coach stream endpoint missing in UI")
+    _require("autoReassessReviewRunCoach" in js, "ReviewRun auto-reassess coach missing")
+    _require("renderCoachChips" in js, "contextual coach chip renderer missing")
+    _require("chip_entities" in js, "coach chip entity pinning missing")
+    _require('id="repo-coach-thread"' in html, "Ask IA coach thread missing")
     _require("renderReviewRunCoachAnswer" in js, "ReviewRun Ask IA answer renderer missing")
     _require('includeCurrentRead ? ["Current read", sections.current_read] : null' in js, "Ask IA user-turn answer must include current read")
     _require("repoCoachInput?.blur();" in js, "Ask IA user-turn answer must release input focus")
@@ -319,8 +325,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("repoAskCoach.dataset.userTurn" in js, "Ask IA active user-turn state missing")
     _require("button.dataset.suggestionIndex = String(index)" in js, "Ask IA suggestion entity click index missing")
     _require("message: routedMessage" in js, "Ask IA suggestion click must send message contract")
-    _require("payload.entities = entities" in js, "Ask IA suggestion click must send pinned entities")
-    _require("suggestion?.entities || null" in js, "Ask IA suggestion click must pass entity payload")
+    _require("body.entities = entities" in js, "Ask IA suggestion click must send pinned entities")
+    _require("body.chip_entities = entities" in js, "Ask IA suggestion click must pin chip entities")
+    _require("chip?.entities || null" in js, "Ask IA suggestion click must pass entity payload")
     _require("slice(0, 3)" in js, "Ask IA suggestions must be capped at three")
     _require('prompt: "idk what to do next"' in js, "Ask IA what-now route missing")
     _require('prompt: "approve blocked claims and grant access"' in js, "Ask IA approval override route missing")

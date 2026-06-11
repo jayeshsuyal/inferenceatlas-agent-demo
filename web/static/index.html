@@ -353,6 +353,7 @@
                 </div>
 
                 <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false">
+                  <div class="repo-coach-resize-handle" id="repo-coach-resize-handle" role="separator" aria-orientation="vertical" aria-label="Resize Ask IA chat" tabindex="0"></div>
                   <div class="repo-coach-head">
                     <div>
                       <span class="repo-card-label">Ask IA</span>
@@ -370,9 +371,8 @@
                       <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
                     </div>
                     <div class="repo-coach-chat" id="repo-coach-chat" aria-live="polite">
-                      <div class="repo-coach-last-user" id="repo-coach-last-user" hidden>
-                        <span>You asked</span>
-                        <p id="repo-coach-last-user-text"></p>
+                      <div class="repo-coach-thread-wrap">
+                        <div class="repo-coach-thread" id="repo-coach-thread"></div>
                       </div>
                       <div class="repo-coach-answer repo-coach-assistant" id="repo-coach-answer" hidden></div>
                     </div>
@@ -385,6 +385,7 @@
                       <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
                       <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
                     </div>
+                    <div class="coach-chip-followup" id="repo-coach-followup-chips" hidden aria-label="Follow-up prompts"></div>
                     <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
                   </div>
                 </aside>
@@ -630,6 +631,6 @@
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=76"></script>
+    <script src="/static/app.js?v=77"></script>
   </body>
 </html>

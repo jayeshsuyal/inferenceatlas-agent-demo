@@ -130,6 +130,9 @@ const repoAskCoach = document.getElementById("repo-ask-coach");
 const repoCoachBody = document.getElementById("repo-coach-body");
 const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
+const repoCoachThread = document.getElementById("repo-coach-thread");
+const repoCoachFollowupChips = document.getElementById("repo-coach-followup-chips");
+const repoCoachResizeHandle = document.getElementById("repo-coach-resize-handle");
 const repoStageRepoStatus = document.getElementById("repo-stage-repo-status");
 const repoStagePacketStatus = document.getElementById("repo-stage-packet-status");
 const repoStageProofStatus = document.getElementById("repo-stage-proof-status");
@@ -205,6 +208,23 @@ let currentReviewRunPortkeyTest = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
+const COACH_CHIP_MAX_LABEL = 28;
+const COACH_FLOAT_WIDTH_KEY = "ia_coach_float_width_px";
+const COACH_FLOAT_HEIGHT_KEY = "ia_coach_float_height_px";
+const COACH_FLOAT_WIDTH_MIN = 280;
+const COACH_FLOAT_WIDTH_MAX = 560;
+const COACH_FLOAT_HEIGHT_MIN = 220;
+const COACH_FLOAT_HEIGHT_MAX = 720;
+const STAGE_REASSESS_PROMPTS = {
+  repo_not_connected: "What should I do first to start a ReviewRun?",
+  repo_selected: "What will IA review when I generate the packet for this repo?",
+  packet_generating: "What is IA checking while the packet generates?",
+  packet_generated: "What proof is still missing before this review can move?",
+  proof_attached: "Proof is attached. What should change when I regenerate the packet?",
+  packet_regenerated: "What changed after the packet rerun?",
+  ready_to_export: "What changed in Portkey and blocked scope after rerun?",
+  portkey_tested: "Summarize the Portkey guardrail read for this ReviewRun.",
+};
 let currentReviewRunCoachSuggestions = [];
 let reviewRunScreenOverride = null;
 let walkthroughPayload = null;
@@ -997,22 +1017,316 @@ function safeCoachSuggestions(suggestions = []) {
     });
 }
 
-function renderReviewRunCoachSuggestions(suggestions = []) {
-  if (!packetCoachQuickChips) return;
-  currentReviewRunCoachSuggestions = safeCoachSuggestions(suggestions);
-  packetCoachQuickChips.replaceChildren();
-  packetCoachQuickChips.dataset.suggestionMode = "contract";
-  currentReviewRunCoachSuggestions.forEach((suggestion, index) => {
+function normalizeCoachSuggestion(input) {
+  if (typeof input === "string") {
+    const text = input.trim();
+    if (!text) return null;
+    return {
+      label: text.length > COACH_CHIP_MAX_LABEL ? `${text.slice(0, COACH_CHIP_MAX_LABEL - 1)}…` : text,
+      message: text,
+      entities: null,
+    };
+  }
+  if (input && typeof input === "object" && typeof input.message === "string" && input.message.trim()) {
+    const labelSource = String(input.label || input.message).trim();
+    return {
+      label:
+        labelSource.length > COACH_CHIP_MAX_LABEL
+          ? `${labelSource.slice(0, COACH_CHIP_MAX_LABEL - 1)}…`
+          : labelSource,
+      message: input.message.trim(),
+      entities: input.entities && typeof input.entities === "object" ? input.entities : null,
+    };
+  }
+  return null;
+}
+
+function renderCoachChips(container, suggestions, onPick, { disabled = false, hiddenWhenEmpty = true } = {}) {
+  if (!container) return;
+  const chips = (Array.isArray(suggestions) ? suggestions : [])
+    .map(normalizeCoachSuggestion)
+    .filter(Boolean)
+    .slice(0, 3);
+  container.replaceChildren();
+  if (!chips.length) {
+    container.hidden = hiddenWhenEmpty;
+    return;
+  }
+  container.hidden = false;
+  chips.forEach((chip, index) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.dataset.askPrompt = suggestion.message;
+    button.className = "coach-chip";
     button.dataset.suggestionIndex = String(index);
-    button.setAttribute("aria-label", suggestion.message);
-    button.textContent = suggestion.label;
-    button.disabled = reviewRunCoachBusy;
-    button.setAttribute("aria-disabled", String(reviewRunCoachBusy));
-    packetCoachQuickChips.appendChild(button);
+    button.textContent = chip.label;
+    button.title = chip.message;
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", String(disabled));
+    button.addEventListener("click", () => {
+      if (disabled) return;
+      onPick(chip);
+    });
+    container.appendChild(button);
   });
+}
+
+function handleCoachChipPick(chip) {
+  const entities = chip?.entities || null;
+  if (entities?.chip_action === "open_proofgraph") {
+    window.location.assign(reviewRunProofGraphUrl());
+    return;
+  }
+  setReviewCoachCollapsed(false);
+  askReviewRunCoach(chip?.message || chip?.label || "", entities);
+}
+
+function renderCoachSuggestionSets(suggestions = [], { followUp = false, disabled = false } = {}) {
+  const values = safeCoachSuggestions(suggestions);
+  if (followUp) {
+    renderCoachChips(repoCoachFollowupChips, values, handleCoachChipPick, { disabled });
+    if (packetCoachQuickChips) {
+      packetCoachQuickChips.hidden = true;
+      packetCoachQuickChips.replaceChildren();
+    }
+    return;
+  }
+  currentReviewRunCoachSuggestions = values;
+  renderCoachChips(packetCoachQuickChips, values, handleCoachChipPick, { disabled });
+  if (repoCoachFollowupChips) {
+    repoCoachFollowupChips.hidden = true;
+    repoCoachFollowupChips.replaceChildren();
+  }
+}
+
+function renderReviewRunCoachSuggestions(suggestions = []) {
+  renderCoachSuggestionSets(suggestions, { followUp: false, disabled: reviewRunCoachBusy });
+}
+
+function renderPacketCoachSuggestions(suggestions, { container = packetInlineCoachPrompts, disabled = false } = {}) {
+  renderCoachChips(
+    container,
+    suggestions,
+    (chip) => askPacketInlineCoach(chip?.message || chip?.label || "", chip?.entities || null),
+    { disabled }
+  );
+}
+
+function coachPlainText(text) {
+  return String(text || "").replace(/`/g, "");
+}
+
+function setCoachFloatingExpanded(expanded) {
+  if (!repoAskCoach) return;
+  repoAskCoach.classList.toggle("repo-coach-expanded", Boolean(expanded));
+}
+
+function applyCoachFloatingSize(widthPx, heightPx) {
+  if (!repoAskCoach) return;
+  const width = Math.min(COACH_FLOAT_WIDTH_MAX, Math.max(COACH_FLOAT_WIDTH_MIN, Math.round(widthPx)));
+  const height = Math.min(COACH_FLOAT_HEIGHT_MAX, Math.max(COACH_FLOAT_HEIGHT_MIN, Math.round(heightPx)));
+  repoAskCoach.style.setProperty("--ia-coach-float-width", `${width}px`);
+  repoAskCoach.style.setProperty("--ia-coach-float-max-height", `${height}px`);
+  try {
+    localStorage.setItem(COACH_FLOAT_WIDTH_KEY, String(width));
+    localStorage.setItem(COACH_FLOAT_HEIGHT_KEY, String(height));
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function restoreCoachFloatingSize() {
+  try {
+    const width = Number(localStorage.getItem(COACH_FLOAT_WIDTH_KEY));
+    const height = Number(localStorage.getItem(COACH_FLOAT_HEIGHT_KEY));
+    if (Number.isFinite(width) && Number.isFinite(height)) {
+      applyCoachFloatingSize(width, height);
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function initCoachFloatingResize() {
+  if (!repoCoachResizeHandle || !repoAskCoach) return;
+  restoreCoachFloatingSize();
+
+  let dragging = false;
+  const stopDrag = () => {
+    dragging = false;
+    repoCoachResizeHandle.classList.remove("is-dragging");
+    document.body.classList.remove("coach-resize-active");
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", stopDrag);
+    window.removeEventListener("pointercancel", stopDrag);
+  };
+  const onPointerMove = (event) => {
+    if (!dragging) return;
+    const rect = repoAskCoach.getBoundingClientRect();
+    const nextWidth = rect.right - event.clientX;
+    const nextHeight = Math.min(
+      COACH_FLOAT_HEIGHT_MAX,
+      Math.max(COACH_FLOAT_HEIGHT_MIN, rect.bottom - event.clientY + 120)
+    );
+    applyCoachFloatingSize(nextWidth, nextHeight);
+  };
+
+  repoCoachResizeHandle.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    dragging = true;
+    repoCoachResizeHandle.classList.add("is-dragging");
+    document.body.classList.add("coach-resize-active");
+    repoCoachResizeHandle.setPointerCapture(event.pointerId);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+  });
+
+  repoCoachResizeHandle.addEventListener("keydown", (event) => {
+    const rect = repoAskCoach.getBoundingClientRect();
+    const step = event.shiftKey ? 48 : 16;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      applyCoachFloatingSize(rect.width + step, rect.height);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      applyCoachFloatingSize(rect.width - step, rect.height);
+    }
+  });
+}
+
+function scrollCoachThread() {
+  const wrap = repoCoachThread?.closest(".repo-coach-thread-wrap");
+  if (wrap) wrap.scrollTop = wrap.scrollHeight;
+}
+
+function updateCoachPinnedRead(text) {
+  if (repoCoachRead && text) {
+    repoCoachRead.textContent = coachPlainText(text);
+  }
+}
+
+function appendCoachThreadUserMessage(text) {
+  if (!repoCoachThread || !text) return;
+  setCoachFloatingExpanded(true);
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-user";
+  row.innerHTML = `<p>${escapeHtml(coachPlainText(text))}</p>`;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+function appendCoachThreadThinking() {
+  if (!repoCoachThread) return null;
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-thinking";
+  row.innerHTML = `
+    <p class="coach-thinking-title">Thinking…</p>
+    <ul class="coach-thinking-log"></ul>
+  `;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+  return { row, list: row.querySelector(".coach-thinking-log") };
+}
+
+function appendCoachThreadThinkingLine(listEl, line) {
+  if (!listEl || !line) return;
+  const li = document.createElement("li");
+  li.textContent = line;
+  listEl.appendChild(li);
+  scrollCoachThread();
+}
+
+function createCoachAssistantBubble() {
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-assistant";
+  const bubble = document.createElement("div");
+  bubble.className = "coach-assistant-bubble";
+  const narration = document.createElement("p");
+  narration.className = "coach-assistant-narration";
+  narration.hidden = true;
+  const sections = document.createElement("div");
+  sections.className = "coach-assistant-sections";
+  bubble.appendChild(narration);
+  bubble.appendChild(sections);
+  row.appendChild(bubble);
+  return { row, narrationEl: narration, sectionsEl: sections };
+}
+
+function appendCoachSectionCard(sectionsEl, label, value) {
+  if (!sectionsEl || !value) return;
+  const card = document.createElement("div");
+  card.className = "coach-section-card";
+  card.innerHTML = `
+    <span>${escapeHtml(label)}</span>
+    <p>${escapeHtml(coachPlainText(value))}</p>
+  `;
+  sectionsEl.appendChild(card);
+}
+
+function appendCoachAssistantMessage(answer) {
+  if (!repoCoachThread || !answer) return;
+  const sections = answer.sections || {};
+  const narration =
+    answer.display_narration ||
+    answer.governance_narration ||
+    (answer.narration_live ? answer.narration : "") ||
+    "";
+  updateCoachPinnedRead(sections.current_read);
+  const { row, narrationEl, sectionsEl } = createCoachAssistantBubble();
+  if (narration) {
+    narrationEl.hidden = false;
+    narrationEl.textContent = coachPlainText(narration);
+  }
+  appendCoachSectionCard(sectionsEl, "What blocks movement", sections.what_blocks_movement);
+  appendCoachSectionCard(sectionsEl, "Next human action", sections.next_human_action);
+  appendCoachSectionCard(sectionsEl, "Downstream impact", sections.downstream_impact);
+  appendCoachSectionCard(sectionsEl, "Safety", sections.safety);
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+async function consumeCoachStream(response, thinkingUi, assistantParts) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() || "";
+    for (const chunk of chunks) {
+      const line = chunk.trim();
+      if (!line.startsWith("data:")) continue;
+      let payload;
+      try {
+        payload = JSON.parse(line.slice(5).trim());
+      } catch {
+        continue;
+      }
+      if (payload.type === "thinking" && payload.line) {
+        appendCoachThreadThinkingLine(thinkingUi?.list, payload.line);
+      } else if (payload.type === "pinned" && payload.current_read) {
+        updateCoachPinnedRead(payload.current_read);
+      } else if (payload.type === "section" && payload.label && payload.value) {
+        appendCoachSectionCard(assistantParts.sectionsEl, payload.label, payload.value);
+        scrollCoachThread();
+      } else if (payload.type === "narration_chunk" && payload.text) {
+        assistantParts.narrationEl.hidden = false;
+        assistantParts.narrationEl.textContent += payload.text;
+        scrollCoachThread();
+      } else if (payload.type === "done") {
+        return payload;
+      } else if (payload.type === "error") {
+        throw new Error(payload.detail || "Coach stream failed");
+      }
+    }
+  }
+  throw new Error("Coach stream ended without a reply");
+}
+
+function removeCoachThreadNode(parts) {
+  if (parts?.row?.parentNode) parts.row.parentNode.removeChild(parts.row);
 }
 
 function renderReviewRunCoachAnswer(answer) {
@@ -1377,7 +1691,7 @@ function setCoachForSelectedRepo(repo) {
       ? "Repo indexing. Ask IA will update after the repo is ready."
       : "Repo selected. Ask IA is coaching packet generation."
   );
-  void refreshReviewRunCoachSuggestions(indexing ? "Current read" : "idk what to do next");
+  void refreshReviewRunCoachSuggestions();
 }
 
 function setCoachForReviewLoading() {
@@ -1425,7 +1739,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Updated packet ready. No approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what will Portkey do?");
+    void refreshReviewRunCoachSuggestions();
     return;
   }
 
@@ -1440,7 +1754,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Proof attached. Verdict unchanged; no approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what next");
+    void refreshReviewRunCoachSuggestions();
     return;
   }
 
@@ -1454,14 +1768,21 @@ function setCoachForPacket(packet, portkeyPayload) {
     },
     "Packet generated. IA did not approve or write."
   );
-  void refreshReviewRunCoachSuggestions("idk what to do next");
+  void refreshReviewRunCoachSuggestions();
 }
 
 function resetReviewRunCoachAnswer() {
-  if (!repoCoachAnswer) return;
-  repoCoachAnswer.hidden = true;
-  repoCoachAnswer.innerHTML = "";
-  repoCoachAnswer.removeAttribute("data-prompt-kind");
+  if (repoCoachThread) repoCoachThread.replaceChildren();
+  if (repoCoachAnswer) {
+    repoCoachAnswer.hidden = true;
+    repoCoachAnswer.innerHTML = "";
+    repoCoachAnswer.removeAttribute("data-prompt-kind");
+  }
+  if (repoCoachFollowupChips) {
+    repoCoachFollowupChips.hidden = true;
+    repoCoachFollowupChips.replaceChildren();
+  }
+  setCoachFloatingExpanded(false);
 }
 
 function renderLocalReviewRunCoach(sections) {
@@ -1473,31 +1794,18 @@ function renderLocalReviewRunCoach(sections) {
   }
 }
 
-async function refreshReviewRunCoachSuggestions(prompt = "Current read") {
+async function refreshReviewRunCoachSuggestions() {
   const refreshSeq = ++reviewRunCoachSuggestionRefreshSeq;
   if (!currentReviewRun?.run_id) {
     renderReviewRunCoachSuggestions();
     return;
   }
   try {
-    const routedMessage = routeReviewRunCoachPrompt(prompt);
-    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: routedMessage,
-        message: routedMessage,
-        entities: {
-          source: "review_run",
-          prompt_kind: "current_read",
-          run_id: currentReviewRun.run_id,
-          stage: currentReviewRun.stage || reviewRunUiStage(),
-        },
-      }),
-    });
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}`);
     const data = await res.json().catch(() => ({}));
     if (refreshSeq !== reviewRunCoachSuggestionRefreshSeq) return;
     if (res.ok && data.ok) {
+      if (data.run) currentReviewRun = data.run;
       renderReviewRunCoachSuggestions(data.suggestions || []);
     }
   } catch (_) {
@@ -1507,39 +1815,81 @@ async function refreshReviewRunCoachSuggestions(prompt = "Current read") {
   }
 }
 
-async function askReviewRunCoach(prompt, entities = null) {
-  if (reviewRunCoachBusy) return;
+async function autoReassessReviewRunCoach(trigger, { fallbackPacket, fallbackPortkey } = {}) {
+  const stage = trigger || reviewRunUiStage(fallbackPacket);
+  const prompt =
+    STAGE_REASSESS_PROMPTS[stage] ||
+    STAGE_REASSESS_PROMPTS[reviewRunUiStage(fallbackPacket)] ||
+    "Reassess the current ReviewRun state.";
+  if (!currentReviewRun?.run_id) {
+    if (fallbackPacket) setCoachForPacket(fallbackPacket, fallbackPortkey);
+    else setCoachForNoRepo();
+    return false;
+  }
+  return askReviewRunCoach(prompt, { source: "review_run", reassess_trigger: stage }, { reassess: true });
+}
+
+async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false } = {}) {
+  if (reviewRunCoachBusy) return false;
   const message = String(prompt || "Current read").trim() || "Current read";
   const routedMessage = routeReviewRunCoachPrompt(message);
   const wantsPortkeyStage = /\bportkey\b/i.test(routedMessage);
-  setReviewRunCoachUserPrompt(message);
   if (!currentReviewRun?.run_id) {
     setCoachForNoRepo(true);
-    setReviewRunCoachUserPrompt(message);
-    return;
+    return false;
   }
 
+  const entities =
+    chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length ? chipEntities : null;
+  const reassessTrigger = entities?.reassess_trigger || (reassess ? reviewRunUiStage(packetDetail) : "");
+  const userLabel = reassess
+    ? `↻ Reassess · ${String(reassessTrigger || "stage change").replace(/_/g, " ")}`
+    : message;
+  if (!reassess) setReviewRunCoachUserPrompt(message);
+  appendCoachThreadUserMessage(userLabel);
+
   setReviewRunCoachBusy(true);
+  const thinkingUi = appendCoachThreadThinking();
+  const assistantParts = createCoachAssistantBubble();
   let ok = false;
   try {
-    const payload = {
+    const body = {
       prompt: routedMessage,
       message: routedMessage,
     };
-    if (entities && typeof entities === "object") payload.entities = entities;
-    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
-    renderReviewRunCoachAnswer(data.answer || {});
-    renderReviewRunCoachSuggestions(data.suggestions || []);
+    if (entities) {
+      body.entities = entities;
+      body.chip_entities = entities;
+    }
+    if (reassessTrigger) body.reassess_trigger = reassessTrigger;
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach/stream`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Ask IA coach stream failed");
+    }
+    const data = await consumeCoachStream(res, thinkingUi, assistantParts);
+    removeCoachThreadNode(thinkingUi);
+    repoCoachThread.appendChild(assistantParts.row);
+    scrollCoachThread();
+    const answer = data.answer || {};
+    const suggestions = data.suggestions || answer.suggestions || [];
+    if (reassess) {
+      renderCoachSuggestionSets(suggestions, { followUp: false });
+    } else {
+      renderCoachSuggestionSets(suggestions, { followUp: true });
+    }
     if (wantsPortkeyStage) openReviewRunPortkeyStage();
     ok = true;
   } catch (err) {
-    resetReviewRunCoachAnswer();
+    removeCoachThreadNode(thinkingUi);
+    removeCoachThreadNode(assistantParts);
     if (packetCoachStatus) {
       packetCoachStatus.hidden = false;
       packetCoachStatus.classList.add("error");
@@ -1549,11 +1899,14 @@ async function askReviewRunCoach(prompt, entities = null) {
     setReviewRunCoachBusy(
       false,
       ok
-        ? "Ask IA read current ReviewRun. Decision lock unchanged."
+        ? reassess
+          ? "Ask IA reassessed this ReviewRun. Decision lock unchanged."
+          : "Ask IA read current ReviewRun. Decision lock unchanged."
         : packetCoachStatus?.textContent || ""
     );
     if (!ok && packetCoachStatus) packetCoachStatus.classList.add("error");
   }
+  return ok;
 }
 
 function updateReviewRepoConnectUi() {
@@ -1629,6 +1982,7 @@ function renderReviewRepoSummary(repo = null) {
   }
   resetReviewRunCoachAnswer();
   setCoachForSelectedRepo(selected);
+  void autoReassessReviewRunCoach("repo_selected");
   updateReviewCtaState();
 }
 
@@ -3991,7 +4345,7 @@ async function testReviewRunPortkeyGuardrail() {
       },
       "Portkey guardrail test recorded locally. No approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what will Portkey do?");
+    await autoReassessReviewRunCoach("portkey_tested", { fallbackPacket: packetDetail, fallbackPortkey: packetPortkeyPreview });
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -4056,6 +4410,10 @@ async function attachReviewRunProof() {
         "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    await autoReassessReviewRunCoach("proof_attached", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -4105,6 +4463,10 @@ async function rerunReviewRunPacket() {
         "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    await autoReassessReviewRunCoach("packet_regenerated", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -4157,6 +4519,10 @@ async function runRepoProofCockpit() {
     packetPortkeyPreview = payload;
     packetPortkeyProofLoop = proofLoop;
     renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+    await autoReassessReviewRunCoach("packet_generated", {
+      fallbackPacket: cockpitPacket,
+      fallbackPortkey: payload,
+    });
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -4477,6 +4843,7 @@ async function loadPacketDetail() {
     if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
     renderPacketDetail(data);
     unlockPacketCoach();
+    renderPacketCoachSuggestions(data.suggestions || []);
     setPacketInlineCoachStatus("Ask a packet-backed follow-up. IA stays read-only and cannot approve or write.");
     window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
     try {
@@ -4492,7 +4859,7 @@ async function loadPacketDetail() {
   }
 }
 
-async function askPacketInlineCoach(prompt) {
+async function askPacketInlineCoach(prompt, chipEntities = null) {
   if (packetInlineCoachBusy) return;
   const message = String(prompt || "").trim();
   if (!message) return;
@@ -4512,14 +4879,18 @@ async function askPacketInlineCoach(prompt) {
       await loadPacketDetail();
     }
     const fixtureId = currentPacketFixtureForChat() || packetSelectedFixtureId();
+    const body = {
+      message,
+      session_id: sessionId,
+      current_fixture: fixtureId,
+    };
+    if (chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length) {
+      body.chip_entities = chipEntities;
+    }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message,
-        session_id: sessionId,
-        current_fixture: fixtureId,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Ask IA failed (${res.status})`);
@@ -6116,11 +6487,17 @@ form.addEventListener("submit", (e) => {
 });
 
 packetCoachQuickChips?.addEventListener("click", (event) => {
-  const btn = event.target.closest("button[data-ask-prompt]");
+  const btn = event.target.closest("button");
   if (!btn || busy || reviewRunCoachBusy) return;
   const suggestion = currentReviewRunCoachSuggestions[Number(btn.dataset.suggestionIndex || -1)];
-  setReviewCoachCollapsed(false);
-  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "", suggestion?.entities || null);
+  if (suggestion) {
+    handleCoachChipPick(suggestion);
+    return;
+  }
+  if (btn.dataset.askPrompt) {
+    setReviewCoachCollapsed(false);
+    askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
+  }
 });
 
 repoCoachForm?.addEventListener("submit", (event) => {
@@ -6200,6 +6577,7 @@ document.body.dataset.activeTab = "start";
 setupTabs();
 
 (async function initApp() {
+  initCoachFloatingResize();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();
   await loadMeta();

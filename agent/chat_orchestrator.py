@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 from .chat_answer import (
     ChatAnswer,
@@ -528,8 +528,14 @@ def orchestrate_chat(
     file_blocks: List[Tuple[str, str]],
     attach_warnings: List[str],
     current_fixture: str = "",
+    chip_entities: Optional[dict[str, Any]] = None,
 ) -> OrchestratedChat:
     """Plan and assemble a full chat turn."""
+    if isinstance(chip_entities, dict):
+        fixture_pin = str(chip_entities.get("fixture") or "").strip()
+        if fixture_pin and not str(current_fixture or "").strip():
+            current_fixture = fixture_pin
+
     llm_message, skills_used, github_used, github_index, drive_used, drive_index = (
         assemble_orchestrated_message(
             message=message,

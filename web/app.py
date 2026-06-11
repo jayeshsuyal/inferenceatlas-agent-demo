@@ -21,7 +21,7 @@ from agent.config import (
     LLM_PROVIDER,
     TAVILY_API_KEY,
 )
-from agent.coach_suggestions import suggestions_for_review_run
+from agent.coach_suggestions import build_packet_idle_suggestions, suggestions_for_review_run
 from agent.decision_brief import build_agent_access_decision_brief
 from agent.downstream_gate import build_downstream_gate_decision
 from agent.mind import init_mind, load_mind, save_mind, step
@@ -216,6 +216,7 @@ class ChatRequest(BaseModel):
     github_repos: List[str] = Field(default_factory=list)
     drive_file_ids: List[str] = Field(default_factory=list)
     current_fixture: str = Field(default="", max_length=120)
+    chip_entities: Optional[dict[str, Any]] = None
 
 
 class GithubAttachRequest(BaseModel):
@@ -918,7 +919,11 @@ def _build_review_run_coach_response(
         chip_entities.update(dict(body.chip_entities or {}))
         if body.reassess_trigger:
             chip_entities.setdefault("reassess_trigger", body.reassess_trigger)
-        base_answer = build_review_run_coach_answer(run, prompt)
+        base_answer = build_review_run_coach_answer(
+            run,
+            prompt,
+            chip_entities=chip_entities or None,
+        )
         answer = enrich_review_run_coach_answer(
             run,
             base_answer,
@@ -926,7 +931,7 @@ def _build_review_run_coach_response(
             chip_entities=chip_entities or None,
             store_dir=COACH_SESSION_DIR,
         )
-        suggestions = suggestions_for_review_run(run)
+        suggestions = list(answer.get("suggestions") or suggestions_for_review_run(run))
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     return run, answer, suggestions
@@ -1080,11 +1085,17 @@ def get_review_run(run_id: str) -> dict:
                 "principle": "Private engine, public proof.",
             },
         }
+    try:
+        run_obj = ReviewRun.from_dict(run)
+        suggestions = suggestions_for_review_run(run_obj)
+    except ValueError:
+        suggestions = []
     return {
         "ok": True,
         "read_only": True,
         "run": run,
         "record": review_run_record_summary(record),
+        "suggestions": suggestions,
     }
 
 
@@ -1786,8 +1797,13 @@ def ia_packet_detail(fixture: str = Query(default="mcp_tool_blast_radius")) -> d
         label="IA Packet JSON",
         use_timestamp=False,
     )
+    try:
+        suggestions = build_packet_idle_suggestions(fixture_id)
+    except Exception:
+        suggestions = []
     return {
         **detail,
+        "suggestions": suggestions,
         "output_files": [
             _file_ref(md["file_id"], md["label"]),
             _file_ref(js["file_id"], js["label"]),
@@ -1912,6 +1928,7 @@ def _execute_chat(body: ChatRequest) -> ChatResponse:
         file_blocks=file_blocks,
         attach_warnings=file_warnings,
         current_fixture=body.current_fixture.strip(),
+        chip_entities=body.chip_entities,
     )
 
     plain = (
@@ -2084,6 +2101,7 @@ def chat_stream(body: ChatRequest) -> StreamingResponse:
                 file_blocks=file_blocks,
                 attach_warnings=file_warnings,
                 current_fixture=body.current_fixture.strip(),
+                chip_entities=body.chip_entities,
             )
 
             for line in orch.thinking_steps:

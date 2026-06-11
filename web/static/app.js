@@ -126,8 +126,6 @@ const repoReviewRequest = document.getElementById("repo-review-request");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCoachAnswer = document.getElementById("repo-coach-answer");
-const repoCoachLastUser = document.getElementById("repo-coach-last-user");
-const repoCoachLastUserText = document.getElementById("repo-coach-last-user-text");
 const repoCoachForm = document.getElementById("repo-coach-form");
 const repoCoachInput = document.getElementById("repo-coach-input");
 const repoAskCoach = document.getElementById("repo-ask-coach");
@@ -1620,16 +1618,10 @@ function coachPromptKindLabel(kind) {
 function setReviewRunCoachUserPrompt(prompt) {
   const message = String(prompt || "").trim();
   if (repoAskCoach) repoAskCoach.dataset.userTurn = String(Boolean(message));
-  if (!repoCoachLastUser || !repoCoachLastUserText) return;
-  repoCoachLastUser.hidden = !message;
-  repoCoachLastUserText.textContent = message;
 }
 
 function clearReviewRunCoachUserPrompt() {
   if (repoAskCoach) repoAskCoach.dataset.userTurn = "false";
-  if (!repoCoachLastUser || !repoCoachLastUserText) return;
-  repoCoachLastUser.hidden = true;
-  repoCoachLastUserText.textContent = "";
 }
 
 function selectedReviewRepoName() {

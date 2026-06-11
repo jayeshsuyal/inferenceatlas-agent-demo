@@ -157,8 +157,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Minimize Ask IA chat",
         'data-coach-mode="floating"',
         "repo-coach-chat",
-        "repo-coach-last-user",
-        "You asked",
+        "repo-coach-thread",
+        "repo-coach-followup-chips",
+        "repo-coach-maximize",
+        "repo-index-tracker",
         "Ask what to do next...",
         "Review AI spend",
         "Test downstream gate",
@@ -464,7 +466,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("position: fixed !important;" in css, "Ask IA must float above the stage")
     _require("grid-template-columns: minmax(0, 1fr) !important;" in css, "runway must not reserve a sidecar rail")
     _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")
-    _require(".repo-coach-last-user" in css, "Ask IA user bubble CSS missing")
+    _require(".repo-coach-thread" in css, "Ask IA thread CSS missing")
+    _require(".coach-thread-user" in css, "Ask IA user bubble CSS missing")
+    _require(".coach-thread-assistant" in css, "Ask IA assistant bubble CSS missing")
+    _require(".coach-chip-followup" in css, "Ask IA follow-up chip CSS missing")
     _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-current-read' in css, "Ask IA user-turn duplicate current read must hide")
     _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-chat' in css, "Ask IA user-turn transcript height CSS missing")
     _require("min-height: 20rem;" in css, "Ask IA user-turn transcript must reserve answer space")

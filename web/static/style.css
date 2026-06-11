@@ -8096,26 +8096,6 @@ body[data-active-tab="start"] .repo-coach-chat {
   gap: 0.52rem;
 }
 
-body:not([data-active-tab]) .repo-coach-last-user,
-body[data-active-tab="start"] .repo-coach-last-user {
-  justify-self: end;
-  max-width: min(92%, 21rem);
-  padding: 0.58rem 0.68rem;
-  border: 1px solid rgba(245, 196, 81, 0.22);
-  border-radius: 12px 12px 4px 12px;
-  background:
-    linear-gradient(180deg, rgba(245, 196, 81, 0.12), rgba(255, 255, 255, 0.03)),
-    rgba(245, 196, 81, 0.07);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-body:not([data-active-tab]) .repo-coach-last-user[hidden],
-body[data-active-tab="start"] .repo-coach-last-user[hidden] {
-  display: none !important;
-}
-
-body:not([data-active-tab]) .repo-coach-last-user span,
-body[data-active-tab="start"] .repo-coach-last-user span,
 body:not([data-active-tab]) .repo-coach-assistant-head span,
 body[data-active-tab="start"] .repo-coach-assistant-head span {
   display: block;
@@ -8125,15 +8105,6 @@ body[data-active-tab="start"] .repo-coach-assistant-head span {
   letter-spacing: 0.075em;
   line-height: 1.15;
   text-transform: uppercase;
-}
-
-body:not([data-active-tab]) .repo-coach-last-user p,
-body[data-active-tab="start"] .repo-coach-last-user p {
-  margin: 0.16rem 0 0;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8rem;
-  font-weight: 750;
-  line-height: 1.28;
 }
 
 body:not([data-active-tab]) .repo-coach-assistant,

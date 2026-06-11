@@ -7516,3 +7516,116 @@ body[data-active-tab="start"] .repo-portkey-test-action {
     justify-self: stretch;
   }
 }
+
+/* PR 136: Ask IA is the closeable operator sidecar for the current ReviewRun. */
+body:not([data-active-tab]) .repo-coach-head,
+body[data-active-tab="start"] .repo-coach-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+body:not([data-active-tab]) .repo-coach-head h3,
+body[data-active-tab="start"] .repo-coach-head h3 {
+  margin: 0.16rem 0 0 !important;
+}
+
+body:not([data-active-tab]) .repo-coach-toggle,
+body[data-active-tab="start"] .repo-coach-toggle {
+  min-height: 2rem;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+body:not([data-active-tab]) .repo-coach-toggle:hover,
+body[data-active-tab="start"] .repo-coach-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
+}
+
+body:not([data-active-tab]) .repo-coach-stage-line,
+body[data-active-tab="start"] .repo-coach-stage-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.58rem 0.68rem;
+  border: 1px solid rgba(245, 196, 81, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(245, 196, 81, 0.1), rgba(255, 255, 255, 0.025)),
+    rgba(0, 0, 0, 0.24);
+}
+
+body:not([data-active-tab]) .repo-coach-stage-line span,
+body[data-active-tab="start"] .repo-coach-stage-line span,
+body:not([data-active-tab]) .repo-coach-current-read span,
+body[data-active-tab="start"] .repo-coach-current-read span {
+  color: rgba(255, 255, 255, 0.46);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.075em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-coach-stage-line strong,
+body[data-active-tab="start"] .repo-coach-stage-line strong {
+  color: #f7d36d;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  text-align: right;
+}
+
+body:not([data-active-tab]) .repo-coach-body,
+body[data-active-tab="start"] .repo-coach-body {
+  display: grid;
+  gap: 0.8rem;
+}
+
+body:not([data-active-tab]) .repo-coach-body[hidden],
+body[data-active-tab="start"] .repo-coach-body[hidden] {
+  display: none;
+}
+
+body:not([data-active-tab]) .repo-coach-current-read,
+body[data-active-tab="start"] .repo-coach-current-read {
+  display: grid;
+  gap: 0.34rem;
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar[data-coach-collapsed="true"],
+body[data-active-tab="start"] .repo-ask-sidecar[data-coach-collapsed="true"] {
+  min-height: 0;
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar[data-coach-collapsed="true"] .repo-coach-stage-line,
+body[data-active-tab="start"] .repo-ask-sidecar[data-coach-collapsed="true"] .repo-coach-stage-line {
+  margin-top: 0.2rem;
+}
+
+body:not([data-active-tab]) .repo-coach-answer-row,
+body[data-active-tab="start"] .repo-coach-answer-row {
+  padding: 0.72rem 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+body:not([data-active-tab]) .repo-coach-answer-row span,
+body[data-active-tab="start"] .repo-coach-answer-row span {
+  color: rgba(255, 255, 255, 0.44) !important;
+}
+
+body:not([data-active-tab]) .repo-coach-answer-row strong,
+body[data-active-tab="start"] .repo-coach-answer-row strong {
+  color: rgba(255, 255, 255, 0.9) !important;
+}

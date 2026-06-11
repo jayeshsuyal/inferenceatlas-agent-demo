@@ -124,6 +124,10 @@ const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCoachAnswer = document.getElementById("repo-coach-answer");
 const repoCoachForm = document.getElementById("repo-coach-form");
 const repoCoachInput = document.getElementById("repo-coach-input");
+const repoAskCoach = document.getElementById("repo-ask-coach");
+const repoCoachBody = document.getElementById("repo-coach-body");
+const repoCoachStage = document.getElementById("repo-coach-stage");
+const repoCoachToggle = document.getElementById("repo-coach-toggle");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -984,6 +988,74 @@ function selectedReviewRepoName() {
   return currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo";
 }
 
+const REVIEW_RUN_STAGE_CHROME = {
+  repo_not_connected: {
+    label: "Connect repo",
+    placeholder: "Ask what to connect next...",
+  },
+  repo_connected: {
+    label: "Choose repo",
+    placeholder: "Ask which repo to review...",
+  },
+  repo_selected: {
+    label: "Repo selected",
+    placeholder: "Ask how to generate the packet...",
+  },
+  repo_indexed: {
+    label: "Ready to review",
+    placeholder: "Ask what the packet will check...",
+  },
+  packet_generating: {
+    label: "Generating packet",
+    placeholder: "Ask what IA is checking...",
+  },
+  packet_generated: {
+    label: "Packet generated",
+    placeholder: "Ask what proof is missing...",
+  },
+  proof_attached: {
+    label: "Proof attached",
+    placeholder: "Ask what to rerun next...",
+  },
+  packet_regenerated: {
+    label: "Updated packet",
+    placeholder: "Ask what changed...",
+  },
+  portkey_tested: {
+    label: "Portkey tested",
+    placeholder: "Ask what Portkey will do...",
+  },
+  export_ready: {
+    label: "Export ready",
+    placeholder: "Ask what to route next...",
+  },
+};
+
+function reviewRunStageChrome(stage) {
+  return REVIEW_RUN_STAGE_CHROME[stage] || REVIEW_RUN_STAGE_CHROME.repo_not_connected;
+}
+
+function updateReviewRunCoachChrome(stage) {
+  const chrome = reviewRunStageChrome(stage);
+  if (repoAskCoach) repoAskCoach.dataset.reviewStage = stage;
+  if (repoCoachStage) repoCoachStage.textContent = chrome.label;
+  if (repoCoachInput) repoCoachInput.placeholder = chrome.placeholder;
+}
+
+function setReviewCoachCollapsed(collapsed) {
+  const isCollapsed = Boolean(collapsed);
+  if (repoAskCoach) repoAskCoach.dataset.coachCollapsed = String(isCollapsed);
+  if (repoCoachBody) repoCoachBody.hidden = isCollapsed;
+  if (repoCoachToggle) {
+    repoCoachToggle.setAttribute("aria-expanded", String(!isCollapsed));
+    repoCoachToggle.setAttribute(
+      "aria-label",
+      isCollapsed ? "Open Ask IA coach" : "Collapse Ask IA coach"
+    );
+    repoCoachToggle.textContent = isCollapsed ? "Open Ask IA" : "Hide";
+  }
+}
+
 function reviewRunUiStage(packet = packetDetail) {
   if (currentReviewRunPortkeyTest) return "portkey_tested";
   if (packet?.review_run?.stage === "ready_to_export" || packet?.review_delta?.packet_changed) {
@@ -1001,6 +1073,7 @@ function reviewRunUiStage(packet = packetDetail) {
 
 function setReviewRunUiStage(stage = reviewRunUiStage()) {
   if (repoProofCockpit) repoProofCockpit.dataset.reviewStage = stage;
+  updateReviewRunCoachChrome(stage);
   return stage;
 }
 
@@ -1037,51 +1110,41 @@ function setCoachForNoRepo(expanded = false) {
     downstream_impact: "ProofGraph and Portkey wait for the IA Packet before showing a downstream state.",
     safety: "IA did not approve, dispatch, write, or mutate access.",
   };
-  if (expanded) {
-    setReviewRunCoachStage(
-      sections,
-      liveSignedIn
-        ? "GitHub live connected. Choose one repo."
-        : demoSignedIn
-          ? "Demo GitHub connected. Choose demo repo or connect live GitHub."
-          : liveAuthConfigured
-            ? "Ask IA is ready to guide repo selection."
-            : "Live GitHub OAuth env missing in this server."
-    );
-    return;
-  }
-  resetReviewRunCoachAnswer();
-  if (repoCoachRead) repoCoachRead.textContent = sections.current_read;
-  if (packetCoachStatus) {
-    packetCoachStatus.hidden = false;
-    packetCoachStatus.classList.remove("error");
-    packetCoachStatus.textContent = liveSignedIn
+  setReviewRunCoachStage(
+    sections,
+    liveSignedIn
       ? "GitHub live connected. Choose one repo."
       : demoSignedIn
         ? "Demo GitHub connected. Choose demo repo or connect live GitHub."
         : liveAuthConfigured
           ? "Ask IA is ready to guide repo selection."
-          : "Live GitHub OAuth env missing in this server.";
-  }
+          : "Live GitHub OAuth env missing in this server."
+  );
+  if (expanded) setReviewCoachCollapsed(false);
 }
 
 function setCoachForSelectedRepo(repo) {
   setReviewRunUiStage();
   const name = repo?.full_name || selectedReviewRepoName();
   const indexing = Boolean(repo?.indexing);
-  resetReviewRunCoachAnswer();
-  if (repoCoachRead) {
-    repoCoachRead.textContent = indexing
-      ? `You selected ${name}. IA is indexing this repo before it can generate a packet.`
-      : `You selected ${name}. Should I generate the repo-access packet next? It will name blocked claims, missing proof, and Portkey impact.`;
-  }
-  if (packetCoachStatus) {
-    packetCoachStatus.hidden = false;
-    packetCoachStatus.classList.remove("error");
-    packetCoachStatus.textContent = indexing
+  setReviewRunCoachStage(
+    {
+      current_read: indexing
+        ? `You selected ${name}. IA is indexing this repo before it can generate a packet.`
+        : `You selected ${name}. I can generate a repo-access packet next.`,
+      what_blocks_movement: indexing
+        ? "The repo index is still being prepared for this ReviewRun."
+        : "No packet exists yet, so no downstream gate should trust the raw agent request.",
+      next_human_action: indexing
+        ? "Wait for the selected repo index to finish."
+        : "Click Review access to generate the packet for this selected repo.",
+      downstream_impact: "The packet will name allowed scope, blocked claims, missing proof, and Portkey state.",
+      safety: "Ask IA can coach this review, but it cannot approve access or write to the repo.",
+    },
+    indexing
       ? "Repo indexing. Ask IA will update after the repo is ready."
-      : "Repo selected. Ask IA is coaching packet generation.";
-  }
+      : "Repo selected. Ask IA is coaching packet generation."
+  );
 }
 
 function setCoachForReviewLoading() {
@@ -5703,6 +5766,7 @@ form.addEventListener("submit", (e) => {
 packetCoachQuickChips?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn || busy || reviewRunCoachBusy) return;
+  setReviewCoachCollapsed(false);
   askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
 });
 
@@ -5710,7 +5774,13 @@ repoCoachForm?.addEventListener("submit", (event) => {
   event.preventDefault();
   const prompt = repoCoachInput?.value || "What now?";
   if (repoCoachInput) repoCoachInput.value = "";
+  setReviewCoachCollapsed(false);
   askReviewRunCoach(prompt);
+});
+
+repoCoachToggle?.addEventListener("click", () => {
+  const collapsed = repoAskCoach?.dataset.coachCollapsed === "true";
+  setReviewCoachCollapsed(!collapsed);
 });
 
 packetInlineCoachPrompts?.addEventListener("click", (event) => {

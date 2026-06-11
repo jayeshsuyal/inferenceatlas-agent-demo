@@ -231,7 +231,7 @@ class ReviewRunContractTests(TestCase):
         self.assertEqual(greeting["prompt_kind"], "greeting")
         self.assertEqual(greeting["stage"], "repo_selected")
         self.assertIn("No packet exists yet", greeting["sections"]["current_read"])
-        self.assertIn("Describe what the agent wants", greeting["sections"]["next_human_action"])
+        self.assertIn("Click Review access", greeting["sections"]["next_human_action"])
 
         packet_run = generate_initial_review_run_packet(selected, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
         next_step = build_review_run_coach_answer(packet_run, "idk what to do next")

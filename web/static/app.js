@@ -1022,12 +1022,14 @@ function renderReviewRunCoachAnswer(answer) {
     repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
   }
   if (!repoCoachAnswer) return;
+  const includeCurrentRead = repoAskCoach?.dataset.userTurn === "true" && sections.current_read;
   const rows = [
+    includeCurrentRead ? ["Current read", sections.current_read] : null,
     ["What blocks movement", sections.what_blocks_movement],
     ["Next human action", sections.next_human_action],
     ["Downstream impact", sections.downstream_impact],
     ["Safety", sections.safety],
-  ].filter(([, value]) => value);
+  ].filter((row) => row && row[1]);
   repoCoachAnswer.hidden = !rows.length;
   repoCoachAnswer.dataset.promptKind = promptKind;
   repoCoachAnswer.innerHTML = rows
@@ -1049,6 +1051,13 @@ function renderReviewRunCoachAnswer(answer) {
       </div>
     `
   );
+  if (repoCoachBody && repoAskCoach?.dataset.userTurn === "true") {
+    repoCoachInput?.blur();
+    repoCoachBody.scrollTop = 0;
+    window.requestAnimationFrame(() => {
+      repoCoachBody.scrollTop = 0;
+    });
+  }
 }
 
 function coachListText(items = [], limit = 4, fallback = "none") {
@@ -1204,7 +1213,10 @@ function reviewRunActiveScreen(stage) {
   if (reviewRunScreenOverride === "proof_workbench" && (stage === "packet_generated" || stage === "proof_attached")) {
     return "proof_workbench";
   }
-  if (reviewRunScreenOverride === "portkey_gate" && (stage === "packet_regenerated" || stage === "portkey_tested")) {
+  if (
+    reviewRunScreenOverride === "portkey_gate"
+    && ["packet_generated", "proof_attached", "packet_regenerated", "portkey_tested"].includes(stage)
+  ) {
     return "portkey_gate";
   }
   if (stage === "portkey_tested") return "portkey_gate";
@@ -1225,6 +1237,16 @@ function focusReviewRunScreen(screenId) {
 
 function clearReviewRunScreenOverride() {
   reviewRunScreenOverride = null;
+}
+
+function openReviewRunPortkeyStage() {
+  const stage = reviewRunUiStage(packetDetail);
+  const canOpen = Boolean(packetDetail?.packet_reference?.revision_id)
+    && ["packet_generated", "proof_attached", "packet_regenerated", "portkey_tested"].includes(stage);
+  if (!canOpen) return false;
+  focusReviewRunScreen("portkey_gate");
+  if (repoPortkeyCard) repoPortkeyCard.open = true;
+  return true;
 }
 
 function updateReviewRunStageScreens(stage) {
@@ -1489,6 +1511,7 @@ async function askReviewRunCoach(prompt, entities = null) {
   if (reviewRunCoachBusy) return;
   const message = String(prompt || "Current read").trim() || "Current read";
   const routedMessage = routeReviewRunCoachPrompt(message);
+  const wantsPortkeyStage = /\bportkey\b/i.test(routedMessage);
   setReviewRunCoachUserPrompt(message);
   if (!currentReviewRun?.run_id) {
     setCoachForNoRepo(true);
@@ -1513,6 +1536,7 @@ async function askReviewRunCoach(prompt, entities = null) {
     if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
     renderReviewRunCoachAnswer(data.answer || {});
     renderReviewRunCoachSuggestions(data.suggestions || []);
+    if (wantsPortkeyStage) openReviewRunPortkeyStage();
     ok = true;
   } catch (err) {
     resetReviewRunCoachAnswer();
@@ -3764,7 +3788,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
       : null;
   const effectivePortkeyVerdict =
     typeof portkeyTest?.verdict === "boolean" ? portkeyTest.verdict : Boolean(guardrail.verdict);
-  const effectivePortkeyDecisionLabel = effectivePortkeyVerdict ? "allow" : "block";
+  const effectivePortkeyDecisionLabel = effectivePortkeyVerdict ? "Allow with policy" : "Block";
   const effectivePortkeyState =
     portkeyTest?.portkey_state || (effectivePortkeyVerdict ? "Allow with policy" : "Block");
   const graphPortkeyState = portkeyTest?.portkey_state || graph?.portkey_state || effectivePortkeyState;
@@ -3772,9 +3796,30 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const portkeyStillBlocked = portkeyTest?.still_blocked_scope || movement.blocked || packet.blocked || [];
   const portkeyAllowed = portkeyTest?.allowed_scope || movement.allowed || packet.allowed || [];
   const portkeyTested = Boolean(portkeyTest);
+  const portkeyApiMutation = Boolean(
+    portkeyTest?.invariants?.portkey_api_call_made
+    || portkeyTest?.api_call_made
+    || portkeyPayload?.api_call_made
+  );
+  const portkeyPolicyMutation = Boolean(
+    portkeyTest?.invariants?.portkey_policy_mutation_allowed
+    || portkeyTest?.policy_mutation_allowed
+    || portkeyPayload?.policy_mutation_allowed
+  );
   const tone = verdictTone(decision);
   const delta = packet.review_delta || {};
   const portkeyRunwayReady = packet?.review_run?.stage === "ready_to_export" || Boolean(delta.packet_changed);
+  const hasPortkeyDelta = Boolean(delta.packet_changed || packetRef.previous_revision_id);
+  const portkeyRevisionBefore = hasPortkeyDelta
+    ? delta.packet_revision_before || packetRef.previous_revision_id || "rev_1"
+    : packetRef.revision_id || "rev_1";
+  const portkeyRevisionAfter = hasPortkeyDelta
+    ? delta.packet_revision_after || packetRef.revision_id || "rev_2"
+    : "rev_2";
+  const portkeyStateBefore = hasPortkeyDelta ? delta.portkey_before || "Block" : effectivePortkeyState;
+  const portkeyStateAfter = hasPortkeyDelta
+    ? delta.portkey_after || effectivePortkeyState
+    : "Waiting for proof";
   const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
   setReviewRunUiStage(reviewRunUiStage(packet));
@@ -3853,7 +3898,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (repoPortkeyCard) {
     const latencyLabel =
       typeof portkeyTest?.elapsed_ms === "number" ? `${portkeyTest.elapsed_ms}ms` : "not tested";
-    const eventLabel = portkeyEvent.event_id || "no event yet";
+    const eventLabel = portkeyTest?.event_id || portkeyEvent.event_id || "no event yet";
     const allowedLabel = portkeyAllowed.length ? portkeyAllowed.join(", ") : "none";
     const blockedLabel = portkeyStillBlocked.length ? portkeyStillBlocked.join(", ") : "none";
     repoPortkeyCard.innerHTML = `
@@ -3869,23 +3914,37 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
           <b>-&gt;</b>
           <span>Portkey</span>
         </div>
-        <p>Test the local BYO Guardrails handoff against this ReviewRun packet. No Portkey admin write, no policy mutation.</p>
-        <div class="repo-outcome-grid">
+        <div class="repo-portkey-stage-title">
+          <span>Packet-consumption runway</span>
+          <strong>IA Packet -&gt; BYO Guardrail -&gt; Portkey</strong>
+        </div>
+        <div class="repo-portkey-revision-flow" aria-label="Portkey revision result">
+          <div><span>${escapeHtml(portkeyRevisionBefore)}</span><strong>${escapeHtml(portkeyStateBefore)}</strong></div>
+          <b>-&gt;</b>
+          <div><span>${escapeHtml(portkeyRevisionAfter)}</span><strong>${escapeHtml(portkeyStateAfter)}</strong></div>
+        </div>
+        <p>Portkey consumes packet metadata from this ReviewRun and returns a packet-backed verdict. No Portkey Admin API mutation, no live policy push.</p>
+        <div class="repo-outcome-grid repo-portkey-outcomes">
           <div class="repo-outcome ${effectivePortkeyVerdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>
           <div class="repo-outcome ${portkeyTested ? "approved" : "review"}"><span>Latency</span><strong>${escapeHtml(latencyLabel)}</strong></div>
-          <div class="repo-outcome approved"><span>API mutation</span><strong>false</strong></div>
+          <div class="repo-outcome ${portkeyApiMutation ? "blocked" : "approved"}"><span>API mutation</span><strong>${escapeHtml(String(portkeyApiMutation))}</strong></div>
+          <div class="repo-outcome ${portkeyPolicyMutation ? "blocked" : "approved"}"><span>Policy mutation</span><strong>${escapeHtml(String(portkeyPolicyMutation))}</strong></div>
         </div>
         <div class="repo-portkey-handoff" aria-label="Portkey handoff result">
-          <div><span>Packet revision</span><strong>${escapeHtml(portkeyTest?.packet_reference?.revision_id || packetRef.revision_id || "not generated")}</strong></div>
+          <div><span>Packet id</span><strong>${escapeHtml(portkeyTest?.packet_reference?.packet_id || packetRef.packet_id || "not generated")}</strong></div>
+          <div><span>Revision</span><strong>${escapeHtml(portkeyTest?.packet_reference?.revision_id || packetRef.revision_id || "not generated")}</strong></div>
+          <div><span>Event id</span><strong>${escapeHtml(eventLabel)}</strong></div>
           <div><span>Allowed scope</span><strong>${escapeHtml(allowedLabel)}</strong></div>
-          <div><span>Still blocked</span><strong>${escapeHtml(blockedLabel)}</strong></div>
-          <div><span>Event</span><strong>${escapeHtml(eventLabel)}</strong></div>
+          <div><span>Still-blocked scope</span><strong>${escapeHtml(blockedLabel)}</strong></div>
+          <div><span>Latency</span><strong>${escapeHtml(latencyLabel)}</strong></div>
+          <div><span>API mutation</span><strong>${escapeHtml(String(portkeyApiMutation))}</strong></div>
+          <div><span>Policy mutation</span><strong>${escapeHtml(String(portkeyPolicyMutation))}</strong></div>
         </div>
         <code class="repo-packet-ref">${escapeHtml(packetRef.packet_id || "")}</code>
         <button type="button" class="btn-primary repo-portkey-test-action" data-review-run-portkey-test>
           ${portkeyTested ? "Retest Portkey guardrail" : "Test Portkey guardrail"}
         </button>
-        <p class="repo-microcopy">Portkey receives packet metadata and returns a packet-backed verdict. IA does not approve or write.</p>
+        <p class="repo-microcopy">API mutation: ${escapeHtml(String(portkeyApiMutation))}. Policy mutation: ${escapeHtml(String(portkeyPolicyMutation))}. IA does not approve, write, or mutate Portkey.</p>
       </div>
     `;
     const testButton = repoPortkeyCard.querySelector("[data-review-run-portkey-test]");

@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=73", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=53", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=76", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=58", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -305,6 +305,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
     _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
     _require("renderReviewRunCoachAnswer" in js, "ReviewRun Ask IA answer renderer missing")
+    _require('includeCurrentRead ? ["Current read", sections.current_read] : null' in js, "Ask IA user-turn answer must include current read")
+    _require("repoCoachInput?.blur();" in js, "Ask IA user-turn answer must release input focus")
+    _require("window.requestAnimationFrame(() =>" in js, "Ask IA user-turn answer must pin chat scroll")
     _require("renderReviewRunCoachSuggestions" in js, "Ask IA smart suggestion renderer missing")
     _require("safeCoachSuggestions" in js, "Ask IA suggestion cap/sanitizer missing")
     _require("refreshReviewRunCoachSuggestions" in js, "Ask IA suggestion refresh missing")
@@ -377,15 +380,30 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("<span>BYO Guardrail</span>" in js, "Portkey runway must show BYO Guardrail")
     _require("<span>Portkey</span>" in js, "Portkey runway must end at Portkey")
     _require("portkeyRunwayReady" in js, "Portkey runway readiness flag missing")
+    _require("openReviewRunPortkeyStage" in js, "Ask IA Portkey prompt must focus the Portkey stage")
+    _require("wantsPortkeyStage = /\\bportkey\\b/i.test(routedMessage)" in js, "Ask IA must detect Portkey prompts")
     _require(
         "repoPortkeyCard.open = portkeyTested || portkeyRunwayReady" in js,
         "Portkey row must open after rerun or test",
     )
     _require("effectivePortkeyDecisionLabel" in js, "Portkey verdict display label missing")
     _require(
-        'effectivePortkeyVerdict ? "allow" : "block"' in js,
+        'effectivePortkeyVerdict ? "Allow with policy" : "Block"' in js,
         "Portkey verdict must render as a user-facing decision label",
     )
+    for expected in (
+        "Packet-consumption runway",
+        "repo-portkey-revision-flow",
+        "portkeyRevisionBefore",
+        "portkeyStateAfter",
+        "<span>Event id</span>",
+        "<span>Still-blocked scope</span>",
+        "<span>Policy mutation</span>",
+        "Portkey consumes packet metadata from this ReviewRun",
+        "No Portkey Admin API mutation, no live policy push.",
+        "API mutation: ${escapeHtml(String(portkeyApiMutation))}. Policy mutation: ${escapeHtml(String(portkeyPolicyMutation))}.",
+    ):
+        _require(expected in js, f"Portkey final runway missing: {expected}")
     _require(
         js.count("<span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>") == 1,
         "Portkey verdict outcome must render once",
@@ -431,12 +449,18 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     )
     _require(".repo-portkey-handoff" in css, "ReviewRun Portkey handoff CSS missing")
     _require(".repo-portkey-runway" in css, "ReviewRun Portkey runway CSS missing")
+    _require(".repo-portkey-stage-title" in css, "ReviewRun Portkey stage title CSS missing")
+    _require(".repo-portkey-revision-flow" in css, "ReviewRun Portkey revision flow CSS missing")
+    _require(".repo-portkey-outcomes" in css, "ReviewRun Portkey outcome CSS missing")
     _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
     _require(".repo-ask-floating" in css, "Ask IA floating CSS missing")
     _require("position: fixed !important;" in css, "Ask IA must float above the stage")
     _require("grid-template-columns: minmax(0, 1fr) !important;" in css, "runway must not reserve a sidecar rail")
     _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")
     _require(".repo-coach-last-user" in css, "Ask IA user bubble CSS missing")
+    _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-current-read' in css, "Ask IA user-turn duplicate current read must hide")
+    _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-chat' in css, "Ask IA user-turn transcript height CSS missing")
+    _require("min-height: 20rem;" in css, "Ask IA user-turn transcript must reserve answer space")
     _require(".repo-coach-assistant-head" in css, "Ask IA assistant header CSS missing")
     _require('data-prompt-kind="approval_override"' in css, "Ask IA safety correction state CSS missing")
     _require('data-user-turn="true"' in css, "Ask IA active user-turn CSS missing")
@@ -447,7 +471,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-coach-stage-line" in css, "Ask IA stage line CSS missing")
     _require('.repo-ask-floating[data-coach-collapsed="true"]' in css, "Ask IA collapsed floating CSS missing")
     _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
-    _require("max-height: min(42rem, calc(100vh - 1.7rem));" in css, "Ask IA floating chat must stay compact")
+    _require("max-height: min(18.5rem, calc(100vh - 1.7rem));" in css, "Ask IA floating chat must stay compact")
     _require("PR 137: recording-ready visual polish" in css, "recording polish CSS missing")
     _require("calc(100vh - 9rem)" in css, "loaded ReviewRun recording viewport guard missing")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")

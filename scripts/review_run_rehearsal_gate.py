@@ -133,6 +133,8 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "position: fixed !important;",
         ".repo-proof-result[hidden]",
         "One-run minimal ReviewRun cockpit",
+        ".repo-portkey-revision-flow",
+        ".repo-portkey-outcomes",
     ):
         _require(expected in css, f"root CSS missing cockpit density guard: {expected}")
 
@@ -146,8 +148,14 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "Use prepared receipt",
         "return [reviewRunActiveScreen(stage)];",
         "focusReviewRunScreen(\"proof_workbench\")",
+        "openReviewRunPortkeyStage",
         "repo-rerun-delta",
         "repo-portkey-runway",
+        "Packet-consumption runway",
+        "repo-portkey-revision-flow",
+        "<span>Event id</span>",
+        "<span>Still-blocked scope</span>",
+        "<span>Policy mutation</span>",
         "repoPortkeyCard.open = portkeyTested || portkeyRunwayReady",
     ):
         _require(expected in app_js, f"root JS missing ReviewRun flow hook: {expected}")

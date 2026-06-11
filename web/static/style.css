@@ -7437,6 +7437,89 @@ body[data-active-tab="start"] .repo-portkey-runway b {
   font-weight: 900;
 }
 
+body:not([data-active-tab]) .repo-portkey-stage-title,
+body[data-active-tab="start"] .repo-portkey-stage-title {
+  display: grid;
+  gap: 0.16rem;
+  margin: 0.65rem 0 0.5rem;
+}
+
+body:not([data-active-tab]) .repo-portkey-stage-title span,
+body[data-active-tab="start"] .repo-portkey-stage-title span {
+  color: var(--gloss-dim);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-portkey-stage-title strong,
+body[data-active-tab="start"] .repo-portkey-stage-title strong {
+  color: var(--gloss-text);
+  font-size: 0.88rem;
+  line-height: 1.25;
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow,
+body[data-active-tab="start"] .repo-portkey-revision-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.46rem;
+  align-items: stretch;
+  margin: 0 0 0.74rem;
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow div,
+body[data-active-tab="start"] .repo-portkey-revision-flow div {
+  min-width: 0;
+  padding: 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.032)),
+    rgba(0, 0, 0, 0.22);
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow span,
+body[data-active-tab="start"] .repo-portkey-revision-flow span,
+body:not([data-active-tab]) .repo-portkey-revision-flow strong,
+body[data-active-tab="start"] .repo-portkey-revision-flow strong {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow span,
+body[data-active-tab="start"] .repo-portkey-revision-flow span {
+  color: var(--gloss-dim);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow strong,
+body[data-active-tab="start"] .repo-portkey-revision-flow strong {
+  margin-top: 0.2rem;
+  color: var(--gloss-text);
+  font-size: 0.84rem;
+  line-height: 1.22;
+}
+
+body:not([data-active-tab]) .repo-portkey-revision-flow b,
+body[data-active-tab="start"] .repo-portkey-revision-flow b {
+  align-self: center;
+  color: var(--gloss-amber);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+body:not([data-active-tab]) .repo-portkey-outcomes,
+body[data-active-tab="start"] .repo-portkey-outcomes {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 0.72rem;
+}
+
 body:not([data-active-tab]) .repo-portkey-handoff div,
 body[data-active-tab="start"] .repo-portkey-handoff div {
   min-width: 0;
@@ -7996,6 +8079,13 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_ga
   body[data-active-tab="start"] .repo-rerun-delta {
     grid-template-columns: 1fr;
   }
+
+  body:not([data-active-tab]) .repo-portkey-outcomes,
+  body[data-active-tab="start"] .repo-portkey-outcomes,
+  body:not([data-active-tab]) .repo-portkey-handoff,
+  body[data-active-tab="start"] .repo-portkey-handoff {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* PR 2: Ask IA as a compact one-turn chat sidecar. */
@@ -8107,6 +8197,22 @@ body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .packet-c
   display: grid !important;
 }
 
+body:not([data-active-tab]) .repo-ask-sidecar[data-user-turn="true"] .repo-coach-current-read,
+body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-current-read {
+  display: none !important;
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar[data-user-turn="true"] .repo-coach-chat,
+body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-chat {
+  align-content: start;
+  min-height: 20rem;
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer,
+body[data-active-tab="start"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer {
+  min-height: 12rem;
+}
+
 body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer,
 body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-sidecar[data-user-turn="true"] .repo-coach-answer {
   max-height: min(27rem, calc(100vh - 16rem));
@@ -8137,7 +8243,7 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-
   display: grid;
   width: min(24rem, calc(100vw - 1.7rem)) !important;
   min-height: 0 !important;
-  max-height: min(42rem, calc(100vh - 1.7rem));
+  max-height: min(18.5rem, calc(100vh - 1.7rem));
   padding: 0.95rem !important;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
@@ -8154,7 +8260,7 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-
 
 body:not([data-active-tab]) .repo-ask-floating .repo-coach-body,
 body[data-active-tab="start"] .repo-ask-floating .repo-coach-body {
-  max-height: min(32rem, calc(100vh - 10.5rem));
+  max-height: min(10.5rem, calc(100vh - 9rem));
   overflow: auto;
   padding-right: 0.1rem;
 }
@@ -8186,6 +8292,20 @@ body[data-active-tab="start"] .repo-ask-floating .repo-coach-toggle {
   white-space: nowrap;
 }
 
+@media (min-width: 900px) and (min-height: 840px) {
+  body:not([data-active-tab]) .repo-ask-floating,
+  body[data-active-tab="start"] .repo-ask-floating,
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-ask-floating,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-ask-floating {
+    max-height: min(22rem, calc(100vh - 1.7rem));
+  }
+
+  body:not([data-active-tab]) .repo-ask-floating .repo-coach-body,
+  body[data-active-tab="start"] .repo-ask-floating .repo-coach-body {
+    max-height: min(14rem, calc(100vh - 9rem));
+  }
+}
+
 @media (max-width: 760px) {
   body:not([data-active-tab]) .repo-ask-floating,
   body[data-active-tab="start"] .repo-ask-floating,
@@ -8194,11 +8314,11 @@ body[data-active-tab="start"] .repo-ask-floating .repo-coach-toggle {
     right: 0.55rem !important;
     bottom: 0.55rem !important;
     width: calc(100vw - 1.1rem) !important;
-    max-height: min(34rem, 62vh);
+    max-height: min(10.5rem, 36vh);
   }
 
   body:not([data-active-tab]) .repo-ask-floating .repo-coach-body,
   body[data-active-tab="start"] .repo-ask-floating .repo-coach-body {
-    max-height: min(26rem, calc(62vh - 6.5rem));
+    max-height: min(5rem, calc(36vh - 6.5rem));
   }
 }

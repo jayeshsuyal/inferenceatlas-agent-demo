@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=69", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=49", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=70", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=50", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -128,7 +128,16 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Connect a repo, generate the IA Packet, then let downstream gates read the packet before movement.",
         "Review cockpit",
         "repo-runway-panel",
+        "repo-stage-status",
+        "repo-stage-repo-status",
+        "repo-stage-packet-status",
+        "repo-stage-proof-status",
+        "repo-stage-portkey-status",
         "repo-option-stack",
+        "data-stage-screen=\"repo_setup\"",
+        "data-stage-screen=\"packet_decision\"",
+        "data-stage-screen=\"proof_workbench\"",
+        "data-stage-screen=\"downstream_outputs\"",
         "Repo access",
         "Connect GitHub",
         "Use demo repo",
@@ -188,6 +197,11 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("attachReviewRepo" in js, "root GitHub repo attach handler missing")
     _require("createReviewRunForIndexedRepo" in js, "ReviewRun creation from selected repo missing")
     _require('fetch("/api/review-runs"' in js, "root flow must create ReviewRun from selected repo")
+    _require("reviewRunActiveScreen" in js, "ReviewRun active screen router missing")
+    _require("reviewRunVisibleScreens" in js, "ReviewRun visible screen contract missing")
+    _require("updateReviewRunStageScreens" in js, "ReviewRun stage screen swapper missing")
+    _require("updateReviewRunStageStatus" in js, "ReviewRun compact stage status updater missing")
+    _require("repoProofCockpit.dataset.activeScreen" in js, "root stage router must set active screen")
     _require("currentReviewRun.stage === \"repo_selected\"" in js, "repo review must wait for repo_selected ReviewRun")
     _require(
         "Connect and index one GitHub repo before generating a packet." in js,
@@ -348,6 +362,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".team-lens-row" in css, "Team Lenses row CSS missing")
     _require(".repo-proof-cockpit" in css, "repo proof cockpit CSS missing")
     _require(".repo-runway-panel" in css, "one-run runway panel CSS missing")
+    _require(".repo-stage-status" in css, "compact ReviewRun stage status CSS missing")
+    _require(".repo-stage-screen[hidden]" in css, "inactive stage screens must be hidden")
+    _require('data-active-screen="packet_decision"' in css, "packet decision screen CSS missing")
+    _require('data-active-screen="portkey_gate"' in css, "Portkey gate screen CSS missing")
     _require(".repo-option-stack" in css, "review option stack CSS missing")
     _require(".repo-option-row" in css, "Render-style option row CSS missing")
     _require(".repo-infra-rows" in css, "downstream infrastructure rows CSS missing")

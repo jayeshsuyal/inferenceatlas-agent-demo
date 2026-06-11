@@ -128,6 +128,10 @@ const repoAskCoach = document.getElementById("repo-ask-coach");
 const repoCoachBody = document.getElementById("repo-coach-body");
 const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
+const repoStageRepoStatus = document.getElementById("repo-stage-repo-status");
+const repoStagePacketStatus = document.getElementById("repo-stage-packet-status");
+const repoStageProofStatus = document.getElementById("repo-stage-proof-status");
+const repoStagePortkeyStatus = document.getElementById("repo-stage-portkey-status");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -1071,8 +1075,76 @@ function reviewRunUiStage(packet = packetDetail) {
   return "repo_not_connected";
 }
 
-function setReviewRunUiStage(stage = reviewRunUiStage()) {
-  if (repoProofCockpit) repoProofCockpit.dataset.reviewStage = stage;
+function reviewRunActiveScreen(stage) {
+  if (stage === "portkey_tested") return "portkey_gate";
+  if (stage === "packet_regenerated" || stage === "export_ready") return "packet_rerun";
+  if (stage === "proof_attached") return "proof_workbench";
+  if (stage === "packet_generated") return "packet_decision";
+  return "repo_setup";
+}
+
+function reviewRunVisibleScreens(stage) {
+  const active = reviewRunActiveScreen(stage);
+  if (active === "packet_decision") return ["packet_decision", "proof_workbench"];
+  if (active === "packet_rerun") return ["packet_decision", "proof_workbench", "downstream_outputs"];
+  if (active === "portkey_gate") return ["downstream_outputs"];
+  return [active];
+}
+
+function updateReviewRunStageScreens(stage) {
+  const visibleScreens = new Set(reviewRunVisibleScreens(stage));
+  document.querySelectorAll("[data-stage-screen]").forEach((screen) => {
+    const screenId = screen.dataset.stageScreen || "";
+    screen.hidden = !visibleScreens.has(screenId);
+  });
+}
+
+function updateReviewRunStageStatus(stage, packet = packetDetail) {
+  const repoName = currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "";
+  const packetRef = packet?.packet_reference || currentReviewRun?.packet?.packet_reference || {};
+  const proof = packet?.proof_resolution || {};
+  const delta = packet?.review_delta || {};
+  const guardrail = packetPortkeyPreview?.portkey_guardrail_response || {};
+  const missingCount = proof.missing_proof_count ?? (proof.missing_proof || []).length;
+  const attachedCount = proof.attached_proof_count ?? (proof.attached_proof || []).length;
+  if (repoStageRepoStatus) {
+    repoStageRepoStatus.textContent = repoName
+      ? repoName.split("/").slice(-1)[0]
+      : stage === "repo_connected"
+        ? "Choose one"
+        : "Not selected";
+  }
+  if (repoStagePacketStatus) {
+    repoStagePacketStatus.textContent = packetRef.revision_id || packetRef.packet_id
+      ? packetRef.revision_id || "Generated"
+      : "Not generated";
+  }
+  if (repoStageProofStatus) {
+    repoStageProofStatus.textContent = delta.packet_changed
+      ? "Applied"
+      : proof.ready_for_rerun || currentReviewRun?.packet?.ready_for_rerun
+        ? "Ready to rerun"
+        : attachedCount
+          ? `${attachedCount} attached`
+          : missingCount
+            ? `${missingCount} missing`
+            : packetRef.packet_id
+              ? "Needed"
+              : "Waiting";
+  }
+  if (repoStagePortkeyStatus) {
+    repoStagePortkeyStatus.textContent = currentReviewRunPortkeyTest?.portkey_state
+      || (delta.packet_changed ? "Ready to test" : packetRef.packet_id ? (guardrail.verdict ? "Allow preview" : "Block") : "No gate");
+  }
+}
+
+function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) {
+  if (repoProofCockpit) {
+    repoProofCockpit.dataset.reviewStage = stage;
+    repoProofCockpit.dataset.activeScreen = reviewRunActiveScreen(stage);
+  }
+  updateReviewRunStageScreens(stage);
+  updateReviewRunStageStatus(stage, packet);
   updateReviewRunCoachChrome(stage);
   return stage;
 }
@@ -1162,7 +1234,7 @@ function setCoachForReviewLoading() {
 }
 
 function setCoachForPacket(packet, portkeyPayload) {
-  setReviewRunUiStage(reviewRunUiStage(packet));
+  setReviewRunUiStage(reviewRunUiStage(packet), packet);
   const decision = packet?.decision || {};
   const packetRef = packet?.packet_reference || {};
   const movement = packet?.movement_classes || {};

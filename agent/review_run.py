@@ -333,7 +333,7 @@ def _ask_ia_state(stage: str, *, run_id: str, selected_repo: Optional[dict[str, 
     repo_name = (selected_repo or {}).get("full_name") or (selected_repo or {}).get("name") or None
     next_actions = {
         "repo_not_connected": "Connect GitHub or use the demo repo.",
-        "repo_selected": "Describe what the agent wants to do in this repo.",
+        "repo_selected": "Click Review access to generate the packet for this selected repo.",
         "request_entered": "Generate the IA Packet.",
         "packet_generated": "Collect sponsor proof.",
         "sponsor_proof_collected": "Preview the Portkey gate.",
@@ -1308,6 +1308,12 @@ def _review_run_coach_prompt_kind(prompt: str) -> str:
 
 
 def _review_run_coach_next_action(run: ReviewRun) -> str:
+    if run.stage == "repo_not_connected":
+        return "Connect GitHub or use the demo repo."
+    if run.stage == "repo_selected":
+        return "Click Review access to generate the packet for this selected repo."
+    if run.stage == "request_entered":
+        return "Generate the IA Packet."
     if run.stage in {"packet_generated", "sponsor_proof_collected", "portkey_previewed"}:
         return (
             "Attach Support Ops repo-owner approval, Engineering rollback/off-switch proof, "

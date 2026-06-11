@@ -7401,6 +7401,36 @@ body[data-active-tab="start"] .repo-portkey-handoff {
   margin: 0.8rem 0;
 }
 
+body:not([data-active-tab]) .repo-portkey-runway,
+body[data-active-tab="start"] .repo-portkey-runway {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.42rem;
+  align-items: center;
+  margin: 0 0 0.7rem;
+  padding: 0.52rem;
+  border: 1px solid rgba(245, 196, 81, 0.18);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(245, 196, 81, 0.1), rgba(255, 255, 255, 0.035));
+}
+
+body:not([data-active-tab]) .repo-portkey-runway span,
+body[data-active-tab="start"] .repo-portkey-runway span {
+  min-width: 0;
+  color: var(--gloss-text);
+  font-size: 0.7rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+}
+
+body:not([data-active-tab]) .repo-portkey-runway b,
+body[data-active-tab="start"] .repo-portkey-runway b {
+  color: var(--gloss-amber);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
 body:not([data-active-tab]) .repo-portkey-handoff div,
 body[data-active-tab="start"] .repo-portkey-handoff div {
   min-width: 0;

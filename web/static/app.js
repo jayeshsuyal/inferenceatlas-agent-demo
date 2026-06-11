@@ -3760,6 +3760,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const portkeyTested = Boolean(portkeyTest);
   const tone = verdictTone(decision);
   const delta = packet.review_delta || {};
+  const portkeyRunwayReady = packet?.review_run?.stage === "ready_to_export" || Boolean(delta.packet_changed);
   const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
   setReviewRunUiStage(reviewRunUiStage(packet));
@@ -3827,6 +3828,13 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
         <strong>${escapeHtml(effectivePortkeyState)}</strong>
       </summary>
       <div class="repo-accordion-body">
+        <div class="repo-portkey-runway" aria-label="Portkey runway">
+          <span>IA Packet</span>
+          <b>-&gt;</b>
+          <span>BYO Guardrail</span>
+          <b>-&gt;</b>
+          <span>Portkey</span>
+        </div>
         <p>Test the local BYO Guardrails handoff against this ReviewRun packet. No Portkey admin write, no policy mutation.</p>
         <div class="repo-outcome-grid">
           <div class="repo-outcome ${effectivePortkeyVerdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>
@@ -3850,7 +3858,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     if (testButton) {
       testButton.addEventListener("click", () => testReviewRunPortkeyGuardrail());
     }
-    repoPortkeyCard.open = portkeyTested;
+    repoPortkeyCard.open = portkeyTested || portkeyRunwayReady;
   }
   setCoachForPacket(packet, portkeyPayload);
 }

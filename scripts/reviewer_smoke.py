@@ -151,6 +151,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Next human action",
         "Missing proof",
         "Use prepared proof before rerun.",
+        "Review prepared human proof receipts. Using them attaches evidence only; it does not approve access.",
         "Use prepared proof for demo",
         "No prepared proof used yet. Verdict unchanged.",
         "Review delta",
@@ -243,10 +244,22 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("sponsor_proof_trace: sponsorTrace || undefined" in js, "ReviewRun packet must preserve sponsor trace when available")
     _require("movementLane" in js, "movement lane renderer missing")
     _require("renderRepoProofResolution" in js, "proof resolution renderer missing")
+    _require("proofReceiptTimestamp" in js, "proof receipt timestamp helper missing")
+    _require("proofReceiptSafetyPills" in js, "proof receipt safety helper missing")
     _require("proofLensesForPacket" in js, "proof owner lens renderer missing")
     _require("owner_lenses" in js, "proof owner lens payload missing")
     _require("data-owner-lens" in js, "proof owner lens DOM hook missing")
     _require("data-proof-owner" in js, "proof owner attach metadata missing")
+    _require("data-proof-receipt" in js, "proof receipts must expose receipt metadata")
+    _require("data-proof-timestamp" in js, "proof receipts must expose timestamp metadata")
+    _require("Prepared receipt" in js, "prepared receipt label missing")
+    _require("Attached receipt" in js, "attached receipt label missing")
+    _require("Owner: ${escapeHtml(ownerGroup)}" in js, "proof receipt owner metadata missing")
+    _require("Timestamp: ${escapeHtml(receiptTimestamp)}" in js, "proof receipt timestamp metadata missing")
+    _require("not approval" in js, "proof receipt no-approval safety chip missing")
+    _require("no writes" in js, "proof receipt no-writes safety chip missing")
+    _require("rerun required" in js, "proof receipt rerun safety chip missing")
+    _require("prepared proof receipt${checked.length === 1 ? \"\" : \"s\"} selected" in js, "proof selected-count feedback missing")
     for owner in ("Support Ops", "Engineering", "Security"):
         _require(owner in js, f"proof owner lens missing: {owner}")
     _require("attachReviewRunProof" in js, "proof attach handler missing")
@@ -342,6 +355,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-proof-checklist" in css, "repo proof checklist CSS missing")
     _require(".repo-proof-lens" in css, "repo proof owner lens CSS missing")
     _require(".repo-proof-lens-head" in css, "repo proof owner lens heading CSS missing")
+    _require(".repo-proof-receipt" in css, "repo proof receipt CSS missing")
+    _require(".repo-proof-receipt-head" in css, "repo proof receipt heading CSS missing")
+    _require(".repo-proof-receipt-meta" in css, "repo proof receipt metadata CSS missing")
+    _require(".repo-proof-receipt-safety" in css, "repo proof receipt safety CSS missing")
     _require(".repo-proof-check.attached" in css, "repo proof attached item CSS missing")
     _require(".repo-proof-attach-action" in css, "repo proof attach CTA CSS missing")
     _require(".repo-proof-attach-status" in css, "repo proof attach status CSS missing")

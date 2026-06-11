@@ -4094,6 +4094,69 @@ body[data-active-tab="start"] .messages {
   font-weight: 800;
 }
 
+.repo-proof-receipt {
+  display: grid;
+  gap: 0.34rem;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid rgba(12, 12, 13, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.repo-proof-receipt-head {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.repo-proof-receipt-head span,
+.repo-proof-receipt-meta span,
+.repo-proof-receipt-safety span {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.repo-proof-receipt-head span {
+  color: #7a5b14;
+}
+
+.repo-proof-receipt-head strong {
+  min-width: 0;
+  color: #111214;
+  font-size: 0.74rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.repo-proof-receipt p {
+  color: #575a61;
+  font-size: 0.66rem;
+  line-height: 1.32;
+}
+
+.repo-proof-receipt-meta,
+.repo-proof-receipt-safety {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.repo-proof-receipt-meta span {
+  color: #6f737c;
+}
+
+.repo-proof-receipt-safety span {
+  padding: 0.18rem 0.34rem;
+  border: 1px solid rgba(21, 128, 61, 0.22);
+  border-radius: 999px;
+  background: rgba(21, 128, 61, 0.08);
+  color: #166534;
+}
+
 .repo-proof-attach-action {
   justify-self: start;
 }
@@ -6585,6 +6648,36 @@ body[data-active-tab="start"] .repo-proof-lens .repo-proof-check {
   border: 0;
   background: transparent;
   color: rgba(255, 255, 255, 0.84);
+}
+
+body:not([data-active-tab]) .repo-proof-receipt,
+body[data-active-tab="start"] .repo-proof-receipt {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+body:not([data-active-tab]) .repo-proof-receipt-head span,
+body[data-active-tab="start"] .repo-proof-receipt-head span {
+  color: rgba(245, 158, 11, 0.86);
+}
+
+body:not([data-active-tab]) .repo-proof-receipt-head strong,
+body[data-active-tab="start"] .repo-proof-receipt-head strong {
+  color: #ffffff;
+}
+
+body:not([data-active-tab]) .repo-proof-receipt p,
+body[data-active-tab="start"] .repo-proof-receipt p,
+body:not([data-active-tab]) .repo-proof-receipt-meta span,
+body[data-active-tab="start"] .repo-proof-receipt-meta span {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+body:not([data-active-tab]) .repo-proof-receipt-safety span,
+body[data-active-tab="start"] .repo-proof-receipt-safety span {
+  border-color: rgba(94, 234, 141, 0.2);
+  background: rgba(94, 234, 141, 0.08);
+  color: rgba(187, 247, 208, 0.9);
 }
 
 body:not([data-active-tab]) .repo-proof-attach-action,

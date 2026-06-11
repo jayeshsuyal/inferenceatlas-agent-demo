@@ -122,6 +122,8 @@ const repoReviewRequest = document.getElementById("repo-review-request");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCoachAnswer = document.getElementById("repo-coach-answer");
+const repoCoachLastUser = document.getElementById("repo-coach-last-user");
+const repoCoachLastUserText = document.getElementById("repo-coach-last-user-text");
 const repoCoachForm = document.getElementById("repo-coach-form");
 const repoCoachInput = document.getElementById("repo-coach-input");
 const repoAskCoach = document.getElementById("repo-ask-coach");
@@ -957,6 +959,7 @@ function setReviewRunCoachBusy(loading, statusText = "") {
 
 function renderReviewRunCoachAnswer(answer) {
   const sections = answer?.sections || {};
+  const promptKind = String(answer?.prompt_kind || "current_read").trim() || "current_read";
   if (repoCoachRead && sections.current_read) {
     repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
   }
@@ -968,6 +971,7 @@ function renderReviewRunCoachAnswer(answer) {
     ["Safety", sections.safety],
   ].filter(([, value]) => value);
   repoCoachAnswer.hidden = !rows.length;
+  repoCoachAnswer.dataset.promptKind = promptKind;
   repoCoachAnswer.innerHTML = rows
     .map(
       ([label, value]) => `
@@ -978,6 +982,15 @@ function renderReviewRunCoachAnswer(answer) {
       `
     )
     .join("");
+  repoCoachAnswer.insertAdjacentHTML(
+    "afterbegin",
+    `
+      <div class="repo-coach-assistant-head">
+        <span>IA answered</span>
+        <strong>${escapeHtml(coachPromptKindLabel(promptKind))}</strong>
+      </div>
+    `
+  );
 }
 
 function coachListText(items = [], limit = 4, fallback = "none") {
@@ -986,6 +999,60 @@ function coachListText(items = [], limit = 4, fallback = "none") {
   const visible = values.slice(0, limit);
   const rest = values.length - visible.length;
   return rest > 0 ? `${visible.join(", ")} +${rest} more` : visible.join(", ");
+}
+
+const REVIEW_RUN_COACH_PROMPT_ROUTES = [
+  {
+    match: /^(what now\??|what should i do now\??|now what\??)$/i,
+    prompt: "idk what to do next",
+  },
+  {
+    match: /^missing proof\??$/i,
+    prompt: "What proof is missing?",
+  },
+  {
+    match: /^portkey impact\??$/i,
+    prompt: "What will Portkey do?",
+  },
+  {
+    match: /^approve blocked claims\??$/i,
+    prompt: "approve blocked claims and grant access",
+  },
+];
+
+function routeReviewRunCoachPrompt(prompt) {
+  const message = String(prompt || "").trim();
+  const route = REVIEW_RUN_COACH_PROMPT_ROUTES.find((candidate) => candidate.match.test(message));
+  return route ? route.prompt : message;
+}
+
+function coachPromptKindLabel(kind) {
+  const labels = {
+    approval_override: "Safety correction",
+    current_read: "Current review",
+    greeting: "Current review",
+    movement: "Movement",
+    next_action: "Next action",
+    portkey: "Portkey impact",
+    proof: "Missing proof",
+    unrelated: "Current review",
+  };
+  return labels[kind] || "Current review";
+}
+
+function setReviewRunCoachUserPrompt(prompt) {
+  const message = String(prompt || "").trim();
+  if (repoAskCoach) repoAskCoach.dataset.userTurn = String(Boolean(message));
+  if (!repoCoachLastUser || !repoCoachLastUserText) return;
+  repoCoachLastUser.hidden = !message;
+  repoCoachLastUserText.textContent = message;
+}
+
+function clearReviewRunCoachUserPrompt() {
+  if (repoAskCoach) repoAskCoach.dataset.userTurn = "false";
+  if (!repoCoachLastUser || !repoCoachLastUserText) return;
+  repoCoachLastUser.hidden = true;
+  repoCoachLastUserText.textContent = "";
 }
 
 function selectedReviewRepoName() {
@@ -1150,6 +1217,7 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
 }
 
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
+  clearReviewRunCoachUserPrompt();
   renderReviewRunCoachAnswer({ sections });
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
@@ -1297,9 +1365,11 @@ function resetReviewRunCoachAnswer() {
   if (!repoCoachAnswer) return;
   repoCoachAnswer.hidden = true;
   repoCoachAnswer.innerHTML = "";
+  repoCoachAnswer.removeAttribute("data-prompt-kind");
 }
 
 function renderLocalReviewRunCoach(sections) {
+  clearReviewRunCoachUserPrompt();
   renderReviewRunCoachAnswer({ sections });
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
@@ -1311,8 +1381,11 @@ function renderLocalReviewRunCoach(sections) {
 async function askReviewRunCoach(prompt) {
   if (reviewRunCoachBusy) return;
   const message = String(prompt || "Current read").trim() || "Current read";
+  const routedMessage = routeReviewRunCoachPrompt(message);
+  setReviewRunCoachUserPrompt(message);
   if (!currentReviewRun?.run_id) {
     setCoachForNoRepo(true);
+    setReviewRunCoachUserPrompt(message);
     return;
   }
 
@@ -1322,7 +1395,7 @@ async function askReviewRunCoach(prompt) {
     const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: message }),
+      body: JSON.stringify({ prompt: routedMessage }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");

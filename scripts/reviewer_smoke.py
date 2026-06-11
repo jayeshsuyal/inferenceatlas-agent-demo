@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=70", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=50", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=71", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=51", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -152,6 +152,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Review coach",
         "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
         "Collapse Ask IA coach",
+        "repo-coach-chat",
+        "repo-coach-last-user",
+        "You asked",
         "Ask what to do next...",
         "Review AI spend",
         "Test downstream gate",
@@ -282,6 +285,13 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
     _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
     _require("renderReviewRunCoachAnswer" in js, "ReviewRun Ask IA answer renderer missing")
+    _require("REVIEW_RUN_COACH_PROMPT_ROUTES" in js, "Ask IA prompt router missing")
+    _require("routeReviewRunCoachPrompt" in js, "Ask IA frontend prompt routing missing")
+    _require("coachPromptKindLabel" in js, "Ask IA prompt-kind label missing")
+    _require("setReviewRunCoachUserPrompt" in js, "Ask IA user turn state missing")
+    _require("repoAskCoach.dataset.userTurn" in js, "Ask IA active user-turn state missing")
+    _require('prompt: "idk what to do next"' in js, "Ask IA what-now route missing")
+    _require('prompt: "approve blocked claims and grant access"' in js, "Ask IA approval override route missing")
     _require('data-ask-prompt="What now?"' in html, "Ask IA what-now prompt missing")
     _require('data-ask-prompt="What proof is missing?"' in html, "Ask IA proof prompt missing")
     _require('data-ask-prompt="What will Portkey do?"' in html, "Ask IA Portkey prompt missing")
@@ -377,6 +387,11 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-portkey-handoff" in css, "ReviewRun Portkey handoff CSS missing")
     _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
     _require(".repo-ask-sidecar" in css, "Ask IA sidecar CSS missing")
+    _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")
+    _require(".repo-coach-last-user" in css, "Ask IA user bubble CSS missing")
+    _require(".repo-coach-assistant-head" in css, "Ask IA assistant header CSS missing")
+    _require('data-prompt-kind="approval_override"' in css, "Ask IA safety correction state CSS missing")
+    _require('data-user-turn="true"' in css, "Ask IA active user-turn CSS missing")
     _require(".repo-coach-answer" in css, "Ask IA answer surface CSS missing")
     _require(".repo-coach-answer-row" in css, "Ask IA answer row CSS missing")
     _require(".repo-coach-toggle" in css, "Ask IA close/open CSS missing")

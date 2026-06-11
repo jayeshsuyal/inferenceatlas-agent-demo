@@ -36,6 +36,7 @@ PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL = "https://portkey.ai/docs/product/guardrail
 PORTKEY_GUARDRAIL_DELIVERY_MODE = "live_guardrail_webhook"
 PORTKEY_EVENT_KIND = "portkey_byo_guardrail"
 PORTKEY_REHEARSAL_EVENT_KIND = "rehearsal_probe"
+PORTKEY_LOCAL_TEST_EVENT_KIND = "review_run_guardrail_test"
 SAFE_PORTKEY_REQUEST_MODES = {
     "dry_run",
     "dry-run",
@@ -335,7 +336,7 @@ def build_portkey_guardrail_event(
         "event_id": event_id,
         "kind": kind,
         "generated_at": timestamp,
-        "delivery_mode": PORTKEY_GUARDRAIL_DELIVERY_MODE,
+        "delivery_mode": data.get("delivery_mode") or PORTKEY_GUARDRAIL_DELIVERY_MODE,
         "read_only": True,
         "event_type": str(body.get("eventType") or body.get("event_type") or "unknown"),
         "verdict": bool(response.get("verdict")),

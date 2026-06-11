@@ -202,6 +202,7 @@ let packetPortkeyPreview = null;
 let packetPortkeyProofLoop = null;
 let currentReviewRunProofGraph = null;
 let currentReviewRunPortkeyTest = null;
+let currentReviewRunPortkeyReceipt = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
@@ -1246,6 +1247,7 @@ function openReviewRunPortkeyStage() {
   if (!canOpen) return false;
   focusReviewRunScreen("portkey_gate");
   if (repoPortkeyCard) repoPortkeyCard.open = true;
+  void refreshReviewRunPortkeyReceipt({ rerender: true });
   return true;
 }
 
@@ -1603,6 +1605,7 @@ function renderReviewRepoSummary(repo = null) {
     clearReviewRunScreenOverride();
     currentReviewRunProofGraph = null;
     currentReviewRunPortkeyTest = null;
+    currentReviewRunPortkeyReceipt = null;
     resetReviewRunCoachAnswer();
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
     setCoachForNoRepo();
@@ -1716,6 +1719,7 @@ async function createReviewRunForIndexedRepo(repo) {
   if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
   currentReviewRun = data.run;
   currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
+  currentReviewRunPortkeyReceipt = null;
   return currentReviewRun;
 }
 
@@ -1725,6 +1729,7 @@ async function attachReviewRepo(repo) {
   currentReviewRun = null;
   currentReviewRunProofGraph = null;
   currentReviewRunPortkeyTest = null;
+  currentReviewRunPortkeyReceipt = null;
   selectedGithubRepos = [{ full_name: fullName, indexing: true, demo: Boolean(repo.demo) }];
   renderGithubChips();
   renderReviewRepoSummary(selectedGithubRepos[0]);
@@ -1766,6 +1771,7 @@ async function attachReviewRepo(repo) {
     currentReviewRun = null;
     currentReviewRunProofGraph = null;
     currentReviewRunPortkeyTest = null;
+    currentReviewRunPortkeyReceipt = null;
     renderGithubChips();
     renderReviewRepoSummary(null);
     setRepoConnectStatus(String(err.message || err), true);
@@ -3467,6 +3473,35 @@ async function fetchReviewRunPortkeyGuardrailTest(runId = currentReviewRun?.run_
   return data.portkey_guardrail_test || null;
 }
 
+function isExternalPortkeyReceipt(event) {
+  return ["portkey_byo_guardrail", "rehearsal_probe"].includes(event?.kind);
+}
+
+function portkeyReceiptMatchesPacket(event, packetRef = packetDetail?.packet_reference || {}) {
+  if (!event || !isExternalPortkeyReceipt(event)) return false;
+  if (currentReviewRun?.run_id && event.review_run_id !== currentReviewRun.run_id) return false;
+  if (packetRef.packet_id && event.packet_id !== packetRef.packet_id) return false;
+  if (packetRef.revision_id && event.revision_id !== packetRef.revision_id) return false;
+  return true;
+}
+
+async function fetchReviewRunPortkeyReceipt(runId = currentReviewRun?.run_id, packetRef = packetDetail?.packet_reference || {}) {
+  if (!runId || !packetRef?.revision_id) return null;
+  const res = await fetch("/api/portkey/guardrail/events");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "Portkey receipt lookup failed");
+  const events = Array.isArray(data.events) ? data.events : [];
+  return events.find((event) => portkeyReceiptMatchesPacket(event, packetRef)) || null;
+}
+
+async function refreshReviewRunPortkeyReceipt({ rerender = false } = {}) {
+  currentReviewRunPortkeyReceipt = await fetchReviewRunPortkeyReceipt().catch(() => null);
+  if (rerender && packetDetail) {
+    renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+  }
+  return currentReviewRunPortkeyReceipt;
+}
+
 function packetPortkeyExportName(payload) {
   const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
   return `${packetId}.portkey_gate.dry_run.json`;
@@ -3796,6 +3831,24 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const portkeyStillBlocked = portkeyTest?.still_blocked_scope || movement.blocked || packet.blocked || [];
   const portkeyAllowed = portkeyTest?.allowed_scope || movement.allowed || packet.allowed || [];
   const portkeyTested = Boolean(portkeyTest);
+  const portkeyReceipt = portkeyReceiptMatchesPacket(currentReviewRunPortkeyReceipt, packetRef)
+    ? currentReviewRunPortkeyReceipt
+    : null;
+  const portkeyReceiptKind = portkeyReceipt?.kind === "rehearsal_probe"
+    ? "Rehearsal webhook"
+    : portkeyReceipt?.kind === "portkey_byo_guardrail"
+      ? "Live BYO webhook"
+      : "Waiting for webhook";
+  const portkeyReceiptVerdict = typeof portkeyReceipt?.verdict === "boolean"
+    ? portkeyReceipt.verdict
+      ? "Allow with policy"
+      : "Block"
+    : "Not received";
+  const portkeyReceiptLatency =
+    typeof portkeyReceipt?.elapsed_ms === "number" ? `${portkeyReceipt.elapsed_ms}ms` : "not received";
+  const portkeyReceiptMutation = Boolean(
+    portkeyReceipt?.api_mutation || portkeyReceipt?.policy_mutation || portkeyReceipt?.external_writes
+  );
   const portkeyApiMutation = Boolean(
     portkeyTest?.invariants?.portkey_api_call_made
     || portkeyTest?.api_call_made
@@ -3930,6 +3983,22 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
           <div class="repo-outcome ${portkeyApiMutation ? "blocked" : "approved"}"><span>API mutation</span><strong>${escapeHtml(String(portkeyApiMutation))}</strong></div>
           <div class="repo-outcome ${portkeyPolicyMutation ? "blocked" : "approved"}"><span>Policy mutation</span><strong>${escapeHtml(String(portkeyPolicyMutation))}</strong></div>
         </div>
+        <div class="repo-portkey-live-receipt" aria-label="Portkey webhook receipt">
+          <div>
+            <span>Portkey call receipt</span>
+            <strong>${escapeHtml(portkeyReceiptKind)}</strong>
+          </div>
+          <p>${escapeHtml(portkeyReceipt
+            ? `Event ${portkeyReceipt.event_id || "recorded"} matched ${portkeyReceipt.revision_id || packetRef.revision_id || "current revision"}.`
+            : "Waiting for Portkey to call IA through the BYO Guardrail webhook. Local tests stay separate."
+          )}</p>
+          <div class="repo-portkey-receipt-grid">
+            <div><span>Event kind</span><strong>${escapeHtml(portkeyReceipt?.kind || "none")}</strong></div>
+            <div><span>Webhook verdict</span><strong>${escapeHtml(portkeyReceiptVerdict)}</strong></div>
+            <div><span>Webhook latency</span><strong>${escapeHtml(portkeyReceiptLatency)}</strong></div>
+            <div><span>Mutation flags</span><strong>${escapeHtml(portkeyReceipt ? String(portkeyReceiptMutation) : "none")}</strong></div>
+          </div>
+        </div>
         <div class="repo-portkey-handoff" aria-label="Portkey handoff result">
           <div><span>Packet id</span><strong>${escapeHtml(portkeyTest?.packet_reference?.packet_id || packetRef.packet_id || "not generated")}</strong></div>
           <div><span>Revision</span><strong>${escapeHtml(portkeyTest?.packet_reference?.revision_id || packetRef.revision_id || "not generated")}</strong></div>
@@ -3974,6 +4043,7 @@ async function testReviewRunPortkeyGuardrail() {
     const test = await fetchReviewRunPortkeyGuardrailTest(currentReviewRun.run_id);
     if (!test) throw new Error("Portkey guardrail test returned no result");
     currentReviewRunPortkeyTest = test;
+    currentReviewRunPortkeyReceipt = await fetchReviewRunPortkeyReceipt().catch(() => currentReviewRunPortkeyReceipt);
     renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
     const stillBlocked = (test.still_blocked_scope || []).join(", ") || "none";
     const allowed = (test.allowed_scope || []).join(", ") || "none";
@@ -4092,6 +4162,7 @@ async function rerunReviewRunPacket() {
     currentReviewRun = data.run || currentReviewRun;
     packetPortkeyPreview = data.portkey || packetPortkeyPreview;
     currentReviewRunPortkeyTest = null;
+    currentReviewRunPortkeyReceipt = null;
     currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
     const nextPacket = {
       ...(data.packet || {}),
@@ -4143,6 +4214,7 @@ async function runRepoProofCockpit() {
     if (!packetRes.ok || !packetData.ok) throw new Error(packetData.detail || "ReviewRun packet generation failed");
     currentReviewRun = packetData.run || currentReviewRun;
     currentReviewRunPortkeyTest = null;
+    currentReviewRunPortkeyReceipt = null;
     const packet = packetData.packet || {};
     const [{ payload, proofLoop }, proofGraph] = await Promise.all([
       fetchPortkeyProofForFixture(fixtureId),

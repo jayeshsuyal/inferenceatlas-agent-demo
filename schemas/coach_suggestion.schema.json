@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://inferenceatlas.dev/schemas/coach_suggestion.schema.json",
+  "title": "CoachSuggestion",
+  "description": "Contract for a safe Ask IA suggestion with a short label, routed message, and pinned ReviewRun entities.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "label", "message", "entities"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "coach_suggestion.v0"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 28
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "prompt_kind", "run_id", "stage", "subscriber"],
+      "properties": {
+        "source": {
+          "type": "string",
+          "const": "review_run"
+        },
+        "prompt_kind": {
+          "type": "string",
+          "enum": [
+            "approval_override",
+            "current_read",
+            "movement",
+            "next_action",
+            "portkey",
+            "proof"
+          ]
+        },
+        "run_id": { "type": "string" },
+        "stage": { "type": "string" },
+        "repo_full_name": { "type": "string" },
+        "packet_id": { "type": "string" },
+        "revision_id": { "type": "string" },
+        "missing_proof_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "subscriber": {
+          "type": "string",
+          "const": "cto"
+        }
+      }
+    }
+  }
+}

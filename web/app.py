@@ -21,6 +21,7 @@ from agent.config import (
     LLM_PROVIDER,
     TAVILY_API_KEY,
 )
+from agent.coach_suggestions import suggestions_for_review_run
 from agent.decision_brief import build_agent_access_decision_brief
 from agent.downstream_gate import build_downstream_gate_decision
 from agent.mind import init_mind, load_mind, save_mind, step
@@ -905,6 +906,7 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
     try:
         run = ReviewRun.from_dict(run_payload)
         answer = build_review_run_coach_answer(run, body.prompt)
+        suggestions = suggestions_for_review_run(run)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -915,6 +917,7 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         "stage": run.stage,
         "reply": answer["reply"],
         "answer": answer,
+        "suggestions": suggestions,
     }
 
 

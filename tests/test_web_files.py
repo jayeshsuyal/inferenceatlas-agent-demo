@@ -206,6 +206,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('rel="icon"', html)
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
+        self.assertIn('/static/style.css?v=49', html)
+        self.assertIn('/static/app.js?v=68', html)
         self.assertIn("REPO_PROOF_FIXTURE", js)
         self.assertIn('const REPO_PROOF_FIXTURE = "support_triage_agent";', js)
         self.assertIn("btnRootConnectGithub", js)
@@ -298,6 +300,13 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("fetchReviewRunPortkeyGuardrailTest", js)
         self.assertIn('/portkey/guardrail-test', js)
         self.assertIn("Test Portkey guardrail", js)
+        self.assertIn("effectivePortkeyDecisionLabel", js)
+        self.assertIn('effectivePortkeyVerdict ? "allow" : "block"', js)
+        self.assertEqual(
+            js.count("<span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>"),
+            1,
+        )
+        self.assertNotIn("<span>Verdict</span><strong>${escapeHtml(String(effectivePortkeyVerdict))}</strong></div>", js)
         self.assertIn("Portkey guardrail test recorded locally. No approval, no writes.", js)
         self.assertIn("Portkey received packet metadata only. IA did not approve, write, mutate policy, or call a Portkey Admin API.", js)
         self.assertIn("fetchRepoSponsorTrace", js)
@@ -412,6 +421,9 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn('.repo-ask-sidecar[data-coach-collapsed="true"]', css)
         self.assertIn(".repo-coach-answer", css)
         self.assertIn(".repo-coach-answer-row", css)
+        self.assertIn("PR 137: recording-ready visual polish", css)
+        self.assertIn("calc(100vh - 9rem)", css)
+        self.assertIn(".repo-review-delta-item", css)
         self.assertIn(".repo-secondary-link-row", css)
         self.assertIn(".repo-movement-grid", css)
         self.assertIn(".repo-movement-lane.allowed", css)

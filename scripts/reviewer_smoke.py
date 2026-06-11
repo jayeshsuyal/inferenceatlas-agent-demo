@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=38", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=22", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=68", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=49", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -310,6 +310,19 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("fetchReviewRunPortkeyGuardrailTest" in js, "ReviewRun Portkey guardrail test helper missing")
     _require("/portkey/guardrail-test" in js, "ReviewRun Portkey guardrail endpoint missing in UI")
     _require("Test Portkey guardrail" in js, "ReviewRun Portkey test CTA missing")
+    _require("effectivePortkeyDecisionLabel" in js, "Portkey verdict display label missing")
+    _require(
+        'effectivePortkeyVerdict ? "allow" : "block"' in js,
+        "Portkey verdict must render as a user-facing decision label",
+    )
+    _require(
+        js.count("<span>Verdict</span><strong>${escapeHtml(effectivePortkeyDecisionLabel)}</strong></div>") == 1,
+        "Portkey verdict outcome must render once",
+    )
+    _require(
+        "<span>Verdict</span><strong>${escapeHtml(String(effectivePortkeyVerdict))}</strong></div>" not in js,
+        "Portkey verdict must not expose raw boolean text",
+    )
     _require(
         "Portkey guardrail test recorded locally. No approval, no writes." in js,
         "ReviewRun Portkey test must disclose local read-only event",
@@ -351,6 +364,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require('.repo-ask-sidecar[data-coach-collapsed="true"]' in css, "Ask IA collapsed sidecar CSS missing")
     _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in sidecar CSS")
     _require("max-height: min(34rem, calc(100vh - 8rem));" in css, "Ask IA sidecar must stay compact")
+    _require("PR 137: recording-ready visual polish" in css, "recording polish CSS missing")
+    _require("calc(100vh - 9rem)" in css, "loaded ReviewRun recording viewport guard missing")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")
     _require(".repo-movement-grid" in css, "movement class grid CSS missing")
     _require(".repo-movement-lane.allowed" in css, "allowed movement lane CSS missing")

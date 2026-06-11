@@ -96,6 +96,8 @@ from agent.workbench import (
 )
 from agent.tools import compare_providers, get_catalog_summary, tavily_search
 from agent.chat_orchestrator import format_reply_with_manifest, orchestrate_chat
+from agent.coach_enrichment import enrich_review_run_coach_answer
+from agent.coach_session import DEFAULT_COACH_SESSION_DIR
 from agent.session_metrics import (
     clear_metrics_session,
     get_session_metrics,
@@ -185,6 +187,7 @@ _review_runs_lock = threading.Lock()
 _sponsor_proof_runs: Dict[str, dict] = {}
 _sponsor_proof_runs_lock = threading.Lock()
 REVIEW_RUN_STORE_DIR = Path(os.environ.get("IA_REVIEW_RUN_STORE_DIR", DEFAULT_REVIEW_RUN_STORE_DIR)).expanduser()
+COACH_SESSION_DIR = Path(os.environ.get("IA_COACH_SESSION_DIR", DEFAULT_COACH_SESSION_DIR)).expanduser()
 SPONSOR_PROOF_RUN_LEDGER_DIR = Path(
     os.environ.get("IA_SPONSOR_PROOF_RUN_LEDGER_DIR", DEFAULT_SPONSOR_PROOF_RUN_LEDGER_DIR)
 ).expanduser()
@@ -364,6 +367,8 @@ class ReviewRunCoachRequest(BaseModel):
     prompt: str = Field(default="", max_length=1200)
     message: Optional[str] = Field(default=None, max_length=1200)
     entities: Optional[dict[str, Any]] = None
+    chip_entities: Optional[dict[str, Any]] = None
+    reassess_trigger: Optional[str] = Field(default=None, max_length=80)
 
 
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
@@ -892,9 +897,10 @@ def rerun_review_run_packet_api(run_id: str, body: ReviewRunRerunRequest = Revie
     }
 
 
-@app.post("/api/review-runs/{run_id}/coach")
-def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
-    """Answer Ask IA from the current ReviewRun without chat/tool side effects."""
+def _build_review_run_coach_response(
+    run_id: str,
+    body: ReviewRunCoachRequest,
+) -> tuple[ReviewRun, dict[str, Any], list[dict[str, Any]]]:
     with _review_runs_lock:
         run_payload = _review_runs.get(run_id)
     try:
@@ -907,11 +913,29 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         run_payload = record["run"]
     try:
         run = ReviewRun.from_dict(run_payload)
-        answer = build_review_run_coach_answer(run, body.prompt or body.message or "")
+        prompt = body.prompt or body.message or ""
+        chip_entities = dict(body.entities or {})
+        chip_entities.update(dict(body.chip_entities or {}))
+        if body.reassess_trigger:
+            chip_entities.setdefault("reassess_trigger", body.reassess_trigger)
+        base_answer = build_review_run_coach_answer(run, prompt)
+        answer = enrich_review_run_coach_answer(
+            run,
+            base_answer,
+            prompt=prompt,
+            chip_entities=chip_entities or None,
+            store_dir=COACH_SESSION_DIR,
+        )
         suggestions = suggestions_for_review_run(run)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return run, answer, suggestions
 
+
+@app.post("/api/review-runs/{run_id}/coach")
+def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
+    """Answer Ask IA from the current ReviewRun without chat/tool side effects."""
+    run, answer, suggestions = _build_review_run_coach_response(run_id, body)
     return {
         "ok": True,
         "read_only": True,
@@ -921,6 +945,56 @@ def coach_review_run_api(run_id: str, body: ReviewRunCoachRequest) -> dict:
         "answer": answer,
         "suggestions": suggestions,
     }
+
+
+@app.post("/api/review-runs/{run_id}/coach/stream")
+def coach_review_run_stream_api(run_id: str, body: ReviewRunCoachRequest) -> StreamingResponse:
+    """Stream Ask IA thinking and section cards while keeping ReviewRun facts locked."""
+
+    def event_stream():
+        from agent.coach_stream import COACH_SECTION_ORDER, build_coach_thinking_steps, pick_coach_display_narration
+
+        try:
+            run, answer, suggestions = _build_review_run_coach_response(run_id, body)
+            for step in build_coach_thinking_steps(run, answer):
+                yield _sse({"type": "thinking", "line": step})
+
+            sections = answer.get("sections") or {}
+            current_read = str(sections.get("current_read") or "").strip()
+            if current_read:
+                yield _sse({"type": "pinned", "current_read": current_read})
+
+            for key, label in COACH_SECTION_ORDER:
+                value = sections.get(key)
+                if value:
+                    yield _sse({"type": "section", "key": key, "label": label, "value": str(value)})
+
+            narration = pick_coach_display_narration(answer)
+            if narration:
+                for token in narration.split():
+                    yield _sse({"type": "narration_chunk", "text": f"{token} "})
+
+            yield _sse(
+                {
+                    "type": "done",
+                    "read_only": True,
+                    "run_id": run.run_id,
+                    "stage": run.stage,
+                    "reply": answer.get("reply", ""),
+                    "answer": answer,
+                    "suggestions": suggestions,
+                }
+            )
+        except HTTPException as exc:
+            yield _sse({"type": "error", "detail": exc.detail})
+        except Exception as exc:
+            yield _sse({"type": "error", "detail": str(exc)})
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/api/review-runs/{run_id}/proofgraph")

@@ -173,3 +173,37 @@ def copilot(
         except Exception as exc:
             last_err = exc
     raise RuntimeError(str(last_err or "copilot failed"))
+
+
+def governance_copilot(
+    *,
+    message: str,
+    governance_context: str = "",
+    include_explain: bool = True,
+) -> dict[str, Any]:
+    """Ask v1 for governance narration while keeping packet fields authoritative."""
+    body = {
+        "message": message,
+        "governance_context": governance_context,
+        "include_explain": include_explain,
+    }
+    paths = ("/api/v1/ai/governance-copilot", "/api/v1/ai/governance-copilot/")
+    last_err: Optional[Exception] = None
+    for path in paths:
+        try:
+            data = _request("POST", path, body=body)
+            record_v1_http("governance_copilot")
+            if isinstance(data, dict) and data.get("ok") and (data.get("reply") or data.get("narration")):
+                narration = str(data.get("narration") or data.get("reply") or "")
+                return {
+                    "ok": True,
+                    "source": data.get("source", "inferenceatlas-v1-governance-copilot"),
+                    "reply": narration,
+                    "narration": narration,
+                    "path": path,
+                    "raw": data,
+                }
+            raise RuntimeError("governance copilot response missing ok/reply")
+        except Exception as exc:
+            last_err = exc
+    raise RuntimeError(str(last_err or "governance_copilot failed"))

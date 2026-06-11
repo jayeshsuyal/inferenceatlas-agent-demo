@@ -95,7 +95,7 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "Review AI spend",
         "Test downstream gate",
         'aria-label="Ask IA"',
-        'id="repo-coach-answer"',
+        'id="repo-coach-thread-scroll"',
         'data-tab="start">ReviewRun</button>',
         '<summary>Advanced</summary>',
         "Ask IA guides this run. It does not approve or write.",

@@ -21,10 +21,11 @@ class DemoRecordingScriptTests(unittest.TestCase):
             "## 90-Second Talk Track",
             "Every agent demo shows the agent taking action.",
             "AI movement is cross-functional.",
+            "This is one ReviewRun.",
             "/packet?fixture=mcp_tool_blast_radius&autorun=1",
             "IA did not approve. The next human action is named above.",
             "Sponsor tools collect proof; they do not approve, grant, write, spend, select providers, or mutate production.",
-            "Portkey export is dry-run in this public demo; no API call is made.",
+            "Portkey guardrail test is read-only in this public demo; no Admin API call is made.",
             "Ask IA explains the packet; it does not replace the packet.",
             "The script has been rehearsed at least twice.",
             "After this gate passes, do not add product features unless a demo-blocking bug appears.",
@@ -38,8 +39,8 @@ class DemoRecordingScriptTests(unittest.TestCase):
         for expected in [
             "Can this move?",
             "What proof is missing?",
-            "Who reviews this?",
-            "Can Portkey allow this spend?",
+            "What will Portkey do?",
+            "What happens next?",
         ]:
             self.assertIn(expected, script)
 

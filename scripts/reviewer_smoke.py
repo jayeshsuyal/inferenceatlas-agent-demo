@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=72", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=52", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=73", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=53", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -152,9 +152,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Choose one GitHub repository",
         "Connect and index one repo before generating a packet.",
         "Ask IA",
-        "Review coach",
+        "Chat coach",
         "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
-        "Collapse Ask IA coach",
+        "Minimize Ask IA chat",
+        'data-coach-mode="floating"',
         "repo-coach-chat",
         "repo-coach-last-user",
         "You asked",
@@ -201,7 +202,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
 
     _require('aria-label="Connect repo"' in html, "repo access row must be the selected entry point")
     _require('aria-current="step"' in html, "repo access row must show selected step state")
-    _require('class="repo-ask-sidecar"' in html, "Ask IA must be a right-side coach")
+    _require('class="repo-ask-sidecar repo-ask-floating"' in html, "Ask IA must be a floating chat coach")
+    _require('role="dialog"' in html, "Ask IA floating chat must expose dialog semantics")
     _require('class="repo-ask-coach repo-infra-row"' not in html, "Ask IA returned to downstream drawer")
     _require("Should this AI agent get repo access?" not in html, "old cockpit-first heading returned")
     _require("Run proof check" not in html, "old cockpit-first CTA returned")
@@ -337,6 +339,13 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("repoCoachStage" in js, "Ask IA stage label missing")
     _require("REVIEW_RUN_STAGE_CHROME" in js, "Ask IA stage chrome map missing")
     _require("setReviewCoachCollapsed" in js, "Ask IA close/open controller missing")
+    _require("Open Ask IA chat" in js, "Ask IA reopen label missing")
+    _require("Minimize Ask IA chat" in js, "Ask IA minimize label missing")
+    _require(
+        'function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {\n  clearReviewRunCoachUserPrompt();'
+        not in js,
+        "Ask IA stage refresh must not clear the visible user turn",
+    )
     _require('placeholder: "Ask what proof is missing..."' in js, "Ask IA stage placeholder missing")
     _require(
         "You selected ${name}. I can generate a repo-access packet next." in js,
@@ -423,7 +432,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-portkey-handoff" in css, "ReviewRun Portkey handoff CSS missing")
     _require(".repo-portkey-runway" in css, "ReviewRun Portkey runway CSS missing")
     _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
-    _require(".repo-ask-sidecar" in css, "Ask IA sidecar CSS missing")
+    _require(".repo-ask-floating" in css, "Ask IA floating CSS missing")
+    _require("position: fixed !important;" in css, "Ask IA must float above the stage")
+    _require("grid-template-columns: minmax(0, 1fr) !important;" in css, "runway must not reserve a sidecar rail")
     _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")
     _require(".repo-coach-last-user" in css, "Ask IA user bubble CSS missing")
     _require(".repo-coach-assistant-head" in css, "Ask IA assistant header CSS missing")
@@ -434,9 +445,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-coach-answer-row" in css, "Ask IA answer row CSS missing")
     _require(".repo-coach-toggle" in css, "Ask IA close/open CSS missing")
     _require(".repo-coach-stage-line" in css, "Ask IA stage line CSS missing")
-    _require('.repo-ask-sidecar[data-coach-collapsed="true"]' in css, "Ask IA collapsed sidecar CSS missing")
-    _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in sidecar CSS")
-    _require("max-height: min(34rem, calc(100vh - 8rem));" in css, "Ask IA sidecar must stay compact")
+    _require('.repo-ask-floating[data-coach-collapsed="true"]' in css, "Ask IA collapsed floating CSS missing")
+    _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
+    _require("max-height: min(42rem, calc(100vh - 1.7rem));" in css, "Ask IA floating chat must stay compact")
     _require("PR 137: recording-ready visual polish" in css, "recording polish CSS missing")
     _require("calc(100vh - 9rem)" in css, "loaded ReviewRun recording viewport guard missing")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")

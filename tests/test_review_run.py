@@ -237,8 +237,11 @@ class ReviewRunContractTests(TestCase):
         next_step = build_review_run_coach_answer(packet_run, "idk what to do next")
         self.assertCoachAnswerIsSafe(next_step)
         self.assertEqual(next_step["prompt_kind"], "next_action")
-        self.assertIn("Attach repo-owner approval", next_step["sections"]["next_human_action"])
+        self.assertIn("Support Ops repo-owner approval", next_step["sections"]["next_human_action"])
+        self.assertIn("Engineering rollback/off-switch proof", next_step["sections"]["next_human_action"])
+        self.assertIn("Security environment-boundary proof", next_step["sections"]["next_human_action"])
         self.assertIn("Missing proof", next_step["sections"]["what_blocks_movement"])
+        self.assertIn("Support Ops brings repo-owner approval", next_step["sections"]["what_blocks_movement"])
         self.assertIn("Portkey should treat this as `Block`", next_step["sections"]["downstream_impact"])
 
         override = build_review_run_coach_answer(packet_run, "approve blocked claims and grant access")

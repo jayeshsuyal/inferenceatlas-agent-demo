@@ -118,9 +118,12 @@ const repoIndexSummary = document.getElementById("repo-index-summary");
 const repoSelectedName = document.getElementById("repo-selected-name");
 const repoIndexedState = document.getElementById("repo-indexed-state");
 const repoReviewRunId = document.getElementById("repo-review-run-id");
+const repoReviewRequest = document.getElementById("repo-review-request");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCoachAnswer = document.getElementById("repo-coach-answer");
+const repoCoachForm = document.getElementById("repo-coach-form");
+const repoCoachInput = document.getElementById("repo-coach-input");
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -186,6 +189,7 @@ let packetDetail = null;
 let packetPortkeyPreview = null;
 let packetPortkeyProofLoop = null;
 let currentReviewRunProofGraph = null;
+let currentReviewRunPortkeyTest = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let walkthroughPayload = null;
@@ -212,6 +216,35 @@ const DEFAULT_REVIEW_PROOF_ITEMS = [
   { id: "repo_owner_approval", label: "Repo owner approval" },
   { id: "rollback_offswitch", label: "Rollback/off-switch proof" },
   { id: "environment_boundary", label: "Environment boundary" },
+];
+const DEFAULT_REVIEW_PROOF_LENSES = [
+  {
+    lens_id: "support_ops",
+    label: "Support Ops",
+    owner_group: "Support Ops",
+    review_focus: "Repo/workflow owner approval",
+    missing_proof: [{ id: "repo_owner_approval", label: "Repo owner approval" }],
+    prepared_proof_items: [{ id: "repo_owner_approval", label: "Repo owner approval" }],
+    next_human_action: "Attach repo-owner approval from Support Ops.",
+  },
+  {
+    lens_id: "engineering",
+    label: "Engineering",
+    owner_group: "Engineering",
+    review_focus: "Rollback/off-switch proof",
+    missing_proof: [{ id: "rollback_offswitch", label: "Rollback/off-switch proof" }],
+    prepared_proof_items: [{ id: "rollback_offswitch", label: "Rollback/off-switch proof" }],
+    next_human_action: "Attach rollback/off-switch proof from Engineering.",
+  },
+  {
+    lens_id: "security",
+    label: "Security",
+    owner_group: "Security",
+    review_focus: "Secrets/org-wide boundary",
+    missing_proof: [{ id: "environment_boundary", label: "Environment boundary" }],
+    prepared_proof_items: [{ id: "environment_boundary", label: "Environment boundary" }],
+    next_human_action: "Attach environment-boundary proof from Security.",
+  },
 ];
 const FIRST_RUN_PACKET_URL = "/packet?fixture=support_triage_agent&autorun=1";
 const FIRST_RUN_HEADING =
@@ -807,8 +840,27 @@ reviewFile.addEventListener("change", async () => {
 });
 
 function isGithubSignedIn() {
-  const gh = uiConnectors.find((c) => c.id === "github");
+  const gh = githubConnector();
   return Boolean(gh && gh.signed_in);
+}
+
+function githubConnector() {
+  return uiConnectors.find((c) => c.id === "github") || null;
+}
+
+function isGithubDemoSignedIn() {
+  const gh = githubConnector();
+  return Boolean(gh && gh.signed_in && gh.demo_session);
+}
+
+function isGithubLiveSignedIn() {
+  const gh = githubConnector();
+  return Boolean(gh && gh.signed_in && !gh.demo_session);
+}
+
+function isGithubLiveAuthConfigured() {
+  const gh = githubConnector();
+  return Boolean(gh && gh.live_auth_configured);
 }
 
 function updateGithubToolbar() {
@@ -862,6 +914,7 @@ function setReviewRunCoachBusy(loading, statusText = "") {
         button.setAttribute("aria-disabled", String(loading));
       });
   }
+  if (repoCoachInput) repoCoachInput.disabled = loading;
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
     packetCoachStatus.classList.remove("error");
@@ -880,7 +933,6 @@ function renderReviewRunCoachAnswer(answer) {
   }
   if (!repoCoachAnswer) return;
   const rows = [
-    ["Current read", sections.current_read],
     ["What blocks movement", sections.what_blocks_movement],
     ["Next human action", sections.next_human_action],
     ["Downstream impact", sections.downstream_impact],
@@ -899,22 +951,186 @@ function renderReviewRunCoachAnswer(answer) {
     .join("");
 }
 
+function coachListText(items = [], limit = 4, fallback = "none") {
+  const values = (items || []).filter(Boolean).map((item) => String(item).trim()).filter(Boolean);
+  if (!values.length) return fallback;
+  const visible = values.slice(0, limit);
+  const rest = values.length - visible.length;
+  return rest > 0 ? `${visible.join(", ")} +${rest} more` : visible.join(", ");
+}
+
+function selectedReviewRepoName() {
+  return currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo";
+}
+
+function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
+  renderReviewRunCoachAnswer({ sections });
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.classList.remove("error");
+    packetCoachStatus.textContent = statusText;
+  }
+}
+
+function setCoachForNoRepo(expanded = false) {
+  const liveSignedIn = isGithubLiveSignedIn();
+  const demoSignedIn = isGithubDemoSignedIn();
+  const liveAuthConfigured = isGithubLiveAuthConfigured();
+  const sections = {
+    current_read: liveSignedIn
+      ? "GitHub live OAuth is connected. Choose one repo to start the ReviewRun."
+      : demoSignedIn
+        ? "Demo GitHub is connected. Use the demo repo, or connect live GitHub for your repos."
+        : liveAuthConfigured
+          ? "Choose one repo to start. Connect GitHub or use the demo repo."
+          : "Live GitHub OAuth is not configured in this server. Use the demo repo, or restart with .env.",
+    what_blocks_movement: "IA has no packet-backed ReviewRun until one repo is selected and indexed.",
+    next_human_action: liveSignedIn
+      ? "Click Choose repo, then select one repository."
+      : demoSignedIn
+        ? "Click Use demo repo for the fixture, or Connect live GitHub after loading OAuth env."
+        : liveAuthConfigured
+          ? "Connect GitHub or use the demo repo, then select one repository."
+          : "Restart this server with GitHub OAuth env loaded, or click Use demo repo.",
+    downstream_impact: "ProofGraph and Portkey wait for the IA Packet before showing a downstream state.",
+    safety: "IA did not approve, dispatch, write, or mutate access.",
+  };
+  if (expanded) {
+    setReviewRunCoachStage(
+      sections,
+      liveSignedIn
+        ? "GitHub live connected. Choose one repo."
+        : demoSignedIn
+          ? "Demo GitHub connected. Choose demo repo or connect live GitHub."
+          : liveAuthConfigured
+            ? "Ask IA is ready to guide repo selection."
+            : "Live GitHub OAuth env missing in this server."
+    );
+    return;
+  }
+  resetReviewRunCoachAnswer();
+  if (repoCoachRead) repoCoachRead.textContent = sections.current_read;
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.classList.remove("error");
+    packetCoachStatus.textContent = liveSignedIn
+      ? "GitHub live connected. Choose one repo."
+      : demoSignedIn
+        ? "Demo GitHub connected. Choose demo repo or connect live GitHub."
+        : liveAuthConfigured
+          ? "Ask IA is ready to guide repo selection."
+          : "Live GitHub OAuth env missing in this server.";
+  }
+}
+
+function setCoachForSelectedRepo(repo) {
+  const name = repo?.full_name || selectedReviewRepoName();
+  const indexing = Boolean(repo?.indexing);
+  resetReviewRunCoachAnswer();
+  if (repoCoachRead) {
+    repoCoachRead.textContent = indexing
+      ? `You selected ${name}. IA is indexing this repo before it can generate a packet.`
+      : `You selected ${name}. Next: click Review access to generate the IA Packet.`;
+  }
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.classList.remove("error");
+    packetCoachStatus.textContent = indexing
+      ? "Repo indexing. Ask IA will update after the repo is ready."
+      : "Repo selected. Ask IA is coaching packet generation.";
+  }
+}
+
+function setCoachForReviewLoading() {
+  setReviewRunCoachStage(
+    {
+      current_read: `IA is reviewing ${selectedReviewRepoName()} and collecting proof for the packet.`,
+      what_blocks_movement: "Movement stays blocked while the packet is being generated.",
+      next_human_action: "Wait for the IA Packet to finish, then review the blocked claims and missing proof.",
+      downstream_impact: "Portkey and ProofGraph update only after the packet exists.",
+      safety: "IA did not approve, dispatch, write, or mutate access.",
+    },
+    "Generating packet from the selected ReviewRun..."
+  );
+}
+
+function setCoachForPacket(packet, portkeyPayload) {
+  const decision = packet?.decision || {};
+  const movement = packet?.movement_classes || {};
+  const blocked = movement.blocked || packet?.blocked || [];
+  const reviewRequired = movement.review_required || packet?.review_required || [];
+  const missingProof = proofItemsForPacket(packet).map((item) => item.label);
+  const proof = packet?.proof_resolution || {};
+  const delta = packet?.review_delta || {};
+  const readyForRerun = Boolean(proof.ready_for_rerun || packet?.review_run?.packet?.ready_for_rerun);
+  const rerunComplete = packet?.review_run?.stage === "ready_to_export" || Boolean(delta.packet_changed);
+  const guardrail = portkeyPayload?.portkey_guardrail_response || {};
+  const portkeyState = guardrail.verdict ? "allow with policy" : "block";
+  const blockedText = coachListText(blocked, 4, "no blocked claims");
+  const missingText = coachListText(missingProof, 4, "no missing proof");
+  const proofOwnerText = proofOwnerSummaryForPacket(packet) || missingText;
+  const reviewText = coachListText(reviewRequired, 3, "no review-only lanes");
+
+  if (rerunComplete) {
+    setReviewRunCoachStage(
+      {
+        current_read: `Updated packet generated for ${selectedReviewRepoName()}. Same request, new proof, verdict: ${verdictLabel(decision)}.`,
+        what_blocks_movement: `Still blocked: ${blockedText}. Review lanes: ${reviewText}.`,
+        next_human_action: "Export the review brief or Portkey gate, then have the named human owners review the updated packet.",
+        downstream_impact: `Portkey can ${portkeyState} from the updated packet revision; IA still did not mutate Portkey.`,
+        safety: "IA did not approve, dispatch, write, mutate access, or call Portkey live.",
+      },
+      "Updated packet ready. No approval, no writes."
+    );
+    return;
+  }
+
+  if (readyForRerun) {
+    setReviewRunCoachStage(
+      {
+        current_read: `Proof is attached for ${selectedReviewRepoName()}, but the packet verdict has not changed yet.`,
+        what_blocks_movement: `Blocked claims remain: ${blockedText}.`,
+        next_human_action: "Click Regenerate packet. IA will rerun the same request with the attached proof.",
+        downstream_impact: "Portkey still blocks until the regenerated packet changes the downstream state.",
+        safety: "IA did not approve, dispatch, write, mutate access, or override the packet from chat.",
+      },
+      "Proof attached. Verdict unchanged; no approval, no writes."
+    );
+    return;
+  }
+
+  setReviewRunCoachStage(
+    {
+      current_read: `Your packet is generated for ${selectedReviewRepoName()}. Verdict: ${verdictLabel(decision)}.`,
+      what_blocks_movement: `Blocked claims: ${blockedText}. Missing proof owners: ${proofOwnerText}.`,
+      next_human_action: `To resolve blocked claims, attach proof from ${proofOwnerText}, then regenerate the packet. Ask IA cannot approve them from chat.`,
+      downstream_impact: `Portkey reads this packet and will ${portkeyState} until the required proof changes the packet state.`,
+      safety: "IA did not approve, dispatch, write, mutate access, or call Portkey live.",
+    },
+    "Packet generated. IA did not approve or write."
+  );
+}
+
 function resetReviewRunCoachAnswer() {
   if (!repoCoachAnswer) return;
   repoCoachAnswer.hidden = true;
   repoCoachAnswer.innerHTML = "";
 }
 
+function renderLocalReviewRunCoach(sections) {
+  renderReviewRunCoachAnswer({ sections });
+  if (packetCoachStatus) {
+    packetCoachStatus.hidden = false;
+    packetCoachStatus.classList.remove("error");
+    packetCoachStatus.textContent = "Ask IA is reading the current screen state. No approval, no writes.";
+  }
+}
+
 async function askReviewRunCoach(prompt) {
   if (reviewRunCoachBusy) return;
   const message = String(prompt || "Current read").trim() || "Current read";
   if (!currentReviewRun?.run_id) {
-    resetReviewRunCoachAnswer();
-    if (packetCoachStatus) {
-      packetCoachStatus.hidden = false;
-      packetCoachStatus.classList.add("error");
-      packetCoachStatus.textContent = "Connect and index one repo before asking IA.";
-    }
+    setCoachForNoRepo(true);
     return;
   }
 
@@ -949,12 +1165,34 @@ async function askReviewRunCoach(prompt) {
 }
 
 function updateReviewRepoConnectUi() {
-  const signedIn = isGithubSignedIn();
+  const liveSignedIn = isGithubLiveSignedIn();
+  const demoSignedIn = isGithubDemoSignedIn();
+  const liveAuthConfigured = isGithubLiveAuthConfigured();
   if (btnRootConnectGithub) {
-    btnRootConnectGithub.textContent = signedIn ? "Choose repo" : "Connect GitHub";
+    btnRootConnectGithub.textContent = liveSignedIn
+      ? "Choose repo"
+      : demoSignedIn
+        ? "Connect live GitHub"
+        : liveAuthConfigured
+          ? "Connect GitHub"
+          : "GitHub env missing";
+    btnRootConnectGithub.disabled = !liveSignedIn && !liveAuthConfigured;
+    btnRootConnectGithub.setAttribute("aria-disabled", String(btnRootConnectGithub.disabled));
   }
   if (btnRootDemoGithub) {
     btnRootDemoGithub.hidden = false;
+  }
+  if (!selectedReviewRepo() && repoProofCockpit?.dataset.loaded !== "true") {
+    setRepoConnectStatus(
+      liveSignedIn
+        ? "GitHub live connected. Choose one repo to index."
+        : demoSignedIn
+          ? "Demo GitHub connected. Use demo repo, or connect live GitHub after OAuth env is loaded."
+          : liveAuthConfigured
+            ? "Connect GitHub or use the demo repo to start. No approval, no writes."
+            : "Live GitHub OAuth env missing in this server. Use demo repo, or restart with .env."
+    );
+    setCoachForNoRepo(false);
   }
   updateReviewCtaState();
 }
@@ -962,15 +1200,19 @@ function updateReviewRepoConnectUi() {
 function renderReviewRepoSummary(repo = null) {
   if (!repoIndexSummary) return;
   const selected = repo || selectedReviewRepo();
+  if (repoProofCockpit) {
+    repoProofCockpit.dataset.repoSelected = String(Boolean(selected));
+  }
   repoIndexSummary.hidden = !selected;
+  if (repoReviewRequest) {
+    repoReviewRequest.hidden = !selected;
+  }
   if (!selected) {
     currentReviewRunProofGraph = null;
+    currentReviewRunPortkeyTest = null;
     resetReviewRunCoachAnswer();
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
-    if (repoCoachRead) {
-      repoCoachRead.textContent =
-        "Connect GitHub or use the demo repo. IA will answer from the current ReviewRun, not raw agent intent.";
-    }
+    setCoachForNoRepo();
     return;
   }
   if (repoSelectedName) {
@@ -983,20 +1225,17 @@ function renderReviewRepoSummary(repo = null) {
     if (selected.indexing) {
       repoIndexedState.textContent = "Indexing...";
     } else {
-      const files = selected.files_included ?? 0;
       const chars = selected.digest_chars ? selected.digest_chars.toLocaleString() : "0";
-      repoIndexedState.textContent = `Indexed · ${chars} chars · ${files} files`;
+      const files = selected.files_included ?? selected.sample_paths?.length ?? 0;
+      const sourceLabel = files > 0 ? `${files} files` : "demo digest";
+      repoIndexedState.textContent = `Indexed · ${chars} chars · ${sourceLabel}`;
     }
   }
   if (repoReviewRunId) {
     repoReviewRunId.textContent = currentReviewRun?.run_id || "Creating...";
   }
-  if (repoCoachRead) {
-    resetReviewRunCoachAnswer();
-    repoCoachRead.textContent = selected.indexing
-      ? `Indexing ${selected.full_name}. IA cannot generate the packet until this repo is ready.`
-      : `${selected.full_name} is indexed. Next human action: run the access review to generate a packet.`;
-  }
+  resetReviewRunCoachAnswer();
+  setCoachForSelectedRepo(selected);
   updateReviewCtaState();
 }
 
@@ -1049,7 +1288,7 @@ async function loadReviewRepoList(query = "") {
     setRepoConnectStatus(
       data.demo
         ? "Demo GitHub connected. Choose one repo to index."
-        : "GitHub connected. Choose one repo to index."
+        : "GitHub live connected. Choose one repo to index."
     );
   } catch (err) {
     repoInlineList.innerHTML = `<p class="github-repo-empty">${escapeHtml(String(err.message || err))}</p>`;
@@ -1091,6 +1330,7 @@ async function attachReviewRepo(repo) {
   const fullName = repo.full_name;
   currentReviewRun = null;
   currentReviewRunProofGraph = null;
+  currentReviewRunPortkeyTest = null;
   selectedGithubRepos = [{ full_name: fullName, indexing: true, demo: Boolean(repo.demo) }];
   renderGithubChips();
   renderReviewRepoSummary(selectedGithubRepos[0]);
@@ -1114,7 +1354,10 @@ async function attachReviewRepo(repo) {
       files_included: data.files_included,
       paths_in_tree: data.paths_in_tree,
       sample_paths: data.sample_paths || [],
-      index_label: data.message || `Indexed ${fullName}`,
+      index_label:
+        data.files_included && data.message
+          ? data.message
+          : `Indexed ${fullName}: ${(data.digest_chars || 0).toLocaleString()} chars`,
     };
     selectedGithubRepos = [indexedRepo];
     if (data.file_id && !chatAttachmentIds.includes(data.file_id)) {
@@ -1124,11 +1367,11 @@ async function attachReviewRepo(repo) {
     renderGithubChips();
     renderReviewRepoSummary(indexedRepo);
     setRepoConnectStatus(`Repo connected and indexed: ${fullName}. ReviewRun is ready.`);
-    showConnectorToast("GitHub", data.message || `Indexed ${fullName}`, 9000);
   } catch (err) {
     selectedGithubRepos = [];
     currentReviewRun = null;
     currentReviewRunProofGraph = null;
+    currentReviewRunPortkeyTest = null;
     renderGithubChips();
     renderReviewRepoSummary(null);
     setRepoConnectStatus(String(err.message || err), true);
@@ -1138,8 +1381,16 @@ async function attachReviewRepo(repo) {
 }
 
 async function beginRootGithubConnect() {
-  if (isGithubSignedIn()) {
+  if (isGithubLiveSignedIn()) {
     await loadReviewRepoList("");
+    return;
+  }
+  if (!isGithubLiveAuthConfigured()) {
+    setRepoConnectStatus(
+      "Live GitHub OAuth is not configured in this server. Load .env and restart, or use demo repo.",
+      true
+    );
+    setCoachForNoRepo(true);
     return;
   }
   setRepoConnectStatus("Opening GitHub sign-in. Use demo repo if OAuth is not configured.");
@@ -1160,7 +1411,22 @@ async function useDemoGithubForReview() {
     );
     if (!res.ok) throw new Error(`Demo sign-in failed (${res.status})`);
     await refreshConnectors();
-    await loadReviewRepoList("");
+    setRepoConnectStatus("Selecting the demo support repo...");
+    const reposRes = await fetch(
+      `/api/connectors/github/repos?session_id=${encodeURIComponent(sessionId)}&q=`
+    );
+    const reposData = await reposRes.json().catch(() => ({}));
+    if (!reposRes.ok || reposData.ok === false) {
+      throw new Error(reposData.message || reposData.detail || "Failed to load demo repos");
+    }
+    const demoRepo = (reposData.repos || [])[0];
+    if (!demoRepo) throw new Error("Demo GitHub session has no repository to attach");
+    if (repoInlineSearch) repoInlineSearch.value = "";
+    closeReviewRepoPicker();
+    await attachReviewRepo({
+      ...demoRepo,
+      demo: Boolean(reposData.demo || demoRepo.demo),
+    });
   } catch (err) {
     setRepoConnectStatus(String(err.message || err), true);
   }
@@ -1716,7 +1982,7 @@ async function connectConnector(connectorId) {
     if (!res.ok) throw new Error(data.detail || `Connect failed (${res.status})`);
 
     if (data.mode === "oauth_redirect" && data.redirect_url) {
-      window.open(data.redirect_url, "ia_oauth", "width=520,height=720,noopener");
+      window.open(data.redirect_url, "ia_oauth", "width=520,height=720");
       showConnectorToast("Sign in", "Complete authorization in the popup window…");
       pollConnectorUntilConnected(connectorId);
       return;
@@ -1739,6 +2005,10 @@ async function pollConnectorUntilConnected(connectorId, maxAttempts = 40) {
       if (data.connection?.status === "connected") {
         showConnectorToast(connectorId, "Signed in — you can import files now.");
         await refreshConnectors();
+        updateGithubToolbar();
+        if (connectorId === "github") {
+          await loadReviewRepoList("");
+        }
         return;
       }
     } catch (_) {
@@ -1761,7 +2031,7 @@ async function importFromConnector(connectorId, action) {
     });
     const data = await res.json().catch(() => ({}));
     if (data.needs_sign_in && data.redirect_url) {
-      window.open(data.redirect_url, "ia_oauth", "width=520,height=720,noopener");
+      window.open(data.redirect_url, "ia_oauth", "width=520,height=720");
       showConnectorToast(connectorId, "Sign in first, then import again.");
       pollConnectorUntilConnected(connectorId);
       return;
@@ -1806,6 +2076,46 @@ window.addEventListener("message", (event) => {
     }
   }
 });
+
+async function handleConnectorOAuthReturn() {
+  const params = new URLSearchParams(window.location.search);
+  let payload = null;
+  const connectorId = params.get("connector_oauth");
+  if (connectorId) {
+    payload = {
+      connector_id: connectorId,
+      ok: params.get("ok") === "true",
+      message: params.get("ok") === "true" ? "Signed in successfully." : "Sign-in failed.",
+      session_id: params.get("session_id") || "",
+    };
+    window.history.replaceState({}, "", window.location.pathname || "/");
+  } else {
+    try {
+      const raw = localStorage.getItem("ia_connector_oauth_result");
+      if (raw) {
+        payload = JSON.parse(raw);
+        localStorage.removeItem("ia_connector_oauth_result");
+      }
+    } catch (_) {
+      payload = null;
+    }
+  }
+  if (!payload?.connector_id) return;
+  if (payload.session_id && payload.session_id !== sessionId) {
+    sessionId = payload.session_id;
+    localStorage.setItem(STORAGE_KEY, sessionId);
+    chatStorageScope = `chat_${sessionId}`;
+    reviewStorageScope = `review_${sessionId}`;
+    localStorage.setItem(REVIEW_SCOPE_KEY, reviewStorageScope);
+  }
+  await refreshConnectors();
+  updateGithubToolbar();
+  updateDriveToolbar();
+  showConnectorToast(payload.connector_id, payload.message || "Signed in.", payload.ok ? 6000 : 14000);
+  if (payload.ok && payload.connector_id === "github") {
+    await loadReviewRepoList("");
+  }
+}
 
 function createMenuSection({ id, title, subtitle, blurb, expanded, onToggle, buildBody }) {
   const section = document.createElement("div");
@@ -2752,6 +3062,17 @@ async function fetchReviewRunProofGraph(runId = currentReviewRun?.run_id) {
   return data.proofgraph || null;
 }
 
+async function fetchReviewRunPortkeyGuardrailTest(runId = currentReviewRun?.run_id) {
+  if (!runId) throw new Error("Create a ReviewRun before testing Portkey.");
+  const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/portkey/guardrail-test`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "Portkey guardrail test failed");
+  return data.portkey_guardrail_test || null;
+}
+
 function packetPortkeyExportName(payload) {
   const packetId = payload?.ia_packet_reference?.packet_id || packetDetail?.fixture?.fixture_id || "ia_packet";
   return `${packetId}.portkey_gate.dry_run.json`;
@@ -2805,6 +3126,43 @@ function proofItemsForPacket(packet) {
     .filter((item) => item.id && item.label);
 }
 
+function proofLensesForPacket(packet) {
+  const lensPayload = packet?.proof_resolution?.owner_lenses || packet?.proof_lenses || {};
+  const lenses = Array.isArray(lensPayload.lenses) ? lensPayload.lenses : [];
+  const activeLenses = lenses.filter((lens) => Boolean(lens?.active));
+  if (activeLenses.length) return activeLenses;
+  const fallbackById = new Map(DEFAULT_REVIEW_PROOF_LENSES.map((lens) => [lens.missing_proof[0]?.id, lens]));
+  return proofItemsForPacket(packet).map((item) => ({
+    ...(fallbackById.get(item.id) || {}),
+    lens_id: fallbackById.get(item.id)?.lens_id || item.id,
+    label: fallbackById.get(item.id)?.label || item.label,
+    owner_group: fallbackById.get(item.id)?.owner_group || "Human owner",
+    review_focus: fallbackById.get(item.id)?.review_focus || item.label,
+    missing_proof: [item],
+    attached_proof: [],
+    prepared_proof_items: [
+      {
+        ...item,
+        evidence_note: "Human checked this proof item in the ReviewRun cockpit.",
+        ...(fallbackById.get(item.id)?.prepared_proof_items?.[0] || {}),
+      },
+    ],
+    next_human_action: fallbackById.get(item.id)?.next_human_action || `Attach ${item.label}.`,
+    safety_note: "This lens names human proof only. It does not approve, grant, write, mutate, or dispatch.",
+  }));
+}
+
+function proofOwnerSummaryForPacket(packet) {
+  return proofLensesForPacket(packet)
+    .map((lens) => {
+      const owner = String(lens.owner_group || lens.label || "Human owner").trim();
+      const focus = String(lens.review_focus || "").trim();
+      return focus ? `${owner}: ${focus}` : owner;
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
 function attachedProofIds(packet) {
   const attached = packet?.proof_resolution?.attached_proof || packet?.review_run?.attached_proof || [];
   return new Set((attached || []).map((item) => String(item?.id || "").trim()).filter(Boolean));
@@ -2841,7 +3199,7 @@ function renderRepoProofResolution(packet) {
   const readyForRerun = Boolean(proof.ready_for_rerun || packet?.review_run?.packet?.ready_for_rerun);
   const rerunComplete = packet?.review_run?.stage === "ready_to_export" || Boolean(packet?.review_delta?.packet_changed);
   const attachedIds = attachedProofIds(packet);
-  const proofItems = proofItemsForPacket(packet);
+  const proofLenses = proofLensesForPacket(packet);
   const deltaRows = reviewDeltaRows(packet);
   const checklist = repoProofResolutionCard.querySelector(".repo-proof-checklist");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
@@ -2859,14 +3217,28 @@ function renderRepoProofResolution(packet) {
         : "Attach proof before rerun.";
   }
   if (checklist) {
-    checklist.innerHTML = proofItems
-      .map((item) => {
-        const checked = attachedIds.has(item.id);
+    checklist.innerHTML = proofLenses
+      .map((lens) => {
+        const items = [...(lens.missing_proof || []), ...(lens.attached_proof || [])].filter(Boolean);
+        const prepared = Array.isArray(lens.prepared_proof_items) ? lens.prepared_proof_items : [];
+        const item = items[0] || prepared[0] || {};
+        const proofId = String(item.id || "").trim();
+        const proofLabel = String(item.label || proofId || lens.review_focus || lens.label || "").trim();
+        const preparedMatch = prepared.find((candidate) => String(candidate?.id || "") === proofId) || {};
+        const checked = proofId && attachedIds.has(proofId);
+        const disabled = readyForRerun || rerunComplete || !proofId;
         return `
-          <label class="repo-proof-check${checked ? " attached" : ""}">
-            <input type="checkbox" data-proof-id="${escapeHtml(item.id)}" data-proof-label="${escapeHtml(item.label)}"${checked ? " checked" : ""}${readyForRerun || rerunComplete ? " disabled" : ""} />
-            <span>${escapeHtml(item.label)}</span>
-          </label>
+          <section class="repo-proof-lens${checked ? " attached" : ""}" data-owner-lens="${escapeHtml(lens.lens_id || lens.label || "")}">
+            <div class="repo-proof-lens-head">
+              <span>${escapeHtml(lens.owner_group || lens.label || "Human owner")}</span>
+              <strong>${escapeHtml(lens.review_focus || proofLabel || "Required proof")}</strong>
+            </div>
+            <label class="repo-proof-check${checked ? " attached" : ""}">
+              <input type="checkbox" data-proof-id="${escapeHtml(proofId)}" data-proof-label="${escapeHtml(proofLabel)}" data-proof-owner="${escapeHtml(lens.owner_group || lens.label || "")}" data-evidence-note="${escapeHtml(preparedMatch.evidence_note || "Human checked this proof item in the ReviewRun cockpit.")}"${checked ? " checked" : ""}${disabled ? " disabled" : ""} />
+              <span>${escapeHtml(proofLabel)}</span>
+            </label>
+            <p>${escapeHtml(lens.next_human_action || "Attach proof from this owner before rerun.")}</p>
+          </section>
         `;
       })
       .join("");
@@ -2916,14 +3288,10 @@ function setRepoCockpitBusy(loading) {
         : "Connect and index one repo before generating a packet.";
     }
   }
-  if (repoCoachRead) {
-    repoCoachRead.textContent =
-      "Current read: packet generated from the selected ReviewRun. Movement stays scoped until missing proof is attached and review is rerun.";
-  }
-  if (packetCoachStatus) {
-    packetCoachStatus.hidden = false;
-    packetCoachStatus.textContent =
-      "Packet ready. Ask IA for current read, blockers, next human action, downstream impact, or safety.";
+  if (loading) {
+    setCoachForReviewLoading();
+  } else if (repoProofCockpit?.dataset.loaded !== "true" && isReviewRepoReady()) {
+    setCoachForSelectedRepo(selectedReviewRepo());
   }
 }
 
@@ -2959,15 +3327,27 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const graphProofCounts = graph?.proof_counts || {};
   const graphRunId = graph?.generated_from_run_id || currentReviewRun?.run_id || packetRef.run_id;
   const graphState = graph?.status_label || graph?.graph_state || "Packet authority map";
-  const graphPortkeyState = graph?.portkey_state || (portkeyPayload?.portkey_guardrail_response?.verdict ? "Allow with policy" : "Block");
   const graphSponsorProofCount = graphProofCounts.sponsor_steps ?? trace.step_count ?? 0;
   const graphAttachedProofCount = graphProofCounts.attached ?? packet.proof_resolution?.attached_proof_count ?? 0;
   const graphMissingProofCount = graphProofCounts.missing ?? (packet.proof_resolution?.missing_proof || []).length;
   const guardrail = portkeyPayload?.portkey_guardrail_response || {};
   const policy = portkeyPayload?.usage_policy_plan?.request_body || {};
   const proofCall = portkeyProofLoop?.portkey_call || {};
-  const tone = verdictTone(decision);
   const movement = packet.movement_classes || {};
+  const portkeyTest =
+    currentReviewRunPortkeyTest?.packet_reference?.revision_id === packetRef.revision_id
+      ? currentReviewRunPortkeyTest
+      : null;
+  const effectivePortkeyVerdict =
+    typeof portkeyTest?.verdict === "boolean" ? portkeyTest.verdict : Boolean(guardrail.verdict);
+  const effectivePortkeyState =
+    portkeyTest?.portkey_state || (effectivePortkeyVerdict ? "Allow with policy" : "Block");
+  const graphPortkeyState = portkeyTest?.portkey_state || graph?.portkey_state || effectivePortkeyState;
+  const portkeyEvent = portkeyTest?.guardrail_event || {};
+  const portkeyStillBlocked = portkeyTest?.still_blocked_scope || movement.blocked || packet.blocked || [];
+  const portkeyAllowed = portkeyTest?.allowed_scope || movement.allowed || packet.allowed || [];
+  const portkeyTested = Boolean(portkeyTest);
+  const tone = verdictTone(decision);
   const delta = packet.review_delta || {};
   const sourceTruth = packetRef.source_of_truth || "ReviewRun";
 
@@ -2998,27 +3378,12 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoNextActionCard.innerHTML = `
       <span class="repo-card-label">Next human action</span>
       <h3>${escapeHtml(decision.next_human_action || "Human review required before access moves.")}</h3>
-      <p>${escapeHtml(sourceTruth)} ${escapeHtml(currentReviewRun?.run_id || packetRef.run_id || "local")} generated a compact packet for ${escapeHtml(currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo")}.</p>
+      <p>${escapeHtml(sourceTruth)} generated the packet for ${escapeHtml(currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "the selected repo")}.</p>
       <div class="repo-movement-grid" aria-label="Packet movement classes">
         ${movementLane("Allowed", movement.allowed || packet.allowed || [], "allowed")}
         ${movementLane("Review required", movement.review_required || packet.review_required || [], "review")}
         ${movementLane("Blocked", movement.blocked || packet.blocked || [], "blocked")}
       </div>
-      <div class="repo-outcome-grid">
-        <div class="repo-outcome ${decision.production_access ? "approved" : "blocked"}">
-          <span>Production</span><strong>${escapeHtml(String(decision.production_access))}</strong>
-        </div>
-        <div class="repo-outcome ${decision.permission_grants ? "approved" : "blocked"}">
-          <span>Grants</span><strong>${escapeHtml(String(decision.permission_grants))}</strong>
-        </div>
-        <div class="repo-outcome ${decision.external_writes ? "approved" : "blocked"}">
-          <span>Writes</span><strong>${escapeHtml(String(decision.external_writes))}</strong>
-        </div>
-      </div>
-      <details class="repo-proof-details">
-        <summary>Why IA held the line</summary>
-        <ul>${compactList(packet.missing_proof || [], 3)}</ul>
-      </details>
     `;
   }
 
@@ -3026,9 +3391,10 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     repoSponsorProofCard.innerHTML = `
       <summary>
         <span class="repo-card-label">ProofGraph</span>
-        <strong>${escapeHtml(String(graphSponsorProofCount))} proof steps mapped · ${escapeHtml(graphState)}</strong>
+        <strong>${escapeHtml(graphState)}</strong>
       </summary>
       <div class="repo-accordion-body">
+        <p>${escapeHtml(String(graphSponsorProofCount))} proof steps mapped. ${escapeHtml(String(graphAttachedProofCount))} attached / ${escapeHtml(String(graphMissingProofCount))} missing.</p>
         <p class="repo-proofgraph-run-ref">Generated from run_id <code>${escapeHtml(graphRunId || "local")}</code></p>
         <div class="repo-proofgraph-map" aria-label="ReviewRun ProofGraph summary">
           <div class="repo-proofgraph-row"><span>selected repo</span><strong>${escapeHtml(graph?.selected_repo || currentReviewRun?.selected_repo?.full_name || selectedReviewRepo()?.full_name || "selected repo")}</strong></div>
@@ -3046,22 +3412,88 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   }
 
   if (repoPortkeyCard) {
+    const latencyLabel =
+      typeof portkeyTest?.elapsed_ms === "number" ? `${portkeyTest.elapsed_ms}ms` : "not tested";
+    const eventLabel = portkeyEvent.event_id || "no event yet";
+    const allowedLabel = portkeyAllowed.length ? portkeyAllowed.join(", ") : "none";
+    const blockedLabel = portkeyStillBlocked.length ? portkeyStillBlocked.join(", ") : "none";
     repoPortkeyCard.innerHTML = `
       <summary>
         <span class="repo-card-label">Portkey</span>
-        <strong>${guardrail.verdict ? "Would allow" : "Would block"} this movement</strong>
+        <strong>${escapeHtml(effectivePortkeyState)}</strong>
       </summary>
       <div class="repo-accordion-body">
-        <p>Webhook ${escapeHtml(proofCall.path || "/api/portkey/guardrail")} returns the IA packet verdict before model or spend movement.</p>
+        <p>Test the local BYO Guardrails handoff against this ReviewRun packet. No Portkey admin write, no policy mutation.</p>
         <div class="repo-outcome-grid">
-          <div class="repo-outcome ${guardrail.verdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(String(guardrail.verdict ?? false))}</strong></div>
-          <div class="repo-outcome blocked"><span>Credit limit</span><strong>${escapeHtml(String(policy.credit_limit ?? 0))}</strong></div>
+          <div class="repo-outcome ${effectivePortkeyVerdict ? "approved" : "blocked"}"><span>Verdict</span><strong>${escapeHtml(String(effectivePortkeyVerdict))}</strong></div>
+          <div class="repo-outcome ${portkeyTested ? "approved" : "review"}"><span>Latency</span><strong>${escapeHtml(latencyLabel)}</strong></div>
           <div class="repo-outcome approved"><span>API mutation</span><strong>false</strong></div>
         </div>
+        <div class="repo-portkey-handoff" aria-label="Portkey handoff result">
+          <div><span>Packet revision</span><strong>${escapeHtml(portkeyTest?.packet_reference?.revision_id || packetRef.revision_id || "not generated")}</strong></div>
+          <div><span>Allowed scope</span><strong>${escapeHtml(allowedLabel)}</strong></div>
+          <div><span>Still blocked</span><strong>${escapeHtml(blockedLabel)}</strong></div>
+          <div><span>Event</span><strong>${escapeHtml(eventLabel)}</strong></div>
+        </div>
         <code class="repo-packet-ref">${escapeHtml(packetRef.packet_id || "")}</code>
+        <button type="button" class="btn-primary repo-portkey-test-action" data-review-run-portkey-test>
+          ${portkeyTested ? "Retest Portkey guardrail" : "Test Portkey guardrail"}
+        </button>
+        <p class="repo-microcopy">Portkey receives packet metadata and returns a packet-backed verdict. IA does not approve or write.</p>
       </div>
     `;
-    repoPortkeyCard.open = false;
+    const testButton = repoPortkeyCard.querySelector("[data-review-run-portkey-test]");
+    if (testButton) {
+      testButton.addEventListener("click", () => testReviewRunPortkeyGuardrail());
+    }
+    repoPortkeyCard.open = portkeyTested;
+  }
+  setCoachForPacket(packet, portkeyPayload);
+}
+
+async function testReviewRunPortkeyGuardrail() {
+  if (!currentReviewRun?.run_id || !packetDetail?.packet_reference?.revision_id) {
+    if (repoCockpitStatus) {
+      repoCockpitStatus.textContent = "Generate the packet before testing Portkey.";
+      repoCockpitStatus.classList.add("error");
+    }
+    return;
+  }
+  const button = repoPortkeyCard?.querySelector("[data-review-run-portkey-test]");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Testing Portkey...";
+  }
+  try {
+    const test = await fetchReviewRunPortkeyGuardrailTest(currentReviewRun.run_id);
+    if (!test) throw new Error("Portkey guardrail test returned no result");
+    currentReviewRunPortkeyTest = test;
+    renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+    const stillBlocked = (test.still_blocked_scope || []).join(", ") || "none";
+    const allowed = (test.allowed_scope || []).join(", ") || "none";
+    if (repoCockpitStatus) {
+      repoCockpitStatus.classList.remove("error");
+      repoCockpitStatus.textContent = `Portkey guardrail tested ${test.packet_reference?.revision_id || "current revision"}: ${test.portkey_state}.`;
+    }
+    setReviewRunCoachStage(
+      {
+        current_read: `Portkey tested packet revision ${test.packet_reference?.revision_id || "current"} for ${selectedReviewRepoName()}.`,
+        what_blocks_movement: test.verdict ? `Still blocked: ${stillBlocked}.` : `Portkey blocks movement. Reasons: ${(test.deny_reasons || []).slice(0, 3).join(", ") || "packet not ready"}.`,
+        next_human_action: test.next_human_action || "Follow the packet's named human action before movement.",
+        downstream_impact: `Portkey state: ${test.portkey_state}. Allowed scope: ${allowed}. IA did not mutate Portkey.`,
+        safety: "Portkey received packet metadata only. IA did not approve, write, mutate policy, or call a Portkey Admin API.",
+      },
+      "Portkey guardrail test recorded locally. No approval, no writes."
+    );
+  } catch (err) {
+    if (repoCockpitStatus) {
+      repoCockpitStatus.textContent = String(err.message || err);
+      repoCockpitStatus.classList.add("error");
+    }
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Test Portkey guardrail";
+    }
   }
 }
 
@@ -3074,7 +3506,8 @@ async function attachReviewRunProof() {
     .map((input) => ({
       id: input.dataset.proofId,
       label: input.dataset.proofLabel,
-      evidence_note: "Human checked this proof item in the ReviewRun cockpit.",
+      owner: input.dataset.proofOwner,
+      evidence_note: input.dataset.evidenceNote || "Human checked this proof item in the ReviewRun cockpit.",
     }));
 
   if (!selected.length) {
@@ -3114,10 +3547,7 @@ async function attachReviewRunProof() {
       repoCockpitStatus.textContent =
         "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
     }
-    if (repoCoachRead) {
-      repoCoachRead.textContent =
-        "Current read: proof is attached to the ReviewRun. IA still needs a rerun before the packet or Portkey state can change.";
-    }
+    setCoachForPacket(nextPacket, packetPortkeyPreview);
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -3152,6 +3582,7 @@ async function rerunReviewRunPacket() {
     if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun rerun failed");
     currentReviewRun = data.run || currentReviewRun;
     packetPortkeyPreview = data.portkey || packetPortkeyPreview;
+    currentReviewRunPortkeyTest = null;
     currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
     const nextPacket = {
       ...(data.packet || {}),
@@ -3164,10 +3595,7 @@ async function rerunReviewRunPacket() {
       repoCockpitStatus.textContent =
         "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
     }
-    if (repoCoachRead) {
-      repoCoachRead.textContent =
-        "Current read: proof changed the packet state. Portkey can allow scoped movement under policy while admin, org-wide write, and secrets stay blocked.";
-    }
+    setCoachForPacket(nextPacket, packetPortkeyPreview);
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -3204,6 +3632,7 @@ async function runRepoProofCockpit() {
     const packetData = await packetRes.json().catch(() => ({}));
     if (!packetRes.ok || !packetData.ok) throw new Error(packetData.detail || "ReviewRun packet generation failed");
     currentReviewRun = packetData.run || currentReviewRun;
+    currentReviewRunPortkeyTest = null;
     const packet = packetData.packet || {};
     const [{ payload, proofLoop }, proofGraph] = await Promise.all([
       fetchPortkeyProofForFixture(fixtureId),
@@ -5182,6 +5611,13 @@ packetCoachQuickChips?.addEventListener("click", (event) => {
   askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
 });
 
+repoCoachForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const prompt = repoCoachInput?.value || "What now?";
+  if (repoCoachInput) repoCoachInput.value = "";
+  askReviewRunCoach(prompt);
+});
+
 packetInlineCoachPrompts?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
   if (!btn) return;
@@ -5246,6 +5682,7 @@ setupTabs();
 
 (async function initApp() {
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
+  await handleConnectorOAuthReturn();
   await loadMeta();
   loadGuide();
   if (window.location.pathname === "/workbench") {

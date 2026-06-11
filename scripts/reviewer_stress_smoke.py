@@ -270,15 +270,21 @@ def _check_portkey_guardrail_auth_boundary(base_url: str, timeout: float) -> Non
     _require(events["read_only"] is True, "Portkey guardrail events endpoint must be read-only")
 
 
-def _expect_sponsor_run_safe(run: dict[str, Any], *, label: str) -> None:
+def _expect_sponsor_run_safe(
+    run: dict[str, Any],
+    *,
+    label: str,
+    allow_live_read_only_evidence: bool = False,
+) -> None:
     _require(run["status"] == "completed", f"{label} sponsor proof run did not complete")
     _require([step["sponsor"] for step in run["collector_steps"]] == EXPECTED_SPONSOR_ORDER, f"{label} sponsor order drifted")
     _require(run["invariants"]["decision_lock_unchanged"] is True, f"{label} decision lock changed")
     _require(run["invariants"]["portkey_api_call_made"] is False, f"{label} made Portkey API call")
     safety = run["safety_boundary"]
     _require(safety["read_only"] is True, f"{label} run must be read-only")
+    if not allow_live_read_only_evidence:
+        _require(safety["live_calls_made"] is False, f"{label} safety_boundary.live_calls_made must stay false")
     for key in (
-        "live_calls_made",
         "approves_access",
         "grants_permissions",
         "executes_external_writes",
@@ -310,13 +316,28 @@ def _check_sponsor_variants(base_url: str, timeout: float) -> None:
         timeout=timeout,
     )
     tavily_run = tavily_payload["run"]
-    _expect_sponsor_run_safe(tavily_run, label="live_tavily_no_key")
+    _expect_sponsor_run_safe(
+        tavily_run,
+        label="live_tavily_read_only",
+        allow_live_read_only_evidence=True,
+    )
     tavily = tavily_run["live_sponsor_proof"]["tavily"]
     _require(tavily["live_requested"] is True, "Tavily opt-in marker missing")
-    _require(tavily["live_call_attempted"] is False, "Tavily no-key path must not attempt a live call")
-    _require(tavily["live_call_count"] == 0, "Tavily no-key path must make zero live calls")
-    _require(tavily["fallback_used"] is True, "Tavily no-key path must use fallback")
-    _require(tavily["fallback_reason"] == "tavily_api_key_missing", "Tavily fallback reason drifted")
+    if tavily["live_call_attempted"]:
+        _require(tavily["live_call_count"] > 0, "Tavily live-key path must record read-only live calls")
+        _require(tavily["fallback_used"] is False, "Tavily live-key path should not use fallback")
+        _require(
+            tavily_run["safety_boundary"]["live_calls_made"] is True,
+            "Tavily live-key path must mark live evidence collection",
+        )
+    else:
+        _require(tavily["live_call_count"] == 0, "Tavily no-key path must make zero live calls")
+        _require(tavily["fallback_used"] is True, "Tavily no-key path must use fallback")
+        _require(tavily["fallback_reason"] == "tavily_api_key_missing", "Tavily fallback reason drifted")
+        _require(
+            tavily_run["safety_boundary"]["live_calls_made"] is False,
+            "Tavily no-key path must not mark live calls",
+        )
 
     ledger = _json_get(base_url, "/api/sponsor-proof-run-ledger", timeout=timeout)["ledger"]
     _require(ledger["read_only"] is True, "sponsor run ledger must be read-only")
@@ -328,14 +349,22 @@ def _check_sponsor_variants(base_url: str, timeout: float) -> None:
     created_run_ids = {composio_run["run_id"], tavily_run["run_id"]}
     created_records = [item for item in ledger["runs"] if item["run_id"] in created_run_ids]
     _require(len(created_records) == 2, "stress-created sponsor runs missing from ledger")
-    _require(
-        all(item["safety_lock"]["live_calls_made"] is False for item in created_records),
-        "stress-created no-key runs must not record live calls",
-    )
-    for run in (composio_payload, tavily_payload):
-        record = run["ledger_record"]
+    expected_live_by_run_id = {
+        composio_run["run_id"]: False,
+        tavily_run["run_id"]: bool(tavily["live_call_attempted"]),
+    }
+    for item in created_records:
+        _require(
+            item["safety_lock"]["live_calls_made"] is expected_live_by_run_id[item["run_id"]],
+            "stress-created ledger live-call marker drifted",
+        )
+    for payload in (composio_payload, tavily_payload):
+        record = payload["ledger_record"]
         _require(record["safety_lock"]["read_only"] is True, "ledger record must stay read-only")
-        _require(record["safety_lock"]["live_calls_made"] is False, "ledger record live-call lock drifted")
+        _require(
+            record["safety_lock"]["live_calls_made"] is expected_live_by_run_id[record["run_id"]],
+            "ledger record live-call lock drifted",
+        )
         _require(record["safety_lock"]["decision_lock_unchanged"] is True, "ledger record decision lock drifted")
         _require(record["safety_lock"]["executes_external_writes"] is False, "ledger record write lock drifted")
 
@@ -381,7 +410,7 @@ def main(argv: list[str] | None = None) -> int:
     print(
         "Reviewer stress passed: "
         + " -> ".join(passed)
-        + " (public packet selectors verified, no live keys required, no approval/write path)"
+        + " (public packet selectors verified, live read-only evidence allowed when configured, no approval/write path)"
     )
     return 0
 

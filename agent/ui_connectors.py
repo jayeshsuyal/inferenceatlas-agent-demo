@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib
+import os
 from dataclasses import dataclass
 from typing import Any, List, Literal, Optional
 
@@ -59,6 +60,17 @@ class UIConnector:
         meta = CONNECTOR_META.get(self.id)
         sc = session_connection or {}
         signed_in = sc.get("status") == "connected"
+        session_mode = str(sc.get("mode", ""))
+        demo_session = session_mode in {"demo_session", "demo_oauth"}
+        live_auth_configured = True
+        if self.id == "github":
+            live_auth_configured = bool(
+                os.getenv("GITHUB_OAUTH_CLIENT_ID", os.getenv("GITHUB_CLIENT_ID", "")).strip()
+            )
+        elif self.id == "google_drive":
+            live_auth_configured = bool(
+                os.getenv("GOOGLE_OAUTH_CLIENT_ID", os.getenv("GOOGLE_CLIENT_ID", "")).strip()
+            )
         return {
             "id": self.id,
             "name": self.name,
@@ -72,6 +84,10 @@ class UIConnector:
             "status_label": status_label,
             "signed_in": signed_in,
             "session_status": sc.get("status", "disconnected"),
+            "session_mode": session_mode,
+            "demo_session": demo_session,
+            "account": sc.get("account", ""),
+            "live_auth_configured": live_auth_configured,
             "actions": [a.to_dict() for a in self.actions],
         }
 
@@ -180,6 +196,8 @@ def _openclaw_available() -> bool:
 def _status_for(connector: UIConnector, session_connection: Optional[dict] = None) -> tuple[ConnectorStatus, str]:
     sc = session_connection or {}
     if sc.get("status") == "connected":
+        if sc.get("mode") in {"demo_session", "demo_oauth"}:
+            return "connected", "Demo session"
         account = sc.get("account")
         if account:
             return "connected", f"Signed in as {account}"

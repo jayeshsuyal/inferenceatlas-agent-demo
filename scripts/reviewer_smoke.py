@@ -823,6 +823,13 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     _require(selected_coach["answer"]["schema_version"] == "review_run_coach_answer.v0", "coach schema drifted")
     _require(selected_coach["answer"]["prompt_kind"] == "greeting", "coach greeting was not classified")
     _require(selected_coach["answer"]["stage"] == "repo_selected", "coach selected stage drifted")
+    _require(len(selected_coach["suggestions"]) <= 3, "coach suggestions must stay capped")
+    _require(selected_coach["suggestions"][0]["schema_version"] == "coach_suggestion.v0", "coach suggestion schema drifted")
+    _require(selected_coach["suggestions"][0]["label"], "coach suggestion label missing")
+    _require(selected_coach["suggestions"][0]["message"], "coach suggestion message missing")
+    _require(selected_coach["suggestions"][0]["entities"]["run_id"] == run["run_id"], "coach suggestion run pin missing")
+    _require(selected_coach["suggestions"][0]["entities"]["stage"] == "repo_selected", "coach suggestion stage pin missing")
+    _require(selected_coach["suggestions"][0]["entities"]["subscriber"] == "cto", "coach suggestion subscriber pin missing")
     _require("No packet exists yet" in selected_coach["answer"]["sections"]["current_read"], "coach selected read drifted")
     _expect_false(
         selected_coach["answer"]["safety_boundary"],
@@ -934,6 +941,15 @@ def _check_review_run_github_connect(base_url: str, timeout: float, session_id: 
     )
     _require(next_coach["answer"]["stage"] == "packet_generated", "coach packet stage drifted")
     _require(next_coach["answer"]["prompt_kind"] == "next_action", "coach next-step classification drifted")
+    _require(
+        [item["entities"]["prompt_kind"] for item in next_coach["suggestions"]] == ["next_action", "proof", "portkey"],
+        "packet-generated coach suggestions must be next/proof/portkey",
+    )
+    _require(
+        next_coach["suggestions"][0]["entities"]["missing_proof_ids"]
+        == ["repo_owner_approval", "rollback_offswitch", "environment_boundary"],
+        "coach suggestions must pin missing proof ids",
+    )
     _require(
         "Support Ops repo-owner approval" in next_coach["answer"]["sections"]["next_human_action"],
         "coach next human action must name Support Ops proof owner",

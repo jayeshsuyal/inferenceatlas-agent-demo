@@ -565,6 +565,11 @@ class ReviewRunApiTests(TestCase):
                 self.assertTrue(greeting["read_only"])
                 self.assertEqual(greeting["answer"]["schema_version"], "review_run_coach_answer.v0")
                 self.assertEqual(greeting["stage"], "repo_selected")
+                self.assertLessEqual(len(greeting["suggestions"]), 3)
+                self.assertEqual(greeting["suggestions"][0]["schema_version"], "coach_suggestion.v0")
+                self.assertEqual(greeting["suggestions"][0]["entities"]["run_id"], run_id)
+                self.assertEqual(greeting["suggestions"][0]["entities"]["stage"], "repo_selected")
+                self.assertEqual(greeting["suggestions"][0]["entities"]["subscriber"], "cto")
                 self.assertEqual(greeting["answer"]["prompt_kind"], "greeting")
                 self.assertIn("No packet exists yet", greeting["answer"]["sections"]["current_read"])
                 self.assertFalse(greeting["answer"]["safety_boundary"]["approval_granted"])
@@ -580,6 +585,14 @@ class ReviewRunApiTests(TestCase):
                 next_step = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="idk what to do next"))
                 self.assertEqual(next_step["answer"]["stage"], "packet_generated")
                 self.assertEqual(next_step["answer"]["prompt_kind"], "next_action")
+                self.assertEqual(
+                    [item["entities"]["prompt_kind"] for item in next_step["suggestions"]],
+                    ["next_action", "proof", "portkey"],
+                )
+                self.assertEqual(
+                    next_step["suggestions"][0]["entities"]["missing_proof_ids"],
+                    ["repo_owner_approval", "rollback_offswitch", "environment_boundary"],
+                )
                 self.assertIn("Support Ops repo-owner approval", next_step["answer"]["sections"]["next_human_action"])
                 self.assertIn("Engineering rollback/off-switch proof", next_step["answer"]["sections"]["next_human_action"])
                 self.assertIn("Security environment-boundary proof", next_step["answer"]["sections"]["next_human_action"])
@@ -611,6 +624,7 @@ class ReviewRunApiTests(TestCase):
                 after_proof = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what next"))
                 self.assertEqual(proofed["run"]["stage"], "proof_attached")
                 self.assertIn("Regenerate the packet", after_proof["answer"]["sections"]["next_human_action"])
+                self.assertEqual(after_proof["suggestions"][0]["label"], "Regenerate packet")
 
                 rerun_review_run_packet_api(
                     run_id,
@@ -621,6 +635,10 @@ class ReviewRunApiTests(TestCase):
                 portkey = coach_review_run_api(run_id, ReviewRunCoachRequest(prompt="what will Portkey do?"))
                 self.assertEqual(portkey["answer"]["stage"], "ready_to_export")
                 self.assertEqual(portkey["answer"]["portkey_state"], "Allow with policy")
+                self.assertEqual(
+                    [item["entities"]["prompt_kind"] for item in portkey["suggestions"]],
+                    ["next_action", "movement", "portkey"],
+                )
                 self.assertIn("Ready with gates", portkey["answer"]["sections"]["current_read"])
                 self.assertNotIn("ready_with_gates", portkey["answer"]["sections"]["current_read"])
                 self.assertIn("Still blocked downstream", portkey["answer"]["sections"]["downstream_impact"])

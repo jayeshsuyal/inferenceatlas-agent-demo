@@ -346,6 +346,15 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("fetchReviewRunPortkeyGuardrailTest" in js, "ReviewRun Portkey guardrail test helper missing")
     _require("/portkey/guardrail-test" in js, "ReviewRun Portkey guardrail endpoint missing in UI")
     _require("Test Portkey guardrail" in js, "ReviewRun Portkey test CTA missing")
+    _require("repo-portkey-runway" in js, "Portkey runway strip missing")
+    _require("<span>IA Packet</span>" in js, "Portkey runway must start from IA Packet")
+    _require("<span>BYO Guardrail</span>" in js, "Portkey runway must show BYO Guardrail")
+    _require("<span>Portkey</span>" in js, "Portkey runway must end at Portkey")
+    _require("portkeyRunwayReady" in js, "Portkey runway readiness flag missing")
+    _require(
+        "repoPortkeyCard.open = portkeyTested || portkeyRunwayReady" in js,
+        "Portkey row must open after rerun or test",
+    )
     _require("effectivePortkeyDecisionLabel" in js, "Portkey verdict display label missing")
     _require(
         'effectivePortkeyVerdict ? "allow" : "block"' in js,
@@ -395,6 +404,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "downstream infrastructure rows must stay collapsed until opened",
     )
     _require(".repo-portkey-handoff" in css, "ReviewRun Portkey handoff CSS missing")
+    _require(".repo-portkey-runway" in css, "ReviewRun Portkey runway CSS missing")
     _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
     _require(".repo-ask-sidecar" in css, "Ask IA sidecar CSS missing")
     _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")

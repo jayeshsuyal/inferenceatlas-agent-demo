@@ -7831,25 +7831,70 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-coac
   }
 }
 
-/* Ask IA coach — resizable sidecar, single scroll chat thread */
+/* Ask IA coach — drag-resizable column, single scroll chat thread */
 body:not([data-active-tab]) .repo-runway-panel,
 body[data-active-tab="start"] .repo-runway-panel,
 body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel,
 body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel {
-  grid-template-columns: minmax(0, 1fr) clamp(22rem, 36vw, 40rem);
+  --repo-coach-col-width: var(--ia-coach-width, min(38rem, 44vw));
+  grid-template-columns: minmax(0, 1fr) var(--repo-coach-col-width) !important;
+}
+
+body.coach-resize-active,
+body.coach-resize-active * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 body:not([data-active-tab]) .repo-ask-sidecar,
 body[data-active-tab="start"] .repo-ask-sidecar {
-  resize: horizontal;
+  position: relative;
   overflow: hidden !important;
-  min-width: 22rem;
-  width: clamp(22rem, 34vw, 40rem);
-  max-width: min(44rem, 96vw);
-  max-height: min(72vh, 42rem);
+  min-width: 0;
+  width: 100%;
+  min-height: 26rem;
+  max-height: min(88vh, 56rem) !important;
   display: flex;
   flex-direction: column;
-  align-self: stretch;
+  align-self: stretch !important;
+  padding-left: 0.85rem !important;
+}
+
+.repo-coach-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  margin-left: -5px;
+  cursor: col-resize;
+  z-index: 4;
+  touch-action: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+}
+
+.repo-coach-resize-handle::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 2.4rem;
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background 0.15s ease, height 0.15s ease;
+}
+
+.repo-coach-resize-handle:hover::after,
+.repo-coach-resize-handle:focus-visible::after,
+.repo-coach-resize-handle.is-dragging::after {
+  height: 3.2rem;
+  background: rgba(47, 111, 237, 0.75);
+}
+
+.repo-coach-resize-handle:focus-visible {
+  outline: none;
 }
 
 body:not([data-active-tab]) .repo-coach-body,
@@ -7873,8 +7918,8 @@ body[data-active-tab="start"] .repo-coach-body {
 }
 
 .repo-coach-pinned span {
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -7882,14 +7927,14 @@ body[data-active-tab="start"] .repo-coach-body {
 
 .repo-coach-pinned p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8rem;
-  line-height: 1.38;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .repo-coach-thread-wrap {
   flex: 1 1 auto;
-  min-height: 11rem;
+  min-height: 14rem;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -7916,12 +7961,12 @@ body[data-active-tab="start"] .repo-coach-body {
 .coach-thread-user {
   align-self: flex-end;
   max-width: 92%;
-  padding: 0.48rem 0.62rem;
+  padding: 0.55rem 0.72rem;
   border-radius: 10px 10px 4px 10px;
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
-  font-size: 0.78rem;
-  line-height: 1.35;
+  font-size: 0.88rem;
+  line-height: 1.42;
 }
 
 .coach-thread-user p {
@@ -7939,17 +7984,17 @@ body[data-active-tab="start"] .repo-coach-body {
 
 .coach-thinking-title {
   margin: 0 0 0.35rem;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.84rem;
   font-weight: 700;
 }
 
 .coach-thinking-log {
   margin: 0;
   padding-left: 1rem;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 0.72rem;
-  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.84rem;
+  line-height: 1.42;
 }
 
 .coach-thread-assistant {
@@ -7964,13 +8009,13 @@ body[data-active-tab="start"] .repo-coach-body {
 
 .coach-assistant-narration {
   margin: 0;
-  padding: 0.55rem 0.62rem;
+  padding: 0.62rem 0.72rem;
   border-radius: 8px;
   background: rgba(47, 111, 237, 0.14);
   border: 1px solid rgba(47, 111, 237, 0.28);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.8rem;
-  line-height: 1.42;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 0.9rem;
+  line-height: 1.48;
 }
 
 .coach-assistant-sections {
@@ -7987,8 +8032,8 @@ body[data-active-tab="start"] .repo-coach-body {
 
 .coach-section-card span {
   display: block;
-  color: rgba(255, 255, 255, 0.52);
-  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -7996,7 +8041,20 @@ body[data-active-tab="start"] .repo-coach-body {
 
 .coach-section-card p {
   margin: 0.2rem 0 0;
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.78rem;
-  line-height: 1.36;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.88rem;
+  line-height: 1.44;
+}
+
+body:not([data-active-tab]) .repo-ask-sidecar .coach-chip,
+body[data-active-tab="start"] .repo-ask-sidecar .coach-chip {
+  min-height: 2.35rem;
+  padding: 0.5rem 0.72rem;
+  font-size: 0.84rem;
+}
+
+body:not([data-active-tab]) .repo-coach-form input,
+body[data-active-tab="start"] .repo-coach-form input {
+  min-height: 2.5rem !important;
+  font-size: 0.88rem !important;
 }

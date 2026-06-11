@@ -129,6 +129,10 @@ const repoAskCoach = document.getElementById("repo-ask-coach");
 const repoCoachBody = document.getElementById("repo-coach-body");
 const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
+const repoCoachResizeHandle = document.getElementById("repo-coach-resize-handle");
+const COACH_PANEL_WIDTH_KEY = "ia_coach_panel_width_px";
+const COACH_PANEL_WIDTH_MIN = 300;
+const COACH_PANEL_WIDTH_MAX = 760;
 const repoCockpitVerdict = document.getElementById("repo-cockpit-verdict");
 const repoCockpitStatus = document.getElementById("repo-cockpit-status");
 const repoProofResult = document.getElementById("repo-proof-result");
@@ -1088,6 +1092,77 @@ async function refreshRunwayCoachChips() {
 
 function coachPlainText(text) {
   return String(text || "").replace(/`/g, "");
+}
+
+function getCoachRunwayPanel() {
+  return repoAskCoach?.closest(".repo-runway-panel") || null;
+}
+
+function applyCoachPanelWidth(px) {
+  const panel = getCoachRunwayPanel();
+  if (!panel) return;
+  const clamped = Math.min(COACH_PANEL_WIDTH_MAX, Math.max(COACH_PANEL_WIDTH_MIN, Math.round(px)));
+  panel.style.setProperty("--ia-coach-width", `${clamped}px`);
+  try {
+    localStorage.setItem(COACH_PANEL_WIDTH_KEY, String(clamped));
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function restoreCoachPanelWidth() {
+  try {
+    const saved = Number(localStorage.getItem(COACH_PANEL_WIDTH_KEY));
+    if (Number.isFinite(saved) && saved >= COACH_PANEL_WIDTH_MIN && saved <= COACH_PANEL_WIDTH_MAX) {
+      applyCoachPanelWidth(saved);
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function initCoachPanelResize() {
+  const panel = getCoachRunwayPanel();
+  if (!repoCoachResizeHandle || !panel) return;
+  restoreCoachPanelWidth();
+
+  let dragging = false;
+  const stopDrag = () => {
+    dragging = false;
+    repoCoachResizeHandle.classList.remove("is-dragging");
+    document.body.classList.remove("coach-resize-active");
+    window.removeEventListener("pointermove", onPointerMove);
+    window.removeEventListener("pointerup", stopDrag);
+    window.removeEventListener("pointercancel", stopDrag);
+  };
+  const onPointerMove = (event) => {
+    if (!dragging) return;
+    const rect = panel.getBoundingClientRect();
+    applyCoachPanelWidth(rect.right - event.clientX);
+  };
+
+  repoCoachResizeHandle.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    dragging = true;
+    repoCoachResizeHandle.classList.add("is-dragging");
+    document.body.classList.add("coach-resize-active");
+    repoCoachResizeHandle.setPointerCapture(event.pointerId);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("pointercancel", stopDrag);
+  });
+
+  repoCoachResizeHandle.addEventListener("keydown", (event) => {
+    const panelWidth = panel.getBoundingClientRect().width;
+    const step = event.shiftKey ? 48 : 16;
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      applyCoachPanelWidth(panelWidth + step);
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      applyCoachPanelWidth(panelWidth - step);
+    }
+  });
 }
 
 function scrollCoachThread() {
@@ -6152,6 +6227,7 @@ document.body.dataset.activeTab = "start";
 setupTabs();
 
 (async function initApp() {
+  initCoachPanelResize();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();
   await loadMeta();

@@ -119,7 +119,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=72", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=73", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=49", timeout=timeout)
 
     for expected in (
@@ -370,6 +370,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".coach-section-card" in css, "Ask IA coach section card CSS missing")
     _require("consumeCoachStream" in js, "Ask IA coach SSE consumer missing")
     _require("/coach/stream" in js, "Ask IA coach stream endpoint missing in UI")
+    _require("initCoachPanelResize" in js, "Ask IA coach drag resize missing")
+    _require('id="repo-coach-resize-handle"' in html, "Ask IA coach resize handle missing")
+    _require(".repo-coach-resize-handle" in css, "Ask IA coach resize handle CSS missing")
     _require(".repo-coach-toggle" in css, "Ask IA close/open CSS missing")
     _require(".repo-coach-stage-line" in css, "Ask IA stage line CSS missing")
     _require('.repo-ask-sidecar[data-coach-collapsed="true"]' in css, "Ask IA collapsed sidecar CSS missing")

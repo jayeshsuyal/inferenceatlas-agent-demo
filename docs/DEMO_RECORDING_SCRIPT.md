@@ -15,7 +15,7 @@ Record only after all checks are true:
 - `python3 scripts/demo_rehearsal.py --json` passes locally as the no-key artifact fallback.
 - The visual cold-start URL works: `/`.
 - Ask IA stays stage-aware for the selected ReviewRun and does not dump raw packets.
-- Portkey runway shows the packet revision, BYO guardrail handoff, dry-run verdict, no API call, and no policy mutation.
+- Portkey runway shows the packet revision, BYO guardrail handoff, dry-run verdict, no Portkey Admin API call, and no policy mutation.
 - ProofGraph opens on demand and is generated from the current ReviewRun, not a premade screenshot.
 - Proof receipts show Support Ops, Engineering, and Security owner lanes; attaching proof does not approve until rerun.
 - The script has been rehearsed at least twice.

@@ -82,7 +82,7 @@ In five minutes, a reviewer should see:
 
 - a judge harness that works without keys
 - a Packet Workbench where a reviewer can choose a lane, generate a packet, copy a review brief, and view the local verification hash
-- an Agent Skills registry showing 16 stable public review skills with commands, artifacts, dependencies, and safety boundaries
+- an Agent Skills registry showing 17 stable public review skills with commands, artifacts, dependencies, and safety boundaries
 - a role-level trial request converted into a report, packet, access brief, meeting-ready outcome memo, sponsor evidence replay, and live evidence rehearsal
 - a Packet Diff proving low, medium/high, and critical requests move differently
 - an Evidence Receipt Ledger attaching tool scope, proof debt, reviewer routes, and cost/procurement controls without weakening the packet lock

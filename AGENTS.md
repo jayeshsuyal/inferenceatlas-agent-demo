@@ -49,7 +49,7 @@ Expected result:
 - the judge harness prints the scenario matrix, public contract status, sponsor adapter safety, and artifact checklist
 - the demo runs without keys
 - the scenario list shows `support_triage_agent`, `read_only_analytics_agent`, and `admin_code_fix_bot`
-- the Agent Skills registry reports `15 / 15 stable skills available`
+- the Agent Skills registry reports `17 / 17 stable skills available`
 - Packet Diff shows relaxed read-only, proof-routed scoped validation, and blocked critical lanes
 - Evidence Receipt Ledger attaches tool scope, proof debt, reviewer routes, and cost/procurement controls without changing the packet lock
 - Packet Outcome Memo converts the support-triage packet into a scoped-validation human decision
@@ -75,33 +75,33 @@ Expected result:
 3. `docs/PRODUCT_TOUR.md`
 4. `docs/AGENT_SKILLS.md`
 5. `docs/PRODUCT_QUALITY_AUDIT.md`
-7. `docs/JUDGE_REVIEW_GUIDE.md`
-8. `docs/DESIGN_PARTNER_BRIEF.md`
-9. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-10. `examples/requests/design_partner_trial.yml`
-11. `examples/requests/support_triage_trial.yml`
+6. `docs/JUDGE_REVIEW_GUIDE.md`
+7. `docs/DESIGN_PARTNER_BRIEF.md`
+8. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+9. `examples/requests/design_partner_trial.yml`
+10. `examples/requests/support_triage_trial.yml`
 11. `examples/generated/support_triage_trial_report.md`
 12. `examples/generated/support_triage_trial.outcome_memo.md`
 13. `examples/generated/support_triage_trial.evidence_replay.md`
 14. `examples/evidence/support_triage_trial/`
 15. `examples/generated/trust_receipt.md`
-15. `examples/generated/packet_diff.md`
-16. `examples/generated/support_triage_agent.evidence_receipts.md`
-17. `examples/generated/support_triage_agent.outcome_memo.md`
-18. `examples/generated/sponsor_live_readiness.md`
-19. `examples/generated/review_room.md`
-20. `examples/generated/review_room.html`
-21. `examples/generated/support_triage_agent.proof_health.md`
-22. `docs/REVIEW_ROOM_WALKTHROUGH.md`
-23. `examples/generated/review_room.desktop.jpg`
-24. `policy/agent_access.yml`
-25. `agent/adapters/`
-26. `examples/generated/support_triage_agent.decision_brief.md`
-27. `examples/generated/support_triage_agent.packet.md`
-28. `examples/generated/admin_code_fix_bot.packet.json`
-29. `docs/CONTRACT.md`
-30. `docs/SAFETY_CONTRACT.md`
-31. `docs/V1_CAPABILITY_PASSPORT.md`
+16. `examples/generated/packet_diff.md`
+17. `examples/generated/support_triage_agent.evidence_receipts.md`
+18. `examples/generated/support_triage_agent.outcome_memo.md`
+19. `examples/generated/sponsor_live_readiness.md`
+20. `examples/generated/review_room.md`
+21. `examples/generated/review_room.html`
+22. `examples/generated/support_triage_agent.proof_health.md`
+23. `docs/REVIEW_ROOM_WALKTHROUGH.md`
+24. `examples/generated/review_room.desktop.jpg`
+25. `policy/agent_access.yml`
+26. `agent/adapters/`
+27. `examples/generated/support_triage_agent.decision_brief.md`
+28. `examples/generated/support_triage_agent.packet.md`
+29. `examples/generated/admin_code_fix_bot.packet.json`
+30. `docs/CONTRACT.md`
+31. `docs/SAFETY_CONTRACT.md`
+32. `docs/V1_CAPABILITY_PASSPORT.md`
 
 ## What To Judge
 

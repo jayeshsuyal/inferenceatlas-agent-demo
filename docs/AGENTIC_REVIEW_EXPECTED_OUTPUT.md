@@ -45,7 +45,7 @@ Expected human-readable signals across that two-command path:
 - Live Evidence Rehearsal reports sanitized evidence is attached and the decision remains locked
 - AI Spend Review reports Finance/Procurement review required, with no spend approval, provider selection, or savings guarantee
 - Agent Skills reports `17 / 17 stable skills available`
-- Artifact Integrity Gate reports `60 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
+- Artifact Integrity Gate reports `63 generated artifacts verified`, `0 stale`, `2 static assets valid`, and `0 unexpected checked-in`
 - `admin_code_fix_bot` is `BLOCKED`
 - public contract status is `ok`
 - sponsor adapters show `would_execute=False` and `can_approve_access=False`
@@ -122,7 +122,7 @@ Expected judge JSON pass signals:
 Expected artifact verifier JSON pass signals:
 
 - `status` is `ok`
-- `summary.generated_artifacts_verified` is `60`
+- `summary.generated_artifacts_verified` is `63`
 - `summary.stale_artifacts` is `0`
 - `summary.unexpected_checked_in_artifacts` is `0`
 - `summary.missing_static_assets` is `0`
@@ -221,7 +221,7 @@ Treat these as review failures:
 - Evidence Receipt Ledger weakens the packet lock, skips human review, or claims budget approval
 - Packet Authority Snapshot content hash or revision is nondeterministic
 - Packet Verification claims production access, external writes, permission grants, or approval
-- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 16 stable available skills
+- Agent Skills registry drifts from `agent/skills.py` or reports fewer than 17 stable available skills
 - Packet Outcome Memo approves access, grants permissions, or enables writes
 - Design Partner Outcome Memo approves access, grants permissions, or enables writes
 - Sponsor Evidence Replay lets a sponsor change the decision, approve access, grant permissions, execute writes, or mutate production

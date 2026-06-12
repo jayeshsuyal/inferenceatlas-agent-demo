@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Connect Portkey — InferenceAtlas</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/portkey_plane_b.css?v=3" />
+  </head>
+  <body class="portkey-plane-b">
+    <div class="pk-shell">
+      <header class="pk-topbar">
+        <div class="pk-brand">
+          <span class="logo" aria-hidden="true">◈</span>
+          <div>
+            <h1>Connect Portkey</h1>
+            <p>3 steps — then ReviewRun unlocks governance + build</p>
+          </div>
+        </div>
+        <a class="pk-back" href="/">← Back to ReviewRun</a>
+      </header>
+
+      <ol class="pk-wizard" id="pk-wizard"></ol>
+
+      <section class="pk-card pk-connect-card">
+        <h2>Paste &amp; connect</h2>
+        <p class="pk-saved-hint" id="pk-saved-hint" hidden>API key already saved for this session. Update provider/model and click test again — no need to re-paste.</p>
+        <form class="pk-form" id="pk-form" onsubmit="return false;">
+          <label for="pk-api-key">Portkey API key</label>
+          <div class="pk-input-row">
+            <input id="pk-api-key" name="api_key" type="password" autocomplete="off" placeholder="Paste from Portkey → API Keys → Reveal" />
+            <a class="pk-btn ghost pk-open-link" id="pk-open-keys" href="https://app.portkey.ai/api-keys" target="_blank" rel="noopener">Open API Keys</a>
+          </div>
+
+          <label for="pk-provider">Provider slug <span class="pk-label-hint">(from Portkey → your provider → Slug, without @)</span></label>
+          <input id="pk-provider" placeholder="iaagent1" autocomplete="off" />
+
+          <label for="pk-model">Model <span class="pk-label-hint">(from Portkey → API Setup &amp; Code tab)</span></label>
+          <input id="pk-model" placeholder="babbage-002" autocomplete="off" />
+          <p class="pk-model-preview">Routes as: <code id="pk-model-preview">@iaagent1/babbage-002</code></p>
+
+          <div class="pk-actions">
+            <button type="button" class="pk-btn primary" id="pk-connect-btn">Save &amp; test connection</button>
+            <button type="button" class="pk-btn ghost" id="pk-disconnect-btn">Disconnect</button>
+          </div>
+        </form>
+
+        <div class="pk-result" id="pk-result" hidden>
+          <p class="pk-result-title" id="pk-result-title"></p>
+          <p class="pk-result-detail" id="pk-result-detail"></p>
+          <pre class="pk-output" id="pk-test-output" hidden></pre>
+          <a class="pk-btn primary pk-open-link" id="pk-result-action" href="#" target="_blank" rel="noopener" hidden></a>
+        </div>
+      </section>
+
+      <details class="pk-advanced">
+        <summary>Advanced — Plane A guardrail export</summary>
+        <div class="pk-card">
+          <p class="pk-muted">Optional. For packet enforcement webhook — not required to connect.</p>
+          <label class="pk-muted" for="pk-public-base">Public IA URL</label>
+          <input id="pk-public-base" class="pk-inline-input" />
+          <div class="pk-actions">
+            <button type="button" class="pk-btn ghost" id="pk-setup-btn">Copy guardrail setup sheet</button>
+          </div>
+          <pre class="pk-output" id="pk-setup-output"></pre>
+        </div>
+      </details>
+    </div>
+    <script src="/static/portkey_connect_shared.js?v=1"></script>
+    <script src="/static/portkey_plane_b.js?v=3" defer></script>
+  </body>
+</html>

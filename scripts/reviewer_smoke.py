@@ -119,8 +119,8 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=78", timeout=timeout)
-    css = _read(base_url, "/static/style.css?v=58", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=88", timeout=timeout)
+    css = _read(base_url, "/static/style.css?v=59", timeout=timeout)
 
     for expected in (
         "ReviewRun",
@@ -433,6 +433,8 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "live Portkey dashboard proof",
         "Copy Portkey metadata",
         "Refresh live proof",
+        "data-portkey-metadata",
+        "Clipboard unavailable. Setup metadata is expanded below.",
     ):
         _require(expected in js, f"Portkey final runway missing: {expected}")
     _require(
@@ -485,6 +487,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-portkey-outcomes" in css, "ReviewRun Portkey outcome CSS missing")
     _require(".repo-portkey-live-receipt" in css, "ReviewRun Portkey receipt CSS missing")
     _require(".repo-portkey-receipt-grid" in css, "ReviewRun Portkey receipt grid CSS missing")
+    _require(".repo-portkey-metadata" in css, "ReviewRun Portkey metadata fallback CSS missing")
     _require(".repo-portkey-test-action" in css, "ReviewRun Portkey test action CSS missing")
     _require(".repo-ask-floating" in css, "Ask IA floating CSS missing")
     _require("position: fixed !important;" in css, "Ask IA must float above the stage")

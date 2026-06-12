@@ -1,6 +1,7 @@
 """FastAPI server for the InferenceAtlas Intelligence Agent."""
 
 import copy
+import html
 import json
 import os
 import threading
@@ -2940,6 +2941,421 @@ def workbench_index() -> FileResponse:
 @app.get("/packet")
 def packet_index() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
+
+
+def _receipt_html_escape(value: Any) -> str:
+    return html.escape(str(value), quote=True)
+
+
+def _receipt_scope_text(items: Any) -> str:
+    values = [str(item) for item in items or [] if str(item).strip()]
+    return ", ".join(values) if values else "none"
+
+
+def _receipt_status_label(value: Any) -> str:
+    return str(value or "verification_pending").replace("_", " ").title()
+
+
+def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: ReviewRun) -> str:
+    ref = receipt.get("packet_reference") or {}
+    movement = receipt.get("movement") or {}
+    approval_summary = receipt.get("approval_summary") or {}
+    portkey = receipt.get("portkey") or {}
+    safety = receipt.get("safety_boundary") or {}
+    approvals = receipt.get("approvals") or []
+    run_id = str(ref.get("run_id") or run.run_id)
+    receipt_id = str(receipt.get("receipt_id") or "receipt pending")
+    status = str(receipt.get("status") or "verification_pending")
+    status_label = _receipt_status_label(status)
+    repo_name = str((run.selected_repo or {}).get("full_name") or "selected repo")
+    packet_id = str(ref.get("packet_id") or "not generated")
+    revision_id = str(ref.get("revision_id") or "not generated")
+    content_hash = str(ref.get("content_hash") or "missing")
+    allowed_scope = _receipt_scope_text(movement.get("allowed_scope"))
+    review_scope = _receipt_scope_text(movement.get("review_required_scope"))
+    blocked_scope = _receipt_scope_text(movement.get("still_blocked_scope"))
+    receipt_hash = str(receipt.get("receipt_hash") or "missing")
+    portkey_state = str(portkey.get("state") or "Block")
+    portkey_event_id = str(portkey.get("event_id") or "not recorded")
+    api_mutation = bool(portkey.get("api_call_made"))
+    policy_mutation = bool(portkey.get("policy_mutation_allowed"))
+    approval_state = str(approval_summary.get("human_approval_state") or "unknown").replace("_", " ")
+    app_path = f"/?review=receipt&run={run_id}&screen=packet_rerun"
+    api_path = str(receipt.get("verification_path") or f"/api/review-runs/{run_id}/approval-receipt")
+    copy_receipt = "\n".join(
+        [
+            f"Portable approval receipt: {receipt_id}",
+            f"Status: {status_label}",
+            f"Run: {run_id}",
+            f"Packet: {packet_id}",
+            f"Revision: {revision_id}",
+            f"Content hash: {content_hash}",
+            f"Receipt hash: {receipt_hash}",
+            f"Human approval state: {approval_state}",
+            f"Allowed scope: {allowed_scope}",
+            f"Review required: {review_scope}",
+            f"Still blocked: {blocked_scope}",
+            f"Portkey state: {portkey_state}",
+            f"Verify: /approval-receipt/{run_id}",
+            "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
+        ]
+    )
+    copy_pr = "\n".join(
+        [
+            f"IA receipt: {receipt_id}",
+            f"Packet: {packet_id}",
+            f"Revision: {revision_id}",
+            f"Receipt status: {status_label}",
+            f"Approved scope: {allowed_scope}",
+            f"Still blocked: {blocked_scope}",
+            f"Verify: /approval-receipt/{run_id}",
+            "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
+        ]
+    )
+    approval_rows = "\n".join(
+        f"""
+        <div class="approval-row">
+          <span>{_receipt_html_escape(item.get("label") or item.get("role_id") or "Reviewer")}</span>
+          <strong>{_receipt_html_escape(_receipt_status_label(item.get("approval_state")))}</strong>
+          <small>{_receipt_html_escape(item.get("scope") or "")}</small>
+        </div>
+        """
+        for item in approvals
+    )
+    safety_rows = "\n".join(
+        f"""
+        <div class="fact {'bad' if bool(value) and key.startswith('ia_') else 'good'}">
+          <span>{_receipt_html_escape(key.replace("_", " "))}</span>
+          <strong>{_receipt_html_escape(str(bool(value)).lower())}</strong>
+        </div>
+        """
+        for key, value in (
+            ("ia_approved", safety.get("ia_approved")),
+            ("ia_grants_permissions", safety.get("ia_grants_permissions")),
+            ("ia_executes_external_writes", safety.get("ia_executes_external_writes")),
+            ("ia_mutates_portkey_policy", safety.get("ia_mutates_portkey_policy")),
+            ("downstream_must_enforce_scope", safety.get("downstream_must_enforce_scope")),
+        )
+    )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>InferenceAtlas Receipt Verification</title>
+  <style>
+    :root {{
+      color-scheme: dark;
+      --bg: #050507;
+      --panel: rgba(255, 255, 255, 0.065);
+      --line: rgba(255, 255, 255, 0.13);
+      --text: rgba(255, 255, 255, 0.94);
+      --muted: rgba(255, 255, 255, 0.62);
+      --green: #72e0a3;
+      --amber: #f2c55c;
+      --red: #ff8b8b;
+    }}
+    * {{ box-sizing: border-box; }}
+    body {{
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+      background:
+        radial-gradient(circle at 78% 8%, rgba(114, 224, 163, 0.14), transparent 18rem),
+        radial-gradient(circle at 12% 0%, rgba(242, 197, 92, 0.12), transparent 16rem),
+        linear-gradient(180deg, #0c0c0f 0%, var(--bg) 45%, #000 100%);
+    }}
+    main {{
+      width: min(1120px, calc(100vw - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 3rem;
+    }}
+    header {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+    }}
+    .brand {{
+      display: grid;
+      gap: 0.15rem;
+    }}
+    .brand span, .eyebrow {{
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }}
+    h1 {{
+      margin: 0;
+      max-width: 780px;
+      font-size: clamp(2rem, 5vw, 4.3rem);
+      line-height: 0.96;
+    }}
+    h2, h3, p {{ margin: 0; }}
+    a, button {{
+      min-height: 2.35rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.62rem 0.9rem;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.07);
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+    }}
+    button:hover, a:hover {{ border-color: rgba(255,255,255,0.32); }}
+    .shell {{
+      display: grid;
+      gap: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: clamp(1rem, 2vw, 1.35rem);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
+        rgba(0, 0, 0, 0.38);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 28px 100px rgba(0, 0, 0, 0.5);
+    }}
+    .hero {{
+      display: grid;
+      gap: 0.8rem;
+      padding: 0.7rem 0 1rem;
+      border-bottom: 1px solid var(--line);
+    }}
+    .status {{
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: 0.48rem;
+      border: 1px solid rgba(114, 224, 163, 0.28);
+      border-radius: 999px;
+      padding: 0.42rem 0.65rem;
+      color: var(--green);
+      background: rgba(114, 224, 163, 0.08);
+      font-size: 0.78rem;
+      font-weight: 900;
+    }}
+    .grid {{
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+    }}
+    .fact, .approval-row {{
+      min-width: 0;
+      padding: 0.78rem;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+    }}
+    .fact span, .approval-row span, .approval-row small {{
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      font-weight: 850;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }}
+    .fact strong, .approval-row strong {{
+      display: block;
+      margin-top: 0.26rem;
+      overflow-wrap: anywhere;
+      font-size: 0.92rem;
+      line-height: 1.25;
+    }}
+    .good strong {{ color: var(--green); }}
+    .review strong {{ color: var(--amber); }}
+    .bad strong {{ color: var(--red); }}
+    .section {{
+      display: grid;
+      gap: 0.75rem;
+      padding: 1rem 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }}
+    .section:first-of-type {{ border-top: 0; }}
+    .section-title {{
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: baseline;
+    }}
+    .section-title p {{
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }}
+    .approvals {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }}
+    .approval-row small {{
+      margin-top: 0.32rem;
+      letter-spacing: 0;
+      text-transform: none;
+      line-height: 1.35;
+    }}
+    .actions {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.58rem;
+      padding-top: 0.2rem;
+    }}
+    .anchor {{
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }}
+    textarea {{
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }}
+    footer {{
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }}
+    @media (max-width: 760px) {{
+      main {{ width: min(100vw - 1rem, 1120px); padding-top: 1rem; }}
+      header {{ align-items: flex-start; flex-direction: column; }}
+      .grid, .approvals {{ grid-template-columns: 1fr; }}
+      .section-title {{ display: grid; }}
+      a, button {{ width: 100%; text-align: center; }}
+    }}
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand">
+        <strong>InferenceAtlas</strong>
+        <span>Portable approval receipt</span>
+      </div>
+      <a href="{_receipt_html_escape(app_path)}">Back to ReviewRun</a>
+    </header>
+    <section class="shell" aria-label="Approval receipt verification">
+      <div class="hero">
+        <span class="status">{_receipt_html_escape(status_label)}</span>
+        <h1>{_receipt_html_escape(receipt_id)}</h1>
+        <p class="anchor">Humans approve scoped movement. IA records and packages the receipt. Downstream systems verify it before movement.</p>
+      </div>
+      <section class="section">
+        <div class="section-title">
+          <h2>Packet Reference</h2>
+          <p>{_receipt_html_escape(repo_name)}</p>
+        </div>
+        <div class="grid">
+          <div class="fact"><span>Run</span><strong>{_receipt_html_escape(run_id)}</strong></div>
+          <div class="fact"><span>Packet</span><strong>{_receipt_html_escape(packet_id)}</strong></div>
+          <div class="fact"><span>Revision</span><strong>{_receipt_html_escape(revision_id)}</strong></div>
+          <div class="fact"><span>Receipt hash</span><strong>{_receipt_html_escape(receipt_hash)}</strong></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">
+          <h2>Movement Scope</h2>
+          <p>Scope travels with the receipt; blocked claims stay blocked.</p>
+        </div>
+        <div class="grid">
+          <div class="fact good"><span>Allowed</span><strong>{_receipt_html_escape(allowed_scope)}</strong></div>
+          <div class="fact review"><span>Review required</span><strong>{_receipt_html_escape(review_scope)}</strong></div>
+          <div class="fact bad"><span>Still blocked</span><strong>{_receipt_html_escape(blocked_scope)}</strong></div>
+          <div class="fact review"><span>Human scope</span><strong>{_receipt_html_escape(approval_state)}</strong></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">
+          <h2>Human Approval Record</h2>
+          <p>{_receipt_html_escape(str(approval_summary.get("recorded_count", 0)))} recorded, {_receipt_html_escape(str(approval_summary.get("missing_count", 0)))} missing.</p>
+        </div>
+        <div class="approvals">{approval_rows}</div>
+      </section>
+      <section class="section">
+        <div class="section-title">
+          <h2>Portkey Consumption</h2>
+          <p>Portkey consumes packet metadata; IA does not push policy.</p>
+        </div>
+        <div class="grid">
+          <div class="fact good"><span>State</span><strong>{_receipt_html_escape(portkey_state)}</strong></div>
+          <div class="fact"><span>Event id</span><strong>{_receipt_html_escape(portkey_event_id)}</strong></div>
+          <div class="fact {'bad' if api_mutation else 'good'}"><span>API mutation</span><strong>{_receipt_html_escape(str(api_mutation).lower())}</strong></div>
+          <div class="fact {'bad' if policy_mutation else 'good'}"><span>Policy mutation</span><strong>{_receipt_html_escape(str(policy_mutation).lower())}</strong></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="section-title">
+          <h2>Safety Boundary</h2>
+          <p>IA never approves access, grants permissions, writes externally, or mutates Portkey policy.</p>
+        </div>
+        <div class="grid">{safety_rows}</div>
+        <p class="anchor">{_receipt_html_escape(receipt.get("safety_anchor") or "")}</p>
+      </section>
+      <section class="section">
+        <div class="section-title">
+          <h2>Carry It</h2>
+          <p>Use the receipt or PR snippet without expanding scope.</p>
+        </div>
+        <div class="actions">
+          <button type="button" data-copy-source="copy-receipt">Copy receipt</button>
+          <button type="button" data-copy-source="copy-pr">Copy PR snippet</button>
+          <a href="{_receipt_html_escape(api_path)}">Open API JSON</a>
+        </div>
+        <p class="anchor" id="copy-status" role="status" aria-live="polite"></p>
+      </section>
+    </section>
+    <footer>Read-only verification page. API path: {_receipt_html_escape(api_path)}. Content hash: {_receipt_html_escape(content_hash)}.</footer>
+  </main>
+  <textarea id="copy-receipt" readonly>{_receipt_html_escape(copy_receipt)}</textarea>
+  <textarea id="copy-pr" readonly>{_receipt_html_escape(copy_pr)}</textarea>
+  <script>
+    document.querySelectorAll("[data-copy-source]").forEach((button) => {{
+      button.addEventListener("click", async () => {{
+        const source = document.getElementById(button.dataset.copySource);
+        const status = document.getElementById("copy-status");
+        const text = source ? source.value : "";
+        let copied = false;
+        try {{
+          if (navigator.clipboard && navigator.clipboard.writeText) {{
+            await navigator.clipboard.writeText(text);
+            copied = true;
+          }}
+        }} catch (_) {{
+          copied = false;
+        }}
+        if (!copied && source) {{
+          source.focus();
+          source.select();
+          try {{ copied = document.execCommand("copy"); }} catch (_) {{ copied = false; }}
+        }}
+        if (status) status.textContent = copied ? "Copied. Scope unchanged." : "Clipboard unavailable.";
+      }});
+    }});
+  </script>
+</body>
+</html>"""
+
+
+@app.get("/approval-receipt/{run_id}", response_class=HTMLResponse)
+def approval_receipt_index(run_id: str) -> HTMLResponse:
+    run, _record = _load_review_run_or_404(run_id)
+    try:
+        receipt = build_review_run_approval_receipt(run)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return HTMLResponse(_render_review_run_approval_receipt_html(receipt, run))
 
 
 @app.get("/proofgraph", response_class=HTMLResponse)

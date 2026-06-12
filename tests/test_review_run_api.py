@@ -407,6 +407,8 @@ class ReviewRunApiTests(TestCase):
                 self.assertIn("Policy mutation", body)
                 self.assertIn("IA never approves access", body)
                 self.assertIn("/api/review-runs/", body)
+                self.assertIn("font-size: 1.55rem", body)
+                self.assertNotIn("font-size: clamp", body)
                 self.assertNotIn("ghp_1234567890abcdefSECRET", body)
 
     def test_review_run_portkey_guardrail_test_tracks_packet_revision_delta(self) -> None:

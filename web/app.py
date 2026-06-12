@@ -3061,6 +3061,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       min-height: 100vh;
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 15px;
       letter-spacing: 0;
       background:
         radial-gradient(circle at 78% 8%, rgba(114, 224, 163, 0.14), transparent 18rem),
@@ -3093,10 +3094,15 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     h1 {{
       margin: 0;
       max-width: 780px;
-      font-size: clamp(2rem, 5vw, 4.3rem);
-      line-height: 0.96;
+      font-size: 2.75rem;
+      line-height: 1.02;
+      overflow-wrap: anywhere;
     }}
     h2, h3, p {{ margin: 0; }}
+    h2 {{
+      font-size: 1.08rem;
+      line-height: 1.2;
+    }}
     a, button {{
       min-height: 2.35rem;
       border: 1px solid var(--line);
@@ -3105,7 +3111,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       color: var(--text);
       background: rgba(255, 255, 255, 0.07);
       font: inherit;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 800;
       text-decoration: none;
       cursor: pointer;
@@ -3138,7 +3144,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       padding: 0.42rem 0.65rem;
       color: var(--green);
       background: rgba(114, 224, 163, 0.08);
-      font-size: 0.78rem;
+      font-size: 0.68rem;
       font-weight: 900;
     }}
     .grid {{
@@ -3156,7 +3162,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     .fact span, .approval-row span, .approval-row small {{
       display: block;
       color: var(--muted);
-      font-size: 0.68rem;
+      font-size: 0.58rem;
       font-weight: 850;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -3165,7 +3171,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       display: block;
       margin-top: 0.26rem;
       overflow-wrap: anywhere;
-      font-size: 0.92rem;
+      font-size: 0.82rem;
       line-height: 1.25;
     }}
     .good strong {{ color: var(--green); }}
@@ -3186,7 +3192,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     }}
     .section-title p {{
       color: var(--muted);
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       line-height: 1.5;
     }}
     .approvals {{
@@ -3208,7 +3214,7 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     }}
     .anchor {{
       color: rgba(255, 255, 255, 0.78);
-      font-size: 0.9rem;
+      font-size: 0.82rem;
       line-height: 1.55;
     }}
     textarea {{
@@ -3224,13 +3230,23 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     footer {{
       margin-top: 1rem;
       color: var(--muted);
-      font-size: 0.78rem;
+      font-size: 0.72rem;
       line-height: 1.5;
       overflow-wrap: anywhere;
     }}
     @media (max-width: 760px) {{
       main {{ width: min(100vw - 1rem, 1120px); padding-top: 1rem; }}
       header {{ align-items: flex-start; flex-direction: column; }}
+      .brand span, .eyebrow {{ font-size: 0.62rem; }}
+      h1 {{ font-size: 1.55rem; line-height: 1.08; }}
+      h2 {{ font-size: 0.98rem; }}
+      .hero {{ gap: 0.62rem; padding: 0.55rem 0 0.85rem; }}
+      .shell {{ border-radius: 14px; padding: 0.9rem; }}
+      .section {{ gap: 0.62rem; padding: 0.85rem 0; }}
+      .fact, .approval-row {{ border-radius: 10px; padding: 0.68rem; }}
+      .fact strong, .approval-row strong {{ font-size: 0.78rem; }}
+      .anchor, .section-title p {{ font-size: 0.78rem; }}
+      footer {{ font-size: 0.68rem; }}
       .grid, .approvals {{ grid-template-columns: 1fr; }}
       .section-title {{ display: grid; }}
       a, button {{ width: 100%; text-align: center; }}

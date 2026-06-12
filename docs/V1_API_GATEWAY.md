@@ -1,6 +1,6 @@
 # InferenceAtlas-v1 API gateway (Option A)
 
-The demo harness does **not** copy `rank_configs` from [InferenceAtlas-v1](https://github.com/jayeshsuyal/InferenceAtlas-v1). Cost questions call the v1 FastAPI over HTTP when configured.
+The demo harness does **not** copy `rank_configs` from the private `InferenceAtlas-v1` repo. Cost questions call the v1 FastAPI over HTTP when configured.
 
 ## Flow (preferred — v1 copilot E2E)
 

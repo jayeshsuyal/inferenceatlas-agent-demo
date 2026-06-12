@@ -35,6 +35,7 @@ from web.app import (
     github_list_repos,
     get_review_run,
     get_review_run_approval_receipt_api,
+    get_review_run_portkey_live_proof_api,
     proofgraph_index,
     portkey_guardrail_webhook,
     review_run_portkey_guardrail_test_api,
@@ -550,6 +551,14 @@ class ReviewRunApiTests(TestCase):
                     rev1["data"]["ia_packet_reference"]["revision_id"],
                     rev1_packet["revision_id"],
                 )
+                rev1_live_proof = get_review_run_portkey_live_proof_api(run_id)["portkey_live_proof"]
+                self.assertEqual(rev1_live_proof["status"], "live_verified")
+                self.assertEqual(rev1_live_proof["dashboard_mode"], "live_portkey_dashboard")
+                self.assertEqual(rev1_live_proof["enforcement_outcome"], "Block")
+                self.assertEqual(rev1_live_proof["latest_event"]["kind"], "portkey_byo_guardrail")
+                self.assertEqual(rev1_live_proof["latest_event"]["revision_id"], rev1_packet["revision_id"])
+                self.assertFalse(rev1_live_proof["latest_event"]["api_mutation"])
+                self.assertFalse(rev1_live_proof["latest_event"]["policy_mutation"])
 
                 attach_review_run_proof_api(
                     run_id,
@@ -568,6 +577,11 @@ class ReviewRunApiTests(TestCase):
                     ),
                 )
                 rev2_packet = rerun["run"]["packet"]
+
+                waiting_after_rerun = get_review_run_portkey_live_proof_api(run_id)["portkey_live_proof"]
+                self.assertEqual(waiting_after_rerun["status"], "waiting_for_webhook")
+                self.assertEqual(waiting_after_rerun["enforcement_outcome"], "Waiting for Portkey")
+                self.assertEqual(waiting_after_rerun["setup_metadata"]["ia_revision_id"], rev2_packet["revision_id"])
 
                 stale = _post_portkey_webhook(rev1_body)
                 self.assertIs(stale["verdict"], False)
@@ -590,6 +604,26 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(rev2["data"]["ia_packet_reference"]["source_of_truth"], "ReviewRun")
                 self.assertFalse(rev2["data"]["safety"]["portkey_api_call_made"])
                 self.assertFalse(rev2["data"]["safety"]["portkey_policy_mutation_allowed"])
+                live_proof = get_review_run_portkey_live_proof_api(run_id)["portkey_live_proof"]
+                self.assertEqual(live_proof["schema_version"], "review_run_portkey_live_proof.v0")
+                self.assertEqual(live_proof["status"], "live_verified")
+                self.assertEqual(live_proof["dashboard_label"], "Live Portkey dashboard proof")
+                self.assertEqual(live_proof["headline"], "Portkey enforcement outcome changed from the IA packet.")
+                self.assertEqual(live_proof["enforcement_outcome"], "Allow with policy")
+                self.assertEqual(live_proof["latest_event"]["revision_id"], rev2_packet["revision_id"])
+                self.assertTrue(live_proof["latest_event"]["verdict"])
+                self.assertFalse(live_proof["latest_event"]["api_mutation"])
+                self.assertFalse(live_proof["latest_event"]["policy_mutation"])
+                self.assertEqual(live_proof["setup_metadata"]["ia_source_of_truth"], "ReviewRun")
+
+                receipt = get_review_run_approval_receipt_api(run_id)["approval_receipt"]
+                self.assertEqual(receipt["portkey_live_proof"]["status"], "live_verified")
+                self.assertEqual(receipt["portkey_live_proof"]["enforcement_outcome"], "Allow with policy")
+                receipt_html = approval_receipt_index(run_id).body.decode("utf-8")
+                self.assertIn("Live proof", receipt_html)
+                self.assertIn("Live Portkey dashboard proof", receipt_html)
+                self.assertIn("Dashboard outcome", receipt_html)
+                self.assertIn("Webhook mutation", receipt_html)
 
                 unsupported = _post_portkey_webhook(
                     _portkey_review_run_body(
@@ -1061,6 +1095,9 @@ class ReviewRunApiTests(TestCase):
         approval_receipt_page_route = next(
             route for route in app.routes if getattr(route, "path", "") == "/approval-receipt/{run_id}"
         )
+        portkey_live_proof_route = next(
+            route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/portkey/live-proof"
+        )
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
@@ -1072,6 +1109,7 @@ class ReviewRunApiTests(TestCase):
         self.assertEqual(proofgraph_route.methods, {"GET"})
         self.assertEqual(approval_receipt_api_route.methods, {"GET"})
         self.assertEqual(approval_receipt_page_route.methods, {"GET"})
+        self.assertEqual(portkey_live_proof_route.methods, {"GET"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

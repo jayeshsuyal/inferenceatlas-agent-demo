@@ -46,8 +46,10 @@ from agent.portkey_guardrail import (
     PORTKEY_GUARDRAIL_SCHEMA_VERSION,
     PORTKEY_GUARDRAIL_TOKEN_HEADER,
     PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL,
+    PORTKEY_EVENT_KIND,
     PORTKEY_LOCAL_TEST_EVENT_KIND,
     PORTKEY_REHEARSAL_AUTH_ENV,
+    PORTKEY_REHEARSAL_EVENT_KIND,
     PORTKEY_REHEARSAL_MODE_HEADER,
     SAFE_PORTKEY_REQUEST_MODES,
     PortkeyGuardrailAuthError,
@@ -768,6 +770,124 @@ def _packet_reference_for_run(run: ReviewRun) -> Optional[dict[str, Any]]:
     }
 
 
+def _portkey_metadata_for_run(run: ReviewRun) -> dict[str, str]:
+    packet_reference = _packet_reference_for_run(run) or {}
+    return {
+        "ia_review_run_id": run.run_id,
+        "ia_packet_id": str(packet_reference.get("packet_id") or ""),
+        "ia_revision_id": str(packet_reference.get("revision_id") or ""),
+        "ia_requested_mode": "scoped_validation",
+        "ia_source_of_truth": "ReviewRun",
+    }
+
+
+def _portkey_event_matches_review_run_packet(event: dict[str, Any], run: ReviewRun) -> bool:
+    if event.get("kind") not in {PORTKEY_EVENT_KIND, PORTKEY_REHEARSAL_EVENT_KIND}:
+        return False
+    packet_reference = _packet_reference_for_run(run)
+    if not packet_reference:
+        return False
+    if str(event.get("review_run_id") or "") != run.run_id:
+        return False
+    if str(event.get("packet_id") or "") != packet_reference["packet_id"]:
+        return False
+    if str(event.get("revision_id") or "") != packet_reference["revision_id"]:
+        return False
+    return True
+
+
+def _summarize_portkey_live_event(event: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "event_id": event.get("event_id"),
+        "kind": event.get("kind"),
+        "delivery_mode": event.get("delivery_mode"),
+        "generated_at": event.get("generated_at"),
+        "event_type": event.get("event_type"),
+        "verdict": bool(event.get("verdict")),
+        "elapsed_ms": int(event.get("elapsed_ms") or 0),
+        "review_run_id": event.get("review_run_id"),
+        "packet_id": event.get("packet_id"),
+        "revision_id": event.get("revision_id"),
+        "reason": event.get("reason"),
+        "requested_mode": event.get("requested_mode"),
+        "api_mutation": bool(event.get("api_mutation")),
+        "policy_mutation": bool(event.get("policy_mutation")),
+        "external_writes": bool(event.get("external_writes")),
+        "read_only": bool(event.get("read_only", True)),
+    }
+
+
+def build_review_run_portkey_live_proof(run: ReviewRun) -> dict[str, Any]:
+    """Return the latest external Portkey webhook proof for the current packet revision."""
+    packet_reference = _packet_reference_for_run(run)
+    setup_metadata = _portkey_metadata_for_run(run)
+    base: dict[str, Any] = {
+        "schema_version": "review_run_portkey_live_proof.v0",
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "webhook_path": "/api/portkey/guardrail",
+        "webhook_method": "POST",
+        "auth_header": "Authorization: Bearer <PORTKEY_GUARDRAIL_TOKEN>",
+        "setup_metadata": setup_metadata,
+        "docs_reference": {
+            "guardrail_webhook": PORTKEY_GUARDRAIL_DOC_URL,
+            "guardrails_overview": PORTKEY_GUARDRAILS_OVERVIEW_DOC_URL,
+            "last_verified": "2026-06-11",
+        },
+        "safety": _portkey_webhook_safety_payload(),
+        "latest_event": None,
+        "current_packet": packet_reference,
+    }
+    if not packet_reference:
+        return {
+            **base,
+            "status": "packet_not_generated",
+            "dashboard_mode": "not_configurable",
+            "dashboard_label": "Generate packet first",
+            "headline": "Portkey has no IA packet to consume yet.",
+            "enforcement_outcome": "No packet",
+            "live_proof_ready": False,
+        }
+
+    latest_event = next(
+        (
+            event
+            for event in list_portkey_guardrail_events(ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR)
+            if _portkey_event_matches_review_run_packet(event, run)
+        ),
+        None,
+    )
+    if latest_event is None:
+        return {
+            **base,
+            "status": "waiting_for_webhook",
+            "dashboard_mode": "configured_portkey_required",
+            "dashboard_label": "Waiting for live Portkey call",
+            "headline": "Configure Portkey BYO Guardrail with this packet metadata, then send a request.",
+            "enforcement_outcome": "Waiting for Portkey",
+            "live_proof_ready": False,
+        }
+
+    event_summary = _summarize_portkey_live_event(latest_event)
+    is_live = event_summary["kind"] == PORTKEY_EVENT_KIND
+    verdict = bool(event_summary["verdict"])
+    return {
+        **base,
+        "status": "live_verified" if is_live else "rehearsal_verified",
+        "dashboard_mode": "live_portkey_dashboard" if is_live else "rehearsal_probe",
+        "dashboard_label": "Live Portkey dashboard proof" if is_live else "Rehearsal webhook proof",
+        "headline": (
+            "Portkey enforcement outcome changed from the IA packet."
+            if is_live
+            else "Portkey-shaped webhook proof recorded from the IA packet."
+        ),
+        "enforcement_outcome": "Allow with policy" if verdict else "Block",
+        "live_proof_ready": True,
+        "latest_event": event_summary,
+    }
+
+
 def _build_review_run_portkey_guardrail_response(body: Any, *, elapsed_ms: int = 0) -> Optional[dict]:
     if not isinstance(body, dict):
         return None
@@ -1250,12 +1370,26 @@ def get_review_run_approval_receipt_api(run_id: str) -> dict:
         receipt = build_review_run_approval_receipt(run)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    receipt["portkey_live_proof"] = build_review_run_portkey_live_proof(run)
     return {
         "ok": True,
         "read_only": True,
         "run_id": run.run_id,
         "stage": run.stage,
         "approval_receipt": receipt,
+    }
+
+
+@app.get("/api/review-runs/{run_id}/portkey/live-proof")
+def get_review_run_portkey_live_proof_api(run_id: str) -> dict:
+    """Return the latest external Portkey webhook proof for the current packet revision."""
+    run, _record = _load_review_run_or_404(run_id)
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "portkey_live_proof": build_review_run_portkey_live_proof(run),
     }
 
 
@@ -2961,6 +3095,8 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     movement = receipt.get("movement") or {}
     approval_summary = receipt.get("approval_summary") or {}
     portkey = receipt.get("portkey") or {}
+    portkey_live_proof = receipt.get("portkey_live_proof") or {}
+    portkey_live_event = portkey_live_proof.get("latest_event") or {}
     safety = receipt.get("safety_boundary") or {}
     approvals = receipt.get("approvals") or []
     run_id = str(ref.get("run_id") or run.run_id)
@@ -2977,6 +3113,20 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
     receipt_hash = str(receipt.get("receipt_hash") or "missing")
     portkey_state = str(portkey.get("state") or "Block")
     portkey_event_id = str(portkey.get("event_id") or "not recorded")
+    portkey_live_status = _receipt_status_label(portkey_live_proof.get("status"))
+    portkey_live_label = str(portkey_live_proof.get("dashboard_label") or "Waiting for live Portkey call")
+    portkey_live_outcome = str(portkey_live_proof.get("enforcement_outcome") or "Waiting for Portkey")
+    portkey_live_event_id = str(portkey_live_event.get("event_id") or "not received")
+    portkey_live_latency = (
+        f"{int(portkey_live_event.get('elapsed_ms'))}ms"
+        if isinstance(portkey_live_event.get("elapsed_ms"), int)
+        else "not received"
+    )
+    portkey_live_mutation = bool(
+        portkey_live_event.get("api_mutation")
+        or portkey_live_event.get("policy_mutation")
+        or portkey_live_event.get("external_writes")
+    )
     api_mutation = bool(portkey.get("api_call_made"))
     policy_mutation = bool(portkey.get("policy_mutation_allowed"))
     approval_state = str(approval_summary.get("human_approval_state") or "unknown").replace("_", " ")
@@ -2996,6 +3146,9 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
             f"Review required: {review_scope}",
             f"Still blocked: {blocked_scope}",
             f"Portkey state: {portkey_state}",
+            f"Portkey live proof: {portkey_live_label}",
+            f"Portkey live outcome: {portkey_live_outcome}",
+            f"Portkey live event: {portkey_live_event_id}",
             f"Verify: /approval-receipt/{run_id}",
             "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
         ]
@@ -3008,6 +3161,8 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
             f"Receipt status: {status_label}",
             f"Approved scope: {allowed_scope}",
             f"Still blocked: {blocked_scope}",
+            f"Portkey live proof: {portkey_live_label}",
+            f"Portkey live outcome: {portkey_live_outcome}",
             f"Verify: /approval-receipt/{run_id}",
             "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
         ]
@@ -3497,6 +3652,10 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
               <tbody>
                 <tr class="good"><th>State</th><td><strong>{_receipt_html_escape(portkey_state)}</strong></td></tr>
                 <tr><th>Event id</th><td><strong class="mono">{_receipt_html_escape(portkey_event_id)}</strong></td></tr>
+                <tr class="{'good' if portkey_live_proof.get("live_proof_ready") else 'review'}"><th>Live proof</th><td><strong>{_receipt_html_escape(portkey_live_label)}</strong><span>{_receipt_html_escape(portkey_live_status)}</span></td></tr>
+                <tr class="{'good' if portkey_live_outcome == "Allow with policy" else 'review'}"><th>Dashboard outcome</th><td><strong>{_receipt_html_escape(portkey_live_outcome)}</strong></td></tr>
+                <tr><th>Webhook event</th><td><strong class="mono">{_receipt_html_escape(portkey_live_event_id)}</strong><span>{_receipt_html_escape(portkey_live_latency)}</span></td></tr>
+                <tr class="{'bad' if portkey_live_mutation else 'good'}"><th>Webhook mutation</th><td><strong>{_receipt_html_escape(str(portkey_live_mutation).lower())}</strong></td></tr>
                 <tr class="{'bad' if api_mutation else 'good'}"><th>API mutation</th><td><strong>{_receipt_html_escape(str(api_mutation).lower())}</strong></td></tr>
                 <tr class="{'bad' if policy_mutation else 'good'}"><th>Policy mutation</th><td><strong>{_receipt_html_escape(str(policy_mutation).lower())}</strong></td></tr>
               </tbody>
@@ -3579,6 +3738,7 @@ def approval_receipt_index(run_id: str) -> HTMLResponse:
         receipt = build_review_run_approval_receipt(run)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    receipt["portkey_live_proof"] = build_review_run_portkey_live_proof(run)
     return HTMLResponse(_render_review_run_approval_receipt_html(receipt, run))
 
 

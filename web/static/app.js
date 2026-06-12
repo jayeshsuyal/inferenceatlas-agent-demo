@@ -5614,6 +5614,10 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
             <button type="button" class="btn-ghost" data-refresh-portkey-live-proof>Refresh live proof</button>
             <button type="button" class="btn-ghost" data-copy-portkey-metadata${portkeyLiveProof ? "" : " disabled"}>Copy Portkey metadata</button>
           </div>
+          <details class="repo-portkey-metadata" data-portkey-metadata${portkeyLiveProof ? "" : " hidden"}>
+            <summary>Setup metadata</summary>
+            <pre><code>${escapeHtml(formatPortkeyLiveMetadata(portkeyLiveProof) || "Waiting for packet metadata.")}</code></pre>
+          </details>
           <p class="repo-microcopy">A live Portkey dashboard proof means Portkey called IA's BYO Guardrail and changed the enforcement outcome from the packet. Policy mutation remains false.</p>
         </div>
         <div class="repo-portkey-handoff" aria-label="Portkey handoff result">
@@ -5649,11 +5653,13 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     });
     repoPortkeyCard.querySelector("[data-copy-portkey-metadata]")?.addEventListener("click", async () => {
       const copied = await copyTextWithFallback(formatPortkeyLiveMetadata(portkeyLiveProof));
+      const metadataPanel = repoPortkeyCard.querySelector("[data-portkey-metadata]");
+      if (metadataPanel) metadataPanel.open = !copied;
       if (repoCockpitStatus) {
         repoCockpitStatus.classList.toggle("error", !copied);
         repoCockpitStatus.textContent = copied
           ? "Portkey BYO metadata copied. Paste it into the dashboard guardrail request metadata."
-          : "Clipboard unavailable. Use the setup metadata shown in the live proof API.";
+          : "Clipboard unavailable. Setup metadata is expanded below.";
       }
     });
     repoPortkeyCard.open = portkeyTested || portkeyRunwayReady;

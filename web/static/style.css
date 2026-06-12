@@ -8194,6 +8194,36 @@ body[data-active-tab="start"] .repo-receipt-actions .repo-secondary-link {
   font-size: 0.72rem !important;
 }
 
+body:not([data-active-tab]) .repo-portkey-metadata,
+body[data-active-tab="start"] .repo-portkey-metadata {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+body:not([data-active-tab]) .repo-portkey-metadata summary,
+body[data-active-tab="start"] .repo-portkey-metadata summary {
+  cursor: pointer;
+  padding: 0.58rem 0.7rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-portkey-metadata pre,
+body[data-active-tab="start"] .repo-portkey-metadata pre {
+  max-height: 11rem;
+  margin: 0;
+  padding: 0 0.72rem 0.72rem;
+  overflow: auto;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 body:not([data-active-tab]) .repo-rerun-portkey-action,
 body[data-active-tab="start"] .repo-rerun-portkey-action {
   justify-self: start;

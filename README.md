@@ -131,7 +131,7 @@ InferenceAtlas v1 extends the same contract across:
 
 ## Documentation
 
-- **Start:** [Command Reference](docs/COMMAND_REFERENCE.md) and [Demo Recording Script](docs/DEMO_RECORDING_SCRIPT.md)
+- **Start:** [Command Reference](docs/COMMAND_REFERENCE.md), [Demo Recording Script](docs/DEMO_RECORDING_SCRIPT.md), and [90-Second Demo Script](docs/DEMO_90_SECOND_SCRIPT.md)
 - **Understand:** [Public Conformance Contract](docs/CONTRACT.md)
 - **Integrate:** [Live Integration Contract](docs/LIVE_INTEGRATION_CONTRACT.md)
 - **Deep proof:** [Product Tour](docs/PRODUCT_TOUR.md), [Product Quality Audit](docs/PRODUCT_QUALITY_AUDIT.md), [Agent Skills](docs/AGENT_SKILLS.md), and [Artifact Map](docs/ARTIFACT_MAP.md)

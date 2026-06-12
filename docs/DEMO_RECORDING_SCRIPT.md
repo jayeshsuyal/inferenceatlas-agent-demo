@@ -5,6 +5,8 @@ Purpose: record the 90-second hackathon demo without adding new product scope, e
 
 Private engine, public proof.
 
+For the speaker-ready version, use `docs/DEMO_90_SECOND_SCRIPT.md`.
+
 ## Freeze Gate
 
 Record only after all checks are true:

@@ -119,7 +119,7 @@ def _expect_false(mapping: dict[str, Any], keys: list[str], *, prefix: str) -> N
 
 def _check_first_run(base_url: str, timeout: float) -> None:
     html = _read(base_url, "/", timeout=timeout)
-    js = _read(base_url, "/static/app.js?v=76", timeout=timeout)
+    js = _read(base_url, "/static/app.js?v=78", timeout=timeout)
     css = _read(base_url, "/static/style.css?v=58", timeout=timeout)
 
     for expected in (
@@ -153,12 +153,14 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Connect and index one repo before generating a packet.",
         "Ask IA",
         "Chat coach",
-        "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
-        "Minimize Ask IA chat",
+        "Minimize chat coach to header",
         'data-coach-mode="floating"',
-        "repo-coach-chat",
-        "repo-coach-last-user",
-        "You asked",
+        "repo-coach-thread-scroll",
+        "repo-coach-thread",
+        "repo-coach-composer",
+        "repo-coach-followup-chips",
+        "repo-coach-maximize",
+        "repo-index-tracker",
         "Ask what to do next...",
         "Review AI spend",
         "Test downstream gate",
@@ -304,10 +306,19 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("attachReviewRunProof" in js, "proof attach handler missing")
     _require("rerunReviewRunPacket" in js, "proof rerun handler missing")
     _require("askReviewRunCoach" in js, "ReviewRun Ask IA coach handler missing")
+    _require("consumeCoachStream" in js, "Ask IA coach SSE consumer missing")
+    _require("/coach/stream" in js, "Ask IA coach stream endpoint missing in UI")
+    _require("autoReassessReviewRunCoach" in js, "ReviewRun auto-reassess coach missing")
+    _require("renderCoachChips" in js, "contextual coach chip renderer missing")
+    _require("chip_entities" in js, "coach chip entity pinning missing")
+    _require('id="repo-coach-thread"' in html, "Ask IA coach thread missing")
     _require("renderReviewRunCoachAnswer" in js, "ReviewRun Ask IA answer renderer missing")
-    _require('includeCurrentRead ? ["Current read", sections.current_read] : null' in js, "Ask IA user-turn answer must include current read")
-    _require("repoCoachInput?.blur();" in js, "Ask IA user-turn answer must release input focus")
-    _require("window.requestAnimationFrame(() =>" in js, "Ask IA user-turn answer must pin chat scroll")
+    _require(
+        'appendCoachSectionCard(sectionsEl, "Current read", sections.current_read)' in js,
+        "Ask IA answer must include current read section",
+    )
+    _require("scrollCoachThread" in js, "Ask IA thread must auto-scroll on new messages")
+    _require("clearCoachContextBubble" in js, "Ask IA must clear stale context before user ask")
     _require("renderReviewRunCoachSuggestions" in js, "Ask IA smart suggestion renderer missing")
     _require("safeCoachSuggestions" in js, "Ask IA suggestion cap/sanitizer missing")
     _require("refreshReviewRunCoachSuggestions" in js, "Ask IA suggestion refresh missing")
@@ -319,8 +330,9 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("repoAskCoach.dataset.userTurn" in js, "Ask IA active user-turn state missing")
     _require("button.dataset.suggestionIndex = String(index)" in js, "Ask IA suggestion entity click index missing")
     _require("message: routedMessage" in js, "Ask IA suggestion click must send message contract")
-    _require("payload.entities = entities" in js, "Ask IA suggestion click must send pinned entities")
-    _require("suggestion?.entities || null" in js, "Ask IA suggestion click must pass entity payload")
+    _require("body.entities = entities" in js, "Ask IA suggestion click must send pinned entities")
+    _require("body.chip_entities = entities" in js, "Ask IA suggestion click must pin chip entities")
+    _require("chip?.entities || null" in js, "Ask IA suggestion click must pass entity payload")
     _require("slice(0, 3)" in js, "Ask IA suggestions must be capped at three")
     _require('prompt: "idk what to do next"' in js, "Ask IA what-now route missing")
     _require('prompt: "approve blocked claims and grant access"' in js, "Ask IA approval override route missing")
@@ -338,12 +350,22 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "proof attach must show unchanged verdict and Portkey state",
     )
     _require("source_of_truth" in js, "ReviewRun packet source of truth missing")
-    _require("repoCoachRead" in js, "Ask IA Coach read state missing")
+    _require("repoCoachThreadScroll" in js, "Ask IA thread scroll container missing")
+    _require("ensureCoachThreadWelcome" in js, "Ask IA welcome thread seed missing")
+    _require(
+        "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync."
+        in js,
+        "Ask IA welcome copy missing from coach thread seed",
+    )
+    _require("appendCoachThreadSystemMessage" in js, "Ask IA system thread messages missing")
+    _require("upsertCoachContextBubble" in js, "Ask IA stage context bubble missing")
     _require("repoCoachStage" in js, "Ask IA stage label missing")
     _require("REVIEW_RUN_STAGE_CHROME" in js, "Ask IA stage chrome map missing")
     _require("setReviewCoachCollapsed" in js, "Ask IA close/open controller missing")
-    _require("Open Ask IA chat" in js, "Ask IA reopen label missing")
-    _require("Minimize Ask IA chat" in js, "Ask IA minimize label missing")
+    _require("Expand chat coach" in js, "Ask IA expand label missing")
+    _require("Minimize chat coach to header" in js, "Ask IA minimize label missing")
+    _require("Exit maximize" in js, "Ask IA exit maximize label missing")
+    _require("syncReviewCoachControlLabels" in js, "Ask IA control label sync missing")
     _require(
         'function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {\n  clearReviewRunCoachUserPrompt();'
         not in js,
@@ -464,11 +486,13 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-ask-floating" in css, "Ask IA floating CSS missing")
     _require("position: fixed !important;" in css, "Ask IA must float above the stage")
     _require("grid-template-columns: minmax(0, 1fr) !important;" in css, "runway must not reserve a sidecar rail")
-    _require(".repo-coach-chat" in css, "Ask IA chat wrapper CSS missing")
-    _require(".repo-coach-last-user" in css, "Ask IA user bubble CSS missing")
-    _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-current-read' in css, "Ask IA user-turn duplicate current read must hide")
-    _require('.repo-ask-sidecar[data-user-turn="true"] .repo-coach-chat' in css, "Ask IA user-turn transcript height CSS missing")
-    _require("min-height: 20rem;" in css, "Ask IA user-turn transcript must reserve answer space")
+    _require(".repo-coach-thread-scroll" in css, "Ask IA unified thread scroll CSS missing")
+    _require(".repo-coach-composer" in css, "Ask IA composer footer CSS missing")
+    _require(".repo-coach-thread" in css, "Ask IA thread CSS missing")
+    _require(".coach-thread-user" in css, "Ask IA user bubble CSS missing")
+    _require(".coach-thread-assistant" in css, "Ask IA assistant bubble CSS missing")
+    _require(".coach-thread-system" in css, "Ask IA system thread message CSS missing")
+    _require(".coach-chip-followup" in css, "Ask IA follow-up chip CSS missing")
     _require(".repo-coach-assistant-head" in css, "Ask IA assistant header CSS missing")
     _require('data-prompt-kind="approval_override"' in css, "Ask IA safety correction state CSS missing")
     _require('data-user-turn="true"' in css, "Ask IA active user-turn CSS missing")
@@ -479,7 +503,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require(".repo-coach-stage-line" in css, "Ask IA stage line CSS missing")
     _require('.repo-ask-floating[data-coach-collapsed="true"]' in css, "Ask IA collapsed floating CSS missing")
     _require(".repo-ask-sidecar .packet-coach-quick-chips" in css, "Ask IA prompts must live in coach CSS")
-    _require("max-height: min(18.5rem, calc(100vh - 1.7rem));" in css, "Ask IA floating chat must stay compact")
+    _require("--ia-coach-float-height" in css, "Ask IA floating chat height CSS variable missing")
     _require("PR 137: recording-ready visual polish" in css, "recording polish CSS missing")
     _require("calc(100vh - 9rem)" in css, "loaded ReviewRun recording viewport guard missing")
     _require(".repo-secondary-link-row" in css, "advanced link row CSS missing")

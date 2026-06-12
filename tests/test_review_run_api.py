@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -24,6 +25,7 @@ from web.app import (
     _review_runs,
     attach_review_run_proof_api,
     coach_review_run_api,
+    coach_review_run_stream_api,
     app,
     create_review_run_api,
     generate_review_run_packet_api,
@@ -85,6 +87,24 @@ def _post_portkey_webhook(body: dict, *, token: str = "demo-token", rehearsal_to
 
 
 class ReviewRunApiTests(TestCase):
+    def _collect_sse(self, response) -> list[dict]:
+        async def _consume() -> list[dict]:
+            chunks: list[str] = []
+            async for chunk in response.body_iterator:
+                if isinstance(chunk, bytes):
+                    chunks.append(chunk.decode("utf-8"))
+                else:
+                    chunks.append(str(chunk))
+            events: list[dict] = []
+            for raw in "".join(chunks).split("\n\n"):
+                line = raw.strip()
+                if not line.startswith("data: "):
+                    continue
+                events.append(json.loads(line.removeprefix("data: ")))
+            return events
+
+        return asyncio.run(_consume())
+
     def test_review_run_api_creates_and_reads_durable_run(self) -> None:
         with TemporaryDirectory() as temp_dir:
             store_dir = Path(temp_dir)
@@ -705,7 +725,10 @@ class ReviewRunApiTests(TestCase):
     def test_review_run_coach_api_stress_prompts_are_state_anchored(self) -> None:
         with TemporaryDirectory() as temp_dir:
             store_dir = Path(temp_dir)
-            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+            with (
+                patch("web.app.REVIEW_RUN_STORE_DIR", store_dir),
+                patch("web.app.COACH_SESSION_DIR", store_dir / "coach_sessions"),
+            ):
                 created = create_review_run_api(
                     ReviewRunCreateRequest(
                         selected_repo={
@@ -821,6 +844,50 @@ class ReviewRunApiTests(TestCase):
                 self.assertEqual(reloaded["answer"]["prompt_kind"], "unrelated")
                 self.assertIn("routing that back", reloaded["answer"]["sections"]["current_read"])
 
+    def test_review_run_coach_stream_api_keeps_packet_locked(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with (
+                patch("web.app.REVIEW_RUN_STORE_DIR", store_dir),
+                patch("web.app.COACH_SESSION_DIR", store_dir / "coach_sessions"),
+            ):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+                generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+
+                response = coach_review_run_stream_api(
+                    run_id,
+                    ReviewRunCoachRequest(prompt="what should I do next?", reassess_trigger="packet_generated"),
+                )
+                events = self._collect_sse(response)
+
+                self.assertEqual(response.media_type, "text/event-stream")
+                self.assertGreaterEqual(len(events), 4)
+                self.assertEqual(events[0]["type"], "thinking")
+                self.assertIn("Decision lock unchanged", [event.get("line") for event in events if event.get("line")][-1])
+                done = events[-1]
+                self.assertEqual(done["type"], "done")
+                self.assertTrue(done["read_only"])
+                self.assertEqual(done["stage"], "packet_generated")
+                self.assertFalse(done["answer"]["approves_access"])
+                self.assertFalse(done["answer"]["safety_boundary"]["external_writes"])
+                self.assertFalse(done["answer"]["safety_boundary"]["portkey_api_call_made"])
+                self.assertIn("Support Ops repo-owner approval", done["answer"]["sections"]["next_human_action"])
+                self.assertTrue((store_dir / "coach_sessions").is_dir())
+
     def test_review_run_rerun_api_rejects_partial_proof(self) -> None:
         with TemporaryDirectory() as temp_dir:
             store_dir = Path(temp_dir)
@@ -883,6 +950,9 @@ class ReviewRunApiTests(TestCase):
         proof_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proof")
         rerun_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/rerun")
         coach_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/coach")
+        coach_stream_route = next(
+            route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/coach/stream"
+        )
         proofgraph_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proofgraph")
 
         self.assertEqual(post_route.methods, {"POST"})
@@ -891,6 +961,7 @@ class ReviewRunApiTests(TestCase):
         self.assertEqual(proof_route.methods, {"POST"})
         self.assertEqual(rerun_route.methods, {"POST"})
         self.assertEqual(coach_route.methods, {"POST"})
+        self.assertEqual(coach_stream_route.methods, {"POST"})
         self.assertEqual(proofgraph_route.methods, {"GET"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:

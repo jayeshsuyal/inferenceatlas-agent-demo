@@ -1,5 +1,10 @@
 const STORAGE_KEY = "ia_session_id";
 const REVIEW_SCOPE_KEY = "ia_review_scope";
+const REVIEW_RUN_STORAGE_KEY = "ia_review_run_id";
+const SELECTED_REPO_STORAGE_KEY = "ia_selected_repo";
+const REVIEW_STAGE_STORAGE_KEY = "ia_review_stage";
+const REVIEW_SCREEN_STORAGE_KEY = "ia_review_screen";
+const INDEX_JOB_STORAGE_KEY = "ia_repo_index_job_id";
 
 const messagesEl = document.getElementById("messages");
 const chatView = document.getElementById("chat-view");
@@ -122,14 +127,56 @@ const repoReviewRequest = document.getElementById("repo-review-request");
 const repoRequestRepoName = document.getElementById("repo-request-repo-name");
 const repoCoachRead = document.getElementById("repo-coach-read");
 const repoCoachAnswer = document.getElementById("repo-coach-answer");
-const repoCoachLastUser = document.getElementById("repo-coach-last-user");
-const repoCoachLastUserText = document.getElementById("repo-coach-last-user-text");
 const repoCoachForm = document.getElementById("repo-coach-form");
 const repoCoachInput = document.getElementById("repo-coach-input");
 const repoAskCoach = document.getElementById("repo-ask-coach");
 const repoCoachBody = document.getElementById("repo-coach-body");
 const repoCoachStage = document.getElementById("repo-coach-stage");
 const repoCoachToggle = document.getElementById("repo-coach-toggle");
+const repoCoachThread = document.getElementById("repo-coach-thread");
+const repoCoachThreadScroll = document.getElementById("repo-coach-thread-scroll");
+const repoCoachFollowupChips = document.getElementById("repo-coach-followup-chips");
+const repoCoachResizeW = document.getElementById("repo-coach-resize-w");
+const repoCoachResizeH = document.getElementById("repo-coach-resize-h");
+const repoCoachResizeCorner = document.getElementById("repo-coach-resize-corner");
+const repoCoachMaximize = document.getElementById("repo-coach-maximize");
+const repoCoachBackdrop = document.getElementById("repo-coach-backdrop");
+const repoCoachIndexSummary = document.getElementById("repo-coach-index-summary");
+const repoCoachIndexSummaryBody = document.getElementById("repo-coach-index-summary-body");
+const reviewFlowSteps = document.getElementById("review-flow-steps");
+const reviewFlowReadonlyBanner = document.getElementById("review-flow-readonly-banner");
+const reviewFlowReadonlyLabel = document.getElementById("review-flow-readonly-label");
+const btnBranchReviewRunStep = document.getElementById("btn-branch-review-run-step");
+const reviewSessionHub = document.getElementById("review-session-hub");
+const reviewSessionHubBubble = document.getElementById("review-session-hub-bubble");
+const reviewSessionHubPanel = document.getElementById("review-session-hub-panel");
+const reviewSessionHubClose = document.getElementById("review-session-hub-close");
+const reviewSessionHubBadge = document.getElementById("review-session-hub-badge");
+const reviewSessionHubAccordion = document.getElementById("review-session-hub-accordion");
+const btnNewReviewRun = document.getElementById("btn-new-review-run");
+let sessionHubSuppressOutsideClose = false;
+
+const REVIEW_RUN_TOOL_LABELS = {
+  repo_index: "GitHub repo index",
+  repo_selected: "Repo attach",
+  repo_indexed: "Repo index complete",
+  packet_generating: "IA Packet generation",
+  packet_generated: "IA Packet",
+  proof_attached: "Proof workbench",
+  packet_regenerated: "Packet rerun",
+  portkey_tested: "Portkey guardrail test",
+  coach_stream: "Ask IA coach stream",
+  ready_to_export: "Export brief",
+};
+const repoIndexTracker = document.getElementById("repo-index-tracker");
+const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
+const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
+const btnShowIndexSummary = document.getElementById("btn-show-index-summary");
+const repoIndexDetailModal = document.getElementById("repo-index-detail-modal");
+const repoIndexDetailBackdrop = document.getElementById("repo-index-detail-backdrop");
+const repoIndexDetailClose = document.getElementById("repo-index-detail-close");
+const repoIndexDetailBody = document.getElementById("repo-index-detail-body");
+const repoIndexDetailTitle = document.getElementById("repo-index-detail-title");
 const repoStageRepoStatus = document.getElementById("repo-stage-repo-status");
 const repoStagePacketStatus = document.getElementById("repo-stage-packet-status");
 const repoStageProofStatus = document.getElementById("repo-stage-proof-status");
@@ -206,8 +253,44 @@ let currentReviewRunPortkeyReceipt = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
+let currentRepoIndexJobId = localStorage.getItem(INDEX_JOB_STORAGE_KEY) || "";
+let repoIndexPollTimer = null;
+let lastReviewRunStage = localStorage.getItem(REVIEW_STAGE_STORAGE_KEY) || "";
+let pendingIndexSummary = "";
+let pendingIndexReport = null;
+const COACH_CHIP_MAX_LABEL = 28;
+const COACH_FLOAT_WIDTH_KEY = "ia_coach_float_width_px";
+const COACH_FLOAT_HEIGHT_KEY = "ia_coach_float_height_px";
+const COACH_MAXIMIZED_WIDTH_KEY = "ia_coach_max_width_px";
+const COACH_MAXIMIZED_HEIGHT_KEY = "ia_coach_max_height_px";
+const COACH_FLOAT_WIDTH_MIN = 280;
+const COACH_FLOAT_WIDTH_MAX = 560;
+const COACH_FLOAT_HEIGHT_MIN = 220;
+const COACH_FLOAT_HEIGHT_MAX = 720;
+const COACH_MAXIMIZED_WIDTH_DEFAULT = 720;
+const COACH_MAXIMIZED_HEIGHT_DEFAULT = 680;
+const COACH_MAXIMIZED_WIDTH_MAX = 1200;
+const COACH_MAXIMIZED_HEIGHT_MAX = 960;
+const STAGE_REASSESS_PROMPTS = {
+  repo_not_connected: "What should I do first to start a ReviewRun?",
+  repo_selected: "What will IA review when I generate the packet for this repo?",
+  packet_generating: "What is IA checking while the packet generates?",
+  packet_generated: "What proof is still missing before this review can move?",
+  proof_attached: "Proof is attached. What should change when I regenerate the packet?",
+  packet_regenerated: "What changed after the packet rerun?",
+  ready_to_export: "What changed in Portkey and blocked scope after rerun?",
+  portkey_tested: "Summarize the Portkey guardrail read for this ReviewRun.",
+};
 let currentReviewRunCoachSuggestions = [];
-let reviewRunScreenOverride = null;
+let reviewRunScreenOverride = localStorage.getItem(REVIEW_SCREEN_STORAGE_KEY) || null;
+let reviewRunReadOnlyScreen = null;
+const REVIEW_FLOW_STEPS = [
+  { id: "repo_setup", label: "Connect & index", detail: "Choose one GitHub repo" },
+  { id: "packet_decision", label: "IA Packet", detail: "Generate packet verdict" },
+  { id: "proof_workbench", label: "Attach proof", detail: "Human proof receipts" },
+  { id: "packet_rerun", label: "Regenerate", detail: "Rerun with proof" },
+  { id: "portkey_gate", label: "Portkey gate", detail: "Test guardrail locally" },
+];
 let walkthroughPayload = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
@@ -998,66 +1081,798 @@ function safeCoachSuggestions(suggestions = []) {
     });
 }
 
-function renderReviewRunCoachSuggestions(suggestions = []) {
-  if (!packetCoachQuickChips) return;
-  currentReviewRunCoachSuggestions = safeCoachSuggestions(suggestions);
-  packetCoachQuickChips.replaceChildren();
-  packetCoachQuickChips.dataset.suggestionMode = "contract";
-  currentReviewRunCoachSuggestions.forEach((suggestion, index) => {
+function normalizeCoachSuggestion(input) {
+  if (typeof input === "string") {
+    const text = input.trim();
+    if (!text) return null;
+    return {
+      label: text.length > COACH_CHIP_MAX_LABEL ? `${text.slice(0, COACH_CHIP_MAX_LABEL - 1)}…` : text,
+      message: text,
+      entities: null,
+    };
+  }
+  if (input && typeof input === "object" && typeof input.message === "string" && input.message.trim()) {
+    const labelSource = String(input.label || input.message).trim();
+    return {
+      label:
+        labelSource.length > COACH_CHIP_MAX_LABEL
+          ? `${labelSource.slice(0, COACH_CHIP_MAX_LABEL - 1)}…`
+          : labelSource,
+      message: input.message.trim(),
+      entities: input.entities && typeof input.entities === "object" ? input.entities : null,
+    };
+  }
+  return null;
+}
+
+function renderCoachChips(container, suggestions, onPick, { disabled = false, hiddenWhenEmpty = true } = {}) {
+  if (!container) return;
+  const chips = (Array.isArray(suggestions) ? suggestions : [])
+    .map(normalizeCoachSuggestion)
+    .filter(Boolean)
+    .slice(0, 3);
+  container.replaceChildren();
+  if (!chips.length) {
+    container.hidden = hiddenWhenEmpty;
+    return;
+  }
+  container.hidden = false;
+  chips.forEach((chip, index) => {
     const button = document.createElement("button");
     button.type = "button";
-    button.dataset.askPrompt = suggestion.message;
+    button.className = "coach-chip";
     button.dataset.suggestionIndex = String(index);
-    button.setAttribute("aria-label", suggestion.message);
-    button.textContent = suggestion.label;
-    button.disabled = reviewRunCoachBusy;
-    button.setAttribute("aria-disabled", String(reviewRunCoachBusy));
-    packetCoachQuickChips.appendChild(button);
+    button.textContent = chip.label;
+    button.title = chip.message;
+    button.disabled = disabled;
+    button.setAttribute("aria-disabled", String(disabled));
+    button.addEventListener("click", () => {
+      if (disabled) return;
+      onPick(chip);
+    });
+    container.appendChild(button);
   });
+}
+
+function handleCoachChipPick(chip) {
+  const entities = chip?.entities || null;
+  if (entities?.chip_action === "open_proofgraph") {
+    window.location.assign(reviewRunProofGraphUrl());
+    return;
+  }
+  setReviewCoachCollapsed(false);
+  askReviewRunCoach(chip?.message || chip?.label || "", entities);
+}
+
+function renderCoachSuggestionSets(suggestions = [], { followUp = false, disabled = false } = {}) {
+  const values = safeCoachSuggestions(suggestions);
+  if (followUp) {
+    renderCoachChips(repoCoachFollowupChips, values, handleCoachChipPick, { disabled });
+    if (packetCoachQuickChips) {
+      packetCoachQuickChips.hidden = true;
+      packetCoachQuickChips.replaceChildren();
+    }
+    return;
+  }
+  currentReviewRunCoachSuggestions = values;
+  renderCoachChips(packetCoachQuickChips, values, handleCoachChipPick, { disabled });
+  if (repoCoachFollowupChips) {
+    repoCoachFollowupChips.hidden = true;
+    repoCoachFollowupChips.replaceChildren();
+  }
+}
+
+function renderReviewRunCoachSuggestions(suggestions = []) {
+  renderCoachSuggestionSets(suggestions, { followUp: false, disabled: reviewRunCoachBusy });
+}
+
+function renderPacketCoachSuggestions(suggestions, { container = packetInlineCoachPrompts, disabled = false } = {}) {
+  renderCoachChips(
+    container,
+    suggestions,
+    (chip) => askPacketInlineCoach(chip?.message || chip?.label || "", chip?.entities || null),
+    { disabled }
+  );
+}
+
+function coachPlainText(text) {
+  return String(text || "").replace(/`/g, "");
+}
+
+function setCoachFloatingExpanded(expanded) {
+  if (!repoAskCoach) return;
+  repoAskCoach.classList.toggle("repo-coach-expanded", Boolean(expanded));
+}
+
+function applyCoachFloatingSize(widthPx, heightPx, { maximized = false } = {}) {
+  if (!repoAskCoach) return;
+  const widthMax = maximized ? COACH_MAXIMIZED_WIDTH_MAX : COACH_FLOAT_WIDTH_MAX;
+  const heightMax = maximized ? COACH_MAXIMIZED_HEIGHT_MAX : COACH_FLOAT_HEIGHT_MAX;
+  const width = Math.min(widthMax, Math.max(COACH_FLOAT_WIDTH_MIN, Math.round(widthPx)));
+  const height = Math.min(heightMax, Math.max(COACH_FLOAT_HEIGHT_MIN, Math.round(heightPx)));
+  repoAskCoach.style.setProperty("--ia-coach-float-width", `${width}px`);
+  repoAskCoach.style.setProperty("--ia-coach-float-height", `${height}px`);
+  repoAskCoach.style.setProperty("--ia-coach-float-max-height", `${height}px`);
+  try {
+    if (maximized) {
+      localStorage.setItem(COACH_MAXIMIZED_WIDTH_KEY, String(width));
+      localStorage.setItem(COACH_MAXIMIZED_HEIGHT_KEY, String(height));
+    } else {
+      localStorage.setItem(COACH_FLOAT_WIDTH_KEY, String(width));
+      localStorage.setItem(COACH_FLOAT_HEIGHT_KEY, String(height));
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function restoreCoachFloatingSize() {
+  try {
+    const width = Number(localStorage.getItem(COACH_FLOAT_WIDTH_KEY));
+    const height = Number(localStorage.getItem(COACH_FLOAT_HEIGHT_KEY));
+    if (Number.isFinite(width) && Number.isFinite(height)) {
+      applyCoachFloatingSize(width, height);
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function initCoachFloatingResize() {
+  if (!repoAskCoach) return;
+  restoreCoachFloatingSize();
+
+  const bindResize = (handle, mode) => {
+    if (!handle) return;
+    let dragging = false;
+    const stopDrag = () => {
+      dragging = false;
+      handle.classList.remove("is-dragging");
+      document.body.classList.remove("coach-resize-active", "coach-resize-active-ns", "coach-resize-active-nwse");
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("pointercancel", stopDrag);
+    };
+    const onPointerMove = (event) => {
+      if (!dragging) return;
+      const rect = repoAskCoach.getBoundingClientRect();
+      let width = rect.width;
+      let height = rect.height;
+      if (mode === "width" || mode === "corner") {
+        width = rect.right - event.clientX;
+      }
+      if (mode === "height" || mode === "corner") {
+        height = rect.bottom - event.clientY;
+      }
+      const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+      applyCoachFloatingSize(width, height, { maximized });
+    };
+    handle.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      dragging = true;
+      handle.classList.add("is-dragging");
+      document.body.classList.add(
+        mode === "height" ? "coach-resize-active-ns" : mode === "corner" ? "coach-resize-active-nwse" : "coach-resize-active"
+      );
+      handle.setPointerCapture(event.pointerId);
+      window.addEventListener("pointermove", onPointerMove);
+      window.addEventListener("pointerup", stopDrag);
+      window.addEventListener("pointercancel", stopDrag);
+    });
+  };
+
+  bindResize(repoCoachResizeW, "width");
+  bindResize(repoCoachResizeH, "height");
+  bindResize(repoCoachResizeCorner, "corner");
+}
+
+function syncReviewCoachControlLabels() {
+  const collapsed = repoAskCoach?.dataset.coachCollapsed === "true";
+  const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+  if (repoCoachToggle) {
+    repoCoachToggle.setAttribute("aria-expanded", String(!collapsed));
+    repoCoachToggle.setAttribute(
+      "aria-label",
+      collapsed ? "Expand chat coach" : "Minimize chat coach to header"
+    );
+    repoCoachToggle.textContent = collapsed ? "Expand" : "Minimize";
+  }
+  if (repoCoachMaximize) {
+    repoCoachMaximize.textContent = maximized ? "Exit maximize" : "Maximize";
+    repoCoachMaximize.setAttribute(
+      "aria-label",
+      maximized ? "Exit maximize and dock chat coach" : "Maximize chat coach"
+    );
+  }
+}
+
+function setReviewCoachMaximized(maximized) {
+  const on = Boolean(maximized);
+  if (repoAskCoach) repoAskCoach.dataset.coachMaximized = String(on);
+  if (repoCoachBackdrop) repoCoachBackdrop.hidden = !on;
+  if (on) {
+    setReviewCoachCollapsed(false);
+    setCoachFloatingExpanded(true);
+    try {
+      const width = Number(localStorage.getItem(COACH_MAXIMIZED_WIDTH_KEY)) || COACH_MAXIMIZED_WIDTH_DEFAULT;
+      const height = Number(localStorage.getItem(COACH_MAXIMIZED_HEIGHT_KEY)) || COACH_MAXIMIZED_HEIGHT_DEFAULT;
+      applyCoachFloatingSize(width, height, { maximized: true });
+    } catch (_) {
+      applyCoachFloatingSize(COACH_MAXIMIZED_WIDTH_DEFAULT, COACH_MAXIMIZED_HEIGHT_DEFAULT, { maximized: true });
+    }
+    if (pendingIndexSummary) appendCoachIndexSummaryToThread(pendingIndexSummary);
+  } else {
+    restoreCoachFloatingSize();
+  }
+  syncReviewCoachControlLabels();
+}
+
+function persistReviewRunState() {
+  try {
+    if (currentReviewRun?.run_id) {
+      localStorage.setItem(REVIEW_RUN_STORAGE_KEY, currentReviewRun.run_id);
+    }
+    const repo = selectedReviewRepo();
+    if (repo) {
+      localStorage.setItem(SELECTED_REPO_STORAGE_KEY, JSON.stringify(repo));
+    }
+    const stage = reviewRunUiStage();
+    localStorage.setItem(REVIEW_STAGE_STORAGE_KEY, stage);
+    const screen = reviewRunActiveScreen(stage);
+    if (screen && screen !== "repo_setup") {
+      localStorage.setItem(REVIEW_SCREEN_STORAGE_KEY, screen);
+    } else {
+      localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+    }
+    if (currentRepoIndexJobId) {
+      localStorage.setItem(INDEX_JOB_STORAGE_KEY, currentRepoIndexJobId);
+    }
+  } catch (_) {
+    /* ignore storage errors */
+  }
+}
+
+function renderRepoIndexTracker(job) {
+  if (!repoIndexTracker) return;
+  const status = job?.status || "idle";
+  if (!job || status === "idle") {
+    repoIndexTracker.hidden = true;
+    return;
+  }
+  repoIndexTracker.hidden = false;
+  const pct = Number(job.progress_pct || 0);
+  if (repoIndexTrackerBar) repoIndexTrackerBar.value = pct;
+  const phase = job.phase ? job.phase.replace(/_/g, " ") : "indexing";
+  if (repoIndexTrackerLabel) {
+    repoIndexTrackerLabel.textContent =
+      status === "completed"
+        ? `Indexed ${job.files_indexed || 0} files · ${(job.digest_chars || 0).toLocaleString()} chars`
+        : `${phase}… ${pct}%`;
+  }
+  if (btnShowIndexSummary) {
+    btnShowIndexSummary.hidden = status !== "completed" || !job.summary;
+  }
+  if (status === "completed" && job.summary) {
+    pendingIndexSummary = job.summary;
+    if (job.report) pendingIndexReport = job.report;
+    appendCoachIndexSummaryToThread(job.summary);
+    persistReviewRunState();
+  }
+}
+
+function closeRepoIndexDetailModal() {
+  if (!repoIndexDetailModal) return;
+  repoIndexDetailModal.hidden = true;
+  document.body.classList.remove("repo-index-detail-open");
+}
+
+function renderRepoIndexBarChart(rows, { valueKey = "count", maxBars = 8 } = {}) {
+  const data = (rows || []).slice(0, maxBars);
+  if (!data.length) return `<p class="repo-index-detail-empty">No category data yet.</p>`;
+  const max = Math.max(...data.map((row) => Number(row[valueKey] || 0)), 1);
+  const width = 280;
+  const barHeight = 18;
+  const gap = 8;
+  const height = data.length * (barHeight + gap) + 8;
+  const bars = data
+    .map((row, index) => {
+      const value = Number(row[valueKey] || 0);
+      const barWidth = Math.max(8, Math.round((value / max) * (width - 110)));
+      const y = 8 + index * (barHeight + gap);
+      return `
+        <g class="repo-index-bar-row">
+          <text x="0" y="${y + 13}" class="repo-index-chart-label">${escapeHtml(row.label || row.key || "")}</text>
+          <rect x="108" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" class="repo-index-chart-bar"></rect>
+          <text x="${112 + barWidth}" y="${y + 13}" class="repo-index-chart-value">${escapeHtml(String(value))}</text>
+        </g>
+      `;
+    })
+    .join("");
+  return `<svg class="repo-index-bar-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Files by category">${bars}</svg>`;
+}
+
+function renderRepoIndexDonut(pct) {
+  const value = Math.max(0, Math.min(100, Number(pct || 0)));
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - value / 100);
+  return `
+    <svg class="repo-index-donut" viewBox="0 0 120 120" role="img" aria-label="Index completeness ${value}%">
+      <circle cx="60" cy="60" r="${radius}" class="repo-index-donut-track"></circle>
+      <circle cx="60" cy="60" r="${radius}" class="repo-index-donut-fill" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+      <text x="60" y="58" class="repo-index-donut-pct">${value}%</text>
+      <text x="60" y="74" class="repo-index-donut-caption">scoped</text>
+    </svg>
+  `;
+}
+
+function renderRepoIndexTierChart(rows) {
+  const data = rows || [];
+  if (!data.length) return "";
+  const max = Math.max(...data.map((row) => Number(row.chars || 0)), 1);
+  return `
+    <div class="repo-index-tier-bars">
+      ${data
+        .map((row) => {
+          const pct = Math.round((Number(row.chars || 0) / max) * 100);
+          return `
+            <div class="repo-index-tier-row">
+              <span>${escapeHtml(row.label || row.key || "")}</span>
+              <div class="repo-index-tier-track"><div class="repo-index-tier-fill" style="width:${pct}%"></div></div>
+              <code>${Number(row.chars || 0).toLocaleString()} chars</code>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderRepoIndexDetailPresentation(report) {
+  if (!report) return `<p class="repo-index-detail-empty">No structured index report yet.</p>`;
+  const repo = report.full_name || currentIndexedRepoName() || "Selected repo";
+  if (repoIndexDetailTitle) repoIndexDetailTitle.textContent = repo;
+  const stats = [
+    ["Paths discovered", report.total_paths ?? "—"],
+    ["Files excerpted", report.fetched_files ?? "—"],
+    ["Digest size", `${Number(report.digest_chars || 0).toLocaleString()} chars`],
+    ["README", report.readme_found ? "Found" : "Missing"],
+  ];
+  const topPaths = (report.top_paths || [])
+    .map(
+      (row) =>
+        `<li><code>${escapeHtml(row.path || "")}</code> <span>${escapeHtml(row.category || "")} · score ${escapeHtml(String(row.score ?? ""))}</span></li>`
+    )
+    .join("");
+  const unfetched = (report.high_relevance_unfetched || [])
+    .map((row) => `<li><code>${escapeHtml(row.path || "")}</code> <span>${escapeHtml(row.category || "")}</span></li>`)
+    .join("");
+  const stageFetches = (report.stage_fetches || [])
+    .slice(-5)
+    .map((row) => `<li>${escapeHtml((row.patterns || []).join(", "))} → ${(row.fetched || []).length} files</li>`)
+    .join("");
+  const flags = [
+    report.preindexed ? "Pre-indexed demo artifact" : null,
+    report.truncated_tree ? "GitHub tree truncated — subtrees expanded" : null,
+    report.index_complete ? "Tier-1 background index complete" : "Background index in progress",
+    report.enterprise_search?.enabled ? "Enterprise code search enabled" : null,
+  ].filter(Boolean);
+  return `
+    <p class="repo-index-detail-narrative">${escapeHtml(coachPlainText(report.narrative || pendingIndexSummary || ""))}</p>
+    <div class="repo-index-detail-stats">
+      ${stats
+        .map(
+          ([label, value]) => `
+        <div class="repo-index-detail-stat">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(String(value))}</strong>
+        </div>`
+        )
+        .join("")}
+    </div>
+    <div class="repo-index-detail-grid">
+      <section class="repo-index-detail-card">
+        <h3>Files by category</h3>
+        ${renderRepoIndexBarChart(report.category_chart)}
+      </section>
+      <section class="repo-index-detail-card repo-index-detail-card-donut">
+        <h3>Index completeness</h3>
+        ${renderRepoIndexDonut(report.completeness_pct)}
+        <ul class="repo-index-detail-flags">${flags.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+      </section>
+      <section class="repo-index-detail-card span-2">
+        <h3>Chars by indexing tier</h3>
+        ${renderRepoIndexTierChart(report.tier_chart)}
+      </section>
+      <section class="repo-index-detail-card">
+        <h3>Top excerpted paths</h3>
+        <ul class="repo-index-detail-list">${topPaths || "<li>No files excerpted yet.</li>"}</ul>
+      </section>
+      <section class="repo-index-detail-card">
+        <h3>High relevance (not yet fetched)</h3>
+        <ul class="repo-index-detail-list">${unfetched || "<li>All high-relevance paths fetched.</li>"}</ul>
+      </section>
+      ${
+        stageFetches
+          ? `<section class="repo-index-detail-card span-2"><h3>Stage-triggered fetches</h3><ul class="repo-index-detail-list">${stageFetches}</ul></section>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+function currentIndexedRepoName() {
+  return (
+    currentReviewRun?.selected_repo?.full_name
+    || selectedGithubRepos[0]?.full_name
+    || ""
+  );
+}
+
+async function openRepoIndexDetailModal() {
+  if (!repoIndexDetailModal || !repoIndexDetailBody) return;
+  const repo = currentIndexedRepoName();
+  let report = pendingIndexReport;
+  if (repo && sessionId) {
+    try {
+      const runQuery = currentReviewRun?.run_id
+        ? `&run_id=${encodeURIComponent(currentReviewRun.run_id)}`
+        : "";
+      const res = await fetch(
+        `/api/sessions/${encodeURIComponent(sessionId)}/repos/${encodeURIComponent(repo)}/index-report${runQuery ? `?${runQuery.slice(1)}` : ""}`
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.report) report = data.report;
+    } catch (_) {
+      /* fall back to cached report */
+    }
+  }
+  repoIndexDetailBody.innerHTML = renderRepoIndexDetailPresentation(report);
+  repoIndexDetailModal.hidden = false;
+  document.body.classList.add("repo-index-detail-open");
+}
+
+async function fetchReviewRunRepoPaths(patterns) {
+  if (!currentReviewRun?.run_id || !patterns?.length) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/repo-index/fetch`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, patterns }),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    if (data.report) pendingIndexReport = data.report;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function pollRepoIndexJob(jobId) {
+  if (!jobId) return;
+  try {
+    const res = await fetch(`/api/index-jobs/${encodeURIComponent(jobId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return;
+    renderRepoIndexTracker(data.job);
+    if (data.job?.status === "completed" || data.job?.status === "failed") {
+      if (repoIndexPollTimer) {
+        clearInterval(repoIndexPollTimer);
+        repoIndexPollTimer = null;
+      }
+      if (currentReviewRun?.run_id) {
+        await refreshReviewRunContextBundle();
+      }
+    }
+  } catch (_) {
+    /* polling is best-effort */
+  }
+}
+
+function startRepoIndexPolling(jobId) {
+  currentRepoIndexJobId = jobId || "";
+  if (!jobId) return;
+  localStorage.setItem(INDEX_JOB_STORAGE_KEY, jobId);
+  if (repoIndexPollTimer) clearInterval(repoIndexPollTimer);
+  void pollRepoIndexJob(jobId);
+  repoIndexPollTimer = setInterval(() => pollRepoIndexJob(jobId), 1800);
+}
+
+async function startBackgroundRepoIndex(fullName) {
+  if (!currentReviewRun?.run_id || !fullName) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/repo-index/start`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, full_name: fullName }),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    startRepoIndexPolling(data.job_id);
+    renderRepoIndexTracker({ status: "queued", phase: "queued", progress_pct: 2 });
+    return data.job_id;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function refreshReviewRunContextBundle() {
+  if (!currentReviewRun?.run_id) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/context?session_id=${encodeURIComponent(sessionId)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    if (data.index_summary) {
+      pendingIndexSummary = data.index_summary;
+      if (btnShowIndexSummary) btnShowIndexSummary.hidden = false;
+    }
+    if (data.index_report) pendingIndexReport = data.index_report;
+    if (data.stage) lastReviewRunStage = data.stage;
+    return data;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function restoreReviewRunSession({ preferredRunId = "" } = {}) {
+  const urlState = parseReviewRunFromUrl();
+  const runId = preferredRunId || urlState.runId || localStorage.getItem(REVIEW_RUN_STORAGE_KEY);
+  if (!runId) {
+    renderReviewFlowProgress();
+    void refreshReviewRunRail();
+    return false;
+  }
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return false;
+    currentReviewRun = data.run;
+    const repoJson = localStorage.getItem(SELECTED_REPO_STORAGE_KEY);
+    if (repoJson) {
+      selectedGithubRepos = [JSON.parse(repoJson)];
+      renderGithubChips();
+      renderReviewRepoSummary(selectedGithubRepos[0]);
+    }
+    lastReviewRunStage = localStorage.getItem(REVIEW_STAGE_STORAGE_KEY) || currentReviewRun.stage || "";
+    const jobId = localStorage.getItem(INDEX_JOB_STORAGE_KEY);
+    if (jobId) startRepoIndexPolling(jobId);
+    await refreshReviewRunContextBundle();
+    const runPacket = currentReviewRun?.packet;
+    if (runPacket?.packet_id && !packetDetail?.packet_reference?.packet_id) {
+      packetDetail = {
+        packet_reference: {
+          packet_id: runPacket.packet_id,
+          revision_id: runPacket.revision_id,
+        },
+        decision: { verdict: runPacket.verdict },
+        review_run: currentReviewRun,
+      };
+      if (repoProofCockpit) repoProofCockpit.dataset.loaded = "true";
+      renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+    }
+    const savedScreen = urlState.screen || localStorage.getItem(REVIEW_SCREEN_STORAGE_KEY) || "";
+    if (savedScreen && reviewRunScreenAccessible(savedScreen)) {
+      reviewRunScreenOverride = savedScreen;
+    }
+    setReviewRunUiStage(reviewRunUiStage(packetDetail), packetDetail);
+    syncReviewRunUrl({ screen: reviewRunActiveScreen(reviewRunUiStage(packetDetail)), runId, replace: true });
+    if (packetDetail?.packet_reference?.packet_id) {
+      setCoachForPacket(packetDetail, packetPortkeyPreview);
+    } else {
+      void autoReassessReviewRunCoach(currentReviewRun.stage || "repo_selected");
+    }
+    void refreshReviewRunCoachSuggestions();
+    persistReviewRunState();
+    renderReviewFlowProgress();
+    void refreshReviewRunRail();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function scrollCoachThread() {
+  const scrollEl = repoCoachThreadScroll || repoCoachThread?.closest(".repo-coach-thread-scroll");
+  if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+}
+
+function appendCoachThreadSystemMessage(title, body, { marker = "", replace = true, runId = "" } = {}) {
+  if (!repoCoachThread || !body) return null;
+  if (marker && replace) {
+    repoCoachThread.querySelector(`[data-coach-marker="${marker}"]`)?.remove();
+  }
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-system";
+  if (marker) row.dataset.coachMarker = marker;
+  if (runId) row.dataset.runId = runId;
+  row.innerHTML = `
+    <span class="coach-system-label">${escapeHtml(title)}</span>
+    <div class="coach-system-body">${escapeHtml(coachPlainText(body))}</div>
+  `;
+  repoCoachThread.appendChild(row);
+  setCoachFloatingExpanded(true);
+  scrollCoachThread();
+  return row;
+}
+
+function appendCoachIndexSummaryToThread(summary) {
+  if (!summary) return;
+  appendCoachThreadSystemMessage("Repository index", summary, { marker: "index-summary" });
+}
+
+function updateCoachPinnedRead(text) {
+  if (!text) return;
+  appendCoachThreadSystemMessage("Current read", text, { marker: "pinned-read" });
+}
+
+function clearCoachContextBubble() {
+  repoCoachThread?.querySelector('[data-coach-marker="context"]')?.remove();
+}
+
+function upsertCoachContextBubble(sections) {
+  if (!repoCoachThread || !sections || reviewRunCoachBusy) return;
+  clearCoachContextBubble();
+  const { row, sectionsEl } = createCoachAssistantBubble();
+  row.classList.add("coach-thread-context");
+  row.dataset.coachMarker = "context";
+  appendCoachSectionCard(sectionsEl, "Current read", sections.current_read);
+  appendCoachSectionCard(sectionsEl, "What blocks movement", sections.what_blocks_movement);
+  appendCoachSectionCard(sectionsEl, "Next human action", sections.next_human_action);
+  appendCoachSectionCard(sectionsEl, "Downstream impact", sections.downstream_impact);
+  appendCoachSectionCard(sectionsEl, "Safety", sections.safety);
+  repoCoachThread.appendChild(row);
+  setCoachFloatingExpanded(true);
+  scrollCoachThread();
+}
+
+function ensureCoachThreadWelcome() {
+  if (!repoCoachThread || repoCoachThread.children.length) return;
+  appendCoachThreadSystemMessage(
+    "Ask IA",
+    "I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.",
+    { marker: "welcome", replace: false }
+  );
+}
+
+function appendCoachThreadUserMessage(text) {
+  if (!repoCoachThread || !text) return;
+  setCoachFloatingExpanded(true);
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-user";
+  row.innerHTML = `<p>${escapeHtml(coachPlainText(text))}</p>`;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+function appendCoachThreadThinking() {
+  if (!repoCoachThread) return null;
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-thinking";
+  row.innerHTML = `
+    <p class="coach-thinking-title">Thinking…</p>
+    <ul class="coach-thinking-log"></ul>
+  `;
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+  return { row, list: row.querySelector(".coach-thinking-log") };
+}
+
+function appendCoachThreadThinkingLine(listEl, line) {
+  if (!listEl || !line) return;
+  const li = document.createElement("li");
+  li.textContent = line;
+  listEl.appendChild(li);
+  scrollCoachThread();
+}
+
+function createCoachAssistantBubble() {
+  const row = document.createElement("div");
+  row.className = "coach-thread-msg coach-thread-assistant";
+  const bubble = document.createElement("div");
+  bubble.className = "coach-assistant-bubble";
+  const narration = document.createElement("p");
+  narration.className = "coach-assistant-narration";
+  narration.hidden = true;
+  const sections = document.createElement("div");
+  sections.className = "coach-assistant-sections";
+  bubble.appendChild(narration);
+  bubble.appendChild(sections);
+  row.appendChild(bubble);
+  return { row, narrationEl: narration, sectionsEl: sections };
+}
+
+function appendCoachSectionCard(sectionsEl, label, value) {
+  if (!sectionsEl || !value) return;
+  const card = document.createElement("div");
+  card.className = "coach-section-card";
+  card.innerHTML = `
+    <span>${escapeHtml(label)}</span>
+    <p>${escapeHtml(coachPlainText(value))}</p>
+  `;
+  sectionsEl.appendChild(card);
+}
+
+function appendCoachAssistantMessage(answer) {
+  if (!repoCoachThread || !answer) return;
+  const sections = answer.sections || {};
+  const narration =
+    answer.display_narration ||
+    answer.governance_narration ||
+    (answer.narration_live ? answer.narration : "") ||
+    "";
+  const { row, narrationEl, sectionsEl } = createCoachAssistantBubble();
+  if (narration) {
+    narrationEl.hidden = false;
+    narrationEl.textContent = coachPlainText(narration);
+  }
+  appendCoachSectionCard(sectionsEl, "What blocks movement", sections.what_blocks_movement);
+  appendCoachSectionCard(sectionsEl, "Next human action", sections.next_human_action);
+  appendCoachSectionCard(sectionsEl, "Downstream impact", sections.downstream_impact);
+  appendCoachSectionCard(sectionsEl, "Safety", sections.safety);
+  repoCoachThread.appendChild(row);
+  scrollCoachThread();
+}
+
+async function consumeCoachStream(response, thinkingUi, assistantParts) {
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const chunks = buffer.split("\n\n");
+    buffer = chunks.pop() || "";
+    for (const chunk of chunks) {
+      const line = chunk.trim();
+      if (!line.startsWith("data:")) continue;
+      let payload;
+      try {
+        payload = JSON.parse(line.slice(5).trim());
+      } catch {
+        continue;
+      }
+      if (payload.type === "thinking" && payload.line) {
+        appendCoachThreadThinkingLine(thinkingUi?.list, payload.line);
+      } else if (payload.type === "pinned" && payload.current_read) {
+        updateCoachPinnedRead(payload.current_read);
+      } else if (payload.type === "section" && payload.label && payload.value) {
+        appendCoachSectionCard(assistantParts.sectionsEl, payload.label, payload.value);
+        scrollCoachThread();
+      } else if (payload.type === "narration_chunk" && payload.text) {
+        assistantParts.narrationEl.hidden = false;
+        assistantParts.narrationEl.textContent += payload.text;
+        scrollCoachThread();
+      } else if (payload.type === "done") {
+        return payload;
+      } else if (payload.type === "error") {
+        throw new Error(payload.detail || "Coach stream failed");
+      }
+    }
+  }
+  throw new Error("Coach stream ended without a reply");
+}
+
+function removeCoachThreadNode(parts) {
+  if (parts?.row?.parentNode) parts.row.parentNode.removeChild(parts.row);
 }
 
 function renderReviewRunCoachAnswer(answer) {
   const sections = answer?.sections || {};
-  const promptKind = String(answer?.prompt_kind || "current_read").trim() || "current_read";
-  if (repoCoachRead && sections.current_read) {
-    repoCoachRead.textContent = sections.current_read.replace(/`/g, "");
-  }
-  if (!repoCoachAnswer) return;
-  const includeCurrentRead = repoAskCoach?.dataset.userTurn === "true" && sections.current_read;
-  const rows = [
-    includeCurrentRead ? ["Current read", sections.current_read] : null,
-    ["What blocks movement", sections.what_blocks_movement],
-    ["Next human action", sections.next_human_action],
-    ["Downstream impact", sections.downstream_impact],
-    ["Safety", sections.safety],
-  ].filter((row) => row && row[1]);
-  repoCoachAnswer.hidden = !rows.length;
-  repoCoachAnswer.dataset.promptKind = promptKind;
-  repoCoachAnswer.innerHTML = rows
-    .map(
-      ([label, value]) => `
-        <div class="repo-coach-answer-row">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(String(value).replace(/`/g, ""))}</strong>
-        </div>
-      `
-    )
-    .join("");
-  repoCoachAnswer.insertAdjacentHTML(
-    "afterbegin",
-    `
-      <div class="repo-coach-assistant-head">
-        <span>IA answered</span>
-        <strong>${escapeHtml(coachPromptKindLabel(promptKind))}</strong>
-      </div>
-    `
-  );
-  if (repoCoachBody && repoAskCoach?.dataset.userTurn === "true") {
-    repoCoachInput?.blur();
-    repoCoachBody.scrollTop = 0;
-    window.requestAnimationFrame(() => {
-      repoCoachBody.scrollTop = 0;
-    });
+  if (Object.keys(sections).length) upsertCoachContextBubble(sections);
+  if (repoCoachAnswer) {
+    repoCoachAnswer.hidden = true;
+    repoCoachAnswer.innerHTML = "";
+    repoCoachAnswer.removeAttribute("data-prompt-kind");
   }
 }
 
@@ -1111,16 +1926,10 @@ function coachPromptKindLabel(kind) {
 function setReviewRunCoachUserPrompt(prompt) {
   const message = String(prompt || "").trim();
   if (repoAskCoach) repoAskCoach.dataset.userTurn = String(Boolean(message));
-  if (!repoCoachLastUser || !repoCoachLastUserText) return;
-  repoCoachLastUser.hidden = !message;
-  repoCoachLastUserText.textContent = message;
 }
 
 function clearReviewRunCoachUserPrompt() {
   if (repoAskCoach) repoAskCoach.dataset.userTurn = "false";
-  if (!repoCoachLastUser || !repoCoachLastUserText) return;
-  repoCoachLastUser.hidden = true;
-  repoCoachLastUserText.textContent = "";
 }
 
 function selectedReviewRepoName() {
@@ -1183,16 +1992,12 @@ function updateReviewRunCoachChrome(stage) {
 
 function setReviewCoachCollapsed(collapsed) {
   const isCollapsed = Boolean(collapsed);
+  if (isCollapsed && repoAskCoach?.dataset.coachMaximized === "true") {
+    setReviewCoachMaximized(false);
+  }
   if (repoAskCoach) repoAskCoach.dataset.coachCollapsed = String(isCollapsed);
   if (repoCoachBody) repoCoachBody.hidden = isCollapsed;
-  if (repoCoachToggle) {
-    repoCoachToggle.setAttribute("aria-expanded", String(!isCollapsed));
-    repoCoachToggle.setAttribute(
-      "aria-label",
-      isCollapsed ? "Open Ask IA chat" : "Minimize Ask IA chat"
-    );
-    repoCoachToggle.textContent = isCollapsed ? "Open Ask IA" : "Minimize";
-  }
+  syncReviewCoachControlLabels();
 }
 
 function reviewRunUiStage(packet = packetDetail) {
@@ -1231,13 +2036,567 @@ function reviewRunVisibleScreens(stage) {
   return [reviewRunActiveScreen(stage)];
 }
 
+function reviewRunNaturalScreen(stage = reviewRunUiStage()) {
+  const saved = reviewRunScreenOverride;
+  reviewRunScreenOverride = null;
+  const screen = reviewRunActiveScreen(stage);
+  reviewRunScreenOverride = saved;
+  return screen;
+}
+
+function reviewRunFlowContext(packet = packetDetail) {
+  const packetRef = packet?.packet_reference || currentReviewRun?.packet || {};
+  const proof = packet?.proof_resolution || {};
+  const delta = packet?.review_delta || {};
+  return {
+    hasPacket: Boolean(packetRef.packet_id || packetRef.revision_id),
+    proofReady: Boolean(proof.ready_for_rerun || currentReviewRun?.packet?.ready_for_rerun),
+    rerunComplete: Boolean(delta.packet_changed || packet?.review_run?.stage === "ready_to_export"),
+    portkeyTested: Boolean(currentReviewRunPortkeyTest),
+  };
+}
+
+function reviewRunScreenAccessible(screenId, ctx = reviewRunFlowContext()) {
+  const stage = reviewRunUiStage();
+  switch (screenId) {
+    case "repo_setup":
+      return true;
+    case "packet_decision":
+      return ctx.hasPacket || !["repo_not_connected", "repo_connected"].includes(stage);
+    case "proof_workbench":
+      return ctx.hasPacket;
+    case "packet_rerun":
+      return ctx.rerunComplete || ctx.proofReady;
+    case "portkey_gate":
+      return ctx.hasPacket;
+    default:
+      return false;
+  }
+}
+
+function parseReviewRunFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    runId: String(params.get("run") || "").trim(),
+    screen: String(params.get("screen") || "").trim(),
+  };
+}
+
+function syncReviewRunUrl({ screen = "", runId = "", replace = false } = {}) {
+  if (document.body.dataset.activeTab !== "start") return;
+  const params = new URLSearchParams(window.location.search);
+  const rid = runId || currentReviewRun?.run_id || "";
+  const stage = reviewRunUiStage();
+  const scr = screen || reviewRunActiveScreen(stage) || "repo_setup";
+  if (rid) params.set("run", rid);
+  else params.delete("run");
+  if (scr && scr !== "repo_setup") params.set("screen", scr);
+  else params.delete("screen");
+  const query = params.toString();
+  const next = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  const state = { reviewRun: { run_id: rid, screen: scr } };
+  if (replace) history.replaceState(state, "", next);
+  else history.pushState(state, "", next);
+}
+
+function reviewRunNaturalScreenIndex(stage = reviewRunUiStage()) {
+  return REVIEW_FLOW_STEPS.findIndex((step) => step.id === reviewRunNaturalScreen(stage));
+}
+
+function isReviewRunScreenReadOnly(screenId, stage = reviewRunUiStage()) {
+  const idx = REVIEW_FLOW_STEPS.findIndex((step) => step.id === screenId);
+  const naturalIdx = reviewRunNaturalScreenIndex(stage);
+  return idx >= 0 && naturalIdx >= 0 && idx < naturalIdx;
+}
+
+function updateReviewRunReadonlyChrome() {
+  const active = reviewRunActiveScreen(reviewRunUiStage());
+  const readOnly = Boolean(reviewRunReadOnlyScreen && reviewRunReadOnlyScreen === active);
+  if (repoProofCockpit) repoProofCockpit.dataset.flowReadonly = String(readOnly);
+  if (reviewFlowReadonlyBanner) reviewFlowReadonlyBanner.hidden = !readOnly;
+  if (reviewFlowReadonlyLabel && readOnly) {
+    const label = REVIEW_FLOW_STEPS.find((step) => step.id === reviewRunReadOnlyScreen)?.label || "step";
+    reviewFlowReadonlyLabel.textContent = `Viewing “${label}” (read-only). Edit to resume from here and discard later steps.`;
+  }
+  document
+    .querySelectorAll(
+      ".repo-primary-action, .repo-proof-attach-action, [data-review-run-portkey-test], #btn-run-repo-proof, #btn-root-connect-github, #btn-root-demo-github"
+    )
+    .forEach((el) => {
+      if (readOnly) {
+        el.dataset.flowDisabled = "true";
+        el.disabled = true;
+      } else if (el.dataset.flowDisabled === "true") {
+        delete el.dataset.flowDisabled;
+      }
+    });
+  if (!readOnly) updateReviewCtaState();
+}
+
+function discardFutureFlowAfter(screenId) {
+  const order = REVIEW_FLOW_STEPS.map((step) => step.id);
+  const idx = order.indexOf(screenId);
+  if (idx < 0) return;
+
+  if (idx < order.indexOf("portkey_gate")) {
+    currentReviewRunPortkeyTest = null;
+  }
+  if (idx < order.indexOf("packet_rerun")) {
+    if (packetDetail) {
+      packetDetail = {
+        ...packetDetail,
+        review_delta: {},
+        review_run: packetDetail.review_run
+          ? { ...packetDetail.review_run, stage: "proof_attached" }
+          : packetDetail.review_run,
+      };
+    }
+    if (currentReviewRun?.packet) {
+      currentReviewRun = {
+        ...currentReviewRun,
+        stage: "proof_attached",
+        packet: { ...currentReviewRun.packet, ready_for_rerun: true },
+      };
+    }
+  }
+  if (idx < order.indexOf("proof_workbench")) {
+    currentReviewRunPortkeyTest = null;
+    if (packetDetail) {
+      packetDetail = {
+        ...packetDetail,
+        proof_resolution: {
+          ...(packetDetail.proof_resolution || {}),
+          ready_for_rerun: false,
+          attached_proof_count: 0,
+          attached_proof: [],
+          missing_proof: packetDetail.proof_resolution?.missing_proof || [],
+        },
+        review_delta: {},
+      };
+    }
+    if (currentReviewRun) {
+      currentReviewRun = {
+        ...currentReviewRun,
+        stage: "packet_generated",
+        attached_proof: [],
+        packet: currentReviewRun.packet
+          ? { ...currentReviewRun.packet, ready_for_rerun: false }
+          : currentReviewRun.packet,
+      };
+    }
+  }
+  if (idx < order.indexOf("packet_decision")) {
+    packetDetail = null;
+    packetPortkeyPreview = null;
+    packetPortkeyProofLoop = null;
+    currentReviewRunPortkeyTest = null;
+    currentReviewRunProofGraph = null;
+    if (currentReviewRun) {
+      currentReviewRun = { ...currentReviewRun, stage: "repo_selected", packet: {} };
+    }
+    if (repoProofCockpit) repoProofCockpit.dataset.loaded = "false";
+    if (repoProofResult) repoProofResult.hidden = true;
+  }
+
+  if (packetDetail) {
+    renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+  } else if (selectedReviewRepo()) {
+    setCoachForSelectedRepo(selectedReviewRepo());
+  }
+}
+
+function branchReviewRunAtScreen(screenId) {
+  if (!screenId || !reviewRunScreenAccessible(screenId)) return false;
+  const naturalIdx = reviewRunNaturalScreenIndex();
+  const targetIdx = REVIEW_FLOW_STEPS.findIndex((step) => step.id === screenId);
+  reviewRunReadOnlyScreen = null;
+  if (targetIdx >= 0 && targetIdx < naturalIdx) {
+    discardFutureFlowAfter(screenId);
+  }
+  navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
+  updateReviewRunReadonlyChrome();
+  void refreshReviewRunRail();
+  return true;
+}
+
+function viewReviewRunScreen(screenId) {
+  if (!reviewRunScreenAccessible(screenId)) return false;
+  reviewRunReadOnlyScreen = isReviewRunScreenReadOnly(screenId) ? screenId : null;
+  const ok = navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
+  updateReviewRunReadonlyChrome();
+  renderReviewFlowProgress();
+  return ok;
+}
+
+function navigateReviewRunScreen(screenId, { pushHistory = true, force = false } = {}) {
+  const ctx = reviewRunFlowContext();
+  if (!force && !reviewRunScreenAccessible(screenId, ctx)) return false;
+  const stage = reviewRunUiStage();
+  const naturalScreen = reviewRunNaturalScreen(stage);
+  if (screenId === naturalScreen && !force) {
+    clearReviewRunScreenOverride();
+    reviewRunReadOnlyScreen = null;
+  } else {
+    reviewRunScreenOverride = screenId;
+    if (!force && !isReviewRunScreenReadOnly(screenId, stage)) {
+      reviewRunReadOnlyScreen = null;
+    }
+  }
+  setReviewRunUiStage(stage, packetDetail);
+  if (pushHistory) syncReviewRunUrl({ screen: reviewRunActiveScreen(stage) });
+  persistReviewRunState();
+  updateReviewRunReadonlyChrome();
+  renderReviewFlowProgress();
+  return true;
+}
+
 function focusReviewRunScreen(screenId) {
-  reviewRunScreenOverride = screenId;
-  setReviewRunUiStage(reviewRunUiStage(), packetDetail);
+  return navigateReviewRunScreen(screenId, { pushHistory: true });
 }
 
 function clearReviewRunScreenOverride() {
   reviewRunScreenOverride = null;
+  localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+}
+
+function renderReviewFlowProgress() {
+  if (!reviewFlowSteps) return;
+  const stage = reviewRunUiStage();
+  const activeScreen = reviewRunActiveScreen(stage);
+  const ctx = reviewRunFlowContext();
+  const naturalIdx = Math.max(
+    0,
+    REVIEW_FLOW_STEPS.findIndex((step) => step.id === reviewRunNaturalScreen(stage))
+  );
+  reviewFlowSteps.replaceChildren();
+  REVIEW_FLOW_STEPS.forEach((step, index) => {
+    const accessible = reviewRunScreenAccessible(step.id, ctx);
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "review-flow-step";
+    btn.dataset.screen = step.id;
+    if (step.id === activeScreen) btn.dataset.state = "current";
+    else if (index < naturalIdx) btn.dataset.state = "complete";
+    else if (accessible) btn.dataset.state = "available";
+    else btn.dataset.state = "locked";
+    if (reviewRunReadOnlyScreen === step.id) btn.dataset.viewing = "true";
+    btn.disabled = !accessible;
+    btn.innerHTML = `
+      <span class="review-flow-step-index">${index + 1}</span>
+      <span class="review-flow-step-copy">
+        <strong>${escapeHtml(step.label)}</strong>
+        <small>${escapeHtml(step.detail)}</small>
+      </span>
+    `;
+    btn.addEventListener("click", () => {
+      if (index < naturalIdx) {
+        viewReviewRunScreen(step.id);
+      } else {
+        reviewRunReadOnlyScreen = null;
+        navigateReviewRunScreen(step.id);
+      }
+    });
+    li.appendChild(btn);
+    reviewFlowSteps.appendChild(li);
+  });
+}
+
+function formatReviewRunToolLabel(trigger) {
+  const key = String(trigger || "").trim();
+  if (!key) return "";
+  return REVIEW_RUN_TOOL_LABELS[key] || key.replace(/_/g, " ");
+}
+
+function setReviewSessionHubExpanded(expanded) {
+  if (!reviewSessionHub) return;
+  const on = Boolean(expanded);
+  reviewSessionHub.dataset.expanded = String(on);
+  reviewSessionHub.classList.toggle("is-open", on);
+  if (reviewSessionHubPanel) {
+    reviewSessionHubPanel.hidden = !on;
+    reviewSessionHubPanel.setAttribute("aria-hidden", String(!on));
+  }
+  if (reviewSessionHubBubble) {
+    reviewSessionHubBubble.setAttribute("aria-expanded", String(on));
+    reviewSessionHubBubble.setAttribute(
+      "aria-label",
+      on ? "Close session runs and chats" : "Open session runs and chats"
+    );
+  }
+  if (on) void refreshReviewRunRail();
+}
+
+function renderReviewRunHubDetails(run) {
+  const tools = (run.tools_used || []).map(formatReviewRunToolLabel).filter(Boolean);
+  const context = run.context_used || [];
+  return `
+    <div class="review-session-hub-run-body">
+      <p class="review-session-hub-run-blurb">${escapeHtml(coachPlainText(run.summary || "No summary yet."))}</p>
+      <div class="review-session-hub-run-meta">
+        <span class="review-session-hub-meta-label">Tools used</span>
+        <ul>${tools.length ? tools.map((t) => `<li>${escapeHtml(t)}</li>`).join("") : "<li>None recorded yet</li>"}</ul>
+      </div>
+      <div class="review-session-hub-run-meta">
+        <span class="review-session-hub-meta-label">Context used</span>
+        <ul>${context.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+      </div>
+      <button type="button" class="btn-primary review-session-hub-open-chat" data-run-id="${escapeHtml(run.run_id)}">
+        Open in chat
+      </button>
+    </div>
+  `;
+}
+
+function renderReviewRunHubAccordion(runs) {
+  if (!reviewSessionHubAccordion) return;
+  reviewSessionHubAccordion.replaceChildren();
+  if (!sessionId) {
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">No active session.</p>`;
+    return;
+  }
+  if (!runs.length) {
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">No ReviewRuns yet. Connect a repo or start a new run.</p>`;
+    return;
+  }
+
+  const sessionBlock = document.createElement("details");
+  sessionBlock.className = "review-session-hub-session-block";
+  sessionBlock.open = true;
+
+  const sessionSummary = document.createElement("summary");
+  sessionSummary.className = "review-session-hub-session-summary";
+  sessionSummary.innerHTML = `
+    <span class="review-session-hub-summary-title">Session</span>
+    <strong>${escapeHtml(sessionId.slice(0, 10))}…</strong>
+    <small>${runs.length} run${runs.length === 1 ? "" : "s"}</small>
+  `;
+
+  const sessionBody = document.createElement("div");
+  sessionBody.className = "review-session-hub-session-body";
+  sessionBody.innerHTML = `<p class="review-session-hub-hint">Each repo connect starts a new ReviewRun. Expand a run for summary, tools, and context.</p>`;
+
+  const runList = document.createElement("div");
+  runList.className = "review-session-hub-run-list";
+
+  runs.forEach((run) => {
+    const runBlock = document.createElement("details");
+    runBlock.className = "review-session-hub-run";
+    runBlock.dataset.runId = run.run_id;
+    if (run.run_id === currentReviewRun?.run_id) runBlock.dataset.active = "true";
+
+    const repo = (run.repo_full_name || "No repo").split("/").slice(-1)[0];
+    const shortId = String(run.run_id || "").replace("ia-review-run-", "").slice(0, 10);
+    const runSummary = document.createElement("summary");
+    runSummary.className = "review-session-hub-run-toggle";
+    runSummary.innerHTML = `
+      <strong>${escapeHtml(repo)}</strong>
+      <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}</span>
+      <code>${escapeHtml(shortId)}</code>
+    `;
+
+    const runBody = document.createElement("div");
+    runBody.className = "review-session-hub-run-wrap";
+    runBody.innerHTML = renderReviewRunHubDetails(run);
+    runBody.querySelector(".review-session-hub-open-chat")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openReviewRunInChat(run.run_id);
+    });
+
+    runBlock.appendChild(runSummary);
+    runBlock.appendChild(runBody);
+    runBlock.addEventListener("toggle", () => {
+      if (!runBlock.open) return;
+      void hydrateReviewRunHubDetails(runBlock, run);
+    });
+    runList.appendChild(runBlock);
+  });
+
+  sessionBody.appendChild(runList);
+  sessionBlock.appendChild(sessionSummary);
+  sessionBlock.appendChild(sessionBody);
+  reviewSessionHubAccordion.appendChild(sessionBlock);
+}
+
+async function hydrateReviewRunHubDetails(runBlock, run) {
+  if (!runBlock || runBlock.dataset.hydrated === "true" || !run?.run_id || !sessionId) return;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(run.run_id)}/context?session_id=${encodeURIComponent(sessionId)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return;
+    const merged = {
+      ...run,
+      summary:
+        run.summary
+        || (data.index_summary ? String(data.index_summary).slice(0, 260) : "")
+        || `Stage ${data.stage || run.stage || "unknown"}.`,
+      tools_used: run.tools_used?.length
+        ? run.tools_used
+        : (data.flow_events || []).map((event) => event.trigger || event.stage).filter(Boolean),
+      context_used: [
+        `Run id: ${run.run_id}`,
+        `Repo: ${data.repo_full_name || run.repo_full_name || "none"}`,
+        `Stage: ${String(data.stage || run.stage || "unknown").replace(/_/g, " ")}`,
+        `Index: ${data.index_complete ? "complete" : "partial or pending"}`,
+        `Coach turns: ${(data.coach_session?.turns || []).length || run.coach_turns || 0}`,
+      ],
+    };
+    const wrap = runBlock.querySelector(".review-session-hub-run-wrap");
+    if (wrap) wrap.innerHTML = renderReviewRunHubDetails(merged);
+    wrap?.querySelector(".review-session-hub-open-chat")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openReviewRunInChat(run.run_id);
+    });
+    runBlock.dataset.hydrated = "true";
+  } catch (_) {
+    /* best-effort hydration */
+  }
+}
+
+async function openReviewRunInChat(runId) {
+  if (!runId) return;
+  setReviewSessionHubExpanded(false);
+  if (runId !== currentReviewRun?.run_id) {
+    await switchReviewRun(runId);
+  }
+  setReviewCoachCollapsed(false);
+  setReviewCoachMaximized(false);
+  setCoachFloatingExpanded(true);
+  appendCoachThreadSystemMessage(
+    "Run reference",
+    `ReviewRun ${runId} is active in this chat coach. Ask IA will read packet, proof, and Portkey state from this run.`,
+    { marker: "run-ref", replace: true, runId }
+  );
+  if (repoCoachInput) {
+    repoCoachInput.placeholder = `Ask about ${runId.replace("ia-review-run-", "run ")}…`;
+    repoCoachInput.focus();
+  }
+  scrollCoachThread();
+}
+
+async function refreshReviewRunRail() {
+  if (!reviewSessionHubAccordion || !sessionId) return;
+  try {
+    const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/review-runs`);
+    const data = await res.json().catch(() => ({}));
+    const runs = res.ok && data.ok ? data.runs || [] : [];
+    if (reviewSessionHubBadge) reviewSessionHubBadge.textContent = String(runs.length);
+    renderReviewRunHubAccordion(runs);
+  } catch (_) {
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">Could not load runs</p>`;
+  }
+}
+
+function restartReviewRunInSession() {
+  reviewRunReadOnlyScreen = null;
+  localStorage.removeItem(REVIEW_RUN_STORAGE_KEY);
+  localStorage.removeItem(SELECTED_REPO_STORAGE_KEY);
+  localStorage.removeItem(REVIEW_SCREEN_STORAGE_KEY);
+  localStorage.removeItem(REVIEW_STAGE_STORAGE_KEY);
+  localStorage.removeItem(INDEX_JOB_STORAGE_KEY);
+  currentReviewRun = null;
+  packetDetail = null;
+  packetPortkeyPreview = null;
+  packetPortkeyProofLoop = null;
+  currentReviewRunPortkeyTest = null;
+  currentReviewRunProofGraph = null;
+  currentRepoIndexJobId = "";
+  pendingIndexSummary = "";
+  if (repoIndexPollTimer) {
+    clearInterval(repoIndexPollTimer);
+    repoIndexPollTimer = null;
+  }
+  reviewRunScreenOverride = null;
+  selectedGithubRepos = [];
+  clearReviewRunScreenOverride();
+  resetReviewRunCoachAnswer();
+  renderGithubChips();
+  renderReviewRepoSummary(null);
+  if (repoProofCockpit) {
+    repoProofCockpit.dataset.loaded = "false";
+    delete repoProofCockpit.dataset.activeScreen;
+    repoProofCockpit.dataset.flowReadonly = "false";
+  }
+  if (repoProofResult) repoProofResult.hidden = true;
+  if (repoIndexTracker) repoIndexTracker.hidden = true;
+  if (repoReviewRequest) repoReviewRequest.hidden = true;
+  if (repoIndexSummary) repoIndexSummary.hidden = true;
+  setReviewRunUiStage("repo_not_connected");
+  setCoachForNoRepo(true);
+  syncReviewRunUrl({ replace: true });
+  updateReviewRunReadonlyChrome();
+  void refreshReviewRunRail();
+  setReviewSessionHubExpanded(false);
+}
+
+async function switchReviewRun(runId) {
+  if (!runId || runId === currentReviewRun?.run_id) return;
+  localStorage.setItem(REVIEW_RUN_STORAGE_KEY, runId);
+  packetDetail = null;
+  packetPortkeyPreview = null;
+  packetPortkeyProofLoop = null;
+  currentReviewRunPortkeyTest = null;
+  currentReviewRunProofGraph = null;
+  reviewRunScreenOverride = null;
+  reviewRunReadOnlyScreen = null;
+  resetReviewRunCoachAnswer();
+  await restoreReviewRunSession({ preferredRunId: runId });
+}
+
+function initReviewRunFlowNavigation() {
+  window.addEventListener("popstate", (event) => {
+    if (document.body.dataset.activeTab !== "start") return;
+    const review = event.state?.reviewRun || parseReviewRunFromUrl();
+    if (review.runId && review.runId !== currentReviewRun?.run_id) {
+      void switchReviewRun(review.runId);
+      return;
+    }
+    if (review.screen && reviewRunScreenAccessible(review.screen)) {
+      viewReviewRunScreen(review.screen);
+    }
+  });
+
+  reviewSessionHubBubble?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+    sessionHubSuppressOutsideClose = true;
+  });
+  reviewSessionHubBubble?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const expanded = reviewSessionHub?.dataset.expanded === "true";
+    setReviewSessionHubExpanded(!expanded);
+    sessionHubSuppressOutsideClose = true;
+  });
+  reviewSessionHubPanel?.addEventListener("click", (event) => {
+    event.stopPropagation();
+  });
+  reviewSessionHubClose?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setReviewSessionHubExpanded(false);
+  });
+  document.addEventListener("click", (event) => {
+    if (sessionHubSuppressOutsideClose) {
+      sessionHubSuppressOutsideClose = false;
+      return;
+    }
+    if (reviewSessionHub?.dataset.expanded !== "true") return;
+    if (event.target.closest("#review-session-hub")) return;
+    setReviewSessionHubExpanded(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && reviewSessionHub?.dataset.expanded === "true") {
+      setReviewSessionHubExpanded(false);
+    }
+  });
+  btnNewReviewRun?.addEventListener("click", () => restartReviewRunInSession());
+  btnBranchReviewRunStep?.addEventListener("click", () => {
+    if (reviewRunReadOnlyScreen) branchReviewRunAtScreen(reviewRunReadOnlyScreen);
+  });
 }
 
 function openReviewRunPortkeyStage() {
@@ -1245,7 +2604,7 @@ function openReviewRunPortkeyStage() {
   const canOpen = Boolean(packetDetail?.packet_reference?.revision_id)
     && ["packet_generated", "proof_attached", "packet_regenerated", "portkey_tested"].includes(stage);
   if (!canOpen) return false;
-  focusReviewRunScreen("portkey_gate");
+  navigateReviewRunScreen("portkey_gate");
   if (repoPortkeyCard) repoPortkeyCard.open = true;
   void refreshReviewRunPortkeyReceipt({ rerender: true });
   return true;
@@ -1306,11 +2665,12 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
   updateReviewRunStageScreens(stage);
   updateReviewRunStageStatus(stage, packet);
   updateReviewRunCoachChrome(stage);
+  renderReviewFlowProgress();
   return stage;
 }
 
 function setReviewRunCoachStage(sections, statusText = "Ask IA guides this ReviewRun. It cannot approve or write.") {
-  renderReviewRunCoachAnswer({ sections });
+  if (sections && !reviewRunCoachBusy) upsertCoachContextBubble(sections);
   if (packetCoachStatus) {
     packetCoachStatus.hidden = false;
     packetCoachStatus.classList.remove("error");
@@ -1379,7 +2739,7 @@ function setCoachForSelectedRepo(repo) {
       ? "Repo indexing. Ask IA will update after the repo is ready."
       : "Repo selected. Ask IA is coaching packet generation."
   );
-  void refreshReviewRunCoachSuggestions(indexing ? "Current read" : "idk what to do next");
+  void refreshReviewRunCoachSuggestions();
 }
 
 function setCoachForReviewLoading() {
@@ -1427,7 +2787,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Updated packet ready. No approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what will Portkey do?");
+    void refreshReviewRunCoachSuggestions();
     return;
   }
 
@@ -1442,7 +2802,7 @@ function setCoachForPacket(packet, portkeyPayload) {
       },
       "Proof attached. Verdict unchanged; no approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what next");
+    void refreshReviewRunCoachSuggestions();
     return;
   }
 
@@ -1456,14 +2816,22 @@ function setCoachForPacket(packet, portkeyPayload) {
     },
     "Packet generated. IA did not approve or write."
   );
-  void refreshReviewRunCoachSuggestions("idk what to do next");
+  void refreshReviewRunCoachSuggestions();
 }
 
 function resetReviewRunCoachAnswer() {
-  if (!repoCoachAnswer) return;
-  repoCoachAnswer.hidden = true;
-  repoCoachAnswer.innerHTML = "";
-  repoCoachAnswer.removeAttribute("data-prompt-kind");
+  if (repoCoachThread) repoCoachThread.replaceChildren();
+  if (repoCoachAnswer) {
+    repoCoachAnswer.hidden = true;
+    repoCoachAnswer.innerHTML = "";
+    repoCoachAnswer.removeAttribute("data-prompt-kind");
+  }
+  if (repoCoachFollowupChips) {
+    repoCoachFollowupChips.hidden = true;
+    repoCoachFollowupChips.replaceChildren();
+  }
+  setCoachFloatingExpanded(false);
+  ensureCoachThreadWelcome();
 }
 
 function renderLocalReviewRunCoach(sections) {
@@ -1475,31 +2843,18 @@ function renderLocalReviewRunCoach(sections) {
   }
 }
 
-async function refreshReviewRunCoachSuggestions(prompt = "Current read") {
+async function refreshReviewRunCoachSuggestions() {
   const refreshSeq = ++reviewRunCoachSuggestionRefreshSeq;
   if (!currentReviewRun?.run_id) {
     renderReviewRunCoachSuggestions();
     return;
   }
   try {
-    const routedMessage = routeReviewRunCoachPrompt(prompt);
-    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt: routedMessage,
-        message: routedMessage,
-        entities: {
-          source: "review_run",
-          prompt_kind: "current_read",
-          run_id: currentReviewRun.run_id,
-          stage: currentReviewRun.stage || reviewRunUiStage(),
-        },
-      }),
-    });
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}`);
     const data = await res.json().catch(() => ({}));
     if (refreshSeq !== reviewRunCoachSuggestionRefreshSeq) return;
     if (res.ok && data.ok) {
+      if (data.run) currentReviewRun = data.run;
       renderReviewRunCoachSuggestions(data.suggestions || []);
     }
   } catch (_) {
@@ -1509,39 +2864,86 @@ async function refreshReviewRunCoachSuggestions(prompt = "Current read") {
   }
 }
 
-async function askReviewRunCoach(prompt, entities = null) {
-  if (reviewRunCoachBusy) return;
+async function autoReassessReviewRunCoach(trigger, { fallbackPacket, fallbackPortkey } = {}) {
+  const stage = trigger || reviewRunUiStage(fallbackPacket);
+  const prompt =
+    STAGE_REASSESS_PROMPTS[stage] ||
+    STAGE_REASSESS_PROMPTS[reviewRunUiStage(fallbackPacket)] ||
+    "Reassess the current ReviewRun state.";
+  if (!currentReviewRun?.run_id) {
+    if (fallbackPacket) setCoachForPacket(fallbackPacket, fallbackPortkey);
+    else setCoachForNoRepo();
+    return false;
+  }
+  return askReviewRunCoach(prompt, { source: "review_run", reassess_trigger: stage }, { reassess: true });
+}
+
+async function askReviewRunCoach(prompt, chipEntities = null, { reassess = false } = {}) {
+  if (reviewRunCoachBusy) return false;
   const message = String(prompt || "Current read").trim() || "Current read";
   const routedMessage = routeReviewRunCoachPrompt(message);
   const wantsPortkeyStage = /\bportkey\b/i.test(routedMessage);
-  setReviewRunCoachUserPrompt(message);
   if (!currentReviewRun?.run_id) {
     setCoachForNoRepo(true);
-    setReviewRunCoachUserPrompt(message);
-    return;
+    return false;
   }
 
+  const entities =
+    chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length ? chipEntities : null;
+  const reassessTrigger = entities?.reassess_trigger || (reassess ? reviewRunUiStage(packetDetail) : "");
+  const userLabel = reassess
+    ? `↻ Reassess · ${String(reassessTrigger || "stage change").replace(/_/g, " ")}`
+    : message;
+  if (!reassess) setReviewRunCoachUserPrompt(message);
+  clearCoachContextBubble();
+  appendCoachThreadUserMessage(userLabel);
+
   setReviewRunCoachBusy(true);
+  const thinkingUi = appendCoachThreadThinking();
+  const assistantParts = createCoachAssistantBubble();
   let ok = false;
   try {
-    const payload = {
+    const body = {
       prompt: routedMessage,
       message: routedMessage,
+      session_id: sessionId,
+      previous_stage: lastReviewRunStage || reviewRunUiStage(packetDetail),
     };
-    if (entities && typeof entities === "object") payload.entities = entities;
-    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data.detail || "Ask IA coach failed");
-    renderReviewRunCoachAnswer(data.answer || {});
-    renderReviewRunCoachSuggestions(data.suggestions || []);
+    if (entities) {
+      body.entities = entities;
+      body.chip_entities = entities;
+    }
+    if (reassessTrigger) body.reassess_trigger = reassessTrigger;
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/coach/stream`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Ask IA coach stream failed");
+    }
+    const data = await consumeCoachStream(res, thinkingUi, assistantParts);
+    removeCoachThreadNode(thinkingUi);
+    repoCoachThread.appendChild(assistantParts.row);
+    scrollCoachThread();
+    const answer = data.answer || {};
+    const suggestions = data.suggestions || answer.suggestions || [];
+    if (reassess) {
+      renderCoachSuggestionSets(suggestions, { followUp: false });
+    } else {
+      renderCoachSuggestionSets(suggestions, { followUp: true });
+    }
     if (wantsPortkeyStage) openReviewRunPortkeyStage();
+    lastReviewRunStage = currentReviewRun?.stage || reviewRunUiStage(packetDetail);
+    persistReviewRunState();
     ok = true;
   } catch (err) {
-    resetReviewRunCoachAnswer();
+    removeCoachThreadNode(thinkingUi);
+    removeCoachThreadNode(assistantParts);
     if (packetCoachStatus) {
       packetCoachStatus.hidden = false;
       packetCoachStatus.classList.add("error");
@@ -1551,11 +2953,14 @@ async function askReviewRunCoach(prompt, entities = null) {
     setReviewRunCoachBusy(
       false,
       ok
-        ? "Ask IA read current ReviewRun. Decision lock unchanged."
+        ? reassess
+          ? "Ask IA reassessed this ReviewRun. Decision lock unchanged."
+          : "Ask IA read current ReviewRun. Decision lock unchanged."
         : packetCoachStatus?.textContent || ""
     );
     if (!ok && packetCoachStatus) packetCoachStatus.classList.add("error");
   }
+  return ok;
 }
 
 function updateReviewRepoConnectUi() {
@@ -1632,6 +3037,7 @@ function renderReviewRepoSummary(repo = null) {
   }
   resetReviewRunCoachAnswer();
   setCoachForSelectedRepo(selected);
+  void autoReassessReviewRunCoach("repo_selected");
   updateReviewCtaState();
 }
 
@@ -1719,6 +3125,9 @@ async function createReviewRunForIndexedRepo(repo) {
   if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun creation failed");
   currentReviewRun = data.run;
   currentReviewRunProofGraph = await fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null);
+  persistReviewRunState();
+  syncReviewRunUrl({ runId: currentReviewRun.run_id, screen: "repo_setup", replace: true });
+  void refreshReviewRunRail();
   currentReviewRunPortkeyReceipt = null;
   return currentReviewRun;
 }
@@ -1763,9 +3172,12 @@ async function attachReviewRepo(repo) {
       chatAttachmentIds.push(data.file_id);
     }
     await createReviewRunForIndexedRepo(indexedRepo);
+    void startBackgroundRepoIndex(fullName);
     renderGithubChips();
     renderReviewRepoSummary(indexedRepo);
-    setRepoConnectStatus(`Repo connected and indexed: ${fullName}. ReviewRun is ready.`);
+    setRepoConnectStatus(
+      `Quick index ready for ${fullName}. Full repo indexing continues in the background.`
+    );
   } catch (err) {
     selectedGithubRepos = [];
     currentReviewRun = null;
@@ -4033,7 +5445,7 @@ async function testReviewRunPortkeyGuardrail() {
     }
     return;
   }
-  clearReviewRunScreenOverride();
+  navigateReviewRunScreen("portkey_gate", { pushHistory: true, force: true });
   const button = repoPortkeyCard?.querySelector("[data-review-run-portkey-test]");
   if (button) {
     button.disabled = true;
@@ -4061,7 +5473,7 @@ async function testReviewRunPortkeyGuardrail() {
       },
       "Portkey guardrail test recorded locally. No approval, no writes."
     );
-    void refreshReviewRunCoachSuggestions("what will Portkey do?");
+    await autoReassessReviewRunCoach("portkey_tested", { fallbackPacket: packetDetail, fallbackPortkey: packetPortkeyPreview });
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -4126,6 +5538,12 @@ async function attachReviewRunProof() {
         "Proof attached. Verdict and Portkey state unchanged; regenerate the packet before movement changes.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    navigateReviewRunScreen("proof_workbench", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
+    await autoReassessReviewRunCoach("proof_attached", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -4140,7 +5558,7 @@ async function attachReviewRunProof() {
 
 async function rerunReviewRunPacket() {
   if (!currentReviewRun?.run_id || !repoProofResolutionCard) return;
-  clearReviewRunScreenOverride();
+  navigateReviewRunScreen("packet_rerun", { pushHistory: true, force: true });
   const status = repoProofResolutionCard.querySelector(".repo-proof-attach-status");
   const button = repoProofResolutionCard.querySelector(".repo-proof-attach-action");
   if (button) {
@@ -4176,6 +5594,12 @@ async function rerunReviewRunPacket() {
         "Updated packet generated. Same request; new proof changed packet state; Portkey reads the new revision.";
     }
     setCoachForPacket(nextPacket, packetPortkeyPreview);
+    navigateReviewRunScreen("packet_rerun", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
+    await autoReassessReviewRunCoach("packet_regenerated", {
+      fallbackPacket: nextPacket,
+      fallbackPortkey: packetPortkeyPreview,
+    });
   } catch (err) {
     if (status) {
       status.textContent = String(err.message || err);
@@ -4196,7 +5620,6 @@ async function runRepoProofCockpit() {
     }
     return;
   }
-  clearReviewRunScreenOverride();
   setRepoCockpitBusy(true);
   try {
     const fixtureId = REPO_PROOF_FIXTURE;
@@ -4229,6 +5652,12 @@ async function runRepoProofCockpit() {
     packetPortkeyPreview = payload;
     packetPortkeyProofLoop = proofLoop;
     renderRepoProofCockpit(cockpitPacket, payload, proofLoop);
+    navigateReviewRunScreen("packet_decision", { pushHistory: true, force: true });
+    void refreshReviewRunRail();
+    await autoReassessReviewRunCoach("packet_generated", {
+      fallbackPacket: cockpitPacket,
+      fallbackPortkey: payload,
+    });
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -4549,6 +5978,7 @@ async function loadPacketDetail() {
     if (!res.ok) throw new Error(data.detail || "IA Packet load failed");
     renderPacketDetail(data);
     unlockPacketCoach();
+    renderPacketCoachSuggestions(data.suggestions || []);
     setPacketInlineCoachStatus("Ask a packet-backed follow-up. IA stays read-only and cannot approve or write.");
     window.history.replaceState({}, "", packetDetailUrl(data.fixture?.fixture_id || fixtureId));
     try {
@@ -4564,7 +5994,7 @@ async function loadPacketDetail() {
   }
 }
 
-async function askPacketInlineCoach(prompt) {
+async function askPacketInlineCoach(prompt, chipEntities = null) {
   if (packetInlineCoachBusy) return;
   const message = String(prompt || "").trim();
   if (!message) return;
@@ -4584,14 +6014,18 @@ async function askPacketInlineCoach(prompt) {
       await loadPacketDetail();
     }
     const fixtureId = currentPacketFixtureForChat() || packetSelectedFixtureId();
+    const body = {
+      message,
+      session_id: sessionId,
+      current_fixture: fixtureId,
+    };
+    if (chipEntities && typeof chipEntities === "object" && Object.keys(chipEntities).length) {
+      body.chip_entities = chipEntities;
+    }
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message,
-        session_id: sessionId,
-        current_fixture: fixtureId,
-      }),
+      body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || `Ask IA failed (${res.status})`);
@@ -6188,11 +7622,17 @@ form.addEventListener("submit", (e) => {
 });
 
 packetCoachQuickChips?.addEventListener("click", (event) => {
-  const btn = event.target.closest("button[data-ask-prompt]");
+  const btn = event.target.closest("button");
   if (!btn || busy || reviewRunCoachBusy) return;
   const suggestion = currentReviewRunCoachSuggestions[Number(btn.dataset.suggestionIndex || -1)];
-  setReviewCoachCollapsed(false);
-  askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "", suggestion?.entities || null);
+  if (suggestion) {
+    handleCoachChipPick(suggestion);
+    return;
+  }
+  if (btn.dataset.askPrompt) {
+    setReviewCoachCollapsed(false);
+    askReviewRunCoach(btn.dataset.askPrompt || btn.textContent || "");
+  }
 });
 
 repoCoachForm?.addEventListener("submit", (event) => {
@@ -6207,6 +7647,24 @@ repoCoachToggle?.addEventListener("click", () => {
   const collapsed = repoAskCoach?.dataset.coachCollapsed === "true";
   setReviewCoachCollapsed(!collapsed);
 });
+
+repoCoachMaximize?.addEventListener("click", () => {
+  const maximized = repoAskCoach?.dataset.coachMaximized === "true";
+  if (maximized) {
+    setReviewCoachMaximized(false);
+    return;
+  }
+  setReviewCoachCollapsed(false);
+  setReviewCoachMaximized(true);
+});
+
+repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false));
+
+btnShowIndexSummary?.addEventListener("click", () => {
+  void openRepoIndexDetailModal();
+});
+repoIndexDetailClose?.addEventListener("click", closeRepoIndexDetailModal);
+repoIndexDetailBackdrop?.addEventListener("click", closeRepoIndexDetailModal);
 
 packetInlineCoachPrompts?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");
@@ -6272,10 +7730,17 @@ document.body.dataset.activeTab = "start";
 setupTabs();
 
 (async function initApp() {
+  initCoachFloatingResize();
+  initReviewRunFlowNavigation();
+  syncReviewCoachControlLabels();
+  ensureCoachThreadWelcome();
   await Promise.all([loadUiSkills(), loadUiConnectors()]);
   await handleConnectorOAuthReturn();
   await loadMeta();
   loadGuide();
+  await restoreReviewRunSession();
+  renderReviewFlowProgress();
+  void refreshReviewRunRail();
   if (window.location.pathname === "/workbench") {
     showWorkbenchPanel();
   }

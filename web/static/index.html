@@ -24,6 +24,13 @@
           </div>
         </div>
         <div class="stack" id="stack-pills"></div>
+        <div class="repo-index-tracker" id="repo-index-tracker" hidden aria-live="polite">
+          <span class="repo-index-tracker-label" id="repo-index-tracker-label">Indexing repo…</span>
+          <progress id="repo-index-tracker-bar" max="100" value="0"></progress>
+          <button type="button" class="btn-ghost btn-index-summary" id="btn-show-index-summary" hidden>
+            Show summary
+          </button>
+        </div>
         <button type="button" class="btn-ghost" id="btn-reset">New chat</button>
       </header>
 
@@ -200,6 +207,14 @@
                 <p>Connect a repo, generate the IA Packet, then let downstream gates read the packet before movement.</p>
               </header>
 
+              <nav class="review-flow-progress" id="review-flow-progress" aria-label="ReviewRun progress">
+                <ol class="review-flow-steps" id="review-flow-steps"></ol>
+                <div class="review-flow-readonly-banner" id="review-flow-readonly-banner" hidden>
+                  <p class="review-flow-readonly-label" id="review-flow-readonly-label">Viewing a completed step (read-only).</p>
+                  <button type="button" class="btn-ghost" id="btn-branch-review-run-step">Edit this step</button>
+                </div>
+              </nav>
+
               <section class="repo-runway-panel" aria-label="Review cockpit">
                 <div class="repo-stage-status" aria-label="ReviewRun status">
                   <div>
@@ -352,40 +367,41 @@
                   </section>
                 </div>
 
-                <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false">
+                <aside class="repo-ask-sidecar repo-ask-floating" id="repo-ask-coach" aria-label="Ask IA" role="dialog" aria-modal="false" data-coach-mode="floating" data-coach-collapsed="false" data-coach-maximized="false">
+                  <div class="repo-coach-resize-handle repo-coach-resize-w" id="repo-coach-resize-w" role="separator" aria-orientation="vertical" aria-label="Resize width" tabindex="0"></div>
+                  <div class="repo-coach-resize-handle repo-coach-resize-h" id="repo-coach-resize-h" role="separator" aria-orientation="horizontal" aria-label="Resize height" tabindex="0"></div>
+                  <div class="repo-coach-resize-handle repo-coach-resize-corner" id="repo-coach-resize-corner" role="separator" aria-label="Resize Ask IA chat" tabindex="0"></div>
                   <div class="repo-coach-head">
                     <div>
                       <span class="repo-card-label">Ask IA</span>
                       <h3>Chat coach</h3>
                     </div>
-                    <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Minimize Ask IA chat">Minimize</button>
+                    <div class="repo-coach-head-actions">
+                      <button type="button" class="repo-coach-toggle" id="repo-coach-maximize" aria-label="Maximize chat coach">Maximize</button>
+                      <button type="button" class="repo-coach-toggle" id="repo-coach-toggle" aria-expanded="true" aria-controls="repo-coach-body" aria-label="Minimize chat coach to header">Minimize</button>
+                    </div>
                   </div>
                   <div class="repo-coach-stage-line" aria-live="polite">
                     <span>Stage</span>
                     <strong id="repo-coach-stage">Connect repo</strong>
                   </div>
                   <div class="repo-coach-body" id="repo-coach-body">
-                    <div class="repo-coach-current-read">
-                      <span>Current read</span>
-                      <p id="repo-coach-read">I am watching this ReviewRun. Choose one repo and I will keep the next human action, blocked scope, and Portkey impact in sync.</p>
+                    <div class="repo-coach-thread-scroll" id="repo-coach-thread-scroll" aria-live="polite">
+                      <div class="repo-coach-thread" id="repo-coach-thread"></div>
                     </div>
-                    <div class="repo-coach-chat" id="repo-coach-chat" aria-live="polite">
-                      <div class="repo-coach-last-user" id="repo-coach-last-user" hidden>
-                        <span>You asked</span>
-                        <p id="repo-coach-last-user-text"></p>
+                    <div class="repo-coach-composer">
+                      <form class="repo-coach-form" id="repo-coach-form">
+                        <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
+                        <button type="submit" class="btn-primary">Ask</button>
+                      </form>
+                      <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
+                        <button type="button" data-ask-prompt="What now?">What now?</button>
+                        <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
+                        <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
                       </div>
-                      <div class="repo-coach-answer repo-coach-assistant" id="repo-coach-answer" hidden></div>
+                      <div class="coach-chip-followup" id="repo-coach-followup-chips" hidden aria-label="Follow-up prompts"></div>
+                      <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
                     </div>
-                    <form class="repo-coach-form" id="repo-coach-form">
-                      <input id="repo-coach-input" type="text" autocomplete="off" placeholder="Ask what to do next..." />
-                      <button type="submit" class="btn-primary">Ask</button>
-                    </form>
-                    <div class="packet-coach-quick-chips" id="packet-coach-quick-chips" aria-label="Packet-backed chat prompts">
-                      <button type="button" data-ask-prompt="What now?">What now?</button>
-                      <button type="button" data-ask-prompt="What proof is missing?">Missing proof</button>
-                      <button type="button" data-ask-prompt="What will Portkey do?">Portkey impact</button>
-                    </div>
-                    <p class="packet-coach-status" id="packet-coach-status" role="status" aria-live="polite">Ask IA guides this run. It does not approve or write.</p>
                   </div>
                 </aside>
               </section>
@@ -629,7 +645,47 @@
       </main>
     </div>
 
+    <div class="repo-index-detail-modal" id="repo-index-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="repo-index-detail-title">
+      <div class="repo-index-detail-backdrop" id="repo-index-detail-backdrop"></div>
+      <div class="repo-index-detail-panel">
+        <header class="repo-index-detail-head">
+          <div>
+            <span class="repo-card-label">Repository index</span>
+            <h2 id="repo-index-detail-title">Index presentation</h2>
+          </div>
+          <button type="button" class="repo-index-detail-close" id="repo-index-detail-close" aria-label="Close index presentation">×</button>
+        </header>
+        <div class="repo-index-detail-body" id="repo-index-detail-body"></div>
+      </div>
+    </div>
+
+    <div class="review-session-hub" id="review-session-hub" data-expanded="false">
+      <button
+        type="button"
+        class="review-session-hub-bubble"
+        id="review-session-hub-bubble"
+        aria-expanded="false"
+        aria-controls="review-session-hub-panel"
+        aria-label="Open session runs and chats"
+      >
+        <span class="review-session-hub-icon" aria-hidden="true">◈</span>
+        <span class="review-session-hub-badge" id="review-session-hub-badge">0</span>
+      </button>
+      <div class="review-session-hub-panel" id="review-session-hub-panel" hidden>
+        <div class="review-session-hub-head">
+          <div>
+            <span class="repo-card-label">Session</span>
+            <strong>Runs &amp; chats</strong>
+          </div>
+          <button type="button" class="review-session-hub-close" id="review-session-hub-close" aria-label="Close session panel">×</button>
+        </div>
+        <button type="button" class="btn-primary review-session-hub-new-run" id="btn-new-review-run">New run in session</button>
+        <div class="review-session-hub-accordion" id="review-session-hub-accordion"></div>
+      </div>
+    </div>
+
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
-    <script src="/static/app.js?v=76"></script>
+    <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
+    <script src="/static/app.js?v=86"></script>
   </body>
 </html>

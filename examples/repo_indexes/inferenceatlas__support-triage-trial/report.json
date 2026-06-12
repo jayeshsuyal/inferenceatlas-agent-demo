@@ -1,0 +1,37 @@
+{
+  "category_chart": [
+    {"count": 1, "key": "readme", "label": "Readme"},
+    {"count": 1, "key": "manifest", "label": "Manifest"},
+    {"count": 1, "key": "agent_tools", "label": "Agent Tools"},
+    {"count": 1, "key": "ci_cd", "label": "Ci Cd"},
+    {"count": 1, "key": "auth", "label": "Auth"}
+  ],
+  "completeness_pct": 60.0,
+  "default_branch": "main",
+  "digest_chars": 12400,
+  "enterprise_search": {},
+  "fetched_files": 2,
+  "full_name": "inferenceatlas/support-triage-trial",
+  "high_relevance_unfetched": [
+    {"category": "ci_cd", "extension": ".yml", "fetched": false, "path": ".github/workflows/smoke.yml", "score": 88},
+    {"category": "auth", "extension": ".yml", "fetched": false, "path": "policy/agent_access.yml", "score": 78}
+  ],
+  "index_complete": true,
+  "job": {"files_indexed": 2, "phase": "done", "progress_pct": 100, "status": "completed"},
+  "narrative": "IA indexed inferenceatlas/support-triage-trial for this ReviewRun using tiered, access-review scoring. Used curated demo pre-index. 2 files were excerpted from 42 discovered paths.",
+  "preindexed": true,
+  "readme_found": true,
+  "schema_version": "repo_index_report.v1",
+  "stage_fetches": [],
+  "tier_chart": [
+    {"chars": 600, "key": "tier0", "label": "Quick (Tier 0)"},
+    {"chars": 0, "key": "tier1", "label": "Core (Tier 1)"},
+    {"chars": 0, "key": "tier2", "label": "Stage (Tier 2)"}
+  ],
+  "top_paths": [
+    {"category": "readme", "chars": 180, "path": "README.md", "score": 120, "tier": "tier0"},
+    {"category": "manifest", "chars": 420, "path": "examples/requests/support_triage_trial.yml", "score": 95, "tier": "tier0"}
+  ],
+  "total_paths": 42,
+  "truncated_tree": false
+}

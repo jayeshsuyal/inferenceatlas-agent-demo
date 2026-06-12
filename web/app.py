@@ -69,6 +69,7 @@ from agent.review_run import (
     DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
     ReviewRun,
     attach_review_run_proof,
+    build_review_run_approval_receipt,
     build_review_run_coach_answer,
     build_review_run_portkey_guardrail_test,
     build_review_run_proofgraph,
@@ -1237,6 +1238,23 @@ def get_review_run_proofgraph_api(run_id: str) -> dict:
         "run_id": run.run_id,
         "stage": run.stage,
         "proofgraph": graph,
+    }
+
+
+@app.get("/api/review-runs/{run_id}/approval-receipt")
+def get_review_run_approval_receipt_api(run_id: str) -> dict:
+    """Return the portable approval receipt for the current ReviewRun packet."""
+    run, _record = _load_review_run_or_404(run_id)
+    try:
+        receipt = build_review_run_approval_receipt(run)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run.run_id,
+        "stage": run.stage,
+        "approval_receipt": receipt,
     }
 
 

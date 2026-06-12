@@ -33,6 +33,7 @@ from web.app import (
     github_attach_repo,
     github_list_repos,
     get_review_run,
+    get_review_run_approval_receipt_api,
     proofgraph_index,
     portkey_guardrail_webhook,
     review_run_portkey_guardrail_test_api,
@@ -317,6 +318,80 @@ class ReviewRunApiTests(TestCase):
                 with self.assertRaises(HTTPException) as missing:
                     get_review_run_proofgraph_api("ia-review-run-missing")
                 self.assertEqual(missing.exception.status_code, 404)
+
+    def test_review_run_approval_receipt_api_is_read_only_and_packet_bound(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            with patch("web.app.REVIEW_RUN_STORE_DIR", store_dir):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                            "access_token": "ghp_1234567890abcdefSECRET",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+
+                with self.assertRaises(HTTPException) as before_packet:
+                    get_review_run_approval_receipt_api(run_id)
+                self.assertEqual(before_packet.exception.status_code, 400)
+                self.assertIn("requires a generated packet", before_packet.exception.detail)
+
+                generated = generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                pending = get_review_run_approval_receipt_api(run_id)
+                pending_receipt = pending["approval_receipt"]
+                self.assertIs(pending["read_only"], True)
+                self.assertEqual(pending_receipt["schema_version"], "review_run_approval_receipt.v0")
+                self.assertEqual(pending_receipt["status"], "pending_human_approval")
+                self.assertEqual(
+                    pending_receipt["packet_reference"]["revision_id"],
+                    generated["run"]["packet"]["revision_id"],
+                )
+                self.assertFalse(pending_receipt["safety_boundary"]["ia_approved"])
+                self.assertNotIn("ghp_1234567890abcdefSECRET", str(pending_receipt))
+
+                attach_review_run_proof_api(
+                    run_id,
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                            {"id": "environment_boundary", "label": "Environment boundary"},
+                        ]
+                    ),
+                )
+                rerun = rerun_review_run_packet_api(
+                    run_id,
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                ready = get_review_run_approval_receipt_api(run_id)
+                receipt = ready["approval_receipt"]
+                self.assertEqual(ready["stage"], "ready_to_export")
+                self.assertEqual(receipt["status"], "ready_to_circulate")
+                self.assertTrue(receipt["can_circulate"])
+                self.assertEqual(receipt["approval_summary"]["recorded_count"], 3)
+                self.assertEqual(receipt["approval_summary"]["missing_count"], 0)
+                self.assertEqual(receipt["movement"]["still_blocked_scope"], ["repo admin", "org-wide write", "secrets"])
+                self.assertEqual(receipt["portkey"]["state"], "Allow with policy")
+                self.assertEqual(
+                    receipt["portkey"]["consumes_packet_revision"],
+                    rerun["run"]["packet"]["revision_id"],
+                )
+                self.assertFalse(receipt["portkey"]["api_call_made"])
+                self.assertFalse(receipt["portkey"]["policy_mutation_allowed"])
+                self.assertFalse(receipt["safety_boundary"]["ia_grants_permissions"])
+                self.assertFalse(receipt["safety_boundary"]["ia_executes_external_writes"])
+                self.assertTrue(receipt["safety_boundary"]["humans_approved_scope"])
 
     def test_review_run_portkey_guardrail_test_tracks_packet_revision_delta(self) -> None:
         with TemporaryDirectory() as temp_dir:

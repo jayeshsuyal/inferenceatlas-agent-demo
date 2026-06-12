@@ -14,7 +14,7 @@ import json
 import re
 import uuid
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Mapping, Optional
 
@@ -28,6 +28,7 @@ REVIEW_RUN_COACH_SCHEMA_VERSION = "review_run_coach_answer.v0"
 REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION = "review_run_proofgraph.v0"
 REVIEW_RUN_PORTKEY_GUARDRAIL_SCHEMA_VERSION = "review_run_portkey_guardrail_test.v0"
 REVIEW_RUN_PROOF_LENSES_SCHEMA_VERSION = "review_run_proof_lenses.v0"
+REVIEW_RUN_APPROVAL_RECEIPT_SCHEMA_VERSION = "review_run_approval_receipt.v0"
 DEFAULT_REVIEW_RUN_STORE_DIR = ROOT_DIR / "state" / "review_runs"
 DEFAULT_REVIEW_RUN_ACCESS_REQUEST = "support-triage-bot needs to read issues, comment, and create labels."
 
@@ -75,6 +76,14 @@ _SECRET_VALUE_RE = re.compile(
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _add_utc_days(timestamp: str, days: int) -> str:
+    value = str(timestamp or "").strip()
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return (parsed.astimezone(timezone.utc) + timedelta(days=days)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _digest(value: str) -> str:
@@ -1260,6 +1269,178 @@ def build_review_run_portkey_guardrail_test(
             "safety_anchor": "Portkey receives a packet-backed verdict. IA does not approve, write, or mutate Portkey.",
         }
     )
+
+
+def build_review_run_approval_receipt(
+    run: ReviewRun,
+    *,
+    generated_at: Optional[str] = None,
+    valid_for_days: int = 30,
+) -> dict[str, Any]:
+    """Build a portable approval receipt from ReviewRun state without approving anything itself."""
+    if valid_for_days <= 0:
+        raise ValueError("valid_for_days must be positive")
+
+    packet = run.packet or {}
+    packet_id = str(packet.get("packet_id") or "").strip()
+    revision_id = str(packet.get("revision_id") or "").strip()
+    content_hash = str(packet.get("content_hash") or "").strip()
+    if not packet_id or not revision_id or not content_hash:
+        raise ValueError("approval receipt requires a generated packet")
+
+    movement = normalize_movement_classes(run.movement_classes)
+    attached_ids = _attached_proof_ids(run)
+    required_approvers = (
+        {
+            "role_id": "manager",
+            "label": "Manager / workflow owner",
+            "proof_item_id": "repo_owner_approval",
+            "scope": "business need and selected-repo ownership",
+            "required": True,
+        },
+        {
+            "role_id": "engineering",
+            "label": "Engineering",
+            "proof_item_id": "rollback_offswitch",
+            "scope": "rollback/off-switch boundary",
+            "required": True,
+        },
+        {
+            "role_id": "security",
+            "label": "Security",
+            "proof_item_id": "environment_boundary",
+            "scope": "selected-repo boundary; secrets and org-wide access stay blocked",
+            "required": True,
+        },
+        {
+            "role_id": "procurement",
+            "label": "Procurement",
+            "proof_item_id": None,
+            "scope": "spend/vendor review",
+            "required": False,
+            "not_required_reason": "repo-access lane has no spend or vendor movement",
+        },
+    )
+    ready_to_circulate = run.stage == "ready_to_export" and packet.get("verdict") == "ready_with_gates"
+    approvals: list[dict[str, Any]] = []
+    for approver in required_approvers:
+        proof_item_id = approver.get("proof_item_id")
+        required = bool(approver["required"])
+        if not required:
+            state = "not_required"
+        elif proof_item_id in attached_ids and ready_to_circulate:
+            state = "approved_for_scoped_validation"
+        elif proof_item_id in attached_ids:
+            state = "recorded_pending_packet_rerun"
+        else:
+            state = "missing"
+        approvals.append(
+            {
+                "role_id": approver["role_id"],
+                "label": approver["label"],
+                "required": required,
+                "approval_state": state,
+                "proof_item_id": proof_item_id,
+                "scope": approver["scope"],
+                "not_required_reason": approver.get("not_required_reason"),
+                "approves_outside_scope": False,
+            }
+        )
+
+    required = [item for item in approvals if item["required"]]
+    recorded = [
+        item
+        for item in required
+        if item["approval_state"] in {"approved_for_scoped_validation", "recorded_pending_packet_rerun"}
+    ]
+    missing = [item for item in required if item["approval_state"] == "missing"]
+    if ready_to_circulate:
+        receipt_status = "ready_to_circulate"
+        human_approval_state = "recorded_for_scoped_validation"
+    elif not missing and recorded:
+        receipt_status = "pending_packet_rerun"
+        human_approval_state = "proof_recorded_rerun_required"
+    else:
+        receipt_status = "pending_human_approval"
+        human_approval_state = "missing_required_approval"
+
+    issued_at = generated_at or run.updated_at or _utcnow()
+    expires_at = _add_utc_days(issued_at, valid_for_days)
+    receipt_id = f"rcpt_{_digest(f'{packet_id}:{revision_id}:{content_hash}')[:10]}"
+    receipt = {
+        "schema_version": REVIEW_RUN_APPROVAL_RECEIPT_SCHEMA_VERSION,
+        "receipt_id": receipt_id,
+        "receipt_type": "portable_approval_receipt_for_ai_movement",
+        "product_object": "Portable approval receipt",
+        "status": receipt_status,
+        "can_circulate": ready_to_circulate,
+        "read_only": True,
+        "issued_at": issued_at,
+        "expires_at": expires_at,
+        "valid_for_days": valid_for_days,
+        "verification_path": f"/api/review-runs/{run.run_id}/approval-receipt",
+        "packet_reference": {
+            "packet_id": packet_id,
+            "revision_id": revision_id,
+            "revision_number": int(packet.get("revision_number") or 0),
+            "previous_revision_id": packet.get("previous_revision_id"),
+            "content_hash": content_hash,
+            "run_id": run.run_id,
+            "source_of_truth": "ReviewRun",
+        },
+        "movement": {
+            "verdict": packet.get("verdict"),
+            "allowed_scope": list(movement["allowed"]),
+            "review_required_scope": list(movement["review_required"]),
+            "still_blocked_scope": list(movement["blocked"]),
+            "movement_class": "scoped_validation" if ready_to_circulate else "blocked_until_receipt_ready",
+        },
+        "approval_summary": {
+            "human_approval_state": human_approval_state,
+            "required_count": len(required),
+            "recorded_count": len(recorded),
+            "missing_count": len(missing),
+            "required_roles": [item["role_id"] for item in required],
+            "missing_roles": [item["role_id"] for item in missing],
+            "not_required_roles": [item["role_id"] for item in approvals if not item["required"]],
+        },
+        "approvals": approvals,
+        "proof_receipts": list(run.attached_proof or []),
+        "portkey": {
+            "state": _portkey_state(run.portkey_preview, default="Block"),
+            "event_id": None,
+            "api_call_made": False,
+            "policy_mutation_allowed": False,
+            "consumes_packet_revision": revision_id,
+        },
+        "revocation": {
+            "supersedes_revision_id": packet.get("previous_revision_id"),
+            "reverify_on_new_packet_revision": True,
+            "reverify_before_production_access": True,
+            "receipt_expiration_invalidates_movement": True,
+        },
+        "delegation": {
+            "manager": "Business/workflow ownership review is carried by the receipt once recorded.",
+            "security": "Security boundary review is carried by the receipt; secrets and org-wide access stay blocked.",
+            "procurement": "Procurement is not required for this repo-access lane; spend lanes must require it.",
+        },
+        "safety_boundary": {
+            "ia_approved": False,
+            "ia_grants_permissions": False,
+            "ia_executes_external_writes": False,
+            "ia_mutates_portkey_policy": False,
+            "receipt_expands_scope": False,
+            "raw_agent_intent_trusted": False,
+            "humans_approved_scope": ready_to_circulate,
+            "downstream_must_enforce_scope": True,
+        },
+        "safety_anchor": (
+            "Humans approve scoped movement. IA records and packages the receipt. "
+            "Downstream systems verify the receipt; IA does not approve, write, grant, or mutate policy."
+        ),
+    }
+    receipt["receipt_hash"] = _content_hash(receipt)
+    return _sanitize_public_value(receipt)
 
 
 def _review_run_repo_name(run: ReviewRun) -> str:

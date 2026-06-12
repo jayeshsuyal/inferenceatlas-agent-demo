@@ -9,12 +9,14 @@ from unittest import TestCase
 
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+    REVIEW_RUN_APPROVAL_RECEIPT_SCHEMA_VERSION,
     REVIEW_RUN_COACH_SCHEMA_VERSION,
     REVIEW_RUN_PROOFGRAPH_SCHEMA_VERSION,
     REVIEW_RUN_RECORD_SCHEMA_VERSION,
     REVIEW_RUN_SCHEMA_VERSION,
     assert_stage_transition,
     attach_review_run_proof,
+    build_review_run_approval_receipt,
     build_review_run_coach_answer,
     build_review_run_proofgraph,
     classify_review_run_access_request,
@@ -544,6 +546,82 @@ class ReviewRunContractTests(TestCase):
             rerun.movement_classes["allowed"],
             ["read issues", "comment", "create labels in selected repo"],
         )
+
+    def test_review_run_approval_receipt_tracks_human_scope_without_ia_approval(self) -> None:
+        packet_run = generate_initial_review_run_packet(
+            select_review_run_repo(create_review_run(now="2026-06-10T12:00:00Z"), _selected_repo()),
+            DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+            now="2026-06-10T12:01:00Z",
+        )
+
+        pending = build_review_run_approval_receipt(
+            packet_run,
+            generated_at="2026-06-10T12:02:00Z",
+        )
+        self.assertEqual(pending["schema_version"], REVIEW_RUN_APPROVAL_RECEIPT_SCHEMA_VERSION)
+        self.assertTrue(pending["receipt_id"].startswith("rcpt_"))
+        self.assertTrue(pending["receipt_hash"].startswith("sha256:"))
+        self.assertEqual(pending["status"], "pending_human_approval")
+        self.assertIs(pending["can_circulate"], False)
+        self.assertEqual(pending["approval_summary"]["missing_roles"], ["manager", "engineering", "security"])
+        self.assertEqual(pending["approval_summary"]["not_required_roles"], ["procurement"])
+        self.assertEqual(pending["movement"]["still_blocked_scope"], ["create labels", "repo admin", "org-wide write", "secrets"])
+        self.assertIs(pending["safety_boundary"]["ia_approved"], False)
+        self.assertIs(pending["safety_boundary"]["humans_approved_scope"], False)
+        self.assertIs(pending["safety_boundary"]["ia_mutates_portkey_policy"], False)
+        self.assertEqual(pending["expires_at"], "2026-07-10T12:02:00Z")
+        self.assertIn("Downstream systems verify", pending["safety_anchor"])
+
+        proof_attached = attach_review_run_proof(
+            packet_run,
+            [
+                {"id": "repo_owner_approval"},
+                {"id": "rollback_offswitch"},
+                {"id": "environment_boundary"},
+            ],
+            now="2026-06-10T12:03:00Z",
+        )
+        pending_rerun = build_review_run_approval_receipt(
+            proof_attached,
+            generated_at="2026-06-10T12:04:00Z",
+        )
+        self.assertEqual(pending_rerun["status"], "pending_packet_rerun")
+        self.assertEqual(pending_rerun["approval_summary"]["recorded_count"], 3)
+        self.assertEqual(pending_rerun["approval_summary"]["missing_count"], 0)
+        self.assertEqual(
+            {item["approval_state"] for item in pending_rerun["approvals"] if item["required"]},
+            {"recorded_pending_packet_rerun"},
+        )
+        self.assertIs(pending_rerun["safety_boundary"]["humans_approved_scope"], False)
+
+        rerun = generate_proof_resolved_review_run_packet(
+            proof_attached,
+            DEFAULT_REVIEW_RUN_ACCESS_REQUEST,
+            now="2026-06-10T12:05:00Z",
+        )
+        receipt = build_review_run_approval_receipt(
+            rerun,
+            generated_at="2026-06-10T12:06:00Z",
+        )
+        self.assertEqual(receipt["status"], "ready_to_circulate")
+        self.assertIs(receipt["can_circulate"], True)
+        self.assertEqual(receipt["approval_summary"]["human_approval_state"], "recorded_for_scoped_validation")
+        self.assertEqual(receipt["approval_summary"]["recorded_count"], 3)
+        self.assertEqual(receipt["approval_summary"]["missing_count"], 0)
+        self.assertEqual(
+            {item["approval_state"] for item in receipt["approvals"] if item["required"]},
+            {"approved_for_scoped_validation"},
+        )
+        self.assertEqual(receipt["movement"]["allowed_scope"], ["read issues", "comment", "create labels in selected repo"])
+        self.assertEqual(receipt["movement"]["still_blocked_scope"], ["repo admin", "org-wide write", "secrets"])
+        self.assertEqual(receipt["portkey"]["state"], "Allow with policy")
+        self.assertEqual(receipt["portkey"]["consumes_packet_revision"], rerun.packet["revision_id"])
+        self.assertEqual(receipt["revocation"]["supersedes_revision_id"], packet_run.packet["revision_id"])
+        self.assertIs(receipt["revocation"]["reverify_on_new_packet_revision"], True)
+        self.assertIs(receipt["safety_boundary"]["ia_approved"], False)
+        self.assertIs(receipt["safety_boundary"]["ia_grants_permissions"], False)
+        self.assertIs(receipt["safety_boundary"]["receipt_expands_scope"], False)
+        self.assertIs(receipt["safety_boundary"]["humans_approved_scope"], True)
 
     def test_review_run_proofgraph_tracks_packet_revisions_and_zero_writes(self) -> None:
         run = create_review_run(now="2026-06-10T12:00:00Z")

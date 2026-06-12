@@ -396,7 +396,7 @@ def _check_first_run(base_url: str, timeout: float) -> None:
     _require("fetchPortkeyProofForFixture" in js, "Portkey proof fetch helper missing")
     _require("fetchReviewRunPortkeyGuardrailTest" in js, "ReviewRun Portkey guardrail test helper missing")
     _require("fetchReviewRunPortkeyReceipt" in js, "ReviewRun Portkey receipt helper missing")
-    _require("/api/portkey/guardrail/events" in js, "ReviewRun Portkey receipt endpoint missing in UI")
+    _require("/portkey/live-proof" in js, "ReviewRun Portkey live proof endpoint missing in UI")
     _require("/portkey/guardrail-test" in js, "ReviewRun Portkey guardrail endpoint missing in UI")
     _require("Test Portkey guardrail" in js, "ReviewRun Portkey test CTA missing")
     _require("repo-portkey-runway" in js, "Portkey runway strip missing")
@@ -429,7 +429,10 @@ def _check_first_run(base_url: str, timeout: float) -> None:
         "Portkey call receipt",
         "Live BYO webhook",
         "Rehearsal webhook",
-        "Local tests stay separate.",
+        "Portkey enforcement outcome",
+        "live Portkey dashboard proof",
+        "Copy Portkey metadata",
+        "Refresh live proof",
     ):
         _require(expected in js, f"Portkey final runway missing: {expected}")
     _require(

@@ -250,6 +250,7 @@ let packetPortkeyProofLoop = null;
 let currentReviewRunProofGraph = null;
 let currentReviewRunPortkeyTest = null;
 let currentReviewRunPortkeyReceipt = null;
+let reviewRunPortkeyAutoRefreshKey = "";
 let currentReviewRunApprovalReceipt = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
@@ -2672,6 +2673,7 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
   updateReviewRunStageStatus(stage, packet);
   updateReviewRunCoachChrome(stage);
   renderReviewFlowProgress();
+  maybeAutoRefreshReviewRunPortkeyReceipt(stage, packet);
   return stage;
 }
 
@@ -4907,7 +4909,18 @@ function isExternalPortkeyReceipt(event) {
   return ["portkey_byo_guardrail", "rehearsal_probe"].includes(event?.kind);
 }
 
+function isReviewRunPortkeyLiveProof(value) {
+  return value?.schema_version === "review_run_portkey_live_proof.v0";
+}
+
 function portkeyReceiptMatchesPacket(event, packetRef = packetDetail?.packet_reference || {}) {
+  if (isReviewRunPortkeyLiveProof(event)) {
+    const ref = event.current_packet || {};
+    if (currentReviewRun?.run_id && event.run_id !== currentReviewRun.run_id) return false;
+    if (packetRef.packet_id && ref.packet_id !== packetRef.packet_id) return false;
+    if (packetRef.revision_id && ref.revision_id !== packetRef.revision_id) return false;
+    return true;
+  }
   if (!event || !isExternalPortkeyReceipt(event)) return false;
   if (currentReviewRun?.run_id && event.review_run_id !== currentReviewRun.run_id) return false;
   if (packetRef.packet_id && event.packet_id !== packetRef.packet_id) return false;
@@ -4980,11 +4993,28 @@ function formatApprovalReceiptPrSnippet(receipt) {
 
 async function fetchReviewRunPortkeyReceipt(runId = currentReviewRun?.run_id, packetRef = packetDetail?.packet_reference || {}) {
   if (!runId || !packetRef?.revision_id) return null;
-  const res = await fetch("/api/portkey/guardrail/events");
+  const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/portkey/live-proof`);
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.ok) throw new Error(data.detail || "Portkey receipt lookup failed");
-  const events = Array.isArray(data.events) ? data.events : [];
-  return events.find((event) => portkeyReceiptMatchesPacket(event, packetRef)) || null;
+  const proof = data.portkey_live_proof || null;
+  return portkeyReceiptMatchesPacket(proof, packetRef) ? proof : null;
+}
+
+function formatPortkeyLiveMetadata(proof) {
+  if (!proof) return "";
+  return JSON.stringify(
+    {
+      webhook_path: proof.webhook_path || "/api/portkey/guardrail",
+      method: proof.webhook_method || "POST",
+      headers: {
+        Authorization: "Bearer <PORTKEY_GUARDRAIL_TOKEN>",
+        "Content-Type": "application/json",
+      },
+      metadata: proof.setup_metadata || {},
+    },
+    null,
+    2
+  );
 }
 
 async function refreshReviewRunPortkeyReceipt({ rerender = false } = {}) {
@@ -4993,6 +5023,17 @@ async function refreshReviewRunPortkeyReceipt({ rerender = false } = {}) {
     renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
   }
   return currentReviewRunPortkeyReceipt;
+}
+
+function maybeAutoRefreshReviewRunPortkeyReceipt(stage = reviewRunUiStage(), packet = packetDetail) {
+  const packetRef = packet?.packet_reference || {};
+  if (reviewRunActiveScreen(stage) !== "portkey_gate") return;
+  if (!currentReviewRun?.run_id || !packetRef.packet_id || !packetRef.revision_id) return;
+  if (portkeyReceiptMatchesPacket(currentReviewRunPortkeyReceipt, packetRef)) return;
+  const refreshKey = `${currentReviewRun.run_id}:${packetRef.packet_id}:${packetRef.revision_id}`;
+  if (reviewRunPortkeyAutoRefreshKey === refreshKey) return;
+  reviewRunPortkeyAutoRefreshKey = refreshKey;
+  void refreshReviewRunPortkeyReceipt({ rerender: true });
 }
 
 function packetPortkeyExportName(payload) {
@@ -5295,6 +5336,8 @@ async function fetchRepoSponsorTrace() {
 
 function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (!repoProofCockpit) return;
+  const livePortkeyDashboardProofLabel = "Live Portkey dashboard proof";
+  const liveByoWebhookLabel = "Live BYO webhook";
   const decision = packet.decision || {};
   const trace = packet.sponsor_proof_trace || {};
   const packetRef = packet.packet_reference || {};
@@ -5327,6 +5370,8 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const portkeyReceipt = portkeyReceiptMatchesPacket(currentReviewRunPortkeyReceipt, packetRef)
     ? currentReviewRunPortkeyReceipt
     : null;
+  const portkeyLiveProof = isReviewRunPortkeyLiveProof(portkeyReceipt) ? portkeyReceipt : null;
+  const portkeyEventProof = portkeyLiveProof?.latest_event || portkeyReceipt;
   const approvalReceipt = approvalReceiptMatchesPacket(currentReviewRunApprovalReceipt, packetRef)
     ? currentReviewRunApprovalReceipt
     : null;
@@ -5336,21 +5381,27 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const approvalReceiptReady = Boolean(approvalReceipt?.can_circulate);
   const approvalReceiptStatus = approvalReceipt ? approvalReceiptStatusLabel(approvalReceipt) : "Verification pending";
   const approvalReceiptPath = approvalReceiptVerificationPath(approvalReceipt);
-  const portkeyReceiptKind = portkeyReceipt?.kind === "rehearsal_probe"
+  const portkeyReceiptKind = portkeyLiveProof?.dashboard_label || (portkeyEventProof?.kind === "rehearsal_probe"
     ? "Rehearsal webhook"
-    : portkeyReceipt?.kind === "portkey_byo_guardrail"
-      ? "Live BYO webhook"
-      : "Waiting for webhook";
-  const portkeyReceiptVerdict = typeof portkeyReceipt?.verdict === "boolean"
-    ? portkeyReceipt.verdict
+    : portkeyEventProof?.kind === "portkey_byo_guardrail"
+      ? `${livePortkeyDashboardProofLabel} (${liveByoWebhookLabel})`
+      : "Waiting for webhook");
+  const portkeyReceiptVerdict = typeof portkeyEventProof?.verdict === "boolean"
+    ? portkeyEventProof.verdict
       ? "Allow with policy"
       : "Block"
     : "Not received";
   const portkeyReceiptLatency =
-    typeof portkeyReceipt?.elapsed_ms === "number" ? `${portkeyReceipt.elapsed_ms}ms` : "not received";
+    typeof portkeyEventProof?.elapsed_ms === "number" ? `${portkeyEventProof.elapsed_ms}ms` : "not received";
   const portkeyReceiptMutation = Boolean(
-    portkeyReceipt?.api_mutation || portkeyReceipt?.policy_mutation || portkeyReceipt?.external_writes
+    portkeyEventProof?.api_mutation || portkeyEventProof?.policy_mutation || portkeyEventProof?.external_writes
   );
+  const portkeyLiveHeadline = portkeyLiveProof?.headline || (
+    portkeyReceipt ? "Portkey webhook proof matched this packet revision." : "Waiting for Portkey to call IA through the BYO Guardrail webhook."
+  );
+  const portkeyLiveOutcome = portkeyLiveProof?.enforcement_outcome || portkeyReceiptVerdict;
+  const portkeyLiveStatus = portkeyLiveProof?.status || (portkeyReceipt ? "webhook_received" : "waiting_for_webhook");
+  const portkeyLiveReady = Boolean(portkeyLiveProof?.live_proof_ready || portkeyReceipt);
   const portkeyApiMutation = Boolean(
     portkeyTest?.invariants?.portkey_api_call_made
     || portkeyTest?.api_call_made
@@ -5550,21 +5601,25 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
             <span>Portkey call receipt</span>
             <strong>${escapeHtml(portkeyReceiptKind)}</strong>
           </div>
-          <p>${escapeHtml(portkeyReceipt
-            ? `Event ${portkeyReceipt.event_id || "recorded"} matched ${portkeyReceipt.revision_id || packetRef.revision_id || "current revision"}.`
-            : "Waiting for Portkey to call IA through the BYO Guardrail webhook. Local tests stay separate."
-          )}</p>
+          <p>${escapeHtml(portkeyLiveHeadline)}</p>
           <div class="repo-portkey-receipt-grid">
-            <div><span>Event kind</span><strong>${escapeHtml(portkeyReceipt?.kind || "none")}</strong></div>
+            <div><span>Proof status</span><strong>${escapeHtml(portkeyLiveStatus.replace(/_/g, " "))}</strong></div>
+            <div><span>Portkey enforcement outcome</span><strong>${escapeHtml(portkeyLiveOutcome)}</strong></div>
+            <div><span>Event kind</span><strong>${escapeHtml(portkeyEventProof?.kind || "none")}</strong></div>
             <div><span>Webhook verdict</span><strong>${escapeHtml(portkeyReceiptVerdict)}</strong></div>
             <div><span>Webhook latency</span><strong>${escapeHtml(portkeyReceiptLatency)}</strong></div>
-            <div><span>Mutation flags</span><strong>${escapeHtml(portkeyReceipt ? String(portkeyReceiptMutation) : "none")}</strong></div>
+            <div><span>Mutation flags</span><strong>${escapeHtml(portkeyLiveReady ? String(portkeyReceiptMutation) : "none")}</strong></div>
           </div>
+          <div class="repo-receipt-actions">
+            <button type="button" class="btn-ghost" data-refresh-portkey-live-proof>Refresh live proof</button>
+            <button type="button" class="btn-ghost" data-copy-portkey-metadata${portkeyLiveProof ? "" : " disabled"}>Copy Portkey metadata</button>
+          </div>
+          <p class="repo-microcopy">A live Portkey dashboard proof means Portkey called IA's BYO Guardrail and changed the enforcement outcome from the packet. Policy mutation remains false.</p>
         </div>
         <div class="repo-portkey-handoff" aria-label="Portkey handoff result">
           <div><span>Packet id</span><strong>${escapeHtml(portkeyTest?.packet_reference?.packet_id || packetRef.packet_id || "not generated")}</strong></div>
           <div><span>Revision</span><strong>${escapeHtml(portkeyTest?.packet_reference?.revision_id || packetRef.revision_id || "not generated")}</strong></div>
-          <div><span>Event id</span><strong>${escapeHtml(eventLabel)}</strong></div>
+          <div><span>Event id</span><strong>${escapeHtml(portkeyEventProof?.event_id || eventLabel)}</strong></div>
           <div><span>Allowed scope</span><strong>${escapeHtml(allowedLabel)}</strong></div>
           <div><span>Still-blocked scope</span><strong>${escapeHtml(blockedLabel)}</strong></div>
           <div><span>Latency</span><strong>${escapeHtml(latencyLabel)}</strong></div>
@@ -5582,6 +5637,25 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     if (testButton) {
       testButton.addEventListener("click", () => testReviewRunPortkeyGuardrail());
     }
+    repoPortkeyCard.querySelector("[data-refresh-portkey-live-proof]")?.addEventListener("click", async () => {
+      currentReviewRunPortkeyReceipt = await fetchReviewRunPortkeyReceipt().catch(() => currentReviewRunPortkeyReceipt);
+      renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+      if (repoCockpitStatus) {
+        repoCockpitStatus.classList.remove("error");
+        repoCockpitStatus.textContent = currentReviewRunPortkeyReceipt?.live_proof_ready
+          ? `Live Portkey proof matched ${packetRef.revision_id || "current revision"}: ${currentReviewRunPortkeyReceipt.enforcement_outcome}.`
+          : "Waiting for Portkey to call IA through the BYO Guardrail webhook.";
+      }
+    });
+    repoPortkeyCard.querySelector("[data-copy-portkey-metadata]")?.addEventListener("click", async () => {
+      const copied = await copyTextWithFallback(formatPortkeyLiveMetadata(portkeyLiveProof));
+      if (repoCockpitStatus) {
+        repoCockpitStatus.classList.toggle("error", !copied);
+        repoCockpitStatus.textContent = copied
+          ? "Portkey BYO metadata copied. Paste it into the dashboard guardrail request metadata."
+          : "Clipboard unavailable. Use the setup metadata shown in the live proof API.";
+      }
+    });
     repoPortkeyCard.open = portkeyTested || portkeyRunwayReady;
   }
   setCoachForPacket(packet, portkeyPayload);

@@ -645,6 +645,20 @@
       </main>
     </div>
 
+    <div class="repo-index-detail-modal" id="repo-index-detail-modal" hidden role="dialog" aria-modal="true" aria-labelledby="repo-index-detail-title">
+      <div class="repo-index-detail-backdrop" id="repo-index-detail-backdrop"></div>
+      <div class="repo-index-detail-panel">
+        <header class="repo-index-detail-head">
+          <div>
+            <span class="repo-card-label">Repository index</span>
+            <h2 id="repo-index-detail-title">Index presentation</h2>
+          </div>
+          <button type="button" class="repo-index-detail-close" id="repo-index-detail-close" aria-label="Close index presentation">×</button>
+        </header>
+        <div class="repo-index-detail-body" id="repo-index-detail-body"></div>
+      </div>
+    </div>
+
     <div class="review-session-hub" id="review-session-hub" data-expanded="false">
       <button
         type="button"
@@ -665,18 +679,13 @@
           </div>
           <button type="button" class="review-session-hub-close" id="review-session-hub-close" aria-label="Close session panel">×</button>
         </div>
-        <p class="review-session-hub-session">
-          <span>Session id</span>
-          <code id="review-session-hub-session-id">—</code>
-        </p>
-        <p class="review-session-hub-hint">One session can hold many ReviewRuns. Each repo you connect starts a new run. Coach chats stay tied to the active run.</p>
         <button type="button" class="btn-primary review-session-hub-new-run" id="btn-new-review-run">New run in session</button>
-        <ul class="review-session-hub-list" id="review-session-hub-list" role="list"></ul>
+        <div class="review-session-hub-accordion" id="review-session-hub-accordion"></div>
       </div>
     </div>
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/app.js?v=83"></script>
+    <script src="/static/app.js?v=86"></script>
   </body>
 </html>

@@ -11,14 +11,24 @@ import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
 from .connector_runtime import _now_iso, _raw_connection, load_session, save_session
+from .repo_index_scoring import TEXT_EXTENSIONS, pick_scored_paths
+from .repo_index_store import (
+    build_digest_from_store,
+    build_manifest_paths,
+    load_preindex_manifest,
+    load_report,
+    save_chunk,
+    save_manifest,
+    save_report,
+    build_index_report,
+    list_chunks,
+)
 from .scenarios import ROOT_DIR
 
-TEXT_EXTENSIONS = frozenset(
-    {".md", ".txt", ".json", ".yaml", ".yml", ".toml", ".py", ".js", ".ts", ".tsx", ".jsx", ".csv", ".sql", ".sh", ".env.example"}
-)
 MAX_DIGEST_CHARS = 48_000
 MAX_FILE_BYTES = 24_000
 MAX_FILES = 10
+SUBTREE_PREFIXES = (".github/", "docs/", "doc/", "src/", "agent/", "api/", "web/", "schemas/")
 
 
 def _github_headers(token: str) -> dict[str, str]:
@@ -172,24 +182,49 @@ def _fetch_readme(token: str, owner: str, repo: str) -> str:
         return ""
 
 
-def _fetch_tree_paths(token: str, owner: str, repo: str, branch: str) -> List[str]:
+def _fetch_tree_paths(token: str, owner: str, repo: str, branch: str) -> tuple[List[str], bool]:
+    """Return all blob paths and whether GitHub truncated the recursive tree."""
     try:
         ref = _github_get(token, f"/repos/{owner}/{repo}/git/ref/heads/{branch}")
         sha = ref.get("object", {}).get("sha")
         if not sha:
-            return []
-        tree = _github_get(
-            token,
-            f"/repos/{owner}/{repo}/git/trees/{sha}?recursive=1",
-        )
-        paths = []
-        for node in tree.get("tree", [])[:400]:
+            return [], False
+        tree = _github_get(token, f"/repos/{owner}/{repo}/git/trees/{sha}?recursive=1")
+        paths: list[str] = []
+        for node in tree.get("tree", []):
             p = node.get("path", "")
             if node.get("type") == "blob" and p:
                 paths.append(p)
-        return paths
+        truncated = bool(tree.get("truncated"))
+        if truncated:
+            paths.extend(_fetch_subtree_paths(token, owner, repo, sha))
+        return sorted(set(paths)), truncated
+    except Exception:
+        return [], False
+
+
+def _fetch_subtree_paths(token: str, owner: str, repo: str, root_sha: str) -> List[str]:
+    """Best-effort expansion when recursive tree is truncated."""
+    extra: list[str] = []
+    try:
+        root = _github_get(token, f"/repos/{owner}/{repo}/git/trees/{root_sha}")
+        for node in root.get("tree", []):
+            path = str(node.get("path") or "")
+            if node.get("type") != "tree":
+                continue
+            if not any(path == prefix.rstrip("/") or path.startswith(prefix) for prefix in SUBTREE_PREFIXES):
+                continue
+            sha = node.get("sha")
+            if not sha:
+                continue
+            subtree = _github_get(token, f"/repos/{owner}/{repo}/git/trees/{sha}?recursive=1")
+            for child in subtree.get("tree", []):
+                child_path = child.get("path", "")
+                if child.get("type") == "blob" and child_path:
+                    extra.append(f"{path}/{child_path}" if path else child_path)
     except Exception:
         return []
+    return extra
 
 
 def _fetch_file_content(token: str, owner: str, repo: str, path: str) -> str:
@@ -210,19 +245,8 @@ def _fetch_file_content(token: str, owner: str, repo: str, path: str) -> str:
 
 
 def _pick_files(paths: List[str]) -> List[str]:
-    priority = []
-    for name in ("README.md", "readme.md", "README", "pyproject.toml", "package.json", "Cargo.toml", "go.mod"):
-        if name in paths:
-            priority.append(name)
-    for p in paths:
-        if p in priority:
-            continue
-        if any(p.endswith(ext) for ext in TEXT_EXTENSIONS):
-            if p.count("/") <= 2 and not p.startswith(".git"):
-                priority.append(p)
-        if len(priority) >= MAX_FILES:
-            break
-    return priority[:MAX_FILES]
+    ranked = pick_scored_paths(paths, limit=MAX_FILES)
+    return [row["path"] for row in ranked]
 
 
 def _demo_digest(full_name: str) -> str:
@@ -237,19 +261,65 @@ def _demo_digest(full_name: str) -> str:
     return "\n\n".join(chunks)[:MAX_DIGEST_CHARS]
 
 
+def _apply_preindex_if_available(full_name: str) -> Optional[str]:
+    pre = load_preindex_manifest(full_name)
+    if not pre:
+        return None
+    save_manifest(full_name, {**pre, "preindexed": True})
+    digest = build_digest_from_store(full_name, max_chars=MAX_DIGEST_CHARS)
+    if digest:
+        report = load_report(full_name) or build_index_report(full_name, pre, list_chunks(full_name))
+        save_report(full_name, report)
+        return digest
+    return None
+
+
 def build_repo_digest(session_id: str, full_name: str) -> str:
     conn = _raw_connection(session_id, "github")
     owner, repo = _parse_full_name(full_name)
 
     if conn.get("mode") in ("demo_session", "demo_oauth") or not conn.get("access_token"):
-        return _demo_digest(full_name)
+        pre_digest = _apply_preindex_if_available(full_name)
+        return pre_digest or _demo_digest(full_name)
+
+    pre_digest = _apply_preindex_if_available(full_name)
+    if pre_digest:
+        return pre_digest
 
     token = conn["access_token"]
     meta = _github_get(token, f"/repos/{owner}/{repo}")
     branch = meta.get("default_branch") or "main"
     readme = _fetch_readme(token, owner, repo)
-    paths = _fetch_tree_paths(token, owner, repo, branch)
+    paths, truncated = _fetch_tree_paths(token, owner, repo, branch)
     pick = _pick_files(paths)
+
+    manifest = {
+        "default_branch": branch,
+        "truncated_tree": truncated,
+        "total_paths": len(paths),
+        "readme_found": bool(readme),
+        "readme_excerpt": readme[:12000] if readme else "",
+        "paths": build_manifest_paths(paths, truncated=truncated),
+        "index_complete": False,
+    }
+    save_manifest(full_name, manifest)
+
+    if readme:
+        save_chunk(full_name, "README.md", readme[:12000], tier="tier0")
+    for path in pick:
+        if path.lower().startswith("readme"):
+            continue
+        body = _fetch_file_content(token, owner, repo, path)
+        if body.strip():
+            save_chunk(full_name, path, body[:8000], tier="tier0")
+
+    fetched = {row["path"] for row in list_chunks(full_name)}
+    for row in manifest["paths"]:
+        if row["path"] in fetched:
+            row["fetched"] = True
+    manifest["digest_chars"] = len(build_digest_from_store(full_name, max_chars=MAX_DIGEST_CHARS))
+    save_manifest(full_name, manifest)
+    save_report(full_name, build_index_report(full_name, manifest, list_chunks(full_name)))
 
     parts = [
         f"# GitHub repository: {full_name}",

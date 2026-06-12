@@ -1,0 +1,19 @@
+{
+  "default_branch": "main",
+  "digest_chars": 12400,
+  "full_name": "inferenceatlas/support-triage-trial",
+  "index_complete": true,
+  "paths": [
+    {"category": "readme", "extension": ".md", "fetched": true, "path": "README.md", "score": 120},
+    {"category": "manifest", "extension": ".yml", "fetched": true, "path": "examples/requests/support_triage_trial.yml", "score": 95},
+    {"category": "agent_tools", "extension": ".py", "fetched": true, "path": "agent/trial.py", "score": 72},
+    {"category": "ci_cd", "extension": ".yml", "fetched": false, "path": ".github/workflows/smoke.yml", "score": 88},
+    {"category": "auth", "extension": ".yml", "fetched": false, "path": "policy/agent_access.yml", "score": 78}
+  ],
+  "preindexed": true,
+  "readme_excerpt": "Demo support triage repo — role-level access request fixtures for InferenceAtlas ReviewRun.",
+  "readme_found": true,
+  "schema_version": "repo_index_store.v1",
+  "total_paths": 42,
+  "truncated_tree": false
+}

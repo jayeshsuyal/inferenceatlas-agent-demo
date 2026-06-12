@@ -95,6 +95,19 @@ def record_flow_event(
     contexts[run_id] = ctx
     data["review_contexts"] = contexts
     save_session(session_id, data)
+
+    repo_name = repo_full_name or str(ctx.get("repo_full_name") or "")
+    if run_id and repo_name and trigger:
+        from .repo_index_stage_fetch import maybe_enqueue_stage_index_fetch
+
+        maybe_enqueue_stage_index_fetch(
+            session_id,
+            run_id,
+            trigger=trigger,
+            stage=stage,
+            repo_full_name=repo_name,
+        )
+
     return {"event": event, "validation": validation}
 
 
@@ -110,6 +123,14 @@ def get_review_context_bundle(
     coach_text = format_coach_session_context(run_id, store_dir=coach_store_dir)
     repo_name = str(ctx.get("repo_full_name") or "")
     attached = (data.get("github_attached") or {}).get(repo_name) or {}
+    from .repo_index_store import load_report
+
+    index_report = (
+        ctx.get("index_report")
+        or attached.get("index_report")
+        or load_report(repo_name)
+        or {}
+    )
     return {
         "ok": True,
         "run_id": run_id,
@@ -117,6 +138,7 @@ def get_review_context_bundle(
         "stage": ctx.get("stage") or "",
         "repo_full_name": repo_name,
         "index_summary": ctx.get("index_summary") or attached.get("index_summary") or "",
+        "index_report": index_report,
         "index_complete": bool(ctx.get("index_complete") or attached.get("full_index_complete")),
         "index_job_id": ctx.get("index_job_id") or "",
         "flow_events": ctx.get("flow_events") or [],
@@ -149,6 +171,35 @@ def list_review_runs_for_session(
             record_run = {}
         selected = record_run.get("selected_repo") or {}
         packet = record_run.get("packet") or {}
+        flow_events = list(ctx.get("flow_events") or [])
+        coach_session = load_coach_session(run_id, store_dir=DEFAULT_COACH_SESSION_DIR)
+        coach_turns = list(coach_session.get("turns") or [])
+        checkpoints = list(coach_session.get("checkpoints") or [])
+        last_flow = flow_events[-1] if flow_events else {}
+        last_checkpoint = checkpoints[-1] if checkpoints else {}
+        index_summary = str(ctx.get("index_summary") or "").strip()
+        summary = (
+            str(last_flow.get("summary") or "").strip()
+            or str(last_checkpoint.get("summary") or "").strip()
+            or (index_summary[:220] + ("…" if len(index_summary) > 220 else "") if index_summary else "")
+            or f"ReviewRun at stage {ctx.get('stage') or record_run.get('stage') or 'unknown'}."
+        )
+        tool_triggers = []
+        for event in flow_events:
+            trigger = str(event.get("trigger") or event.get("stage") or "").strip()
+            if trigger and trigger not in tool_triggers:
+                tool_triggers.append(trigger)
+        if coach_turns and "coach_stream" not in tool_triggers:
+            tool_triggers.append("coach_stream")
+        if index_summary and "repo_index" not in tool_triggers:
+            tool_triggers.append("repo_index")
+        context_used = [
+            f"Repo: {ctx.get('repo_full_name') or selected.get('full_name') or 'none'}",
+            f"Packet: {packet.get('packet_id') or 'not generated'}",
+            f"Revision: {packet.get('revision_id') or 'n/a'}",
+            f"Index: {'complete' if ctx.get('index_complete') else 'partial or pending'}",
+            f"Coach turns: {len(coach_turns)}",
+        ]
         items.append(
             {
                 "run_id": run_id,
@@ -168,7 +219,10 @@ def list_review_runs_for_session(
                     or ""
                 ),
                 "created_at": str(record_run.get("created_at") or ""),
-                "coach_turns": len(load_coach_session(run_id, store_dir=DEFAULT_COACH_SESSION_DIR).get("turns") or []),
+                "coach_turns": len(coach_turns),
+                "summary": summary,
+                "tools_used": tool_triggers,
+                "context_used": context_used,
             }
         )
     items.sort(key=lambda row: row.get("updated_at") or row.get("created_at") or "", reverse=True)

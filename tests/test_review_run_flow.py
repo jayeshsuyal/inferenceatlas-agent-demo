@@ -33,6 +33,9 @@ class ReviewRunFlowTests(unittest.TestCase):
         self.assertEqual(len(runs), 2)
         self.assertEqual(runs[0]["run_id"], "ia-review-run-aaa")
         self.assertEqual(runs[1]["run_id"], "ia-review-run-bbb")
+        self.assertIn("summary", runs[0])
+        self.assertIn("tools_used", runs[0])
+        self.assertIn("context_used", runs[0])
 
     def test_record_flow_event_appends_context(self) -> None:
         session_id = "reviewer-smoke-session-flow-2"

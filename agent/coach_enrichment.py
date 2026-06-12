@@ -125,6 +125,17 @@ def enrich_review_run_coach_answer(
         )
         bundle = get_review_context_bundle(session_id, run.run_id, coach_store_dir=store_dir)
         session_context = format_context_for_coach(bundle)
+        if config.MEM0_ENABLED:
+            from .mem0_memory import add_memory, format_mem0_context_block
+
+            mem0_block = format_mem0_context_block(prompt or trigger or run.stage, run_id=run.run_id)
+            if mem0_block:
+                session_context = f"{session_context}\n\n{mem0_block}".strip()
+            add_memory(
+                coach_session_summary(base_answer, trigger=trigger),
+                run_id=run.run_id,
+                metadata={"stage": run.stage, "trigger": trigger or prompt_kind, "source": "review_run_coach"},
+            )
     enriched["session_context_included"] = bool(session_context)
 
     providers = [str(base_answer.get("coach_provider") or "review_run_state_coach")]

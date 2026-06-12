@@ -1,4 +1,4 @@
-"""Background full-repository indexing jobs (quick attach first, deep index async)."""
+"""Background tier-1 repo indexing jobs (quick attach first, scored deep index async)."""
 
 from __future__ import annotations
 
@@ -11,13 +11,22 @@ from typing import Any, Optional
 
 from .connector_runtime import _raw_connection, load_session, save_session
 from .github_repo import (
-    TEXT_EXTENSIONS,
     _attached_repos,
     _digest_index_meta,
     _fetch_file_content,
     _fetch_tree_paths,
     _github_get,
     _parse_full_name,
+)
+from .repo_index_scoring import pick_scored_paths
+from .repo_index_store import (
+    build_digest_from_store,
+    build_index_report,
+    list_chunks,
+    load_manifest,
+    save_chunk,
+    save_manifest,
+    save_report,
 )
 from .scenarios import ROOT_DIR
 
@@ -80,6 +89,7 @@ def get_index_job(job_id: str) -> Optional[dict[str, Any]]:
             "files_total": job.get("files_total", 0),
             "digest_chars": job.get("digest_chars", 0),
             "summary": job.get("summary", ""),
+            "report": job.get("report") or {},
             "error": job.get("error", ""),
             "started_at": job.get("started_at", ""),
             "completed_at": job.get("completed_at", ""),
@@ -87,50 +97,19 @@ def get_index_job(job_id: str) -> Optional[dict[str, Any]]:
     }
 
 
+def _already_indexed_paths(full_name: str, base_digest: str) -> set[str]:
+    chunks = {str(row.get("path") or "") for row in list_chunks(full_name)}
+    legacy = {ln.split("\n### ", 1)[-1].split("\n", 1)[0] for ln in base_digest.split("\n### ")[1:]}
+    return {path for path in chunks | legacy if path}
+
+
 def _pick_background_files(paths: list[str], *, already_indexed: set[str]) -> list[str]:
-    chosen: list[str] = []
-    for path in paths:
-        if path in already_indexed:
-            continue
-        if not any(path.endswith(ext) for ext in TEXT_EXTENSIONS):
-            continue
-        if path.startswith(".git/"):
-            continue
-        chosen.append(path)
-        if len(chosen) >= MAX_BACKGROUND_FILES:
-            break
-    return chosen
+    ranked = pick_scored_paths(paths, limit=MAX_BACKGROUND_FILES, exclude=already_indexed)
+    return [row["path"] for row in ranked]
 
 
-def _build_repo_summary(full_name: str, digest: str, meta: dict[str, Any], files_indexed: int) -> str:
-    tree_count = meta.get("paths_in_tree", 0)
-    lines = [
-        f"# Repository index summary: {full_name}",
-        "",
-        f"- Digest size: **{len(digest):,}** characters",
-        f"- Files excerpted in digest: **{meta.get('files_included', files_indexed)}**",
-        f"- Paths discovered in tree: **{tree_count}**",
-        f"- README found: **{'yes' if meta.get('readme_found') else 'no'}**",
-        "",
-        "## What IA scoped",
-        "Quick index returned immediately so ReviewRun can proceed. "
-        "Background mining indexed additional text files across the repository tree.",
-        "",
-        "## Sample paths",
-    ]
-    for path in (meta.get("sample_paths") or [])[:12]:
-        lines.append(f"- `{path}`")
-    lines.extend(
-        [
-            "",
-            "## Next steps for this ReviewRun",
-            "Generate the IA Packet from the indexed repo context, attach proof for blocked claims, "
-            "then regenerate so Portkey reads the updated packet revision.",
-            "",
-            "_IA did not approve, write, or mutate access from this summary._",
-        ]
-    )
-    return "\n".join(lines)
+def _build_repo_summary(full_name: str, report: dict[str, Any]) -> str:
+    return str(report.get("narrative") or f"Indexed {full_name}.")
 
 
 def _run_background_index(job_id: str) -> None:
@@ -151,46 +130,49 @@ def _run_background_index(job_id: str) -> None:
     try:
         _update(status="running", phase="scoping", progress_pct=5)
         conn = _raw_connection(session_id, "github")
+        manifest = load_manifest(full_name) or {}
         if conn.get("mode") in ("demo_session", "demo_oauth") or not conn.get("access_token"):
             entry = _attached_repos(session_id).get(full_name, {})
-            digest = str(entry.get("digest") or "")
+            digest = str(entry.get("digest") or build_digest_from_store(full_name, max_chars=MAX_BACKGROUND_DIGEST_CHARS))
             meta = _digest_index_meta(digest, full_name)
-            summary = _build_repo_summary(full_name, digest, meta, meta.get("files_included", 0))
+            report = build_index_report(full_name, manifest or {"paths": []}, list_chunks(full_name), job_meta=_load_job(job_id))
+            save_report(full_name, report)
+            summary = _build_repo_summary(full_name, report)
             _update(
                 status="completed",
                 phase="done",
                 progress_pct=100,
                 digest_chars=len(digest),
                 summary=summary,
+                report=report,
                 completed_at=_utc_now(),
             )
-            _attach_summary_to_session(session_id, full_name, run_id, summary, digest, meta)
+            _attach_summary_to_session(session_id, full_name, run_id, summary, digest, meta, report)
             return
 
         owner, repo = _parse_full_name(full_name)
         token = conn["access_token"]
         meta_repo = _github_get(token, f"/repos/{owner}/{repo}")
         branch = meta_repo.get("default_branch") or "main"
-        paths = _fetch_tree_paths(token, owner, repo, branch)
+        paths, truncated = _fetch_tree_paths(token, owner, repo, branch)
         entry = _attached_repos(session_id).get(full_name, {})
-        base_digest = str(entry.get("digest") or "")
-        already = {ln.split("\n### ", 1)[-1].split("\n", 1)[0] for ln in base_digest.split("\n### ")[1:]}
+        base_digest = str(entry.get("digest") or build_digest_from_store(full_name))
+        already = _already_indexed_paths(full_name, base_digest)
 
         targets = _pick_background_files(paths, already_indexed=already)
         files_total = len(targets)
         _update(phase="mining", files_total=files_total, progress_pct=12)
 
-        extra_parts: list[str] = []
         total_chars = len(base_digest)
         indexed = 0
         for idx, path in enumerate(targets):
             body = _fetch_file_content(token, owner, repo, path)
             if not body.strip() or body.startswith("(file too large"):
                 continue
+            save_chunk(full_name, path, body[:CHUNK_FILE_CHARS], tier="tier1")
             block = f"\n### {path}\n```\n{body[:CHUNK_FILE_CHARS]}\n```\n"
             if total_chars + len(block) > MAX_BACKGROUND_DIGEST_CHARS:
                 break
-            extra_parts.append(block)
             total_chars += len(block)
             indexed += 1
             pct = 12 + int((idx + 1) / max(files_total, 1) * 78)
@@ -202,10 +184,39 @@ def _run_background_index(job_id: str) -> None:
             )
 
         _update(phase="summarizing", progress_pct=95)
-        full_digest = (base_digest + "\n\n## Background index\n" + "".join(extra_parts))[:MAX_BACKGROUND_DIGEST_CHARS]
+        manifest = load_manifest(full_name) or {
+            "full_name": full_name,
+            "default_branch": branch,
+            "truncated_tree": truncated,
+            "total_paths": len(paths),
+            "paths": [],
+        }
+        manifest.update(
+            {
+                "index_complete": True,
+                "digest_chars": total_chars,
+                "truncated_tree": truncated,
+                "total_paths": len(paths),
+            }
+        )
+        for row in manifest.get("paths") or []:
+            if row.get("path") in already or any(
+                str(chunk.get("path")) == row.get("path") for chunk in list_chunks(full_name)
+            ):
+                row["fetched"] = True
+        save_manifest(full_name, manifest)
+
+        full_digest = build_digest_from_store(full_name, max_chars=MAX_BACKGROUND_DIGEST_CHARS)
         meta = _digest_index_meta(full_digest, full_name)
-        summary = _build_repo_summary(full_name, full_digest, meta, indexed)
-        _attach_summary_to_session(session_id, full_name, run_id, summary, full_digest, meta)
+        report = build_index_report(
+            full_name,
+            manifest,
+            list_chunks(full_name),
+            job_meta={**(_load_job(job_id) or {}), "status": "completed", "files_indexed": indexed},
+        )
+        save_report(full_name, report)
+        summary = _build_repo_summary(full_name, report)
+        _attach_summary_to_session(session_id, full_name, run_id, summary, full_digest, meta, report)
         _update(
             status="completed",
             phase="done",
@@ -213,6 +224,7 @@ def _run_background_index(job_id: str) -> None:
             files_indexed=indexed,
             digest_chars=len(full_digest),
             summary=summary,
+            report=report,
             completed_at=_utc_now(),
         )
     except Exception as exc:
@@ -226,6 +238,7 @@ def _attach_summary_to_session(
     summary: str,
     digest: str,
     meta: dict[str, Any],
+    report: Optional[dict[str, Any]] = None,
 ) -> None:
     data = load_session(session_id)
     attached = data.setdefault("github_attached", {})
@@ -237,6 +250,7 @@ def _attach_summary_to_session(
             "digest_chars": len(digest),
             "full_index_complete": True,
             "index_summary": summary,
+            "index_report": report or {},
             **meta,
         }
     )
@@ -250,6 +264,7 @@ def _attach_summary_to_session(
                 "run_id": run_id,
                 "repo_full_name": full_name,
                 "index_summary": summary,
+                "index_report": report or {},
                 "index_complete": True,
                 "updated_at": _utc_now(),
             }
@@ -264,7 +279,7 @@ def start_background_full_index(
     *,
     run_id: str = "",
 ) -> dict[str, Any]:
-    """Kick off async deep indexing after quick attach returned."""
+    """Kick off async tier-1 scored indexing after quick attach returned."""
     conn = _raw_connection(session_id, "github")
     if conn.get("status") != "connected":
         return {"ok": False, "message": "GitHub not connected."}
@@ -283,6 +298,7 @@ def start_background_full_index(
         "files_total": 0,
         "digest_chars": 0,
         "summary": "",
+        "report": {},
         "error": "",
         "started_at": _utc_now(),
         "completed_at": "",
@@ -304,11 +320,13 @@ def get_session_review_context(session_id: str, run_id: str) -> dict[str, Any]:
     repo_name = str(ctx.get("repo_full_name") or "")
     index_job_id = str(ctx.get("index_job_id") or "")
     job = _load_job(index_job_id) if index_job_id else None
+    report = ctx.get("index_report") or (job or {}).get("report") or {}
     return {
         "ok": True,
         "run_id": run_id,
         "repo_full_name": repo_name,
         "index_summary": ctx.get("index_summary") or (job or {}).get("summary", ""),
+        "index_report": report,
         "index_complete": bool(ctx.get("index_complete")),
         "index_job": (job or {}).get("status"),
         "context": ctx,

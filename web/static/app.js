@@ -152,13 +152,31 @@ const reviewSessionHubBubble = document.getElementById("review-session-hub-bubbl
 const reviewSessionHubPanel = document.getElementById("review-session-hub-panel");
 const reviewSessionHubClose = document.getElementById("review-session-hub-close");
 const reviewSessionHubBadge = document.getElementById("review-session-hub-badge");
-const reviewSessionHubList = document.getElementById("review-session-hub-list");
-const reviewSessionHubSessionId = document.getElementById("review-session-hub-session-id");
+const reviewSessionHubAccordion = document.getElementById("review-session-hub-accordion");
 const btnNewReviewRun = document.getElementById("btn-new-review-run");
+let sessionHubSuppressOutsideClose = false;
+
+const REVIEW_RUN_TOOL_LABELS = {
+  repo_index: "GitHub repo index",
+  repo_selected: "Repo attach",
+  repo_indexed: "Repo index complete",
+  packet_generating: "IA Packet generation",
+  packet_generated: "IA Packet",
+  proof_attached: "Proof workbench",
+  packet_regenerated: "Packet rerun",
+  portkey_tested: "Portkey guardrail test",
+  coach_stream: "Ask IA coach stream",
+  ready_to_export: "Export brief",
+};
 const repoIndexTracker = document.getElementById("repo-index-tracker");
 const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
 const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
 const btnShowIndexSummary = document.getElementById("btn-show-index-summary");
+const repoIndexDetailModal = document.getElementById("repo-index-detail-modal");
+const repoIndexDetailBackdrop = document.getElementById("repo-index-detail-backdrop");
+const repoIndexDetailClose = document.getElementById("repo-index-detail-close");
+const repoIndexDetailBody = document.getElementById("repo-index-detail-body");
+const repoIndexDetailTitle = document.getElementById("repo-index-detail-title");
 const repoStageRepoStatus = document.getElementById("repo-stage-repo-status");
 const repoStagePacketStatus = document.getElementById("repo-stage-packet-status");
 const repoStageProofStatus = document.getElementById("repo-stage-proof-status");
@@ -238,6 +256,7 @@ let currentRepoIndexJobId = localStorage.getItem(INDEX_JOB_STORAGE_KEY) || "";
 let repoIndexPollTimer = null;
 let lastReviewRunStage = localStorage.getItem(REVIEW_STAGE_STORAGE_KEY) || "";
 let pendingIndexSummary = "";
+let pendingIndexReport = null;
 const COACH_CHIP_MAX_LABEL = 28;
 const COACH_FLOAT_WIDTH_KEY = "ia_coach_float_width_px";
 const COACH_FLOAT_HEIGHT_KEY = "ia_coach_float_height_px";
@@ -1334,8 +1353,201 @@ function renderRepoIndexTracker(job) {
   }
   if (status === "completed" && job.summary) {
     pendingIndexSummary = job.summary;
+    if (job.report) pendingIndexReport = job.report;
     appendCoachIndexSummaryToThread(job.summary);
     persistReviewRunState();
+  }
+}
+
+function closeRepoIndexDetailModal() {
+  if (!repoIndexDetailModal) return;
+  repoIndexDetailModal.hidden = true;
+  document.body.classList.remove("repo-index-detail-open");
+}
+
+function renderRepoIndexBarChart(rows, { valueKey = "count", maxBars = 8 } = {}) {
+  const data = (rows || []).slice(0, maxBars);
+  if (!data.length) return `<p class="repo-index-detail-empty">No category data yet.</p>`;
+  const max = Math.max(...data.map((row) => Number(row[valueKey] || 0)), 1);
+  const width = 280;
+  const barHeight = 18;
+  const gap = 8;
+  const height = data.length * (barHeight + gap) + 8;
+  const bars = data
+    .map((row, index) => {
+      const value = Number(row[valueKey] || 0);
+      const barWidth = Math.max(8, Math.round((value / max) * (width - 110)));
+      const y = 8 + index * (barHeight + gap);
+      return `
+        <g class="repo-index-bar-row">
+          <text x="0" y="${y + 13}" class="repo-index-chart-label">${escapeHtml(row.label || row.key || "")}</text>
+          <rect x="108" y="${y}" width="${barWidth}" height="${barHeight}" rx="4" class="repo-index-chart-bar"></rect>
+          <text x="${112 + barWidth}" y="${y + 13}" class="repo-index-chart-value">${escapeHtml(String(value))}</text>
+        </g>
+      `;
+    })
+    .join("");
+  return `<svg class="repo-index-bar-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Files by category">${bars}</svg>`;
+}
+
+function renderRepoIndexDonut(pct) {
+  const value = Math.max(0, Math.min(100, Number(pct || 0)));
+  const radius = 42;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - value / 100);
+  return `
+    <svg class="repo-index-donut" viewBox="0 0 120 120" role="img" aria-label="Index completeness ${value}%">
+      <circle cx="60" cy="60" r="${radius}" class="repo-index-donut-track"></circle>
+      <circle cx="60" cy="60" r="${radius}" class="repo-index-donut-fill" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}"></circle>
+      <text x="60" y="58" class="repo-index-donut-pct">${value}%</text>
+      <text x="60" y="74" class="repo-index-donut-caption">scoped</text>
+    </svg>
+  `;
+}
+
+function renderRepoIndexTierChart(rows) {
+  const data = rows || [];
+  if (!data.length) return "";
+  const max = Math.max(...data.map((row) => Number(row.chars || 0)), 1);
+  return `
+    <div class="repo-index-tier-bars">
+      ${data
+        .map((row) => {
+          const pct = Math.round((Number(row.chars || 0) / max) * 100);
+          return `
+            <div class="repo-index-tier-row">
+              <span>${escapeHtml(row.label || row.key || "")}</span>
+              <div class="repo-index-tier-track"><div class="repo-index-tier-fill" style="width:${pct}%"></div></div>
+              <code>${Number(row.chars || 0).toLocaleString()} chars</code>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function renderRepoIndexDetailPresentation(report) {
+  if (!report) return `<p class="repo-index-detail-empty">No structured index report yet.</p>`;
+  const repo = report.full_name || currentIndexedRepoName() || "Selected repo";
+  if (repoIndexDetailTitle) repoIndexDetailTitle.textContent = repo;
+  const stats = [
+    ["Paths discovered", report.total_paths ?? "—"],
+    ["Files excerpted", report.fetched_files ?? "—"],
+    ["Digest size", `${Number(report.digest_chars || 0).toLocaleString()} chars`],
+    ["README", report.readme_found ? "Found" : "Missing"],
+  ];
+  const topPaths = (report.top_paths || [])
+    .map(
+      (row) =>
+        `<li><code>${escapeHtml(row.path || "")}</code> <span>${escapeHtml(row.category || "")} · score ${escapeHtml(String(row.score ?? ""))}</span></li>`
+    )
+    .join("");
+  const unfetched = (report.high_relevance_unfetched || [])
+    .map((row) => `<li><code>${escapeHtml(row.path || "")}</code> <span>${escapeHtml(row.category || "")}</span></li>`)
+    .join("");
+  const stageFetches = (report.stage_fetches || [])
+    .slice(-5)
+    .map((row) => `<li>${escapeHtml((row.patterns || []).join(", "))} → ${(row.fetched || []).length} files</li>`)
+    .join("");
+  const flags = [
+    report.preindexed ? "Pre-indexed demo artifact" : null,
+    report.truncated_tree ? "GitHub tree truncated — subtrees expanded" : null,
+    report.index_complete ? "Tier-1 background index complete" : "Background index in progress",
+    report.enterprise_search?.enabled ? "Enterprise code search enabled" : null,
+  ].filter(Boolean);
+  return `
+    <p class="repo-index-detail-narrative">${escapeHtml(coachPlainText(report.narrative || pendingIndexSummary || ""))}</p>
+    <div class="repo-index-detail-stats">
+      ${stats
+        .map(
+          ([label, value]) => `
+        <div class="repo-index-detail-stat">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(String(value))}</strong>
+        </div>`
+        )
+        .join("")}
+    </div>
+    <div class="repo-index-detail-grid">
+      <section class="repo-index-detail-card">
+        <h3>Files by category</h3>
+        ${renderRepoIndexBarChart(report.category_chart)}
+      </section>
+      <section class="repo-index-detail-card repo-index-detail-card-donut">
+        <h3>Index completeness</h3>
+        ${renderRepoIndexDonut(report.completeness_pct)}
+        <ul class="repo-index-detail-flags">${flags.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+      </section>
+      <section class="repo-index-detail-card span-2">
+        <h3>Chars by indexing tier</h3>
+        ${renderRepoIndexTierChart(report.tier_chart)}
+      </section>
+      <section class="repo-index-detail-card">
+        <h3>Top excerpted paths</h3>
+        <ul class="repo-index-detail-list">${topPaths || "<li>No files excerpted yet.</li>"}</ul>
+      </section>
+      <section class="repo-index-detail-card">
+        <h3>High relevance (not yet fetched)</h3>
+        <ul class="repo-index-detail-list">${unfetched || "<li>All high-relevance paths fetched.</li>"}</ul>
+      </section>
+      ${
+        stageFetches
+          ? `<section class="repo-index-detail-card span-2"><h3>Stage-triggered fetches</h3><ul class="repo-index-detail-list">${stageFetches}</ul></section>`
+          : ""
+      }
+    </div>
+  `;
+}
+
+function currentIndexedRepoName() {
+  return (
+    currentReviewRun?.selected_repo?.full_name
+    || selectedGithubRepos[0]?.full_name
+    || ""
+  );
+}
+
+async function openRepoIndexDetailModal() {
+  if (!repoIndexDetailModal || !repoIndexDetailBody) return;
+  const repo = currentIndexedRepoName();
+  let report = pendingIndexReport;
+  if (repo && sessionId) {
+    try {
+      const runQuery = currentReviewRun?.run_id
+        ? `&run_id=${encodeURIComponent(currentReviewRun.run_id)}`
+        : "";
+      const res = await fetch(
+        `/api/sessions/${encodeURIComponent(sessionId)}/repos/${encodeURIComponent(repo)}/index-report${runQuery ? `?${runQuery.slice(1)}` : ""}`
+      );
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.ok && data.report) report = data.report;
+    } catch (_) {
+      /* fall back to cached report */
+    }
+  }
+  repoIndexDetailBody.innerHTML = renderRepoIndexDetailPresentation(report);
+  repoIndexDetailModal.hidden = false;
+  document.body.classList.add("repo-index-detail-open");
+}
+
+async function fetchReviewRunRepoPaths(patterns) {
+  if (!currentReviewRun?.run_id || !patterns?.length) return null;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/repo-index/fetch`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sessionId, patterns }),
+      }
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return null;
+    if (data.report) pendingIndexReport = data.report;
+    return data;
+  } catch (_) {
+    return null;
   }
 }
 
@@ -1402,6 +1614,7 @@ async function refreshReviewRunContextBundle() {
       pendingIndexSummary = data.index_summary;
       if (btnShowIndexSummary) btnShowIndexSummary.hidden = false;
     }
+    if (data.index_report) pendingIndexReport = data.index_report;
     if (data.stage) lastReviewRunStage = data.stage;
     return data;
   } catch (_) {
@@ -1471,7 +1684,7 @@ function scrollCoachThread() {
   if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
 }
 
-function appendCoachThreadSystemMessage(title, body, { marker = "", replace = true } = {}) {
+function appendCoachThreadSystemMessage(title, body, { marker = "", replace = true, runId = "" } = {}) {
   if (!repoCoachThread || !body) return null;
   if (marker && replace) {
     repoCoachThread.querySelector(`[data-coach-marker="${marker}"]`)?.remove();
@@ -1479,6 +1692,7 @@ function appendCoachThreadSystemMessage(title, body, { marker = "", replace = tr
   const row = document.createElement("div");
   row.className = "coach-thread-msg coach-thread-system";
   if (marker) row.dataset.coachMarker = marker;
+  if (runId) row.dataset.runId = runId;
   row.innerHTML = `
     <span class="coach-system-label">${escapeHtml(title)}</span>
     <div class="coach-system-body">${escapeHtml(coachPlainText(body))}</div>
@@ -2087,12 +2301,21 @@ function renderReviewFlowProgress() {
   });
 }
 
+function formatReviewRunToolLabel(trigger) {
+  const key = String(trigger || "").trim();
+  if (!key) return "";
+  return REVIEW_RUN_TOOL_LABELS[key] || key.replace(/_/g, " ");
+}
+
 function setReviewSessionHubExpanded(expanded) {
   if (!reviewSessionHub) return;
   const on = Boolean(expanded);
   reviewSessionHub.dataset.expanded = String(on);
   reviewSessionHub.classList.toggle("is-open", on);
-  if (reviewSessionHubPanel) reviewSessionHubPanel.hidden = !on;
+  if (reviewSessionHubPanel) {
+    reviewSessionHubPanel.hidden = !on;
+    reviewSessionHubPanel.setAttribute("aria-hidden", String(!on));
+  }
   if (reviewSessionHubBubble) {
     reviewSessionHubBubble.setAttribute("aria-expanded", String(on));
     reviewSessionHubBubble.setAttribute(
@@ -2103,47 +2326,167 @@ function setReviewSessionHubExpanded(expanded) {
   if (on) void refreshReviewRunRail();
 }
 
-async function refreshReviewRunRail() {
-  if (reviewSessionHubSessionId) {
-    reviewSessionHubSessionId.textContent = sessionId ? `${sessionId.slice(0, 10)}…` : "—";
+function renderReviewRunHubDetails(run) {
+  const tools = (run.tools_used || []).map(formatReviewRunToolLabel).filter(Boolean);
+  const context = run.context_used || [];
+  return `
+    <div class="review-session-hub-run-body">
+      <p class="review-session-hub-run-blurb">${escapeHtml(coachPlainText(run.summary || "No summary yet."))}</p>
+      <div class="review-session-hub-run-meta">
+        <span class="review-session-hub-meta-label">Tools used</span>
+        <ul>${tools.length ? tools.map((t) => `<li>${escapeHtml(t)}</li>`).join("") : "<li>None recorded yet</li>"}</ul>
+      </div>
+      <div class="review-session-hub-run-meta">
+        <span class="review-session-hub-meta-label">Context used</span>
+        <ul>${context.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>
+      </div>
+      <button type="button" class="btn-primary review-session-hub-open-chat" data-run-id="${escapeHtml(run.run_id)}">
+        Open in chat
+      </button>
+    </div>
+  `;
+}
+
+function renderReviewRunHubAccordion(runs) {
+  if (!reviewSessionHubAccordion) return;
+  reviewSessionHubAccordion.replaceChildren();
+  if (!sessionId) {
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">No active session.</p>`;
+    return;
   }
-  if (!reviewSessionHubList || !sessionId) return;
+  if (!runs.length) {
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">No ReviewRuns yet. Connect a repo or start a new run.</p>`;
+    return;
+  }
+
+  const sessionBlock = document.createElement("details");
+  sessionBlock.className = "review-session-hub-session-block";
+  sessionBlock.open = true;
+
+  const sessionSummary = document.createElement("summary");
+  sessionSummary.className = "review-session-hub-session-summary";
+  sessionSummary.innerHTML = `
+    <span class="review-session-hub-summary-title">Session</span>
+    <strong>${escapeHtml(sessionId.slice(0, 10))}…</strong>
+    <small>${runs.length} run${runs.length === 1 ? "" : "s"}</small>
+  `;
+
+  const sessionBody = document.createElement("div");
+  sessionBody.className = "review-session-hub-session-body";
+  sessionBody.innerHTML = `<p class="review-session-hub-hint">Each repo connect starts a new ReviewRun. Expand a run for summary, tools, and context.</p>`;
+
+  const runList = document.createElement("div");
+  runList.className = "review-session-hub-run-list";
+
+  runs.forEach((run) => {
+    const runBlock = document.createElement("details");
+    runBlock.className = "review-session-hub-run";
+    runBlock.dataset.runId = run.run_id;
+    if (run.run_id === currentReviewRun?.run_id) runBlock.dataset.active = "true";
+
+    const repo = (run.repo_full_name || "No repo").split("/").slice(-1)[0];
+    const shortId = String(run.run_id || "").replace("ia-review-run-", "").slice(0, 10);
+    const runSummary = document.createElement("summary");
+    runSummary.className = "review-session-hub-run-toggle";
+    runSummary.innerHTML = `
+      <strong>${escapeHtml(repo)}</strong>
+      <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}</span>
+      <code>${escapeHtml(shortId)}</code>
+    `;
+
+    const runBody = document.createElement("div");
+    runBody.className = "review-session-hub-run-wrap";
+    runBody.innerHTML = renderReviewRunHubDetails(run);
+    runBody.querySelector(".review-session-hub-open-chat")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openReviewRunInChat(run.run_id);
+    });
+
+    runBlock.appendChild(runSummary);
+    runBlock.appendChild(runBody);
+    runBlock.addEventListener("toggle", () => {
+      if (!runBlock.open) return;
+      void hydrateReviewRunHubDetails(runBlock, run);
+    });
+    runList.appendChild(runBlock);
+  });
+
+  sessionBody.appendChild(runList);
+  sessionBlock.appendChild(sessionSummary);
+  sessionBlock.appendChild(sessionBody);
+  reviewSessionHubAccordion.appendChild(sessionBlock);
+}
+
+async function hydrateReviewRunHubDetails(runBlock, run) {
+  if (!runBlock || runBlock.dataset.hydrated === "true" || !run?.run_id || !sessionId) return;
+  try {
+    const res = await fetch(
+      `/api/review-runs/${encodeURIComponent(run.run_id)}/context?session_id=${encodeURIComponent(sessionId)}`
+    );
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) return;
+    const merged = {
+      ...run,
+      summary:
+        run.summary
+        || (data.index_summary ? String(data.index_summary).slice(0, 260) : "")
+        || `Stage ${data.stage || run.stage || "unknown"}.`,
+      tools_used: run.tools_used?.length
+        ? run.tools_used
+        : (data.flow_events || []).map((event) => event.trigger || event.stage).filter(Boolean),
+      context_used: [
+        `Run id: ${run.run_id}`,
+        `Repo: ${data.repo_full_name || run.repo_full_name || "none"}`,
+        `Stage: ${String(data.stage || run.stage || "unknown").replace(/_/g, " ")}`,
+        `Index: ${data.index_complete ? "complete" : "partial or pending"}`,
+        `Coach turns: ${(data.coach_session?.turns || []).length || run.coach_turns || 0}`,
+      ],
+    };
+    const wrap = runBlock.querySelector(".review-session-hub-run-wrap");
+    if (wrap) wrap.innerHTML = renderReviewRunHubDetails(merged);
+    wrap?.querySelector(".review-session-hub-open-chat")?.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void openReviewRunInChat(run.run_id);
+    });
+    runBlock.dataset.hydrated = "true";
+  } catch (_) {
+    /* best-effort hydration */
+  }
+}
+
+async function openReviewRunInChat(runId) {
+  if (!runId) return;
+  setReviewSessionHubExpanded(false);
+  if (runId !== currentReviewRun?.run_id) {
+    await switchReviewRun(runId);
+  }
+  setReviewCoachCollapsed(false);
+  setReviewCoachMaximized(false);
+  setCoachFloatingExpanded(true);
+  appendCoachThreadSystemMessage(
+    "Run reference",
+    `ReviewRun ${runId} is active in this chat coach. Ask IA will read packet, proof, and Portkey state from this run.`,
+    { marker: "run-ref", replace: true, runId }
+  );
+  if (repoCoachInput) {
+    repoCoachInput.placeholder = `Ask about ${runId.replace("ia-review-run-", "run ")}…`;
+    repoCoachInput.focus();
+  }
+  scrollCoachThread();
+}
+
+async function refreshReviewRunRail() {
+  if (!reviewSessionHubAccordion || !sessionId) return;
   try {
     const res = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/review-runs`);
     const data = await res.json().catch(() => ({}));
     const runs = res.ok && data.ok ? data.runs || [] : [];
     if (reviewSessionHubBadge) reviewSessionHubBadge.textContent = String(runs.length);
-    reviewSessionHubList.replaceChildren();
-    if (!runs.length) {
-      const empty = document.createElement("li");
-      empty.className = "review-session-hub-empty";
-      empty.textContent = "No ReviewRuns yet. Connect a repo or start a new run.";
-      reviewSessionHubList.appendChild(empty);
-      return;
-    }
-    runs.forEach((run) => {
-      const li = document.createElement("li");
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "review-session-hub-item";
-      if (run.run_id === currentReviewRun?.run_id) btn.dataset.active = "true";
-      const repo = (run.repo_full_name || "No repo").split("/").slice(-1)[0];
-      const shortId = String(run.run_id || "").replace("ia-review-run-", "").slice(0, 10);
-      const coachNote = run.coach_turns ? ` · ${run.coach_turns} coach turns` : "";
-      btn.innerHTML = `
-        <strong>${escapeHtml(repo)}</strong>
-        <span>${escapeHtml(String(run.stage || "unknown").replace(/_/g, " "))}${escapeHtml(coachNote)}</span>
-        <code>${escapeHtml(shortId)}</code>
-      `;
-      btn.addEventListener("click", () => {
-        setReviewSessionHubExpanded(false);
-        void switchReviewRun(run.run_id);
-      });
-      li.appendChild(btn);
-      reviewSessionHubList.appendChild(li);
-    });
+    renderReviewRunHubAccordion(runs);
   } catch (_) {
-    reviewSessionHubList.innerHTML = `<li class="review-session-hub-empty">Could not load runs</li>`;
+    reviewSessionHubAccordion.innerHTML = `<p class="review-session-hub-empty">Could not load runs</p>`;
   }
 }
 
@@ -2216,10 +2559,16 @@ function initReviewRunFlowNavigation() {
     }
   });
 
+  reviewSessionHubBubble?.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+    sessionHubSuppressOutsideClose = true;
+  });
   reviewSessionHubBubble?.addEventListener("click", (event) => {
+    event.preventDefault();
     event.stopPropagation();
     const expanded = reviewSessionHub?.dataset.expanded === "true";
     setReviewSessionHubExpanded(!expanded);
+    sessionHubSuppressOutsideClose = true;
   });
   reviewSessionHubPanel?.addEventListener("click", (event) => {
     event.stopPropagation();
@@ -2230,8 +2579,12 @@ function initReviewRunFlowNavigation() {
     setReviewSessionHubExpanded(false);
   });
   document.addEventListener("click", (event) => {
+    if (sessionHubSuppressOutsideClose) {
+      sessionHubSuppressOutsideClose = false;
+      return;
+    }
     if (reviewSessionHub?.dataset.expanded !== "true") return;
-    if (reviewSessionHub.contains(event.target)) return;
+    if (event.target.closest("#review-session-hub")) return;
     setReviewSessionHubExpanded(false);
   });
   document.addEventListener("keydown", (event) => {
@@ -7236,9 +7589,10 @@ repoCoachMaximize?.addEventListener("click", () => {
 repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false));
 
 btnShowIndexSummary?.addEventListener("click", () => {
-  setReviewCoachMaximized(true);
-  if (pendingIndexSummary) appendCoachIndexSummaryToThread(pendingIndexSummary);
+  void openRepoIndexDetailModal();
 });
+repoIndexDetailClose?.addEventListener("click", closeRepoIndexDetailModal);
+repoIndexDetailBackdrop?.addEventListener("click", closeRepoIndexDetailModal);
 
 packetInlineCoachPrompts?.addEventListener("click", (event) => {
   const btn = event.target.closest("button[data-ask-prompt]");

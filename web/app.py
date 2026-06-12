@@ -390,6 +390,11 @@ class ReviewRunIndexStartRequest(BaseModel):
     full_name: str = Field(..., min_length=3, max_length=200)
 
 
+class ReviewRunIndexFetchRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    patterns: List[str] = Field(default_factory=list, max_length=12)
+
+
 def _rehearsal_provider_rows(replay: dict[str, Any]) -> List[dict]:
     rows: List[dict] = []
     for provider, item in replay["sponsor_replay"].items():
@@ -1180,6 +1185,60 @@ def get_repo_index_job_api(job_id: str) -> dict:
     if not result:
         raise HTTPException(status_code=404, detail="unknown index job")
     return result
+
+
+@app.get("/api/sessions/{session_id}/repos/{full_name:path}/index-report")
+def get_repo_index_report_api(
+    session_id: str,
+    full_name: str,
+    run_id: str = Query(""),
+) -> dict:
+    """Structured index presentation: charts, lists, and narrative for Show summary."""
+    from agent.connector_runtime import load_session
+    from agent.repo_index_store import load_report
+
+    repo = full_name.strip()
+    if len(session_id.strip()) < 8 or not repo:
+        raise HTTPException(status_code=400, detail="session_id and full_name required")
+    report = load_report(repo) or {}
+    if not report:
+        data = load_session(session_id)
+        attached = (data.get("github_attached") or {}).get(repo) or {}
+        report = dict(attached.get("index_report") or {})
+        if run_id:
+            ctx = (data.get("review_contexts") or {}).get(run_id) or {}
+            report = dict(ctx.get("index_report") or report)
+    if not report:
+        raise HTTPException(status_code=404, detail="index report not found")
+    return {"ok": True, "read_only": True, "session_id": session_id, "report": report}
+
+
+@app.post("/api/review-runs/{run_id}/repo-index/fetch")
+def fetch_review_run_repo_paths_api(run_id: str, body: ReviewRunIndexFetchRequest) -> dict:
+    """Coach/on-demand path fetch — tier-2 stage deepening."""
+    from agent.repo_index_stage_fetch import fetch_paths_for_run
+
+    run, _record = _load_review_run_or_404(run_id)
+    repo_name = str((run.selected_repo or {}).get("full_name") or "")
+    if not repo_name:
+        raise HTTPException(status_code=400, detail="ReviewRun has no selected repo")
+    patterns = [str(p).strip() for p in body.patterns if str(p).strip()]
+    if not patterns:
+        raise HTTPException(status_code=400, detail="patterns required")
+    try:
+        result = fetch_paths_for_run(body.session_id, run_id, repo_name, patterns)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    from agent.repo_index_store import load_report
+
+    return {
+        "ok": True,
+        "read_only": True,
+        "run_id": run_id,
+        "repo_full_name": repo_name,
+        "report": load_report(repo_name) or {},
+        **result,
+    }
 
 
 def _public_request_path(request_path: str) -> Path:

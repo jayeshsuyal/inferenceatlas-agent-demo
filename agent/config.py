@@ -39,6 +39,15 @@ COACH_SESSION_ENABLED = os.getenv("COACH_SESSION_ENABLED", "1").strip() not in (
 COACH_LLM_NARRATE = os.getenv("COACH_LLM_NARRATE", "0").strip() not in ("0", "false", "False")
 COACH_V1_GOVERNANCE = os.getenv("COACH_V1_GOVERNANCE", "0").strip() not in ("0", "false", "False")
 
+# Repo indexing — optional enterprise code search (GitHub API / Sourcegraph).
+GITHUB_CODE_SEARCH_ENABLED = os.getenv("GITHUB_CODE_SEARCH_ENABLED", "0").strip() not in ("0", "false", "False")
+SOURCEGRAPH_URL = os.getenv("SOURCEGRAPH_URL", "").strip().rstrip("/")
+SOURCEGRAPH_TOKEN = os.getenv("SOURCEGRAPH_TOKEN", "").strip()
+
+MEM0_API_KEY = os.getenv("MEM0_API_KEY", "").strip()
+MEM0_USER_ID = os.getenv("MEM0_USER_ID", "inferenceatlas-agent-demo").strip()
+MEM0_ENABLED = os.getenv("MEM0_ENABLED", "0").strip() not in ("0", "false", "False")
+
 _LLM_PREFER = os.getenv("LLM_PROVIDER", "").strip().lower()
 
 

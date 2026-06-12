@@ -57,15 +57,15 @@ A reviewer should be able to follow this order without needing private source co
 12. `examples/generated/support_triage_agent.outcome_memo.md`
 13. `python3 -m agent.verify_artifacts`
 14. `examples/generated/review_room.html`
-14. `examples/generated/trust_receipt.md`
-15. `examples/generated/support_triage_agent.proof_health.md`
-16. `examples/generated/sponsor_live_readiness.md`
-17. `docs/DESIGN_PARTNER_BRIEF.md`
-18. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
-19. `examples/generated/support_triage_trial_report.md`
-20. `examples/generated/support_triage_trial.outcome_memo.md`
-21. `examples/evidence/support_triage_trial/`
-22. `examples/generated/support_triage_trial.evidence_replay.md`
+15. `examples/generated/trust_receipt.md`
+16. `examples/generated/support_triage_agent.proof_health.md`
+17. `examples/generated/sponsor_live_readiness.md`
+18. `docs/DESIGN_PARTNER_BRIEF.md`
+19. `docs/DESIGN_PARTNER_TRIAL_KIT.md`
+20. `examples/generated/support_triage_trial_report.md`
+21. `examples/generated/support_triage_trial.outcome_memo.md`
+22. `examples/evidence/support_triage_trial/`
+23. `examples/generated/support_triage_trial.evidence_replay.md`
 
 This order is the product-quality baseline. It gives a skim reviewer a clear story, gives an agentic reviewer a command path, gives a CTO a build path, and gives a design partner a trial path.
 
@@ -139,7 +139,7 @@ Use this as the quick premium-quality review:
 | Question | Pass signal |
 | --- | --- |
 | Can a judge understand the product in under one minute? | README, Product Tour, and this audit point to the same spine. |
-| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 16 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
+| Can a reviewer see the capability map? | `docs/AGENT_SKILLS.md` maps 17 stable public skills to commands, artifacts, dependencies, and safety boundaries. |
 | Can an agentic reviewer run it without help? | `docs/AGENTIC_REVIEW_EXPECTED_OUTPUT.md` and `python3 -m agent.judge --no-write --json` give exact pass signals. |
 | Can every PR smoke-test the public spine safely? | `bash scripts/pr_smoke.sh` runs the no-key product gate locally and `.github/workflows/smoke.yml` runs it on pull requests. |
 | Can a reviewer see that the packet is not one hardcoded shape? | `examples/generated/packet_diff.md` compares load-bearing fields across the three public scenarios. |

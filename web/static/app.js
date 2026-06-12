@@ -250,6 +250,7 @@ let packetPortkeyProofLoop = null;
 let currentReviewRunProofGraph = null;
 let currentReviewRunPortkeyTest = null;
 let currentReviewRunPortkeyReceipt = null;
+let currentReviewRunApprovalReceipt = null;
 let packetInlineCoachBusy = false;
 let reviewRunCoachBusy = false;
 let reviewRunCoachSuggestionRefreshSeq = 0;
@@ -1656,6 +1657,7 @@ async function restoreReviewRunSession({ preferredRunId = "" } = {}) {
         decision: { verdict: runPacket.verdict },
         review_run: currentReviewRun,
       };
+      currentReviewRunApprovalReceipt = await fetchReviewRunApprovalReceipt(runId).catch(() => null);
       if (repoProofCockpit) repoProofCockpit.dataset.loaded = "true";
       renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
     }
@@ -2503,6 +2505,8 @@ function restartReviewRunInSession() {
   packetPortkeyPreview = null;
   packetPortkeyProofLoop = null;
   currentReviewRunPortkeyTest = null;
+  currentReviewRunPortkeyReceipt = null;
+  currentReviewRunApprovalReceipt = null;
   currentReviewRunProofGraph = null;
   currentRepoIndexJobId = "";
   pendingIndexSummary = "";
@@ -2540,6 +2544,8 @@ async function switchReviewRun(runId) {
   packetPortkeyPreview = null;
   packetPortkeyProofLoop = null;
   currentReviewRunPortkeyTest = null;
+  currentReviewRunPortkeyReceipt = null;
+  currentReviewRunApprovalReceipt = null;
   currentReviewRunProofGraph = null;
   reviewRunScreenOverride = null;
   reviewRunReadOnlyScreen = null;
@@ -3011,6 +3017,7 @@ function renderReviewRepoSummary(repo = null) {
     currentReviewRunProofGraph = null;
     currentReviewRunPortkeyTest = null;
     currentReviewRunPortkeyReceipt = null;
+    currentReviewRunApprovalReceipt = null;
     resetReviewRunCoachAnswer();
     if (repoRequestRepoName) repoRequestRepoName.textContent = "Choose a GitHub repo first.";
     setCoachForNoRepo();
@@ -3129,6 +3136,7 @@ async function createReviewRunForIndexedRepo(repo) {
   syncReviewRunUrl({ runId: currentReviewRun.run_id, screen: "repo_setup", replace: true });
   void refreshReviewRunRail();
   currentReviewRunPortkeyReceipt = null;
+  currentReviewRunApprovalReceipt = null;
   return currentReviewRun;
 }
 
@@ -3139,6 +3147,7 @@ async function attachReviewRepo(repo) {
   currentReviewRunProofGraph = null;
   currentReviewRunPortkeyTest = null;
   currentReviewRunPortkeyReceipt = null;
+  currentReviewRunApprovalReceipt = null;
   selectedGithubRepos = [{ full_name: fullName, indexing: true, demo: Boolean(repo.demo) }];
   renderGithubChips();
   renderReviewRepoSummary(selectedGithubRepos[0]);
@@ -3184,6 +3193,7 @@ async function attachReviewRepo(repo) {
     currentReviewRunProofGraph = null;
     currentReviewRunPortkeyTest = null;
     currentReviewRunPortkeyReceipt = null;
+    currentReviewRunApprovalReceipt = null;
     renderGithubChips();
     renderReviewRepoSummary(null);
     setRepoConnectStatus(String(err.message || err), true);
@@ -4874,6 +4884,14 @@ async function fetchReviewRunProofGraph(runId = currentReviewRun?.run_id) {
   return data.proofgraph || null;
 }
 
+async function fetchReviewRunApprovalReceipt(runId = currentReviewRun?.run_id) {
+  if (!runId) return null;
+  const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/approval-receipt`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "ReviewRun approval receipt failed");
+  return data.approval_receipt || null;
+}
+
 async function fetchReviewRunPortkeyGuardrailTest(runId = currentReviewRun?.run_id) {
   if (!runId) throw new Error("Create a ReviewRun before testing Portkey.");
   const res = await fetch(`/api/review-runs/${encodeURIComponent(runId)}/portkey/guardrail-test`, {
@@ -4895,6 +4913,70 @@ function portkeyReceiptMatchesPacket(event, packetRef = packetDetail?.packet_ref
   if (packetRef.packet_id && event.packet_id !== packetRef.packet_id) return false;
   if (packetRef.revision_id && event.revision_id !== packetRef.revision_id) return false;
   return true;
+}
+
+function approvalReceiptMatchesPacket(receipt, packetRef = packetDetail?.packet_reference || {}) {
+  const receiptRef = receipt?.packet_reference || {};
+  if (!receipt || receipt.schema_version !== "review_run_approval_receipt.v0") return false;
+  if (currentReviewRun?.run_id && receiptRef.run_id !== currentReviewRun.run_id) return false;
+  if (packetRef.packet_id && receiptRef.packet_id !== packetRef.packet_id) return false;
+  if (packetRef.revision_id && receiptRef.revision_id !== packetRef.revision_id) return false;
+  return true;
+}
+
+function approvalReceiptStatusLabel(receipt = null) {
+  const value = String(receipt?.status || "verification_pending").replace(/_/g, " ");
+  return value.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function receiptScopeLabel(items = []) {
+  return (items || []).filter(Boolean).join(", ") || "none";
+}
+
+function approvalReceiptVerificationPath(receipt = null) {
+  return receipt?.verification_path || (currentReviewRun?.run_id
+    ? `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/approval-receipt`
+    : "#");
+}
+
+function formatApprovalReceiptText(receipt) {
+  if (!receipt) return "";
+  const ref = receipt.packet_reference || {};
+  const movement = receipt.movement || {};
+  const approval = receipt.approval_summary || {};
+  const portkey = receipt.portkey || {};
+  const safety = receipt.safety_boundary || {};
+  return [
+    `Portable approval receipt: ${receipt.receipt_id || "unissued"}`,
+    `Status: ${approvalReceiptStatusLabel(receipt)}`,
+    `Packet: ${ref.packet_id || "unknown"}`,
+    `Revision: ${ref.revision_id || "unknown"}`,
+    `Content hash: ${ref.content_hash || "unknown"}`,
+    `Human approval state: ${approval.human_approval_state || "unknown"}`,
+    `Allowed scope: ${receiptScopeLabel(movement.allowed_scope)}`,
+    `Review required: ${receiptScopeLabel(movement.review_required_scope)}`,
+    `Still blocked: ${receiptScopeLabel(movement.still_blocked_scope)}`,
+    `Portkey state: ${portkey.state || "Block"}`,
+    `Verify: ${approvalReceiptVerificationPath(receipt)}`,
+    `Safety: IA approved=${Boolean(safety.ia_approved)}; IA writes=${Boolean(safety.ia_executes_external_writes)}; IA mutates Portkey policy=${Boolean(safety.ia_mutates_portkey_policy)}.`,
+    receipt.safety_anchor || "Humans approve scoped movement. IA records and packages only.",
+  ].join("\n");
+}
+
+function formatApprovalReceiptPrSnippet(receipt) {
+  if (!receipt) return "";
+  const ref = receipt.packet_reference || {};
+  const movement = receipt.movement || {};
+  return [
+    `IA receipt: ${receipt.receipt_id || "unissued"}`,
+    `Packet: ${ref.packet_id || "unknown"}`,
+    `Revision: ${ref.revision_id || "unknown"}`,
+    `Receipt status: ${approvalReceiptStatusLabel(receipt)}`,
+    `Approved scope: ${receiptScopeLabel(movement.allowed_scope)}`,
+    `Still blocked: ${receiptScopeLabel(movement.still_blocked_scope)}`,
+    `Verify: ${approvalReceiptVerificationPath(receipt)}`,
+    "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
+  ].join("\n");
 }
 
 async function fetchReviewRunPortkeyReceipt(runId = currentReviewRun?.run_id, packetRef = packetDetail?.packet_reference || {}) {
@@ -5246,6 +5328,15 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const portkeyReceipt = portkeyReceiptMatchesPacket(currentReviewRunPortkeyReceipt, packetRef)
     ? currentReviewRunPortkeyReceipt
     : null;
+  const approvalReceipt = approvalReceiptMatchesPacket(currentReviewRunApprovalReceipt, packetRef)
+    ? currentReviewRunApprovalReceipt
+    : null;
+  const approvalReceiptRef = approvalReceipt?.packet_reference || {};
+  const approvalReceiptMovement = approvalReceipt?.movement || {};
+  const approvalReceiptSummary = approvalReceipt?.approval_summary || {};
+  const approvalReceiptReady = Boolean(approvalReceipt?.can_circulate);
+  const approvalReceiptStatus = approvalReceipt ? approvalReceiptStatusLabel(approvalReceipt) : "Verification pending";
+  const approvalReceiptPath = approvalReceiptVerificationPath(approvalReceipt);
   const portkeyReceiptKind = portkeyReceipt?.kind === "rehearsal_probe"
     ? "Rehearsal webhook"
     : portkeyReceipt?.kind === "portkey_byo_guardrail"
@@ -5331,6 +5422,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   if (repoRerunCard) {
     const rows = reviewDeltaRows(packet);
     const deltaEl = repoRerunCard.querySelector(".repo-rerun-delta");
+    const receiptEl = repoRerunCard.querySelector(".repo-approval-receipt");
     const statusEl = repoRerunCard.querySelector("#repo-rerun-status");
     if (deltaEl) {
       deltaEl.innerHTML = rows.length
@@ -5339,8 +5431,67 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
             .join("")
         : `<div><span>Packet</span><strong>${escapeHtml(packetRef.revision_id || "Updated")}</strong></div>`;
     }
+    if (receiptEl) {
+      receiptEl.hidden = !hasPortkeyDelta && !approvalReceipt;
+      if (receiptEl.hidden) {
+        receiptEl.innerHTML = "";
+      } else {
+        const approvalHumanState = String(
+          approvalReceiptSummary.human_approval_state || (approvalReceiptReady ? "recorded_for_scoped_validation" : "pending")
+        ).replace(/_/g, " ");
+        const receiptId = approvalReceipt?.receipt_id || "receipt pending";
+        const receiptHash = approvalReceipt?.receipt_hash || "verify endpoint";
+        const allowedScope = receiptScopeLabel(approvalReceiptMovement.allowed_scope || movement.allowed || packet.allowed || []);
+        const blockedScope = receiptScopeLabel(approvalReceiptMovement.still_blocked_scope || movement.blocked || packet.blocked || []);
+        receiptEl.innerHTML = `
+          <div class="repo-portkey-stage-title">
+            <span>Portable approval receipt</span>
+            <strong>${escapeHtml(receiptId)}</strong>
+          </div>
+          <p>Humans approve scoped movement. IA records and packages the receipt for downstream verification.</p>
+          <div class="repo-approval-receipt-grid">
+            <div class="repo-outcome ${approvalReceiptReady ? "approved" : "review"}"><span>Receipt</span><strong>${escapeHtml(approvalReceiptStatus)}</strong></div>
+            <div class="repo-outcome review"><span>Human scope</span><strong>${escapeHtml(approvalHumanState)}</strong></div>
+            <div class="repo-outcome approved"><span>Allowed</span><strong>${escapeHtml(allowedScope)}</strong></div>
+            <div class="repo-outcome ${blockedScope === "none" ? "approved" : "blocked"}"><span>Still blocked</span><strong>${escapeHtml(blockedScope)}</strong></div>
+          </div>
+          <div class="repo-approval-receipt-meta">
+            <span>Packet ${escapeHtml(approvalReceiptRef.packet_id || packetRef.packet_id || "current")}</span>
+            <span>Revision ${escapeHtml(approvalReceiptRef.revision_id || packetRef.revision_id || "current")}</span>
+            <span>Hash ${escapeHtml(String(receiptHash).slice(0, 18))}</span>
+          </div>
+          <div class="repo-receipt-actions">
+            <button type="button" class="btn-ghost" data-copy-approval-receipt${approvalReceipt ? "" : " disabled"}>Copy receipt</button>
+            <a class="btn-ghost repo-secondary-link" href="${escapeHtml(approvalReceiptPath)}" target="_blank" rel="noreferrer">Open verification</a>
+            <button type="button" class="btn-ghost" data-copy-approval-pr${approvalReceipt ? "" : " disabled"}>Copy PR snippet</button>
+          </div>
+          <p class="repo-microcopy">IA did not approve, write, grant, or mutate Portkey policy. Downstream systems verify this receipt and enforce scope.</p>
+        `;
+        receiptEl.querySelector("[data-copy-approval-receipt]")?.addEventListener("click", async () => {
+          const copied = await copyTextWithFallback(formatApprovalReceiptText(approvalReceipt));
+          if (statusEl) {
+            statusEl.classList.toggle("error", !copied);
+            statusEl.textContent = copied
+              ? "Portable approval receipt copied. Decision lock unchanged."
+              : "Clipboard unavailable. Open verification to inspect the receipt.";
+          }
+        });
+        receiptEl.querySelector("[data-copy-approval-pr]")?.addEventListener("click", async () => {
+          const copied = await copyTextWithFallback(formatApprovalReceiptPrSnippet(approvalReceipt));
+          if (statusEl) {
+            statusEl.classList.toggle("error", !copied);
+            statusEl.textContent = copied
+              ? "PR snippet copied. It carries the receipt without expanding scope."
+              : "Clipboard unavailable. Open verification to inspect the receipt.";
+          }
+        });
+      }
+    }
     if (statusEl) {
-      statusEl.textContent = "Updated packet is ready. Test the Portkey guardrail before any downstream movement.";
+      statusEl.classList.remove("error");
+      statusEl.textContent = approvalReceiptReady
+        ? "Receipt ready to circulate. Test the Portkey guardrail before any downstream movement."
+        : "Updated packet is ready. Verification receipt is pending; Portkey still reads the packet before movement.";
     }
   }
 
@@ -5525,7 +5676,10 @@ async function attachReviewRunProof() {
     if (!res.ok || !data.ok) throw new Error(data.detail || "Proof attachment failed");
     currentReviewRun = data.run || currentReviewRun;
     setReviewRunUiStage("proof_attached");
-    currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
+    [currentReviewRunProofGraph, currentReviewRunApprovalReceipt] = await Promise.all([
+      fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph),
+      fetchReviewRunApprovalReceipt().catch(() => null),
+    ]);
     const nextPacket = {
       ...(data.packet || {}),
       sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
@@ -5581,7 +5735,11 @@ async function rerunReviewRunPacket() {
     packetPortkeyPreview = data.portkey || packetPortkeyPreview;
     currentReviewRunPortkeyTest = null;
     currentReviewRunPortkeyReceipt = null;
-    currentReviewRunProofGraph = await fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph);
+    currentReviewRunApprovalReceipt = null;
+    [currentReviewRunProofGraph, currentReviewRunApprovalReceipt] = await Promise.all([
+      fetchReviewRunProofGraph().catch(() => currentReviewRunProofGraph),
+      fetchReviewRunApprovalReceipt().catch(() => null),
+    ]);
     const nextPacket = {
       ...(data.packet || {}),
       sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
@@ -5638,12 +5796,15 @@ async function runRepoProofCockpit() {
     currentReviewRun = packetData.run || currentReviewRun;
     currentReviewRunPortkeyTest = null;
     currentReviewRunPortkeyReceipt = null;
+    currentReviewRunApprovalReceipt = null;
     const packet = packetData.packet || {};
-    const [{ payload, proofLoop }, proofGraph] = await Promise.all([
+    const [{ payload, proofLoop }, proofGraph, approvalReceipt] = await Promise.all([
       fetchPortkeyProofForFixture(fixtureId),
       fetchReviewRunProofGraph(currentReviewRun.run_id).catch(() => null),
+      fetchReviewRunApprovalReceipt(currentReviewRun.run_id).catch(() => null),
     ]);
     currentReviewRunProofGraph = proofGraph;
+    currentReviewRunApprovalReceipt = approvalReceipt;
     const cockpitPacket = {
       ...packet,
       sponsor_proof_trace: sponsorTrace || packet.sponsor_proof_trace,

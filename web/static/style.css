@@ -8123,6 +8123,77 @@ body[data-active-tab="start"] .repo-rerun-delta strong {
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
+body:not([data-active-tab]) .repo-approval-receipt,
+body[data-active-tab="start"] .repo-approval-receipt {
+  display: grid;
+  gap: 0.68rem;
+  padding: 0.72rem;
+  border: 1px solid rgba(42, 185, 111, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(42, 185, 111, 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(0, 0, 0, 0.22);
+}
+
+body:not([data-active-tab]) .repo-approval-receipt[hidden],
+body[data-active-tab="start"] .repo-approval-receipt[hidden] {
+  display: none;
+}
+
+body:not([data-active-tab]) .repo-approval-receipt p,
+body[data-active-tab="start"] .repo-approval-receipt p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.77rem;
+  line-height: 1.38;
+}
+
+body:not([data-active-tab]) .repo-approval-receipt-grid,
+body[data-active-tab="start"] .repo-approval-receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+body:not([data-active-tab]) .repo-approval-receipt-meta,
+body[data-active-tab="start"] .repo-approval-receipt-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.44rem;
+}
+
+body:not([data-active-tab]) .repo-approval-receipt-meta span,
+body[data-active-tab="start"] .repo-approval-receipt-meta span {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.32rem 0.46rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 0.64rem;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+body:not([data-active-tab]) .repo-receipt-actions,
+body[data-active-tab="start"] .repo-receipt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+  align-items: center;
+}
+
+body:not([data-active-tab]) .repo-receipt-actions .btn-ghost,
+body[data-active-tab="start"] .repo-receipt-actions .btn-ghost,
+body:not([data-active-tab]) .repo-receipt-actions .repo-secondary-link,
+body[data-active-tab="start"] .repo-receipt-actions .repo-secondary-link {
+  min-height: 2.1rem;
+  padding: 0.5rem 0.72rem !important;
+  font-size: 0.72rem !important;
+}
+
 body:not([data-active-tab]) .repo-rerun-portkey-action,
 body[data-active-tab="start"] .repo-rerun-portkey-action {
   justify-self: start;
@@ -8151,6 +8222,11 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_ga
 
   body:not([data-active-tab]) .repo-rerun-delta,
   body[data-active-tab="start"] .repo-rerun-delta {
+    grid-template-columns: 1fr;
+  }
+
+  body:not([data-active-tab]) .repo-approval-receipt-grid,
+  body[data-active-tab="start"] .repo-approval-receipt-grid {
     grid-template-columns: 1fr;
   }
 
@@ -8792,7 +8868,9 @@ body[data-active-tab="start"] #repo-ask-coach.repo-ask-floating[data-coach-maxim
     right: 0.55rem !important;
     bottom: 0.55rem !important;
     width: calc(100vw - 1.1rem) !important;
-    height: min(var(--ia-coach-float-height, 42vh), calc(100vh - 1.1rem)) !important;
+    height: min(var(--ia-coach-float-height, 9.5rem), calc(100vh - 1.1rem)) !important;
+    max-height: min(9.5rem, calc(100vh - 1.1rem)) !important;
+    min-height: 0 !important;
   }
 }
 

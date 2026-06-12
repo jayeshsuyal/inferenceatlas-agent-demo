@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest import TestCase
@@ -12,7 +13,7 @@ from unittest.mock import patch
 from fastapi import HTTPException
 
 from agent.connector_oauth import demo_sign_in
-from agent.portkey_guardrail import list_portkey_guardrail_events
+from agent.portkey_guardrail import PORTKEY_LOCAL_TEST_EVENT_KIND, list_portkey_guardrail_events
 
 from web.app import (
     GithubAttachRequest,
@@ -33,9 +34,56 @@ from web.app import (
     github_list_repos,
     get_review_run,
     proofgraph_index,
+    portkey_guardrail_webhook,
     review_run_portkey_guardrail_test_api,
     rerun_review_run_packet_api,
 )
+
+
+class _FakePortkeyRequest:
+    def __init__(self, body: dict) -> None:
+        self._body = body
+
+    async def json(self) -> dict:
+        return self._body
+
+
+def _portkey_review_run_body(
+    *,
+    run_id: str,
+    packet_id: str,
+    revision_id: str,
+    requested_mode: str = "scoped_validation",
+) -> dict:
+    metadata = {
+        "ia_review_run_id": run_id,
+        "ia_packet_id": packet_id,
+        "ia_revision_id": revision_id,
+        "ia_requested_mode": requested_mode,
+        "ia_source_of_truth": "ReviewRun",
+    }
+    return {
+        "eventType": "beforeRequestHook",
+        "provider": "openai",
+        "requestType": "chatComplete",
+        "metadata": metadata,
+        "request": {
+            "metadata": metadata,
+            "model": "packet-gated-model",
+            "messages": [{"role": "user", "content": "Can this ReviewRun packet move?"}],
+        },
+    }
+
+
+def _post_portkey_webhook(body: dict, *, token: str = "demo-token", rehearsal_token: str | None = None) -> dict:
+    return asyncio.run(
+        portkey_guardrail_webhook(
+            request=_FakePortkeyRequest(body),
+            authorization=f"Bearer {token}",
+            x_ia_portkey_guardrail_token=None,
+            x_ia_rehearsal_mode=rehearsal_token,
+        )
+    )
 
 
 class ReviewRunApiTests(TestCase):
@@ -315,6 +363,8 @@ class ReviewRunApiTests(TestCase):
                 self.assertIs(rev1_test["invariants"]["portkey_api_call_made"], False)
                 self.assertIs(rev1_test["invariants"]["portkey_policy_mutation_allowed"], False)
                 self.assertTrue(rev1_test["event_id"].startswith("portkey-guardrail-"))
+                self.assertEqual(rev1_test["guardrail_event"]["kind"], PORTKEY_LOCAL_TEST_EVENT_KIND)
+                self.assertEqual(rev1_test["guardrail_event"]["delivery_mode"], "review_run_guardrail_test")
 
                 attach_review_run_proof_api(
                     run_id,
@@ -354,6 +404,112 @@ class ReviewRunApiTests(TestCase):
                 events = list_portkey_guardrail_events(ledger_dir=ledger_dir)
                 self.assertEqual(len(events), 2)
                 self.assertEqual({event["verdict"] for event in events}, {False, True})
+                self.assertEqual({event["kind"] for event in events}, {PORTKEY_LOCAL_TEST_EVENT_KIND})
+                self.assertEqual({event["delivery_mode"] for event in events}, {"review_run_guardrail_test"})
+
+    def test_portkey_webhook_consumes_current_review_run_packet_revision(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            store_dir = Path(temp_dir)
+            ledger_dir = store_dir / "ledger"
+            with (
+                patch("web.app.REVIEW_RUN_STORE_DIR", store_dir),
+                patch("web.app.SPONSOR_PROOF_RUN_LEDGER_DIR", ledger_dir),
+                patch.dict(os.environ, {"PORTKEY_GUARDRAIL_TOKEN": "demo-token"}, clear=False),
+            ):
+                created = create_review_run_api(
+                    ReviewRunCreateRequest(
+                        selected_repo={
+                            "provider": "github",
+                            "full_name": "acme/demo-support-incidents",
+                        },
+                        repo_index_summary={"status": "indexed", "indexed_repo_count": 1},
+                    )
+                )
+                run_id = created["run"]["run_id"]
+                generated = generate_review_run_packet_api(
+                    run_id,
+                    ReviewRunPacketRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev1_packet = generated["run"]["packet"]
+                rev1_body = _portkey_review_run_body(
+                    run_id=run_id,
+                    packet_id=rev1_packet["packet_id"],
+                    revision_id=rev1_packet["revision_id"],
+                )
+
+                rev1 = _post_portkey_webhook(rev1_body)
+                self.assertIs(rev1["verdict"], False)
+                self.assertEqual(rev1["data"]["delivery_mode"], "live_guardrail_webhook")
+                self.assertEqual(rev1["data"]["metadata_resolved_by"], "ia_review_run_id")
+                self.assertEqual(rev1["data"]["review_run_id"], run_id)
+                self.assertEqual(rev1["data"]["reason"], "packet_not_ready_for_portkey_movement")
+                self.assertEqual(
+                    rev1["data"]["ia_packet_reference"]["revision_id"],
+                    rev1_packet["revision_id"],
+                )
+
+                attach_review_run_proof_api(
+                    run_id,
+                    ReviewRunProofAttachRequest(
+                        proof_items=[
+                            {"id": "repo_owner_approval", "label": "Repo owner approval"},
+                            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof"},
+                            {"id": "environment_boundary", "label": "Environment boundary"},
+                        ]
+                    ),
+                )
+                rerun = rerun_review_run_packet_api(
+                    run_id,
+                    ReviewRunRerunRequest(
+                        access_request="support-triage-bot needs to read issues, comment, and create labels."
+                    ),
+                )
+                rev2_packet = rerun["run"]["packet"]
+
+                stale = _post_portkey_webhook(rev1_body)
+                self.assertIs(stale["verdict"], False)
+                self.assertEqual(stale["data"]["reason"], "stale_packet_revision")
+                self.assertEqual(
+                    stale["data"]["ia_packet_reference"]["revision_id"],
+                    rev2_packet["revision_id"],
+                )
+
+                rev2 = _post_portkey_webhook(
+                    _portkey_review_run_body(
+                        run_id=run_id,
+                        packet_id=rev2_packet["packet_id"],
+                        revision_id=rev2_packet["revision_id"],
+                    )
+                )
+                self.assertIs(rev2["verdict"], True)
+                self.assertEqual(rev2["data"]["reason"], "packet_allows_scoped_review_with_policy")
+                self.assertEqual(rev2["data"]["requested_mode"], "scoped_validation")
+                self.assertEqual(rev2["data"]["ia_packet_reference"]["source_of_truth"], "ReviewRun")
+                self.assertFalse(rev2["data"]["safety"]["portkey_api_call_made"])
+                self.assertFalse(rev2["data"]["safety"]["portkey_policy_mutation_allowed"])
+
+                unsupported = _post_portkey_webhook(
+                    _portkey_review_run_body(
+                        run_id=run_id,
+                        packet_id=rev2_packet["packet_id"],
+                        revision_id=rev2_packet["revision_id"],
+                        requested_mode="model_request",
+                    )
+                )
+                self.assertIs(unsupported["verdict"], False)
+                self.assertEqual(unsupported["data"]["reason"], "requested_mode_not_packet_scoped")
+
+                events = list_portkey_guardrail_events(ledger_dir=ledger_dir)
+                self.assertEqual(len(events), 4)
+                self.assertEqual({event["review_run_id"] for event in events}, {run_id})
+                self.assertEqual({event["kind"] for event in events}, {"portkey_byo_guardrail"})
+                self.assertIn(True, {event["verdict"] for event in events})
+                for event in events:
+                    self.assertFalse(event["api_mutation"])
+                    self.assertFalse(event["policy_mutation"])
+                    self.assertFalse(event["external_writes"])
 
     def test_review_run_proof_api_stress_cases_fail_closed(self) -> None:
         with TemporaryDirectory() as temp_dir:

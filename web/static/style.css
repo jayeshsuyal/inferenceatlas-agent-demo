@@ -7520,6 +7520,80 @@ body[data-active-tab="start"] .repo-portkey-outcomes {
   margin-top: 0.72rem;
 }
 
+body:not([data-active-tab]) .repo-portkey-live-receipt,
+body[data-active-tab="start"] .repo-portkey-live-receipt {
+  display: grid;
+  gap: 0.48rem;
+  margin: 0.74rem 0 0.85rem;
+  padding: 0.68rem;
+  border: 1px solid rgba(245, 196, 81, 0.2);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(245, 196, 81, 0.09), rgba(255, 255, 255, 0.03)),
+    rgba(0, 0, 0, 0.24);
+}
+
+body:not([data-active-tab]) .repo-portkey-live-receipt > div:first-child,
+body[data-active-tab="start"] .repo-portkey-live-receipt > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+body:not([data-active-tab]) .repo-portkey-live-receipt span,
+body[data-active-tab="start"] .repo-portkey-live-receipt span {
+  color: var(--gloss-dim);
+  font-size: 0.64rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+body:not([data-active-tab]) .repo-portkey-live-receipt strong,
+body[data-active-tab="start"] .repo-portkey-live-receipt strong {
+  color: var(--gloss-text);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+body:not([data-active-tab]) .repo-portkey-live-receipt p,
+body[data-active-tab="start"] .repo-portkey-live-receipt p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.38;
+}
+
+body:not([data-active-tab]) .repo-portkey-receipt-grid,
+body[data-active-tab="start"] .repo-portkey-receipt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.42rem;
+}
+
+body:not([data-active-tab]) .repo-portkey-receipt-grid div,
+body[data-active-tab="start"] .repo-portkey-receipt-grid div {
+  min-width: 0;
+  padding: 0.52rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+body:not([data-active-tab]) .repo-portkey-receipt-grid span,
+body[data-active-tab="start"] .repo-portkey-receipt-grid span,
+body:not([data-active-tab]) .repo-portkey-receipt-grid strong,
+body[data-active-tab="start"] .repo-portkey-receipt-grid strong {
+  display: block;
+}
+
+body:not([data-active-tab]) .repo-portkey-receipt-grid span,
+body[data-active-tab="start"] .repo-portkey-receipt-grid span {
+  margin-bottom: 0.2rem;
+}
+
 body:not([data-active-tab]) .repo-portkey-handoff div,
 body[data-active-tab="start"] .repo-portkey-handoff div {
   min-width: 0;
@@ -8082,6 +8156,8 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_ga
 
   body:not([data-active-tab]) .repo-portkey-outcomes,
   body[data-active-tab="start"] .repo-portkey-outcomes,
+  body:not([data-active-tab]) .repo-portkey-receipt-grid,
+  body[data-active-tab="start"] .repo-portkey-receipt-grid,
   body:not([data-active-tab]) .repo-portkey-handoff,
   body[data-active-tab="start"] .repo-portkey-handoff {
     grid-template-columns: 1fr;
@@ -8291,6 +8367,22 @@ body[data-active-tab="start"] .repo-ask-floating .repo-coach-toggle {
   body:not([data-active-tab]) .repo-ask-floating .repo-coach-body,
   body[data-active-tab="start"] .repo-ask-floating .repo-coach-body {
     max-height: min(5rem, calc(36vh - 6.5rem));
+  }
+
+  body:not([data-active-tab]) .repo-proof-cockpit .repo-runway-panel,
+  body[data-active-tab="start"] .repo-proof-cockpit .repo-runway-panel,
+  body:not([data-active-tab]) .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel,
+  body[data-active-tab="start"] .repo-proof-cockpit[data-loaded="true"] .repo-runway-panel {
+    padding-bottom: min(12rem, 38vh) !important;
+  }
+
+  body:not([data-active-tab]) .repo-proof-attach-action,
+  body[data-active-tab="start"] .repo-proof-attach-action,
+  body:not([data-active-tab]) .repo-portkey-test-action,
+  body[data-active-tab="start"] .repo-portkey-test-action,
+  body:not([data-active-tab]) .repo-rerun-portkey-action,
+  body[data-active-tab="start"] .repo-rerun-portkey-action {
+    scroll-margin-bottom: min(12rem, 38vh);
   }
 }
 

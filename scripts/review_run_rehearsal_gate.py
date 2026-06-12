@@ -392,6 +392,11 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
     approval_receipt_html = _read(base_url, approval_receipt_route, timeout=timeout)
     for expected in (
         "InferenceAtlas Receipt Verification",
+        "Approval receipt",
+        "ReviewRun / Receipt /",
+        "receipt-console",
+        "audit-table",
+        "utility-rail",
         approval_receipt["receipt_id"],
         "Ready To Circulate",
         "Humans approve scoped movement",

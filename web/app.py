@@ -3012,22 +3012,30 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
             "Safety: humans approved scoped movement; IA did not approve, grant, write, or mutate Portkey policy.",
         ]
     )
+    mutation_state = "none" if not api_mutation and not policy_mutation else "review required"
     approval_rows = "\n".join(
         f"""
-        <div class="approval-row">
-          <span>{_receipt_html_escape(item.get("label") or item.get("role_id") or "Reviewer")}</span>
-          <strong>{_receipt_html_escape(_receipt_status_label(item.get("approval_state")))}</strong>
-          <small>{_receipt_html_escape(item.get("scope") or "")}</small>
-        </div>
+              <tr>
+                <th>{_receipt_html_escape(item.get("label") or item.get("role_id") or "Reviewer")}</th>
+                <td>
+                  <strong>{_receipt_html_escape(_receipt_status_label(item.get("approval_state")))}</strong>
+                  <span>{_receipt_html_escape(item.get("scope") or "Scope not recorded")}</span>
+                </td>
+              </tr>
         """
         for item in approvals
-    )
+    ) or """
+              <tr>
+                <th>No approvals</th>
+                <td><strong>Missing</strong><span>ReviewRun has not recorded human approval proof yet.</span></td>
+              </tr>
+    """
     safety_rows = "\n".join(
         f"""
-        <div class="fact {'bad' if bool(value) and key.startswith('ia_') else 'good'}">
-          <span>{_receipt_html_escape(key.replace("_", " "))}</span>
-          <strong>{_receipt_html_escape(str(bool(value)).lower())}</strong>
-        </div>
+              <tr class="{'bad' if bool(value) and key.startswith('ia_') else 'good'}">
+                <th>{_receipt_html_escape(key.replace("_", " "))}</th>
+                <td><strong>{_receipt_html_escape(str(bool(value)).lower())}</strong></td>
+              </tr>
         """
         for key, value in (
             ("ia_approved", safety.get("ia_approved")),
@@ -3046,14 +3054,18 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
   <style>
     :root {{
       color-scheme: dark;
-      --bg: #050507;
-      --panel: rgba(255, 255, 255, 0.065);
+      --bg: #020204;
+      --surface: rgba(255, 255, 255, 0.052);
+      --surface-strong: rgba(255, 255, 255, 0.082);
       --line: rgba(255, 255, 255, 0.13);
+      --line-soft: rgba(255, 255, 255, 0.075);
       --text: rgba(255, 255, 255, 0.94);
-      --muted: rgba(255, 255, 255, 0.62);
-      --green: #72e0a3;
-      --amber: #f2c55c;
-      --red: #ff8b8b;
+      --muted: rgba(255, 255, 255, 0.58);
+      --faint: rgba(255, 255, 255, 0.36);
+      --green: #75d99c;
+      --amber: #e7bd58;
+      --red: #ff8989;
+      --mono: "SFMono-Regular", "SF Mono", Consolas, "Liberation Mono", monospace;
     }}
     * {{ box-sizing: border-box; }}
     body {{
@@ -3061,161 +3073,286 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       min-height: 100vh;
       color: var(--text);
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-size: 15px;
+      font-size: 13px;
       letter-spacing: 0;
       background:
-        radial-gradient(circle at 78% 8%, rgba(114, 224, 163, 0.14), transparent 18rem),
-        radial-gradient(circle at 12% 0%, rgba(242, 197, 92, 0.12), transparent 16rem),
-        linear-gradient(180deg, #0c0c0f 0%, var(--bg) 45%, #000 100%);
+        linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0) 18rem),
+        linear-gradient(135deg, #09090c 0%, #020204 46%, #000 100%);
+    }}
+    body::before {{
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.026) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.74), transparent 72%);
     }}
     main {{
-      width: min(1120px, calc(100vw - 2rem));
+      width: min(1180px, calc(100vw - 32px));
       margin: 0 auto;
-      padding: 2rem 0 3rem;
-    }}
-    header {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1.2rem;
-    }}
-    .brand {{
-      display: grid;
-      gap: 0.15rem;
-    }}
-    .brand span, .eyebrow {{
-      color: var(--muted);
-      font-size: 0.72rem;
-      font-weight: 850;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }}
-    h1 {{
-      margin: 0;
-      max-width: 780px;
-      font-size: 2.75rem;
-      line-height: 1.02;
-      overflow-wrap: anywhere;
-    }}
-    h2, h3, p {{ margin: 0; }}
-    h2 {{
-      font-size: 1.08rem;
-      line-height: 1.2;
+      padding: 22px 0 40px;
     }}
     a, button {{
-      min-height: 2.35rem;
+      min-height: 34px;
       border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 0.62rem 0.9rem;
+      border-radius: 6px;
+      padding: 8px 11px;
       color: var(--text);
-      background: rgba(255, 255, 255, 0.07);
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
       font: inherit;
-      font-size: 0.78rem;
-      font-weight: 800;
+      font-size: 12px;
+      font-weight: 750;
       text-decoration: none;
       cursor: pointer;
     }}
-    button:hover, a:hover {{ border-color: rgba(255,255,255,0.32); }}
-    .shell {{
-      display: grid;
-      gap: 1rem;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: clamp(1rem, 2vw, 1.35rem);
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
-        rgba(0, 0, 0, 0.38);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 28px 100px rgba(0, 0, 0, 0.5);
+    button:hover, a:hover {{ border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.08); }}
+    h1, h2, h3, p {{ margin: 0; }}
+    h1 {{
+      font-size: 20px;
+      line-height: 1.2;
+      font-weight: 760;
+      letter-spacing: 0;
     }}
-    .hero {{
-      display: grid;
-      gap: 0.8rem;
-      padding: 0.7rem 0 1rem;
-      border-bottom: 1px solid var(--line);
+    h2 {{
+      font-size: 13px;
+      line-height: 1.25;
+      font-weight: 760;
     }}
-    .status {{
-      display: inline-flex;
-      width: fit-content;
+    .topbar {{
+      display: flex;
       align-items: center;
-      gap: 0.48rem;
-      border: 1px solid rgba(114, 224, 163, 0.28);
-      border-radius: 999px;
-      padding: 0.42rem 0.65rem;
-      color: var(--green);
-      background: rgba(114, 224, 163, 0.08);
-      font-size: 0.68rem;
-      font-weight: 900;
+      justify-content: space-between;
+      gap: 14px;
+      min-height: 42px;
+      margin-bottom: 12px;
     }}
-    .grid {{
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 0.65rem;
-    }}
-    .fact, .approval-row {{
+    .brand {{
+      display: flex;
+      align-items: center;
+      gap: 10px;
       min-width: 0;
-      padding: 0.78rem;
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      background: var(--panel);
     }}
-    .fact span, .approval-row span, .approval-row small {{
+    .mark {{
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 5px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.035));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.22);
+    }}
+    .brand strong {{
       display: block;
+      font-size: 13px;
+      line-height: 1.2;
+    }}
+    .brand span, .crumb, .label, .audit-table th, .rail-label {{
       color: var(--muted);
-      font-size: 0.58rem;
-      font-weight: 850;
-      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 760;
+      letter-spacing: 0;
+    }}
+    .receipt-console {{
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.095), rgba(255,255,255,0.028)),
+        rgba(0,0,0,0.52);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 80px rgba(0,0,0,0.48);
+      overflow: hidden;
+    }}
+    .object-header {{
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(255,255,255,0.026);
+    }}
+    .crumb {{
+      font-family: var(--mono);
+      overflow-wrap: anywhere;
+    }}
+    .title-row {{
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }}
+    .subtitle {{
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+      max-width: 760px;
+    }}
+    .status-pill {{
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      white-space: nowrap;
+      border: 1px solid rgba(117, 217, 156, 0.34);
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--green);
+      background: rgba(117, 217, 156, 0.08);
+      font-size: 11px;
+      font-weight: 820;
+    }}
+    .status-dot {{
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(117,217,156,0.62);
+    }}
+    .fact-strip {{
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 1fr 1.25fr 0.8fr;
+      border-top: 1px solid var(--line-soft);
+    }}
+    .strip-item {{
+      min-width: 0;
+      padding: 10px 12px;
+      border-right: 1px solid var(--line-soft);
+    }}
+    .strip-item:last-child {{ border-right: 0; }}
+    .label {{
+      display: block;
+      margin-bottom: 5px;
       text-transform: uppercase;
     }}
-    .fact strong, .approval-row strong {{
+    .value {{
       display: block;
-      margin-top: 0.26rem;
       overflow-wrap: anywhere;
-      font-size: 0.82rem;
-      line-height: 1.25;
+      font-size: 13px;
+      line-height: 1.3;
+      font-weight: 720;
     }}
-    .good strong {{ color: var(--green); }}
-    .review strong {{ color: var(--amber); }}
-    .bad strong {{ color: var(--red); }}
-    .section {{
+    .mono {{
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 650;
+    }}
+    .good {{ color: var(--green); }}
+    .review {{ color: var(--amber); }}
+    .bad {{ color: var(--red); }}
+    .console-body {{
       display: grid;
-      gap: 0.75rem;
-      padding: 1rem 0;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      grid-template-columns: minmax(0, 1fr) 286px;
+      gap: 0;
     }}
-    .section:first-of-type {{ border-top: 0; }}
-    .section-title {{
+    .audit-stack {{
+      min-width: 0;
+      border-right: 1px solid var(--line);
+    }}
+    .audit-panel {{
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line-soft);
+    }}
+    .audit-panel:last-child {{ border-bottom: 0; }}
+    .section-heading {{
       display: flex;
-      justify-content: space-between;
-      gap: 1rem;
       align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
     }}
-    .section-title p {{
+    .section-heading p {{
       color: var(--muted);
-      font-size: 0.82rem;
-      line-height: 1.5;
+      font-size: 12px;
+      line-height: 1.45;
+      text-align: right;
     }}
-    .approvals {{
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.65rem;
+    .audit-table {{
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.032);
     }}
-    .approval-row small {{
-      margin-top: 0.32rem;
-      letter-spacing: 0;
-      text-transform: none;
+    .audit-table tr + tr {{ border-top: 1px solid var(--line-soft); }}
+    .audit-table th {{
+      width: 180px;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.026);
+    }}
+    .audit-table td {{
+      padding: 10px 12px;
+      color: var(--text);
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }}
+    .audit-table strong {{
+      display: block;
+      font-size: 13px;
       line-height: 1.35;
+      font-weight: 720;
+    }}
+    .audit-table td span {{
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }}
+    .audit-table .good strong {{ color: var(--green); }}
+    .audit-table .review strong {{ color: var(--amber); }}
+    .audit-table .bad strong {{ color: var(--red); }}
+    .anchor {{
+      margin-top: 10px;
+      color: rgba(255,255,255,0.7);
+      font-size: 12px;
+      line-height: 1.55;
+    }}
+    .utility-rail {{
+      min-width: 0;
+      padding: 16px;
+      background: rgba(0,0,0,0.18);
+    }}
+    .rail-card {{
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.035);
+    }}
+    .rail-card + .rail-card {{ margin-top: 12px; }}
+    .rail-row {{
+      display: grid;
+      gap: 3px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--line-soft);
+    }}
+    .rail-row:last-child {{ padding-bottom: 0; border-bottom: 0; }}
+    .rail-value {{
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.35;
+      color: var(--text);
     }}
     .actions {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.58rem;
-      padding-top: 0.2rem;
+      display: grid;
+      gap: 8px;
     }}
-    .anchor {{
-      color: rgba(255, 255, 255, 0.78);
-      font-size: 0.82rem;
-      line-height: 1.55;
+    .actions a, .actions button {{
+      width: 100%;
+      text-align: center;
+    }}
+    #copy-status {{
+      min-height: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
     }}
     textarea {{
       position: fixed;
@@ -3228,110 +3365,181 @@ def _render_review_run_approval_receipt_html(receipt: dict[str, Any], run: Revie
       clip-path: inset(50%);
     }}
     footer {{
-      margin-top: 1rem;
-      color: var(--muted);
-      font-size: 0.72rem;
+      margin-top: 12px;
+      color: var(--faint);
+      font-size: 11px;
       line-height: 1.5;
       overflow-wrap: anywhere;
     }}
-    @media (max-width: 760px) {{
-      main {{ width: min(100vw - 1rem, 1120px); padding-top: 1rem; }}
-      header {{ align-items: flex-start; flex-direction: column; }}
-      .brand span, .eyebrow {{ font-size: 0.62rem; }}
-      h1 {{ font-size: 1.55rem; line-height: 1.08; }}
-      h2 {{ font-size: 0.98rem; }}
-      .hero {{ gap: 0.62rem; padding: 0.55rem 0 0.85rem; }}
-      .shell {{ border-radius: 14px; padding: 0.9rem; }}
-      .section {{ gap: 0.62rem; padding: 0.85rem 0; }}
-      .fact, .approval-row {{ border-radius: 10px; padding: 0.68rem; }}
-      .fact strong, .approval-row strong {{ font-size: 0.78rem; }}
-      .anchor, .section-title p {{ font-size: 0.78rem; }}
-      footer {{ font-size: 0.68rem; }}
-      .grid, .approvals {{ grid-template-columns: 1fr; }}
-      .section-title {{ display: grid; }}
-      a, button {{ width: 100%; text-align: center; }}
+    @media (min-width: 900px) {{
+      .utility-rail {{
+        position: sticky;
+        top: 0;
+        align-self: start;
+      }}
+    }}
+    @media (max-width: 860px) {{
+      main {{ width: min(100vw - 16px, 1180px); padding-top: 12px; }}
+      .topbar {{ align-items: flex-start; flex-direction: column; }}
+      .title-row {{ display: grid; }}
+      .fact-strip {{ grid-template-columns: 1fr; }}
+      .strip-item {{ border-right: 0; border-bottom: 1px solid var(--line-soft); }}
+      .strip-item:last-child {{ border-bottom: 0; }}
+      .console-body {{ grid-template-columns: 1fr; }}
+      .audit-stack {{ border-right: 0; border-bottom: 1px solid var(--line); }}
+      .section-heading {{ display: grid; gap: 5px; }}
+      .section-heading p {{ text-align: left; }}
+      .audit-table th {{ width: 126px; }}
+      h1 {{ font-size: 18px; }}
+    }}
+    @media (max-width: 520px) {{
+      main {{ width: min(100vw - 12px, 1180px); }}
+      .object-header, .audit-panel, .utility-rail {{ padding: 12px; }}
+      .audit-table th, .audit-table td {{ display: block; width: 100%; }}
+      .audit-table td {{ padding-top: 0; }}
+      .audit-table th {{ padding-bottom: 5px; }}
+      .audit-table tr + tr {{ border-top: 1px solid var(--line-soft); }}
+      a, button {{ min-height: 36px; }}
     }}
   </style>
 </head>
 <body>
   <main>
-    <header>
+    <header class="topbar">
       <div class="brand">
-        <strong>InferenceAtlas</strong>
-        <span>Portable approval receipt</span>
+        <span class="mark" aria-hidden="true"></span>
+        <span>
+          <strong>InferenceAtlas</strong>
+          <span>Portable approval receipt</span>
+        </span>
       </div>
       <a href="{_receipt_html_escape(app_path)}">Back to ReviewRun</a>
     </header>
-    <section class="shell" aria-label="Approval receipt verification">
-      <div class="hero">
-        <span class="status">{_receipt_html_escape(status_label)}</span>
-        <h1>{_receipt_html_escape(receipt_id)}</h1>
-        <p class="anchor">Humans approve scoped movement. IA records and packages the receipt. Downstream systems verify it before movement.</p>
+    <section class="receipt-console" aria-label="Approval receipt verification">
+      <div class="object-header">
+        <div class="crumb">ReviewRun / Receipt / {_receipt_html_escape(receipt_id)}</div>
+        <div class="title-row">
+          <div>
+            <h1>Approval receipt</h1>
+            <p class="subtitle">Humans approve scoped movement. IA records the packet-backed receipt. Downstream systems verify it before movement.</p>
+          </div>
+          <span class="status-pill"><span class="status-dot" aria-hidden="true"></span>{_receipt_html_escape(status_label)}</span>
+        </div>
+        <div class="fact-strip" aria-label="Receipt summary">
+          <div class="strip-item">
+            <span class="label">Status</span>
+            <strong class="value good">{_receipt_html_escape(status_label)}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="label">Packet</span>
+            <strong class="value mono">{_receipt_html_escape(revision_id)}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="label">Portkey</span>
+            <strong class="value good">{_receipt_html_escape(portkey_state)}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="label">Scope</span>
+            <strong class="value">{_receipt_html_escape(allowed_scope)}</strong>
+          </div>
+          <div class="strip-item">
+            <span class="label">Mutations</span>
+            <strong class="value {'bad' if mutation_state != 'none' else 'good'}">{_receipt_html_escape(mutation_state)}</strong>
+          </div>
+        </div>
       </div>
-      <section class="section">
-        <div class="section-title">
-          <h2>Packet Reference</h2>
-          <p>{_receipt_html_escape(repo_name)}</p>
+      <div class="console-body">
+        <div class="audit-stack">
+          <section class="audit-panel">
+            <div class="section-heading">
+              <h2>Packet Reference</h2>
+              <p>{_receipt_html_escape(repo_name)}</p>
+            </div>
+            <table class="audit-table">
+              <tbody>
+                <tr><th>Run</th><td><strong class="mono">{_receipt_html_escape(run_id)}</strong></td></tr>
+                <tr><th>Packet</th><td><strong class="mono">{_receipt_html_escape(packet_id)}</strong></td></tr>
+                <tr><th>Revision</th><td><strong class="mono">{_receipt_html_escape(revision_id)}</strong></td></tr>
+                <tr><th>Content hash</th><td><strong class="mono">{_receipt_html_escape(content_hash)}</strong></td></tr>
+                <tr><th>Receipt hash</th><td><strong class="mono">{_receipt_html_escape(receipt_hash)}</strong></td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="audit-panel">
+            <div class="section-heading">
+              <h2>Movement Scope</h2>
+              <p>Scope travels with the receipt; blocked claims stay blocked.</p>
+            </div>
+            <table class="audit-table">
+              <tbody>
+                <tr class="good"><th>Allowed</th><td><strong>{_receipt_html_escape(allowed_scope)}</strong></td></tr>
+                <tr class="review"><th>Review required</th><td><strong>{_receipt_html_escape(review_scope)}</strong></td></tr>
+                <tr class="bad"><th>Still blocked</th><td><strong>{_receipt_html_escape(blocked_scope)}</strong></td></tr>
+                <tr><th>Human scope</th><td><strong>{_receipt_html_escape(approval_state)}</strong></td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="audit-panel">
+            <div class="section-heading">
+              <h2>Human Approval Record</h2>
+              <p>{_receipt_html_escape(str(approval_summary.get("recorded_count", 0)))} recorded, {_receipt_html_escape(str(approval_summary.get("missing_count", 0)))} missing.</p>
+            </div>
+            <table class="audit-table">
+              <tbody>{approval_rows}</tbody>
+            </table>
+          </section>
+          <section class="audit-panel">
+            <div class="section-heading">
+              <h2>Portkey Consumption</h2>
+              <p>Portkey consumes packet metadata; IA does not push policy.</p>
+            </div>
+            <table class="audit-table">
+              <tbody>
+                <tr class="good"><th>State</th><td><strong>{_receipt_html_escape(portkey_state)}</strong></td></tr>
+                <tr><th>Event id</th><td><strong class="mono">{_receipt_html_escape(portkey_event_id)}</strong></td></tr>
+                <tr class="{'bad' if api_mutation else 'good'}"><th>API mutation</th><td><strong>{_receipt_html_escape(str(api_mutation).lower())}</strong></td></tr>
+                <tr class="{'bad' if policy_mutation else 'good'}"><th>Policy mutation</th><td><strong>{_receipt_html_escape(str(policy_mutation).lower())}</strong></td></tr>
+              </tbody>
+            </table>
+          </section>
+          <section class="audit-panel">
+            <div class="section-heading">
+              <h2>Safety Boundary</h2>
+              <p>IA never approves access, grants permissions, writes externally, or mutates Portkey policy.</p>
+            </div>
+            <table class="audit-table">
+              <tbody>{safety_rows}</tbody>
+            </table>
+            <p class="anchor">{_receipt_html_escape(receipt.get("safety_anchor") or "")}</p>
+          </section>
         </div>
-        <div class="grid">
-          <div class="fact"><span>Run</span><strong>{_receipt_html_escape(run_id)}</strong></div>
-          <div class="fact"><span>Packet</span><strong>{_receipt_html_escape(packet_id)}</strong></div>
-          <div class="fact"><span>Revision</span><strong>{_receipt_html_escape(revision_id)}</strong></div>
-          <div class="fact"><span>Receipt hash</span><strong>{_receipt_html_escape(receipt_hash)}</strong></div>
-        </div>
+        <aside class="utility-rail" aria-label="Receipt utilities">
+          <div class="rail-card">
+            <div class="rail-row">
+              <span class="rail-label">Receipt</span>
+              <strong class="rail-value">{_receipt_html_escape(receipt_id)}</strong>
+            </div>
+            <div class="rail-row">
+              <span class="rail-label">Packet revision</span>
+              <strong class="rail-value">{_receipt_html_escape(revision_id)}</strong>
+            </div>
+            <div class="rail-row">
+              <span class="rail-label">Receipt hash</span>
+              <strong class="rail-value">{_receipt_html_escape(receipt_hash)}</strong>
+            </div>
+          </div>
+          <div class="rail-card">
+            <span class="rail-label">Carry it</span>
+            <div class="actions">
+              <button type="button" data-copy-source="copy-receipt">Copy receipt</button>
+              <button type="button" data-copy-source="copy-pr">Copy PR snippet</button>
+              <a href="{_receipt_html_escape(api_path)}">Open API JSON</a>
+            </div>
+            <p id="copy-status" role="status" aria-live="polite"></p>
+          </div>
+        </aside>
+      </div>
       </section>
-      <section class="section">
-        <div class="section-title">
-          <h2>Movement Scope</h2>
-          <p>Scope travels with the receipt; blocked claims stay blocked.</p>
-        </div>
-        <div class="grid">
-          <div class="fact good"><span>Allowed</span><strong>{_receipt_html_escape(allowed_scope)}</strong></div>
-          <div class="fact review"><span>Review required</span><strong>{_receipt_html_escape(review_scope)}</strong></div>
-          <div class="fact bad"><span>Still blocked</span><strong>{_receipt_html_escape(blocked_scope)}</strong></div>
-          <div class="fact review"><span>Human scope</span><strong>{_receipt_html_escape(approval_state)}</strong></div>
-        </div>
-      </section>
-      <section class="section">
-        <div class="section-title">
-          <h2>Human Approval Record</h2>
-          <p>{_receipt_html_escape(str(approval_summary.get("recorded_count", 0)))} recorded, {_receipt_html_escape(str(approval_summary.get("missing_count", 0)))} missing.</p>
-        </div>
-        <div class="approvals">{approval_rows}</div>
-      </section>
-      <section class="section">
-        <div class="section-title">
-          <h2>Portkey Consumption</h2>
-          <p>Portkey consumes packet metadata; IA does not push policy.</p>
-        </div>
-        <div class="grid">
-          <div class="fact good"><span>State</span><strong>{_receipt_html_escape(portkey_state)}</strong></div>
-          <div class="fact"><span>Event id</span><strong>{_receipt_html_escape(portkey_event_id)}</strong></div>
-          <div class="fact {'bad' if api_mutation else 'good'}"><span>API mutation</span><strong>{_receipt_html_escape(str(api_mutation).lower())}</strong></div>
-          <div class="fact {'bad' if policy_mutation else 'good'}"><span>Policy mutation</span><strong>{_receipt_html_escape(str(policy_mutation).lower())}</strong></div>
-        </div>
-      </section>
-      <section class="section">
-        <div class="section-title">
-          <h2>Safety Boundary</h2>
-          <p>IA never approves access, grants permissions, writes externally, or mutates Portkey policy.</p>
-        </div>
-        <div class="grid">{safety_rows}</div>
-        <p class="anchor">{_receipt_html_escape(receipt.get("safety_anchor") or "")}</p>
-      </section>
-      <section class="section">
-        <div class="section-title">
-          <h2>Carry It</h2>
-          <p>Use the receipt or PR snippet without expanding scope.</p>
-        </div>
-        <div class="actions">
-          <button type="button" data-copy-source="copy-receipt">Copy receipt</button>
-          <button type="button" data-copy-source="copy-pr">Copy PR snippet</button>
-          <a href="{_receipt_html_escape(api_path)}">Open API JSON</a>
-        </div>
-        <p class="anchor" id="copy-status" role="status" aria-live="polite"></p>
-      </section>
-    </section>
     <footer>Read-only verification page. API path: {_receipt_html_escape(api_path)}. Content hash: {_receipt_html_escape(content_hash)}.</footer>
   </main>
   <textarea id="copy-receipt" readonly>{_receipt_html_escape(copy_receipt)}</textarea>

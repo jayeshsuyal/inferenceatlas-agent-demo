@@ -137,6 +137,9 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         ".repo-portkey-outcomes",
         ".repo-portkey-live-receipt",
         ".repo-portkey-receipt-grid",
+        ".repo-approval-receipt",
+        ".repo-approval-receipt-grid",
+        ".repo-receipt-actions",
     ):
         _require(expected in css, f"root CSS missing cockpit density guard: {expected}")
 
@@ -146,6 +149,9 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "renderReviewRunCoachSuggestions",
         "fetchReviewRunPortkeyGuardrailTest",
         "fetchReviewRunPortkeyReceipt",
+        "fetchReviewRunApprovalReceipt",
+        "currentReviewRunApprovalReceipt",
+        "/approval-receipt",
         "/api/portkey/guardrail/events",
         "fetchReviewRunProofGraph",
         "proofOwnerSummaryForPacket",
@@ -154,6 +160,10 @@ def _check_first_run_contract(base_url: str, timeout: float) -> dict[str, Any]:
         "focusReviewRunScreen(\"proof_workbench\")",
         "openReviewRunPortkeyStage",
         "repo-rerun-delta",
+        "Portable approval receipt",
+        "Copy receipt",
+        "Copy PR snippet",
+        "Open verification",
         "repo-portkey-runway",
         "Packet-consumption runway",
         "repo-portkey-revision-flow",
@@ -346,6 +356,38 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
     _require("ReviewRun" in rerun_packet["copy_review_brief"], "review brief must name ReviewRun")
     _require("IA did not approve" in rerun_packet["copy_review_brief"], "review brief lost safety anchor")
 
+    receipt_response = _json_get(
+        base_url,
+        "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/approval-receipt",
+        timeout=timeout,
+    )
+    approval_receipt = receipt_response["approval_receipt"]
+    _require(approval_receipt["schema_version"] == "review_run_approval_receipt.v0", "approval receipt schema drifted")
+    _require(approval_receipt["status"] == "ready_to_circulate", "approval receipt must be ready after rerun")
+    _require(approval_receipt["can_circulate"] is True, "approval receipt must circulate only after rerun")
+    _require(approval_receipt["packet_reference"]["revision_id"] == rerun_run["packet"]["revision_id"], "receipt revision drifted")
+    _require(
+        approval_receipt["movement"]["allowed_scope"] == ["read issues", "comment", "create labels in selected repo"],
+        "receipt allowed scope drifted",
+    )
+    _require(
+        approval_receipt["movement"]["still_blocked_scope"] == ["repo admin", "org-wide write", "secrets"],
+        "receipt still-blocked scope drifted",
+    )
+    _require(
+        approval_receipt["approval_summary"]["human_approval_state"] == "recorded_for_scoped_validation",
+        "receipt human approval state drifted",
+    )
+    _require(approval_receipt["safety_boundary"]["ia_approved"] is False, "approval receipt cannot say IA approved")
+    _require(
+        approval_receipt["safety_boundary"]["ia_mutates_portkey_policy"] is False,
+        "approval receipt cannot mutate Portkey policy",
+    )
+    _require(
+        "Humans approve scoped movement" in approval_receipt["safety_anchor"],
+        "approval receipt lost safety anchor",
+    )
+
     portkey = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/portkey/guardrail-test",
@@ -400,6 +442,8 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
         "proof_lenses": active_lenses,
         "portkey_state_before": "Block",
         "portkey_state_after": portkey_test["portkey_state"],
+        "approval_receipt_id": approval_receipt["receipt_id"],
+        "approval_receipt_status": approval_receipt["status"],
         "still_blocked_scope": portkey_test["still_blocked_scope"],
         "guardrail_event_id": portkey_test["event_id"],
         "copy_review_brief_ready": True,

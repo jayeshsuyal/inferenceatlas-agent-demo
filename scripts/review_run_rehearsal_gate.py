@@ -388,6 +388,24 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
         "approval receipt lost safety anchor",
     )
 
+    approval_receipt_route = "/approval-receipt/" + urllib.parse.quote(run["run_id"])
+    approval_receipt_html = _read(base_url, approval_receipt_route, timeout=timeout)
+    for expected in (
+        "InferenceAtlas Receipt Verification",
+        approval_receipt["receipt_id"],
+        "Ready To Circulate",
+        "Humans approve scoped movement",
+        "read issues, comment, create labels in selected repo",
+        "repo admin, org-wide write, secrets",
+        "Portkey Consumption",
+        "API mutation",
+        "Policy mutation",
+        "IA never approves access",
+        "Open API JSON",
+    ):
+        _require(expected in approval_receipt_html, f"approval receipt page missing detail: {expected}")
+    _require("ghp_" not in approval_receipt_html, "approval receipt page leaked token shape")
+
     portkey = _json_post(
         base_url,
         "/api/review-runs/" + urllib.parse.quote(run["run_id"]) + "/portkey/guardrail-test",
@@ -448,6 +466,7 @@ def _run_review_loop(base_url: str, timeout: float) -> dict[str, Any]:
         "guardrail_event_id": portkey_test["event_id"],
         "copy_review_brief_ready": True,
         "proofgraph_route": "/proofgraph?review_run_id=" + run["run_id"],
+        "approval_receipt_route": approval_receipt_route,
     }
 
 

@@ -357,6 +357,8 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("currentReviewRunApprovalReceipt", js)
         self.assertIn("fetchReviewRunApprovalReceipt", js)
         self.assertIn("/approval-receipt", js)
+        self.assertIn("/approval-receipt/${encodeURIComponent(runId)}", js)
+        self.assertIn("receipt?.verification_path || \"#\"", js)
         self.assertIn("approvalReceiptMatchesPacket", js)
         self.assertIn("Portable approval receipt", js)
         self.assertIn("Copy receipt", js)

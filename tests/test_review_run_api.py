@@ -23,6 +23,7 @@ from web.app import (
     ReviewRunProofAttachRequest,
     ReviewRunRerunRequest,
     _review_runs,
+    approval_receipt_index,
     attach_review_run_proof_api,
     coach_review_run_api,
     coach_review_run_stream_api,
@@ -392,6 +393,21 @@ class ReviewRunApiTests(TestCase):
                 self.assertFalse(receipt["safety_boundary"]["ia_grants_permissions"])
                 self.assertFalse(receipt["safety_boundary"]["ia_executes_external_writes"])
                 self.assertTrue(receipt["safety_boundary"]["humans_approved_scope"])
+
+                body = approval_receipt_index(run_id).body.decode("utf-8")
+                self.assertIn("InferenceAtlas Receipt Verification", body)
+                self.assertIn(receipt["receipt_id"], body)
+                self.assertIn("Ready To Circulate", body)
+                self.assertIn("Humans approve scoped movement", body)
+                self.assertIn("Allowed", body)
+                self.assertIn("read issues, comment, create labels in selected repo", body)
+                self.assertIn("repo admin, org-wide write, secrets", body)
+                self.assertIn("Portkey Consumption", body)
+                self.assertIn("API mutation", body)
+                self.assertIn("Policy mutation", body)
+                self.assertIn("IA never approves access", body)
+                self.assertIn("/api/review-runs/", body)
+                self.assertNotIn("ghp_1234567890abcdefSECRET", body)
 
     def test_review_run_portkey_guardrail_test_tracks_packet_revision_delta(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -1029,6 +1045,12 @@ class ReviewRunApiTests(TestCase):
             route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/coach/stream"
         )
         proofgraph_route = next(route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/proofgraph")
+        approval_receipt_api_route = next(
+            route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/approval-receipt"
+        )
+        approval_receipt_page_route = next(
+            route for route in app.routes if getattr(route, "path", "") == "/approval-receipt/{run_id}"
+        )
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
@@ -1038,6 +1060,8 @@ class ReviewRunApiTests(TestCase):
         self.assertEqual(coach_route.methods, {"POST"})
         self.assertEqual(coach_stream_route.methods, {"POST"})
         self.assertEqual(proofgraph_route.methods, {"GET"})
+        self.assertEqual(approval_receipt_api_route.methods, {"GET"})
+        self.assertEqual(approval_receipt_page_route.methods, {"GET"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

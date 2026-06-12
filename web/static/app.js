@@ -4934,9 +4934,8 @@ function receiptScopeLabel(items = []) {
 }
 
 function approvalReceiptVerificationPath(receipt = null) {
-  return receipt?.verification_path || (currentReviewRun?.run_id
-    ? `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/approval-receipt`
-    : "#");
+  const runId = receipt?.packet_reference?.run_id || currentReviewRun?.run_id;
+  return runId ? `/approval-receipt/${encodeURIComponent(runId)}` : (receipt?.verification_path || "#");
 }
 
 function formatApprovalReceiptText(receipt) {

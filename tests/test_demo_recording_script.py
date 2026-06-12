@@ -7,6 +7,7 @@ from tests.public_boundary_terms import FORBIDDEN_PRIVATE_V1_TERMS
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "docs" / "DEMO_RECORDING_SCRIPT.md"
+SPEAKER_SCRIPT = ROOT / "docs" / "DEMO_90_SECOND_SCRIPT.md"
 
 
 class DemoRecordingScriptTests(unittest.TestCase):
@@ -70,6 +71,38 @@ class DemoRecordingScriptTests(unittest.TestCase):
         self.assertEqual(manifest["verification"]["demo_recording_script"], "test -s docs/DEMO_RECORDING_SCRIPT.md")
         self.assertIn("demo recording script", manifest["private_v1_boundary"]["public_proof_surface"])
         self.assertIn("docs/DEMO_RECORDING_SCRIPT.md", readme)
+        self.assertIn("docs/DEMO_90_SECOND_SCRIPT.md", readme)
+
+    def test_90_second_demo_script_is_speaker_ready_and_safe(self) -> None:
+        script = SPEAKER_SCRIPT.read_text(encoding="utf-8")
+
+        for expected in [
+            "# 90-Second Demo Script",
+            "Status: speaker-ready demo script",
+            "Private engine, public proof.",
+            "InferenceAtlas connects to one repo, generates the packet",
+            "Use demo repo",
+            "Review access",
+            "What proof is missing?",
+            "No Portkey Admin API call. No policy push. No GitHub write.",
+            "Portkey consumes the packet-backed verdict; IA does not mutate Portkey policy.",
+            "IA did not approve. The next human action is named above.",
+            "The local demo proves the BYO guardrail contract.",
+            "/api/portkey/guardrail",
+        ]:
+            self.assertIn(expected, script)
+
+        for forbidden in [
+            "IA approved access",
+            "IA granted permissions",
+            "IA pushed a Portkey policy",
+            "IA wrote to GitHub",
+            "Portkey changed because IA mutated it",
+        ]:
+            self.assertIn(forbidden, script)
+
+        for forbidden in FORBIDDEN_PRIVATE_V1_TERMS:
+            self.assertNotIn(forbidden, script, msg=f"{forbidden} leaked in 90-second demo script")
 
 
 if __name__ == "__main__":

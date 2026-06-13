@@ -119,9 +119,14 @@ For Composio, keep the dry-run flag explicit:
 | `TAVILY_API_KEY` | Tavily evidence search | empty |
 | `COMPOSIO_API_KEY` | Composio dry-run planning | empty |
 | `COMPOSIO_DRY_RUN` | Composio write safety | `1` |
+| `PORTKEY_GUARDRAIL_TOKEN` | Portkey BYO Guardrail webhook auth | empty |
+| `PORTKEY_REHEARSAL_TOKEN` | Rehearsal-only Portkey probe marker | empty |
+| `WEB_PUBLIC_URL` | Public callback/base URL for OAuth and live dashboard setup | `http://127.0.0.1:8080` |
 | `AGENT_MAX_STEPS` | Runtime loop limit | `6` in `.env.example` |
 
 Never commit `.env`, keys, tokens, live customer data, or private workspace IDs.
+
+For a live Portkey dashboard demo, the public URL must be reachable by Portkey and must terminate at the same IA server that has `PORTKEY_GUARDRAIL_TOKEN` configured. Portkey should call `/api/portkey/guardrail` with `Authorization: Bearer <same token>`. This is packet consumption only: IA does not call Portkey Admin APIs, push policies, mutate Portkey state, or approve access.
 
 ## Live Mode Acceptance Checks
 

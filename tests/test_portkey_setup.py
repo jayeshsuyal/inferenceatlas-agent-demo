@@ -138,7 +138,21 @@ def test_portkey_setup_is_documented() -> None:
     assert "Portkey BYO Guardrail Setup" in command_reference
     assert "python3 -m agent.portkey_setup" in command_reference
     assert "Authorization: Bearer <PORTKEY_GUARDRAIL_TOKEN>" in command_reference
+    assert "PORTKEY_GUARDRAIL_TOKEN=<shared-token>" in command_reference
     assert "does not call Portkey APIs" in command_reference
+
+
+def test_portkey_live_env_is_operator_visible() -> None:
+    env_example = (ROOT / ".env.example").read_text(encoding="utf-8")
+    live_contract = (ROOT / "docs" / "LIVE_INTEGRATION_CONTRACT.md").read_text(encoding="utf-8")
+
+    for text in (env_example, live_contract):
+        assert "PORTKEY_GUARDRAIL_TOKEN" in text
+        assert "PORTKEY_REHEARSAL_TOKEN" in text
+        assert "WEB_PUBLIC_URL" in text
+
+    assert "Authorization: Bearer <PORTKEY_GUARDRAIL_TOKEN>" in env_example
+    assert "packet consumption only" in live_contract
 
 
 def test_portkey_setup_rejects_non_positive_timeouts() -> None:

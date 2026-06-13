@@ -58,12 +58,19 @@ This requires local sponsor keys. It verifies Nebius returns live read-only revi
 ## Portkey BYO Guardrail Setup
 
 ```bash
+export PORTKEY_GUARDRAIL_TOKEN="<shared-token>"
 python3 -m agent.portkey_setup \
   --public-base-url https://inferenceatlas-v1.onrender.com \
   --json
 ```
 
 This renders the secret-safe Portkey dashboard setup sheet: webhook URL, `Authorization: Bearer <PORTKEY_GUARDRAIL_TOKEN>`, timeout, packet metadata, expected `{"verdict": true|false}` response, verification commands, and the no-mutation safety boundary. It does not call Portkey APIs, push policies, store secrets, or print the shared token.
+
+Live dashboard readiness requires three matching values:
+
+- IA server env: `PORTKEY_GUARDRAIL_TOKEN=<shared-token>`
+- Portkey webhook URL: `<public IA URL>/api/portkey/guardrail`
+- Portkey header: `Authorization: Bearer <same token>`
 
 Portkey's BYO Guardrails timeout can proceed with a default `verdict: true`, so the live demo claim must be precise: IA fails closed for requests it receives, and the webhook should stay within the local latency budget.
 

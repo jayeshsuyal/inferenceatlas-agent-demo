@@ -1,0 +1,303 @@
+{
+  "audit_trail": [
+    {
+      "at": "2026-06-13T18:23:55Z",
+      "detail": {
+        "admin_api_called": true,
+        "binding": {
+          "config_id": "de9210a6-4bb3-4404-9950-2681c4cb81e4",
+          "guardrail_id": "99c80b97-a4af-4474-a755-17e75bf67933",
+          "inline_config": {
+            "input_guardrails": [
+              "99c80b97-a4af-4474-a755-17e75bf67933"
+            ],
+            "provider": "@iaagent1"
+          },
+          "provider_slug": "iaagent1",
+          "reconcile_status": "reconciled",
+          "reconciled_at": "2026-06-13T18:23:53Z",
+          "required_metadata_keys": [
+            "ia_packet_id",
+            "ia_revision_id",
+            "ia_review_run_id",
+            "ia_content_hash",
+            "ia_verdict"
+          ],
+          "resolved_model": "@iaagent1/babbage-002",
+          "schema_version": "portkey_reconcile.v1",
+          "webhook_url": "https://thysanurous-cecilia-nonstretchable.ngrok-free.dev/api/portkey/guardrail"
+        },
+        "message": "Portkey reconciled \u2014 guardrail 99c80b97-a4af-4474-a755-17e75bf67933, config de9210a6-4bb3-4404-9950-2681c4cb81e4 on @iaagent1.",
+        "ok": true,
+        "policy_mutation": true,
+        "steps": {
+          "config_create": {
+            "config_id": "de9210a6-4bb3-4404-9950-2681c4cb81e4",
+            "detail": "Portkey config created with IA guardrail attached.",
+            "ok": true,
+            "raw": {
+              "id": "de9210a6-4bb3-4404-9950-2681c4cb81e4",
+              "object": "config",
+              "slug": "pc-ia-ia-2ea65c",
+              "version_id": "f705eab6-eaee-4ee2-8405-b5bb56d19b00"
+            },
+            "status": "done"
+          },
+          "guardrail_create": {
+            "admin_api_called": true,
+            "detail": "Guardrail created in Portkey via Admin API.",
+            "guardrail_id": "99c80b97-a4af-4474-a755-17e75bf67933",
+            "id": "admin_guardrail_create",
+            "ok": true,
+            "status": "done",
+            "webhook_url": "https://thysanurous-cecilia-nonstretchable.ngrok-free.dev/api/portkey/guardrail"
+          }
+        }
+      },
+      "event": "portkey_reconcile"
+    }
+  ],
+  "content_hash": "sha256:07054949cc384b8d0fcbe904083c7428135f6d3bd84c7fc6b2017af001434804",
+  "generated_at": "2026-06-13T18:24:00Z",
+  "github_binding": {
+    "branch": null,
+    "default_branch": "main",
+    "head_sha": null,
+    "packet_path": "ia/packets/jayeshsuyal_inferenceatlas-agent-demo/ia-review-run-packet-ebce43f97927348c-v0.iapkt",
+    "pr_number": null,
+    "pr_url": null,
+    "repo_full_name": "jayeshsuyal/inferenceatlas-agent-demo"
+  },
+  "movement_classes": {
+    "allowed": [
+      "read issues",
+      "comment",
+      "create labels in selected repo"
+    ],
+    "blocked": [
+      "repo admin",
+      "org-wide write",
+      "secrets"
+    ],
+    "review_required": []
+  },
+  "obligation_graph": {
+    "edges": [
+      {
+        "from": "environment_boundary",
+        "kind": "invalidates_on_change",
+        "to": "repo_owner_approval"
+      },
+      {
+        "from": "repo_owner_approval",
+        "kind": "invalidates_on_change",
+        "to": "rollback_offswitch"
+      },
+      {
+        "from": "environment_boundary",
+        "kind": "invalidates_on_change",
+        "to": "rollback_offswitch"
+      }
+    ],
+    "obligations": [
+      {
+        "approved_at": "2026-06-13T18:24:00Z",
+        "approves_access": false,
+        "blocks": [
+          "portkey_reconcile",
+          "scoped_write"
+        ],
+        "depends_on": [],
+        "grants_permissions": false,
+        "id": "environment_boundary",
+        "invalidated_at": null,
+        "invalidation_reason": null,
+        "kind": "approval",
+        "label": "Environment boundary",
+        "last_receipt": {
+          "attached_at": "2026-06-13T18:24:00Z",
+          "id": "environment_boundary",
+          "label": "Environment boundary",
+          "note": ""
+        },
+        "priority_tier": "security",
+        "status": "approved",
+        "team": "security"
+      },
+      {
+        "approved_at": "2026-06-13T18:24:00Z",
+        "approves_access": false,
+        "blocks": [
+          "scoped_comment",
+          "label_create"
+        ],
+        "depends_on": [
+          "environment_boundary"
+        ],
+        "grants_permissions": false,
+        "id": "repo_owner_approval",
+        "invalidated_at": null,
+        "invalidation_reason": null,
+        "kind": "approval",
+        "label": "Repo owner approval",
+        "last_receipt": {
+          "attached_at": "2026-06-13T18:24:00Z",
+          "id": "repo_owner_approval",
+          "label": "Repo owner approval",
+          "note": ""
+        },
+        "priority_tier": "support_ops",
+        "status": "approved",
+        "team": "support_ops"
+      },
+      {
+        "approved_at": "2026-06-13T18:24:00Z",
+        "approves_access": false,
+        "blocks": [
+          "production_adjacent_movement"
+        ],
+        "depends_on": [
+          "repo_owner_approval"
+        ],
+        "grants_permissions": false,
+        "id": "rollback_offswitch",
+        "invalidated_at": null,
+        "invalidation_reason": null,
+        "kind": "approval",
+        "label": "Rollback/off-switch proof",
+        "last_receipt": {
+          "attached_at": "2026-06-13T18:24:00Z",
+          "id": "rollback_offswitch",
+          "label": "Rollback/off-switch proof",
+          "note": ""
+        },
+        "priority_tier": "engineering",
+        "status": "approved",
+        "team": "engineering"
+      }
+    ],
+    "priority_tiers": [
+      "security",
+      "legal",
+      "engineering",
+      "support_ops",
+      "finance_procurement"
+    ],
+    "reassessment": {
+      "all_obligations_closed": true,
+      "invalidated_ids": [
+        "repo_owner_approval",
+        "rollback_offswitch"
+      ],
+      "last_run_at": "2026-06-13T18:24:00Z",
+      "last_trigger": "content_hash_changed",
+      "required_reruns": [],
+      "resolution_order": [
+        "security",
+        "legal",
+        "engineering",
+        "support_ops",
+        "finance_procurement"
+      ]
+    },
+    "schema_version": "iapkt_obligation_graph.v1"
+  },
+  "packet_body": {
+    "access_request": {
+      "classification_status": "pending_packet_generation",
+      "raw_request_hash": "b390d8927ec727c3",
+      "raw_text": "support-triage-bot needs to read issues, comment, and create labels."
+    },
+    "attached_proof": [
+      {
+        "approves_access": false,
+        "evidence_note": "Support Ops confirmed repo-owner approval for selected repo only.",
+        "grants_permissions": false,
+        "human_attached": true,
+        "id": "repo_owner_approval",
+        "label": "Repo owner approval",
+        "mutates_downstream_policy": false
+      },
+      {
+        "approves_access": false,
+        "evidence_note": "Engineering provided rollback/off-switch proof for support-triage-bot.",
+        "grants_permissions": false,
+        "human_attached": true,
+        "id": "rollback_offswitch",
+        "label": "Rollback/off-switch proof",
+        "mutates_downstream_policy": false
+      },
+      {
+        "approves_access": false,
+        "evidence_note": "Security confirmed selected-repo boundary; secrets and org-wide access remain blocked.",
+        "grants_permissions": false,
+        "human_attached": true,
+        "id": "environment_boundary",
+        "label": "Environment boundary",
+        "mutates_downstream_policy": false
+      }
+    ],
+    "decision": {
+      "approval_granted": false,
+      "external_writes": false,
+      "next_human_action": "Export the updated packet brief and route the scoped allow-with-policy review.",
+      "permission_grants": false,
+      "production_access": false,
+      "requires_human_review": false,
+      "verdict_class": "ready_with_gates"
+    },
+    "missing_proof": [
+      {
+        "id": "repo_owner_approval",
+        "label": "Repo owner approval"
+      },
+      {
+        "id": "rollback_offswitch",
+        "label": "Rollback/off-switch proof"
+      },
+      {
+        "id": "environment_boundary",
+        "label": "Environment boundary"
+      }
+    ],
+    "movement": null,
+    "packet_reference": {
+      "content_hash": "sha256:722a13e7b40faf5bb5f69a1bef2e14b48313493511881eab032dd4118d00c110",
+      "packet_id": "ia-review-run-packet-ebce43f97927348c-v0",
+      "previous_revision_id": "rev_031cc65181895167",
+      "revision_id": "rev_75ed2477b3751eff",
+      "revision_number": 2,
+      "run_id": "ia-review-run-a25202893e3e4ee9",
+      "source_of_truth": "ReviewRun"
+    },
+    "projection_schema": "review_run_packet.v0"
+  },
+  "packet_id": "ia-review-run-packet-ebce43f97927348c-v0",
+  "portkey_binding": {
+    "config_id": "de9210a6-4bb3-4404-9950-2681c4cb81e4",
+    "guardrail_id": "99c80b97-a4af-4474-a755-17e75bf67933",
+    "obligation_blockers": [],
+    "obligations_ready": true,
+    "provider_slug": "iaagent1",
+    "reconcile_status": "reconciled",
+    "reconciled_at": "2026-06-13T18:23:53Z",
+    "required_metadata_keys": [
+      "ia_packet_id",
+      "ia_revision_id",
+      "ia_review_run_id",
+      "ia_content_hash",
+      "ia_verdict"
+    ],
+    "resolved_model": "@iaagent1/babbage-002",
+    "webhook_url": "https://thysanurous-cecilia-nonstretchable.ngrok-free.dev/api/portkey/guardrail"
+  },
+  "previous_revision_id": "rev_031cc65181895167",
+  "revision_id": "rev_75ed2477b3751eff",
+  "revision_number": 2,
+  "run_id": "ia-review-run-a25202893e3e4ee9",
+  "schema_version": "iapkt.v1",
+  "signatures": [],
+  "source_of_truth": "InferenceAtlas",
+  "stage": "ready_to_export",
+  "verdict_class": "ready_with_gates"
+}

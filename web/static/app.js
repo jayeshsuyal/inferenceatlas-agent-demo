@@ -188,6 +188,8 @@ const repoNextActionCard = document.getElementById("repo-next-action-card");
 const repoProofResolutionCard = document.getElementById("repo-proof-resolution-card");
 const repoRerunCard = document.getElementById("repo-rerun-card");
 const repoSponsorProofCard = document.getElementById("repo-sponsor-proof-card");
+const repoProofGraphLink = document.getElementById("repo-proofgraph-link");
+const repoProofGraphExportLink = document.getElementById("repo-proofgraph-export-link");
 const repoPortkeyCard = document.getElementById("repo-portkey-card");
 const btnOpenPortkeyStage = document.getElementById("btn-open-portkey-stage");
 
@@ -1638,6 +1640,7 @@ async function restoreReviewRunSession({ preferredRunId = "" } = {}) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.ok) return false;
     currentReviewRun = data.run;
+    syncProofGraphStaticLinks(runId);
     const repoJson = localStorage.getItem(SELECTED_REPO_STORAGE_KEY);
     if (repoJson) {
       selectedGithubRepos = [JSON.parse(repoJson)];
@@ -2085,6 +2088,27 @@ function parseReviewRunFromUrl() {
   };
 }
 
+function reviewRunFreshStartRequested() {
+  const params = new URLSearchParams(window.location.search);
+  return ["1", "true", "yes"].includes((params.get("fresh") || "").toLowerCase())
+    || ["1", "true", "yes"].includes((params.get("reset_review") || "").toLowerCase());
+}
+
+function clearReviewRunFreshStartParam() {
+  const params = new URLSearchParams(window.location.search);
+  let changed = false;
+  ["fresh", "reset_review", "run", "screen"].forEach((key) => {
+    if (params.has(key)) {
+      params.delete(key);
+      changed = true;
+    }
+  });
+  if (!changed) return;
+  const query = params.toString();
+  const next = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  history.replaceState({}, "", next);
+}
+
 function syncReviewRunUrl({ screen = "", runId = "", replace = false } = {}) {
   if (document.body.dataset.activeTab !== "start") return;
   const params = new URLSearchParams(window.location.search);
@@ -2509,6 +2533,7 @@ function restartReviewRunInSession() {
   currentReviewRunPortkeyReceipt = null;
   currentReviewRunApprovalReceipt = null;
   currentReviewRunProofGraph = null;
+  syncProofGraphStaticLinks("");
   currentRepoIndexJobId = "";
   pendingIndexSummary = "";
   if (repoIndexPollTimer) {
@@ -4867,11 +4892,36 @@ function packetPortkeyProofLoopPath(fixtureId, requestedMode = "model_request") 
   return `/api/packets/${encodeURIComponent(fixtureId || "ai_spend_budget_overrun")}/downstream/portkey/proof-loop?requested_mode=${encodeURIComponent(requestedMode)}`;
 }
 
-function reviewRunProofGraphUrl(runId = currentReviewRun?.run_id || currentReviewRunProofGraph?.generated_from_run_id) {
-  if (runId) {
-    return `/proofgraph?review_run_id=${encodeURIComponent(runId)}`;
+function reviewRunProofGraphUrl(runId) {
+  const effectiveRunId =
+    runId !== undefined
+      ? runId
+      : currentReviewRun?.run_id || currentReviewRunProofGraph?.generated_from_run_id || parseReviewRunFromUrl().runId;
+  if (effectiveRunId) {
+    return `/proofgraph?review_run_id=${encodeURIComponent(effectiveRunId)}`;
   }
   return `/proofgraph?fixture=${encodeURIComponent(REPO_PROOF_FIXTURE)}`;
+}
+
+function reviewRunProofGraphExportUrl(runId) {
+  const effectiveRunId =
+    runId !== undefined
+      ? runId
+      : currentReviewRun?.run_id || currentReviewRunProofGraph?.generated_from_run_id || parseReviewRunFromUrl().runId;
+  if (effectiveRunId) {
+    return `/proofgraph.svg?review_run_id=${encodeURIComponent(effectiveRunId)}`;
+  }
+  return `/proofgraph.svg?fixture=${encodeURIComponent(REPO_PROOF_FIXTURE)}`;
+}
+
+function syncProofGraphStaticLinks(runId = currentReviewRun?.run_id || parseReviewRunFromUrl().runId) {
+  if (repoProofGraphLink) {
+    repoProofGraphLink.href = reviewRunProofGraphUrl(runId);
+    repoProofGraphLink.textContent = runId ? "Open generated ProofGraph" : "Open ProofGraph";
+  }
+  if (repoProofGraphExportLink) {
+    repoProofGraphExportLink.href = reviewRunProofGraphExportUrl(runId);
+  }
 }
 
 function proofGraphUrl() {
@@ -5344,7 +5394,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
   const graph = currentReviewRunProofGraph || null;
   const graphPacketRef = graph?.packet_reference || packetRef;
   const graphProofCounts = graph?.proof_counts || {};
-  const graphRunId = graph?.generated_from_run_id || currentReviewRun?.run_id || packetRef.run_id;
+  const graphRunId = graph?.generated_from_run_id || currentReviewRun?.run_id || packetRef.run_id || parseReviewRunFromUrl().runId;
   const graphState = graph?.status_label || graph?.graph_state || "Packet authority map";
   const graphSponsorProofCount = graphProofCounts.sponsor_steps ?? trace.step_count ?? 0;
   const graphAttachedProofCount = graphProofCounts.attached ?? packet.proof_resolution?.attached_proof_count ?? 0;
@@ -5556,6 +5606,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
         <p>${escapeHtml(String(graphSponsorProofCount))} sponsor proof steps, ${escapeHtml(String(graphAttachedProofCount))} prepared proof receipts, ${escapeHtml(String(graphMissingProofCount))} missing.</p>
         <p class="repo-microcopy">Packet remains authority. Sponsors contribute proof only. No approval / no writes / no mutation. zero writes.</p>
         <a class="btn-ghost repo-secondary-link" href="${escapeHtml(reviewRunProofGraphUrl(graphRunId))}">Open generated ProofGraph</a>
+        <a class="btn-ghost repo-secondary-link" href="${escapeHtml(reviewRunProofGraphExportUrl(graphRunId))}" download>Export SVG</a>
       </div>
     `;
     repoSponsorProofCard.open = false;
@@ -6146,6 +6197,7 @@ function renderPacketDetail(data) {
   proofGraphActions.className = "walk-actions proofgraph-actions";
   proofGraphActions.innerHTML = `
     <a class="btn-primary" href="${proofGraphUrl()}">Open ProofGraph</a>
+    <a class="btn-ghost" href="${reviewRunProofGraphExportUrl()}" download>Export SVG</a>
     <span class="walkthrough-summary">Shows the full packet authority map: sponsors -> IA Packet -> downstream systems.</span>
   `;
   packetSponsorCard.appendChild(proofGraphActions);
@@ -7978,7 +8030,12 @@ setupTabs();
   await handleConnectorOAuthReturn();
   await loadMeta();
   loadGuide();
-  await restoreReviewRunSession();
+  if (reviewRunFreshStartRequested()) {
+    clearReviewRunFreshStartParam();
+    restartReviewRunInSession();
+  } else {
+    await restoreReviewRunSession();
+  }
   renderReviewFlowProgress();
   void refreshReviewRunRail();
   if (window.PortkeyConnect) {

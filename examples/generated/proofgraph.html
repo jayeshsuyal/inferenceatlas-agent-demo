@@ -60,6 +60,30 @@
       justify-content: flex-end;
       gap: 12px;
     }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .actions a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 999px;
+      padding: 0 14px;
+      color: var(--text);
+      background: rgba(15, 23, 42, 0.72);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 760;
+    }
+    .actions a.primary {
+      border-color: rgba(74, 222, 128, 0.56);
+      color: #bbf7d0;
+      background: rgba(20, 83, 45, 0.35);
+    }
     .stat {
       min-width: 150px;
       border: 1px solid rgba(148, 163, 184, 0.28);
@@ -312,6 +336,9 @@
         <span class="stat"><strong>80</strong><span>proof nodes</span></span>
         <span class="stat"><strong>141</strong><span>edges</span></span>
         <span class="stat ok"><strong>zero</strong><span>writes</span></span>
+      </div>
+      <div class="actions" aria-label="ProofGraph export actions">
+        <a class="primary" href="/proofgraph.svg?fixture=support_triage_agent" download>Export SVG</a>
       </div>
     </header>
 

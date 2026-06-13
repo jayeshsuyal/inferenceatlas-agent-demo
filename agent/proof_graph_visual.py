@@ -96,6 +96,238 @@ def _review_run_fact(label: str, value: Any) -> str:
     return f"<p><span>{_escape(label)}</span><strong>{_escape(value)}</strong></p>"
 
 
+def _svg_lines(value: Any, *, max_chars: int = 32, max_lines: int = 3) -> list[str]:
+    words = str(value).split()
+    if not words:
+        return [""]
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = word if not current else f"{current} {word}"
+        if len(candidate) <= max_chars:
+            current = candidate
+            continue
+        if current:
+            lines.append(current)
+        current = word
+        if len(lines) >= max_lines:
+            break
+    if current and len(lines) < max_lines:
+        lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+    if len(lines) == max_lines and words:
+        joined = " ".join(lines)
+        if len(joined) < len(str(value)) and not lines[-1].endswith("..."):
+            lines[-1] = f"{lines[-1][: max(0, max_chars - 3)]}..."
+    return lines
+
+
+def _svg_text_block(
+    text: Any,
+    *,
+    x: int,
+    y: int,
+    max_chars: int = 32,
+    max_lines: int = 3,
+    size: int = 16,
+    fill: str = "#a7adb8",
+    weight: int = 500,
+    line_height: int = 21,
+) -> str:
+    lines = _svg_lines(text, max_chars=max_chars, max_lines=max_lines)
+    tspans = "\n".join(
+        f'<tspan x="{x}" dy="{0 if index == 0 else line_height}">{_escape(line)}</tspan>'
+        for index, line in enumerate(lines)
+    )
+    return f'<text x="{x}" y="{y}" fill="{fill}" font-size="{size}" font-weight="{weight}">{tspans}</text>'
+
+
+def _svg_stat(label: str, value: Any, *, x: int, y: int, width: int = 160, ok: bool = False) -> str:
+    stroke = "#4ade80" if ok else "#2b3442"
+    fill = "#10261a" if ok else "#12161e"
+    value_fill = "#bbf7d0" if ok else "#f4f5f7"
+    return f"""
+      <g>
+        <rect x="{x}" y="{y}" width="{width}" height="58" rx="10" fill="{fill}" stroke="{stroke}" />
+        <text x="{x + width / 2:.0f}" y="{y + 24}" text-anchor="middle" fill="{value_fill}" font-size="18" font-weight="760">{_escape(value)}</text>
+        <text x="{x + width / 2:.0f}" y="{y + 43}" text-anchor="middle" fill="#a7adb8" font-size="11" font-weight="760">{_escape(label.upper())}</text>
+      </g>"""
+
+
+def _svg_node(
+    *,
+    title: Any,
+    summary: Any,
+    status: Any,
+    x: int,
+    y: int,
+    width: int,
+    accent: str,
+    title_chars: int = 24,
+) -> str:
+    return f"""
+      <g>
+        <rect x="{x}" y="{y}" width="{width}" height="126" rx="12" fill="#12161e" stroke="#2b3442" />
+        <rect x="{x}" y="{y}" width="5" height="126" rx="2" fill="{accent}" />
+        {_svg_text_block(title, x=x + 18, y=y + 33, max_chars=title_chars, max_lines=2, size=20, fill="#f4f5f7", weight=760, line_height=23)}
+        {_svg_text_block(summary, x=x + 18, y=y + 71, max_chars=28, max_lines=2, size=13, fill="#a7adb8", weight=500, line_height=17)}
+        {_svg_text_block(status, x=x + 18, y=y + 109, max_chars=26, max_lines=1, size=13, fill=accent, weight=760, line_height=16)}
+      </g>"""
+
+
+def render_review_run_proof_graph_svg(graph: dict[str, Any]) -> str:
+    """Render a deterministic, downloadable SVG for one ReviewRun ProofGraph."""
+    run_id = graph.get("generated_from_run_id") or graph.get("generated_from", {}).get("run_id") or "unknown"
+    selected_repo = graph.get("selected_repo") or graph.get("generated_from", {}).get("selected_repo") or "no repo selected"
+    packet = graph.get("packet_reference") or {}
+    movement = graph.get("movement_classes") or {}
+    proof_counts = graph.get("proof_counts") or {}
+    revision_id = packet.get("revision_id") or "not generated"
+    portkey_state = graph.get("portkey_state") or "No packet"
+    zero_writes = bool(graph.get("zero_writes"))
+    content_hash = graph.get("content_hash") or "missing"
+    nodes = graph.get("nodes", [])
+    accents = {
+        "repo": "#6aa6ff",
+        "packet": "#f2b84b",
+        "proof": "#24e0a4",
+        "downstream": "#7cb7ff",
+    }
+    node_svg = []
+    node_width = 214
+    start_x = 70
+    gap = 22
+    for index, node in enumerate(nodes[:5]):
+        node_svg.append(
+            _svg_node(
+                title=node.get("label", "unknown"),
+                summary=node.get("summary", ""),
+                status=node.get("status", "unknown"),
+                x=start_x + index * (node_width + gap),
+                y=286,
+                width=node_width,
+                accent=accents.get(node.get("node_type"), "#24e0a4"),
+            )
+        )
+        if index < min(len(nodes[:5]), 5) - 1:
+            arrow_x = start_x + index * (node_width + gap) + node_width + 6
+            node_svg.append(
+                f'<path d="M {arrow_x} 349 H {arrow_x + gap - 10}" stroke="#3b4657" stroke-width="2" marker-end="url(#arrow)" />'
+            )
+    allowed = ", ".join(movement.get("allowed") or []) or "none"
+    review = ", ".join(movement.get("review_required") or []) or "none"
+    blocked = ", ".join(movement.get("blocked") or []) or "none"
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="InferenceAtlas ReviewRun ProofGraph export">
+  <title>InferenceAtlas ReviewRun ProofGraph</title>
+  <desc>run_id: {_escape(run_id)}; packet: {_escape(packet.get("packet_id") or "not generated")}; revision: {_escape(revision_id)}; content_hash: {_escape(content_hash)}; generated from current ReviewRun, not a screenshot.</desc>
+  <metadata>{_escape(content_hash)}</metadata>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#090b10" />
+      <stop offset="1" stop-color="#05070b" />
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 H 0 V 40" fill="none" stroke="#111827" stroke-width="1" />
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3b4657" />
+    </marker>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)" />
+  <rect x="36" y="36" width="1208" height="648" rx="18" fill="url(#grid)" stroke="#2b3442" />
+  <text x="70" y="94" fill="#24e0a4" font-size="13" font-weight="780">REVIEWRUN PROOFGRAPH EXPORT</text>
+  <text x="70" y="148" fill="#f4f5f7" font-size="48" font-weight="780">InferenceAtlas ReviewRun ProofGraph</text>
+  {_svg_text_block(f"Generated from run_id {run_id}. Packet remains authority; sponsors contribute proof only.", x=70, y=184, max_chars=96, max_lines=2, size=18, fill="#a7adb8", line_height=24)}
+  {_svg_stat("state", graph.get("status_label") or graph.get("graph_state") or "unknown", x=690, y=78, width=160)}
+  {_svg_stat("revision", revision_id, x=866, y=78, width=178)}
+  {_svg_stat("writes", "zero" if zero_writes else "unknown", x=1060, y=78, width=126, ok=zero_writes)}
+  <rect x="70" y="224" width="1110" height="36" rx="8" fill="#10261a" stroke="#4ade80" />
+  <text x="92" y="247" fill="#bbf7d0" font-size="16" font-weight="760">No approval / no writes / no mutation - zero writes</text>
+  {''.join(node_svg)}
+  <rect x="70" y="458" width="356" height="130" rx="12" fill="#12161e" stroke="#2b3442" />
+  <text x="94" y="490" fill="#f4f5f7" font-size="18" font-weight="760">Current Read</text>
+  {_svg_text_block(f"Selected repo: {selected_repo}", x=94, y=522, max_chars=42, max_lines=2, size=14, fill="#a7adb8", line_height=18)}
+  {_svg_text_block(f"Packet: {packet.get('packet_id') or 'not generated'}", x=94, y=566, max_chars=42, max_lines=1, size=14, fill="#a7adb8", line_height=18)}
+  <rect x="462" y="458" width="356" height="130" rx="12" fill="#12161e" stroke="#2b3442" />
+  <text x="486" y="490" fill="#f4f5f7" font-size="18" font-weight="760">Movement Scope</text>
+  {_svg_text_block(f"Allowed: {allowed}", x=486, y=522, max_chars=46, max_lines=1, size=14, fill="#71d58b", line_height=18)}
+  {_svg_text_block(f"Review: {review}", x=486, y=546, max_chars=46, max_lines=1, size=14, fill="#f2b84b", line_height=18)}
+  {_svg_text_block(f"Still blocked: {blocked}", x=486, y=570, max_chars=46, max_lines=1, size=14, fill="#ff786f", line_height=18)}
+  <rect x="854" y="458" width="326" height="130" rx="12" fill="#12161e" stroke="#2b3442" />
+  <text x="878" y="490" fill="#f4f5f7" font-size="18" font-weight="760">Proof And Portkey</text>
+  {_svg_text_block(f"Proof: {proof_counts.get('attached', 0)} attached / {proof_counts.get('missing', 0)} missing", x=878, y=522, max_chars=38, max_lines=1, size=14, fill="#a7adb8", line_height=18)}
+  {_svg_text_block(f"Portkey: {portkey_state}", x=878, y=546, max_chars=38, max_lines=1, size=14, fill="#7cb7ff", line_height=18)}
+  {_svg_text_block(f"Hash: {content_hash}", x=878, y=570, max_chars=38, max_lines=1, size=14, fill="#a7adb8", line_height=18)}
+  <text x="70" y="640" fill="#788191" font-size="13">The ProofGraph is generated from the current ReviewRun, not a screenshot. Export is read-only.</text>
+</svg>"""
+
+
+def render_proof_graph_svg(graph: dict[str, Any]) -> str:
+    """Render a deterministic SVG for the public sponsor ProofGraph."""
+    counts = graph.get("node_counts") or {}
+    packet = graph.get("packet_reference") or {}
+    safety = graph.get("safety_boundary") or {}
+    invariants = graph.get("invariants") or {}
+    zero_writes = (
+        safety.get("executes_external_writes") is False
+        and safety.get("mutates_production") is False
+        and invariants.get("all_nodes_non_mutating") is True
+    )
+    sponsor_rows = [
+        ("Tavily", _provider_line(graph, "tavily"), "proof contributor - cannot approve", "#60a5fa"),
+        ("Composio", _provider_line(graph, "composio"), "dry-run blast radius - cannot execute", "#818cf8"),
+        ("OpenClaw", _provider_line(graph, "openclaw"), "runtime trace - cannot approve", "#67e8f9"),
+        ("Nebius", _provider_line(graph, "nebius"), "reviewer synthesis - cannot mutate", "#a78bfa"),
+    ]
+    sponsor_svg = []
+    for index, (name, count, summary, color) in enumerate(sponsor_rows):
+        y = 220 + index * 88
+        sponsor_svg.append(
+            f"""
+            <g>
+              <rect x="474" y="{y}" width="276" height="68" rx="12" fill="#12161e" stroke="{color}" />
+              <circle cx="496" cy="{y + 23}" r="6" fill="{color}" />
+              <text x="512" y="{y + 29}" fill="#f4f5f7" font-size="18" font-weight="760">{_escape(name)}</text>
+              <text x="512" y="{y + 52}" fill="#a7adb8" font-size="13">{_escape(count)} - {_escape(summary)}</text>
+              <path d="M 750 {y + 34} H 812" stroke="#f59e0b" stroke-width="2" />
+            </g>"""
+        )
+    return f"""<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="InferenceAtlas ProofGraph export">
+  <title>InferenceAtlas ProofGraph</title>
+  <desc>packet: {_escape(packet.get("packet_id", "unknown"))}; graph: {_escape(graph.get("graph_id", "unknown"))}; content_hash: {_escape(graph.get("content_hash", "missing"))}; generated ProofGraph export.</desc>
+  <metadata>{_escape(graph.get("content_hash", "missing"))}</metadata>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#07101f" />
+      <stop offset="1" stop-color="#05070b" />
+    </linearGradient>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 H 0 V 40" fill="none" stroke="#162033" stroke-width="1" />
+    </pattern>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)" />
+  <rect x="50" y="40" width="1180" height="628" rx="18" fill="url(#grid)" stroke="#334155" />
+  <text x="88" y="106" fill="#f8fafc" font-size="58" font-weight="780">InferenceAtlas ProofGraph</text>
+  <text x="90" y="142" fill="#a9b5c8" font-size="20">{PROOF_GRAPH_VISUAL_SUBTITLE}</text>
+  {_svg_stat("proof nodes", counts.get("proof", 0), x=760, y=88, width=150)}
+  {_svg_stat("edges", counts.get("edge", 0), x=930, y=88, width=130)}
+  {_svg_stat("writes", "zero" if zero_writes else "unknown", x=1080, y=88, width=120, ok=zero_writes)}
+  <rect x="114" y="310" width="220" height="134" rx="18" fill="#12161e" stroke="#334155" />
+  <text x="164" y="364" fill="#f8fafc" font-size="26" font-weight="760">Agent Request</text>
+  <text x="154" y="398" fill="#a9b5c8" font-size="16">raw intent is not trusted</text>
+  <path d="M 334 377 H 420" stroke="#64748b" stroke-width="2" />
+  <rect x="812" y="270" width="280" height="220" rx="20" fill="#fbbf24" stroke="#f59e0b" stroke-width="3" />
+  <text x="850" y="342" fill="#43270b" font-size="38" font-weight="780">IA Packet</text>
+  <text x="850" y="384" fill="#43270b" font-size="38" font-weight="780">Authority</text>
+  <text x="852" y="424" fill="#713f12" font-size="17" font-weight="700">verdict - proof lock - routing</text>
+  {''.join(sponsor_svg)}
+  <rect x="110" y="560" width="1060" height="40" rx="10" fill="#10261a" stroke="#4ade80" />
+  <text x="640" y="586" text-anchor="middle" fill="#dcfce7" font-size="18" font-weight="760">{PROOF_GRAPH_SAFETY_BANNER}</text>
+  <text x="90" y="638" fill="#64748b" font-size="13">packet: {_escape(packet.get("packet_id", "unknown"))} - graph: {_escape(graph.get("graph_id", "unknown"))} - hash: {_escape(graph.get("content_hash", "missing"))}</text>
+</svg>"""
+
+
 def render_proof_graph_html(graph: dict[str, Any]) -> str:
     """Render a data-backed, no-JS ProofGraph page."""
     counts = graph["node_counts"]
@@ -231,6 +463,30 @@ def render_proof_graph_html(graph: dict[str, Any]) -> str:
       flex-wrap: wrap;
       justify-content: flex-end;
       gap: 12px;
+    }}
+    .actions {{
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }}
+    .actions a {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-radius: 999px;
+      padding: 0 14px;
+      color: var(--text);
+      background: rgba(15, 23, 42, 0.72);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 760;
+    }}
+    .actions a.primary {{
+      border-color: rgba(74, 222, 128, 0.56);
+      color: #bbf7d0;
+      background: rgba(20, 83, 45, 0.35);
     }}
     .stat {{
       min-width: 150px;
@@ -485,6 +741,9 @@ def render_proof_graph_html(graph: dict[str, Any]) -> str:
         {_stat("edges", counts["edge"])}
         {_stat("writes", "zero", ok=zero_writes)}
       </div>
+      <div class="actions" aria-label="ProofGraph export actions">
+        <a class="primary" href="/proofgraph.svg?fixture={_escape(graph.get("scenario_name") or DEFAULT_SCENARIO)}" download>Export SVG</a>
+      </div>
     </header>
 
     <section class="stage" aria-label="InferenceAtlas ProofGraph flow">
@@ -658,6 +917,30 @@ def render_review_run_proof_graph_html(graph: dict[str, Any]) -> str:
       justify-content: flex-end;
       gap: 10px;
     }}
+    .actions {{
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }}
+    .actions a {{
+      display: inline-flex;
+      align-items: center;
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 14px;
+      color: var(--text);
+      background: var(--panel);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 760;
+    }}
+    .actions a.primary {{
+      border-color: rgba(113, 213, 139, 0.72);
+      color: #c9f8d5;
+      background: rgba(25, 92, 48, 0.32);
+    }}
     .stat {{
       min-width: 138px;
       border: 1px solid var(--line);
@@ -812,6 +1095,9 @@ def render_review_run_proof_graph_html(graph: dict[str, Any]) -> str:
         {_stat("state", status_label)}
         {_stat("packet revision", revision_id)}
         {_stat("writes", "zero" if zero_writes else "unknown", ok=zero_writes)}
+      </div>
+      <div class="actions" aria-label="ReviewRun ProofGraph export actions">
+        <a class="primary" href="/proofgraph.svg?review_run_id={_escape(run_id)}" download>Export SVG</a>
       </div>
     </header>
 

@@ -37,6 +37,7 @@ from web.app import (
     get_review_run_approval_receipt_api,
     get_review_run_portkey_live_proof_api,
     proofgraph_index,
+    proofgraph_svg_index,
     portkey_guardrail_webhook,
     review_run_portkey_guardrail_test_api,
     rerun_review_run_packet_api,
@@ -312,6 +313,19 @@ class ReviewRunApiTests(TestCase):
                 self.assertIn(f"Generated from run_id <span class=\"run-id\">{run_id}</span>", body)
                 self.assertIn("Allow with policy", body)
                 self.assertIn("zero writes", body)
+                self.assertIn("Export SVG", body)
+                self.assertIn(f"/proofgraph.svg?review_run_id={run_id}", body)
+
+                svg_response = proofgraph_svg_index(review_run_id=run_id)
+                svg = svg_response.body.decode("utf-8")
+                self.assertEqual(svg_response.status_code, 200)
+                self.assertEqual(svg_response.media_type, "image/svg+xml")
+                self.assertIn(f'filename="ia-proofgraph-{run_id}.svg"', svg_response.headers["content-disposition"])
+                self.assertIn("InferenceAtlas ReviewRun ProofGraph", svg)
+                self.assertIn(run_id, svg)
+                self.assertIn(rev2["content_hash"], svg)
+                self.assertIn("Allow with policy", svg)
+                self.assertIn("not a screenshot", svg)
 
                 with self.assertRaises(HTTPException) as bad:
                     get_review_run_proofgraph_api("../escape")
@@ -1098,6 +1112,7 @@ class ReviewRunApiTests(TestCase):
         portkey_live_proof_route = next(
             route for route in app.routes if getattr(route, "path", "") == "/api/review-runs/{run_id}/portkey/live-proof"
         )
+        proofgraph_svg_route = next(route for route in app.routes if getattr(route, "path", "") == "/proofgraph.svg")
 
         self.assertEqual(post_route.methods, {"POST"})
         self.assertEqual(get_route.methods, {"GET"})
@@ -1110,6 +1125,7 @@ class ReviewRunApiTests(TestCase):
         self.assertEqual(approval_receipt_api_route.methods, {"GET"})
         self.assertEqual(approval_receipt_page_route.methods, {"GET"})
         self.assertEqual(portkey_live_proof_route.methods, {"GET"})
+        self.assertEqual(proofgraph_svg_route.methods, {"GET"})
 
     def test_demo_github_repo_select_creates_safe_review_run(self) -> None:
         session_id = "review-run-root-demo-flow"

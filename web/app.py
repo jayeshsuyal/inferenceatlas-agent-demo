@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -73,8 +73,13 @@ from agent.portkey_plane_b import (
     reconnect_portkey,
     render_plane_b_guardrail_setup_markdown,
 )
-from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO
-from agent.proof_graph_visual import build_proof_graph_visual, render_review_run_proof_graph_html
+from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO, build_proof_graph_for_scenario
+from agent.proof_graph_visual import (
+    build_proof_graph_visual,
+    render_proof_graph_svg,
+    render_review_run_proof_graph_html,
+    render_review_run_proof_graph_svg,
+)
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
 from agent.review_run import (
     DEFAULT_REVIEW_RUN_STORE_DIR,
@@ -3887,6 +3892,36 @@ def proofgraph_index(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return HTMLResponse(html_page)
+
+
+@app.get("/proofgraph.svg")
+def proofgraph_svg_index(
+    fixture: str = Query(DEFAULT_PROOF_GRAPH_SCENARIO, description="Public access scenario to export."),
+    review_run_id: Optional[str] = Query(None, description="Local ReviewRun id to export."),
+) -> Response:
+    """Export the generated ProofGraph as a deterministic, read-only SVG."""
+    fixture_id = fixture if isinstance(fixture, str) else DEFAULT_PROOF_GRAPH_SCENARIO
+    run_id = review_run_id if isinstance(review_run_id, str) and review_run_id.strip() else None
+    if run_id:
+        run, _record = _load_review_run_or_404(run_id)
+        graph = build_review_run_proofgraph(run)
+        svg = render_review_run_proof_graph_svg(graph)
+        filename = f"ia-proofgraph-{run.run_id}.svg"
+    else:
+        try:
+            graph = build_proof_graph_for_scenario(
+                fixture_id,
+                include_all_sponsor_proof=True,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        svg = render_proof_graph_svg(graph)
+        filename = f"ia-proofgraph-{fixture_id}.svg"
+    return Response(
+        content=svg,
+        media_type="image/svg+xml",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

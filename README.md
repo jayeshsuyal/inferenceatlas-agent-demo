@@ -31,6 +31,12 @@ The rehearsal gate checks the recording loop: connect or use a demo repo, genera
 
 No keys are required for the public path. No approval, no external writes, no packet mutation, no Portkey policy mutation.
 
+## Ship Builder Judge Deck
+
+[InferenceAtlas Ship Builder Cinematic Judge Deck](docs/ship_builder/InferenceAtlas_Ship_Builder_Cinematic_Judge_Deck.pdf)
+
+Fast public read: portable approval receipts for AI movement. GitHub hashes code; IA hashes the decision to move; Portkey consumes the packet-backed verdict; ProofGraph shows why the decision changed.
+
 ## The Loop
 
 ```text
@@ -116,7 +122,6 @@ Sponsors contribute proof only. They do not approve, grant, write, spend, select
 
 ## Public Proof Surface, Private Engine
 
-This repository is not a v1 source dump.
 This repository is the public proof surface, not a private v1 code dump.
 This public harness does not approve access.
 
@@ -141,11 +146,7 @@ InferenceAtlas v1 extends the same contract across:
 Advanced surface: Packet Workbench remains available for deterministic fixture inspection at `/workbench`.
 Legacy packet fixture review remains available with `bash scripts/review_60.sh`, which opens `/packet?fixture=mcp_tool_blast_radius&autorun=1`.
 
-CLI fallback:
-
-```bash
-bash scripts/run.sh
-```
+CLI fallback: `bash scripts/run.sh`
 
 InferenceAtlas does not approve access, mutate packets, or push downstream policy.
 

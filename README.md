@@ -18,6 +18,14 @@ InferenceAtlas turns every AI movement request into one reviewable packet: what 
 Downstream systems do not trust raw agent intent. They trust the IA Packet.
 AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.
 
+## Ship Builder Judge Deck
+
+Share the cinematic PDF when you want the fastest public read of the product story:
+
+[InferenceAtlas Ship Builder Cinematic Judge Deck](docs/ship_builder/InferenceAtlas_Ship_Builder_Cinematic_Judge_Deck.pdf)
+
+The deck frames InferenceAtlas as portable approval receipts for AI movement: GitHub hashes code; IA hashes the decision to move; Portkey consumes the packet-backed verdict; ProofGraph shows why the decision changed.
+
 ## Try It In 60 Seconds
 
 ```bash

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=60" />
+    <link rel="stylesheet" href="/static/style.css?v=61" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -374,6 +374,29 @@
                         </div>
                       </details>
                     </div>
+
+                    <article class="repo-card repo-portkey-build-card repo-stage-screen" id="repo-portkey-build-card" data-stage-screen="portkey_build" aria-label="Governance and build via Portkey" hidden>
+                      <div class="repo-portkey-build-head">
+                        <div>
+                          <span class="repo-card-label">Governance + build</span>
+                          <h3>Implement this packet through your Portkey gateway</h3>
+                          <p>Uses your BYOK API key from <a href="/portkey/signin">/portkey/signin</a>. IA binds packet metadata, probes scoped inference, and exports guardrail config.</p>
+                        </div>
+                        <button type="button" class="btn-primary" id="btn-implement-portkey-build" disabled>Implement packet via Portkey</button>
+                      </div>
+                      <div class="portkey-build-locked" id="portkey-build-locked" hidden>
+                        <p>Connect Portkey first — open <a href="/portkey/signin">Connect Portkey</a> and verify your gateway.</p>
+                      </div>
+                      <div class="portkey-build-graph-wrap" id="portkey-build-graph-wrap" hidden>
+                        <p class="portkey-build-graph-title">Packet → Portkey capability graph</p>
+                        <div class="portkey-build-graph" id="portkey-build-graph" aria-label="Portkey implementation graph"></div>
+                        <p class="portkey-build-status" id="portkey-build-status" role="status" aria-live="polite"></p>
+                        <details class="portkey-build-export" id="portkey-build-export" hidden>
+                          <summary>Guardrail dashboard config (copy to Portkey)</summary>
+                          <pre class="pk-output" id="portkey-build-export-json"></pre>
+                        </details>
+                      </div>
+                    </article>
                   </section>
                 </div>
 
@@ -696,7 +719,7 @@
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/portkey_connect_shared.js?v=3"></script>
-    <script src="/static/app.js?v=90"></script>
+    <script src="/static/portkey_connect_shared.js?v=4"></script>
+    <script src="/static/app.js?v=91"></script>
   </body>
 </html>

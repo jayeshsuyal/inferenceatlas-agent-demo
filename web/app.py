@@ -64,6 +64,10 @@ from agent.portkey_guardrail import (
     write_portkey_guardrail_event,
 )
 from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loop
+from agent.portkey_packet_build import (
+    build_portkey_packet_implementation_plan,
+    implement_portkey_packet_build,
+)
 from agent.portkey_plane_b import (
     build_plane_b_guardrail_setup,
     connect_portkey,
@@ -445,6 +449,11 @@ class ReviewRunIndexStartRequest(BaseModel):
 
 class ReviewRunRewindRequest(BaseModel):
     target_screen: str = Field(..., min_length=4, max_length=40)
+
+
+class ReviewRunPortkeyBuildRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    public_base_url: str = Field(..., min_length=8, max_length=500)
 
 
 class ReviewRunIndexFetchRequest(BaseModel):
@@ -1600,6 +1609,37 @@ def review_run_portkey_guardrail_test_api(run_id: str) -> dict:
         "stage": run.stage,
         "portkey_guardrail_test": test,
     }
+
+
+@app.get("/api/review-runs/{run_id}/portkey/build-plan")
+def review_run_portkey_build_plan_api(
+    run_id: str,
+    session_id: str = Query(..., min_length=8, max_length=160),
+    public_base_url: str = Query("http://127.0.0.1:8080", min_length=8, max_length=500),
+) -> dict:
+    """Graph of Portkey capabilities implementable for this packet + BYOK session."""
+    run, _record = _load_review_run_or_404(run_id)
+    try:
+        return build_portkey_packet_implementation_plan(run, session_id, public_base_url=public_base_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/review-runs/{run_id}/portkey/implement")
+def review_run_portkey_implement_api(run_id: str, body: ReviewRunPortkeyBuildRequest) -> dict:
+    """Execute BYOK-implementable Portkey steps for the current packet."""
+    run, _record = _load_review_run_or_404(run_id)
+    try:
+        result = implement_portkey_packet_build(
+            run,
+            body.session_id,
+            public_base_url=body.public_base_url,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not result.get("ok") and result.get("needs_sign_in"):
+        raise HTTPException(status_code=401, detail=result.get("message", "Portkey not connected"))
+    return result
 
 
 @app.get("/api/review-runs/{run_id}")

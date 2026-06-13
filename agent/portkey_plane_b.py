@@ -6,7 +6,7 @@ import json
 import os
 import urllib.error
 import urllib.request
-from typing import Any, Literal
+from typing import Any, Literal, Mapping
 
 from .connector_oauth import disconnect, public_connection, save_user_api_key
 from .connector_runtime import _raw_connection, _set_connection
@@ -329,7 +329,7 @@ def _multi_tenant_note() -> dict[str, str]:
     }
 
 
-def _portkey_headers(api_key: str, *, provider: str = "") -> dict[str, str]:
+def _portkey_headers(api_key: str, *, provider: str = "", metadata: Mapping[str, Any] | None = None) -> dict[str, str]:
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -338,7 +338,13 @@ def _portkey_headers(api_key: str, *, provider: str = "") -> dict[str, str]:
     }
     if provider.strip():
         headers["x-portkey-provider"] = provider.strip()
+    if metadata:
+        headers["x-portkey-metadata"] = json.dumps(_sanitize_metadata(metadata))
     return headers
+
+
+def _sanitize_metadata(metadata: Mapping[str, Any]) -> dict[str, str]:
+    return {str(key): str(value) for key, value in metadata.items() if value is not None and str(value).strip()}
 
 
 def _normalize_provider_model(provider: str, model: str) -> tuple[str, str]:
@@ -393,6 +399,7 @@ def _portkey_infer(
     provider_header: str,
     messages: list[dict[str, Any]],
     max_tokens: int = 8,
+    metadata: Mapping[str, Any] | None = None,
 ) -> tuple[dict[str, Any], str]:
     """Try chat/completions first; fall back to /completions for legacy models."""
     chat_body = {
@@ -407,6 +414,7 @@ def _portkey_infer(
             api_key=api_key,
             body=chat_body,
             provider=provider_header,
+            metadata=metadata,
         )
         return payload, "/chat/completions"
     except urllib.error.HTTPError as exc:
@@ -424,6 +432,7 @@ def _portkey_infer(
             api_key=api_key,
             body=completion_body,
             provider=provider_header,
+            metadata=metadata,
         )
         return payload, "/completions"
 
@@ -470,6 +479,7 @@ def proxy_portkey_chat(
     messages: list[dict[str, Any]],
     model: str = DEFAULT_PROXY_MODEL,
     provider: str = "",
+    metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     conn = _raw_connection(session_id, PORTKEY_CONNECTOR_ID)
     api_key = str(conn.get("api_key", "")).strip()
@@ -488,12 +498,18 @@ def proxy_portkey_chat(
         if stored_model:
             model = stored_model
     resolved_model, provider_header = _resolve_portkey_model(model, provider)
+    bound_metadata = dict(metadata or {})
+    conn_meta = conn.get("packet_metadata") if isinstance(conn.get("packet_metadata"), dict) else {}
+    if conn_meta:
+        bound_metadata = {**conn_meta, **bound_metadata}
     try:
         payload, surface = _portkey_infer(
             api_key,
             resolved_model=resolved_model,
             provider_header=provider_header,
             messages=messages,
+            max_tokens=64,
+            metadata=bound_metadata or None,
         )
     except urllib.error.HTTPError as exc:
         return {
@@ -567,13 +583,14 @@ def _portkey_request(
     api_key: str,
     body: dict[str, Any] | None = None,
     provider: str = "",
+    metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     url = f"{PORTKEY_GATEWAY_URL}{path}"
     data = json.dumps(body or {}).encode("utf-8") if body is not None else None
     req = urllib.request.Request(
         url,
         data=data,
-        headers=_portkey_headers(api_key, provider=provider),
+        headers=_portkey_headers(api_key, provider=provider, metadata=metadata),
         method=method,
     )
     with urllib.request.urlopen(req, timeout=45) as resp:

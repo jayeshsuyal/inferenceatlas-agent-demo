@@ -173,6 +173,14 @@ const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label"
 const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
 const btnShowIndexSummary = document.getElementById("btn-show-index-summary");
 const btnResetRepoIndex = document.getElementById("btn-reset-repo-index");
+const repoPortkeyBuildCard = document.getElementById("repo-portkey-build-card");
+const portkeyBuildGraph = document.getElementById("portkey-build-graph");
+const portkeyBuildGraphWrap = document.getElementById("portkey-build-graph-wrap");
+const portkeyBuildLocked = document.getElementById("portkey-build-locked");
+const portkeyBuildStatus = document.getElementById("portkey-build-status");
+const portkeyBuildExport = document.getElementById("portkey-build-export");
+const portkeyBuildExportJson = document.getElementById("portkey-build-export-json");
+const btnImplementPortkeyBuild = document.getElementById("btn-implement-portkey-build");
 const repoIndexDetailModal = document.getElementById("repo-index-detail-modal");
 const repoIndexDetailBackdrop = document.getElementById("repo-index-detail-backdrop");
 const repoIndexDetailClose = document.getElementById("repo-index-detail-close");
@@ -293,8 +301,10 @@ const REVIEW_FLOW_STEPS = [
   { id: "proof_workbench", label: "Attach proof", detail: "Human proof receipts" },
   { id: "packet_rerun", label: "Regenerate", detail: "Rerun with proof" },
   { id: "portkey_gate", label: "Portkey gate", detail: "Test guardrail locally" },
+  { id: "portkey_build", label: "Governance + build", detail: "Implement packet via Portkey" },
 ];
-let walkthroughPayload = null;
+let currentReviewRunPortkeyBuildPlan = null;
+let currentReviewRunPortkeyBuildImpl = null;
 let walkthroughSponsorRun = null;
 let walkthroughSponsorLedgerRecord = null;
 let walkthroughActiveIndex = 0;
@@ -2051,6 +2061,10 @@ function setReviewCoachCollapsed(collapsed) {
   syncReviewCoachControlLabels();
 }
 
+function isPortkeyGovernanceBuildUnlocked() {
+  return document.body.dataset.portkeyConnected === "true";
+}
+
 function reviewRunUiStage(packet = packetDetail) {
   if (currentReviewRunPortkeyTest) return "portkey_tested";
   if (packet?.review_run?.stage === "ready_to_export" || packet?.review_delta?.packet_changed) {
@@ -2098,6 +2112,8 @@ function reviewRunFlowContext(packet = packetDetail) {
     proofReady: Boolean(proof.ready_for_rerun || currentReviewRun?.packet?.ready_for_rerun),
     rerunComplete: Boolean(delta.packet_changed || packet?.review_run?.stage === "ready_to_export"),
     portkeyTested: Boolean(currentReviewRunPortkeyTest),
+    portkeyConnected: isPortkeyGovernanceBuildUnlocked(),
+    portkeyBuildComplete: Boolean(currentReviewRunPortkeyBuildImpl?.completed),
   };
 }
 
@@ -2114,6 +2130,12 @@ function reviewRunScreenAccessible(screenId, ctx = reviewRunFlowContext()) {
       return ctx.rerunComplete || ctx.proofReady;
     case "portkey_gate":
       return ctx.hasPacket;
+    case "portkey_build":
+      return (
+        ctx.portkeyConnected
+        && ctx.hasPacket
+        && (ctx.rerunComplete || ctx.portkeyTested || currentReviewRun?.stage === "ready_to_export")
+      );
     default:
       return false;
   }
@@ -2183,6 +2205,10 @@ function discardFutureFlowAfter(screenId) {
   const idx = order.indexOf(screenId);
   if (idx < 0) return;
 
+  if (idx < order.indexOf("portkey_build")) {
+    currentReviewRunPortkeyBuildPlan = null;
+    currentReviewRunPortkeyBuildImpl = null;
+  }
   if (idx < order.indexOf("portkey_gate")) {
     currentReviewRunPortkeyTest = null;
   }
@@ -2356,6 +2382,10 @@ function renderReviewFlowProgress() {
     else if (index < naturalIdx) btn.dataset.state = "complete";
     else if (accessible) btn.dataset.state = "available";
     else btn.dataset.state = "locked";
+    if (step.id === "portkey_build" && !ctx.portkeyConnected) {
+      btn.dataset.state = "locked";
+      btn.title = "Connect Portkey on /portkey/signin to unlock Governance + Build";
+    }
     if (reviewRunReadOnlyScreen === step.id) btn.dataset.viewing = "true";
     btn.disabled = !accessible;
     btn.innerHTML = `
@@ -2747,6 +2777,9 @@ function setReviewRunUiStage(stage = reviewRunUiStage(), packet = packetDetail) 
   updateReviewRunCoachChrome(stage);
   renderReviewFlowProgress();
   maybeAutoRefreshReviewRunPortkeyReceipt(stage, packet);
+  if (reviewRunActiveScreen(stage) === "portkey_build") {
+    void refreshPortkeyBuildScreen();
+  }
   return stage;
 }
 
@@ -4978,6 +5011,147 @@ async function fetchReviewRunPortkeyGuardrailTest(runId = currentReviewRun?.run_
   return data.portkey_guardrail_test || null;
 }
 
+function renderPortkeyBuildGraph(plan) {
+  if (!portkeyBuildGraph || !plan?.graph) return;
+  const nodes = plan.graph.nodes || [];
+  const nodeById = Object.fromEntries(nodes.map((node) => [node.id, node]));
+  const orderedIds = [
+    "ia_packet",
+    "byok_gateway",
+    "metadata_binding",
+    "scoped_inference_probe",
+    "local_packet_guardrail",
+    "guardrail_webhook_export",
+    "dashboard_guardrail_attach",
+    "live_webhook_proof",
+  ];
+  const extraIds = nodes.map((node) => node.id).filter((id) => !orderedIds.includes(id));
+  const flowIds = [...orderedIds.filter((id) => nodeById[id]), ...extraIds];
+  const parts = [];
+  flowIds.forEach((id, index) => {
+    const node = nodeById[id];
+    if (!node) return;
+    if (index > 0) parts.push('<span class="portkey-build-edge" aria-hidden="true">→</span>');
+    parts.push(`
+      <div class="portkey-build-node" data-kind="${escapeHtml(node.kind || "")}" data-status="${escapeHtml(node.status || "pending")}">
+        <strong>${escapeHtml(node.label || id)}</strong>
+        <small>${escapeHtml(node.detail || node.portkey_surface || "")}</small>
+      </div>
+    `);
+  });
+  const blocked = nodes.filter((node) => node.kind === "blocked");
+  if (blocked.length) {
+    parts.push('<span class="portkey-build-edge" aria-hidden="true">|</span>');
+    blocked.forEach((node, index) => {
+      if (index > 0) parts.push('<span class="portkey-build-edge" aria-hidden="true">+</span>');
+      parts.push(`
+        <div class="portkey-build-node" data-kind="blocked" data-status="blocked">
+          <strong>${escapeHtml(node.label || node.id)}</strong>
+          <small>${escapeHtml(node.detail || "")}</small>
+        </div>
+      `);
+    });
+  }
+  portkeyBuildGraph.innerHTML = `<div class="portkey-build-graph-flow">${parts.join("")}</div>`;
+  if (portkeyBuildStatus && plan.summary) {
+    portkeyBuildStatus.classList.remove("error");
+    portkeyBuildStatus.textContent = plan.summary.implemented
+      ? "Implemented — packet metadata bound, inference probed, guardrail config exported."
+      : `${plan.summary.implementable_via_byok} BYOK steps · ${plan.summary.manual_operator_steps} manual · ${plan.summary.blocked_admin_api} blocked (Admin API)`;
+  }
+}
+
+async function fetchPortkeyBuildPlan() {
+  if (!currentReviewRun?.run_id || !sessionId) return null;
+  const res = await fetch(
+    `/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/portkey/build-plan?session_id=${encodeURIComponent(sessionId)}&public_base_url=${encodeURIComponent(window.location.origin)}`
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) throw new Error(data.detail || "Portkey build plan failed");
+  currentReviewRunPortkeyBuildPlan = data;
+  return data;
+}
+
+async function refreshPortkeyBuildScreen() {
+  if (!repoPortkeyBuildCard) return;
+  const unlocked = isPortkeyGovernanceBuildUnlocked();
+  const hasPacket = Boolean(packetDetail?.packet_reference?.packet_id || currentReviewRun?.packet?.packet_id);
+  if (portkeyBuildLocked) portkeyBuildLocked.hidden = unlocked;
+  if (portkeyBuildGraphWrap) portkeyBuildGraphWrap.hidden = !unlocked || !hasPacket;
+  if (btnImplementPortkeyBuild) {
+    btnImplementPortkeyBuild.disabled = !unlocked || !hasPacket || !currentReviewRun?.run_id;
+    btnImplementPortkeyBuild.textContent = currentReviewRunPortkeyBuildImpl?.completed
+      ? "Re-implement packet"
+      : "Implement packet via Portkey";
+  }
+  if (!unlocked || !hasPacket || !currentReviewRun?.run_id) return;
+  try {
+    const plan = await fetchPortkeyBuildPlan();
+    renderPortkeyBuildGraph(plan);
+    const exportStep = (currentReviewRunPortkeyBuildImpl?.steps || []).find(
+      (step) => step.id === "guardrail_webhook_export"
+    );
+    if (portkeyBuildExport && portkeyBuildExportJson && exportStep?.dashboard_config) {
+      portkeyBuildExport.hidden = false;
+      portkeyBuildExportJson.textContent = JSON.stringify(exportStep.dashboard_config, null, 2);
+    }
+  } catch (err) {
+    if (portkeyBuildStatus) {
+      portkeyBuildStatus.classList.add("error");
+      portkeyBuildStatus.textContent = String(err.message || err);
+    }
+  }
+}
+
+async function implementPortkeyPacketBuild() {
+  if (!currentReviewRun?.run_id || !sessionId || !btnImplementPortkeyBuild) return;
+  btnImplementPortkeyBuild.disabled = true;
+  btnImplementPortkeyBuild.textContent = "Implementing…";
+  if (portkeyBuildStatus) {
+    portkeyBuildStatus.classList.remove("error");
+    portkeyBuildStatus.textContent = "Binding packet metadata and probing Portkey gateway…";
+  }
+  try {
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/portkey/implement`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, public_base_url: window.location.origin }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || data.message || "Portkey implement failed");
+    currentReviewRunPortkeyBuildImpl = data.implementation || null;
+    currentReviewRunPortkeyBuildPlan = data.plan || currentReviewRunPortkeyBuildPlan;
+    if (data.plan) renderPortkeyBuildGraph(data.plan);
+    const exportConfig = data.implementation?.guardrail_dashboard_config;
+    if (portkeyBuildExport && portkeyBuildExportJson && exportConfig) {
+      portkeyBuildExport.hidden = false;
+      portkeyBuildExportJson.textContent = JSON.stringify(exportConfig, null, 2);
+    }
+    if (portkeyBuildStatus) {
+      if (data.ok) {
+        portkeyBuildStatus.classList.remove("error");
+        portkeyBuildStatus.textContent = data.message || "Packet implemented via Portkey.";
+        navigateReviewRunScreen("portkey_build", { pushHistory: true, force: true });
+      } else {
+        portkeyBuildStatus.classList.add("error");
+        portkeyBuildStatus.textContent = data.message || "Implementation incomplete.";
+      }
+    }
+  } catch (err) {
+    if (portkeyBuildStatus) {
+      portkeyBuildStatus.classList.add("error");
+      portkeyBuildStatus.textContent = String(err.message || err);
+    }
+  } finally {
+    if (btnImplementPortkeyBuild) {
+      btnImplementPortkeyBuild.disabled = !isPortkeyGovernanceBuildUnlocked();
+      btnImplementPortkeyBuild.textContent = currentReviewRunPortkeyBuildImpl?.completed
+        ? "Re-implement packet"
+        : "Implement packet via Portkey";
+    }
+  }
+}
+
 function isExternalPortkeyReceipt(event) {
   return ["portkey_byo_guardrail", "rehearsal_probe"].includes(event?.kind);
 }
@@ -5737,6 +5911,7 @@ function renderRepoProofCockpit(packet, portkeyPayload, portkeyProofLoop) {
     });
     repoPortkeyCard.open = portkeyTested || portkeyRunwayReady;
   }
+  void refreshPortkeyBuildScreen();
   setCoachForPacket(packet, portkeyPayload);
 }
 
@@ -5777,6 +5952,12 @@ async function testReviewRunPortkeyGuardrail() {
       "Portkey guardrail test recorded locally. No approval, no writes."
     );
     await autoReassessReviewRunCoach("portkey_tested", { fallbackPacket: packetDetail, fallbackPortkey: packetPortkeyPreview });
+    if (isPortkeyGovernanceBuildUnlocked() && reviewRunScreenAccessible("portkey_build")) {
+      renderReviewFlowProgress();
+      if (repoCockpitStatus) {
+        repoCockpitStatus.textContent += " Step 6 Governance + Build is unlocked — implement the packet via Portkey.";
+      }
+    }
   } catch (err) {
     if (repoCockpitStatus) {
       repoCockpitStatus.textContent = String(err.message || err);
@@ -7978,6 +8159,9 @@ btnShowIndexSummary?.addEventListener("click", () => {
 });
 btnResetRepoIndex?.addEventListener("click", () => {
   void resetRepoIndex();
+});
+btnImplementPortkeyBuild?.addEventListener("click", () => {
+  void implementPortkeyPacketBuild();
 });
 repoIndexDetailClose?.addEventListener("click", closeRepoIndexDetailModal);
 repoIndexDetailBackdrop?.addEventListener("click", closeRepoIndexDetailModal);

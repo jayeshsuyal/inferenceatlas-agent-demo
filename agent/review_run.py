@@ -838,6 +838,7 @@ def rewind_review_run_for_branch(run: ReviewRun, *, target_screen: str) -> Revie
         "proof_workbench": "packet_generated",
         "packet_rerun": "proof_attached",
         "portkey_gate": "ready_to_export",
+        "portkey_build": "ready_to_export",
     }
     target_stage = target_stage_by_screen.get(screen)
     if not target_stage:

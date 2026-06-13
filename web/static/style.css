@@ -94,20 +94,22 @@ body {
 }
 
 .portkey-connect-wrap {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   min-width: 0;
+  max-width: 22rem;
 }
 
 .portkey-connect-meta {
-  font-size: 0.68rem;
-  line-height: 1.25;
+  font-size: 0.62rem;
+  line-height: 1.2;
   color: #71d58b;
-  max-width: 15rem;
-  white-space: nowrap;
+  opacity: 0.92;
+  max-width: 11rem;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .portkey-build-banner,
@@ -8286,6 +8288,131 @@ body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="proof_work
 body:not([data-active-tab]) .repo-proof-cockpit[data-active-screen="portkey_gate"] .repo-infra-rows,
 body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_gate"] .repo-infra-rows {
   min-height: min(18rem, calc(100vh - 18rem));
+}
+
+body:not([data-active-tab]) .repo-proof-cockpit[data-active-screen="portkey_build"] .repo-portkey-build-card,
+body[data-active-tab="start"] .repo-proof-cockpit[data-active-screen="portkey_build"] .repo-portkey-build-card {
+  min-height: min(22rem, calc(100vh - 16rem));
+}
+
+.repo-portkey-build-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.repo-portkey-build-head h3 {
+  margin: 0.25rem 0;
+}
+
+.portkey-build-locked {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px dashed rgba(242, 184, 75, 0.45);
+  background: rgba(242, 184, 75, 0.08);
+  color: #f2b84b;
+  font-size: 0.85rem;
+}
+
+.portkey-build-graph-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.portkey-build-graph {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  overflow-x: auto;
+}
+
+.portkey-build-graph-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.portkey-build-node {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+  max-width: 14rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.76rem;
+}
+
+.portkey-build-node[data-kind="source"] {
+  border-color: rgba(61, 156, 245, 0.45);
+}
+
+.portkey-build-node[data-kind="implementable"][data-status="done"],
+.portkey-build-node[data-kind="capability"][data-status="ready"] {
+  border-color: rgba(113, 213, 139, 0.5);
+  background: rgba(113, 213, 139, 0.08);
+}
+
+.portkey-build-node[data-kind="blocked"],
+.portkey-build-node[data-status="blocked"] {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.portkey-build-node[data-kind="manual"] {
+  border-color: rgba(242, 184, 75, 0.45);
+}
+
+.portkey-build-node strong {
+  display: block;
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
+}
+
+.portkey-build-node small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.portkey-build-edge {
+  align-self: center;
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.9rem;
+  padding: 0 0.15rem;
+}
+
+.portkey-build-status {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: #71d58b;
+}
+
+.portkey-build-status.error {
+  color: #f07178;
+}
+
+.portkey-build-export {
+  margin-top: 0.75rem;
+}
+
+.review-flow-step[data-screen="portkey_build"][data-state="locked"] {
+  opacity: 0.45;
+}
+
+.review-flow-step[data-screen="portkey_build"][data-state="available"] .review-flow-step-index,
+.review-flow-step[data-screen="portkey_build"][data-state="current"] .review-flow-step-index {
+  box-shadow: 0 0 0 1px rgba(113, 213, 139, 0.45);
 }
 
 @media (max-width: 760px) {

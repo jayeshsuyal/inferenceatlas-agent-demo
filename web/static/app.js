@@ -7981,6 +7981,10 @@ setupTabs();
   await restoreReviewRunSession();
   renderReviewFlowProgress();
   void refreshReviewRunRail();
+  if (window.PortkeyConnect) {
+    window.PortkeyConnect.showPortkeyWelcomeToast();
+    await window.PortkeyConnect.syncPortkeyUi(sessionId);
+  }
   if (window.location.pathname === "/workbench") {
     showWorkbenchPanel();
   }

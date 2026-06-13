@@ -109,6 +109,21 @@ class WebFilesTests(unittest.TestCase):
         self.assertIn("Runtime Permission Boundary", access_review)
         self.assertIn("Composio remains dry-run", access_review)
 
+    def test_portkey_plane_b_signin_surface_is_separate(self) -> None:
+        html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
+        signin = (ROOT / "web" / "static" / "portkey_signin.html").read_text(encoding="utf-8")
+        js = (ROOT / "web" / "static" / "portkey_plane_b.js").read_text(encoding="utf-8")
+
+        self.assertIn('href="/portkey/signin"', html)
+        self.assertIn("Connect PortKey", html)
+        self.assertIn('id="btn-portkey-connect"', html)
+        self.assertIn('id="reviewrun-steps"', html)
+        self.assertIn("portkey_connect_shared.js", html)
+        self.assertIn("Save &amp; test connection", signin)
+        self.assertIn("pk-model", signin)
+        self.assertIn("/api/portkey/plane-b/connect", js)
+        self.assertIn("portkey_connect_shared.js", signin)
+
     def test_live_evidence_rehearsal_ui_is_reachable(self) -> None:
         html = (ROOT / "web" / "static" / "index.html").read_text(encoding="utf-8")
         js = (ROOT / "web" / "static" / "app.js").read_text(encoding="utf-8")
@@ -238,7 +253,7 @@ class WebFilesTests(unittest.TestCase):
         self.assertRegex(html, r'/static/style\.css\?v=\d+')
         self.assertRegex(html, r'/static/app\.js\?v=\d+')
         self.assertIn('/static/style.css?v=59', html)
-        self.assertIn('/static/app.js?v=88', html)
+        self.assertIn('/static/app.js?v=89', html)
         self.assertIn("REPO_PROOF_FIXTURE", js)
         self.assertIn('const REPO_PROOF_FIXTURE = "support_triage_agent";', js)
         self.assertIn("btnRootConnectGithub", js)

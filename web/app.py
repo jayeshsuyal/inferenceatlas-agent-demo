@@ -64,6 +64,15 @@ from agent.portkey_guardrail import (
     write_portkey_guardrail_event,
 )
 from agent.portkey_guardrail_proof_loop import build_portkey_guardrail_proof_loop
+from agent.portkey_plane_b import (
+    build_plane_b_guardrail_setup,
+    connect_portkey,
+    disconnect_portkey,
+    portkey_plane_b_status,
+    proxy_portkey_chat,
+    reconnect_portkey,
+    render_plane_b_guardrail_setup_markdown,
+)
 from agent.proof_graph import DEFAULT_SCENARIO as DEFAULT_PROOF_GRAPH_SCENARIO
 from agent.proof_graph_visual import build_proof_graph_visual, render_review_run_proof_graph_html
 from agent.renderers import render_decision_brief_markdown, render_packet_markdown
@@ -352,6 +361,32 @@ class CustomEvidenceRehearsalRequest(BaseModel):
     storage_scope: str = Field(default="review_anonymous", max_length=160)
 
 
+class PortkeyPlaneBConnectRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    api_key: str = Field(default="", max_length=500)
+    provider: str = Field(default="", max_length=120)
+    model: str = Field(default="", max_length=120)
+    run_test: bool = True
+
+
+class PortkeyPlaneBReconnectRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    provider: str = Field(default="", max_length=120)
+    model: str = Field(default="", max_length=120)
+    run_test: bool = True
+
+
+class PortkeyPlaneBSessionRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+
+
+class PortkeyPlaneBChatRequest(BaseModel):
+    session_id: str = Field(..., min_length=8, max_length=160)
+    messages: List[Dict[str, Any]] = Field(..., min_length=1, max_length=20)
+    model: str = Field(default="gpt-4o-mini", max_length=120)
+    provider: str = Field(default="", max_length=120)
+
+
 class WorkbenchGenerateRequest(BaseModel):
     fixture_id: str = Field(..., min_length=1, max_length=120)
 
@@ -591,6 +626,7 @@ def health() -> dict:
         "composio_dry_run": COMPOSIO_DRY_RUN,
         "catalog": catalog,
         "inferenceatlas_v1": v1_status_summary(),
+        "portkey_plane_b": True,
     }
 
 
@@ -1042,6 +1078,94 @@ def portkey_guardrail_events() -> dict:
         "read_only": True,
         "events": list_portkey_guardrail_events(ledger_dir=SPONSOR_PROOF_RUN_LEDGER_DIR),
     }
+
+
+@app.get("/api/portkey/plane-b/status")
+def portkey_plane_b_status_api(session_id: str = Query(..., min_length=8, max_length=160)) -> dict:
+    """Plane B connection status — separate from ReviewRun governance shell."""
+    return portkey_plane_b_status(session_id)
+
+
+@app.post("/api/portkey/plane-b/connect")
+def portkey_plane_b_connect_api(body: PortkeyPlaneBConnectRequest) -> dict:
+    """Store and verify the user's Portkey API key for this session only."""
+    key = body.api_key.strip()
+    if not key:
+        result = reconnect_portkey(
+            body.session_id,
+            provider=body.provider,
+            model=body.model,
+            run_test=body.run_test,
+        )
+    else:
+        result = connect_portkey(
+            body.session_id,
+            key,
+            provider=body.provider,
+            model=body.model,
+            run_test=body.run_test,
+        )
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Portkey connect failed"))
+    return result
+
+
+@app.post("/api/portkey/plane-b/reconnect")
+def portkey_plane_b_reconnect_api(body: PortkeyPlaneBReconnectRequest) -> dict:
+    """Re-test Portkey using the session-saved key."""
+    result = reconnect_portkey(
+        body.session_id,
+        provider=body.provider,
+        model=body.model,
+        run_test=body.run_test,
+    )
+    if not result.get("ok"):
+        raise HTTPException(status_code=400, detail=result.get("message", "Portkey reconnect failed"))
+    return result
+
+
+@app.post("/api/portkey/plane-b/disconnect")
+def portkey_plane_b_disconnect_api(body: PortkeyPlaneBSessionRequest) -> dict:
+    return disconnect_portkey(body.session_id)
+
+
+@app.post("/api/portkey/plane-b/chat")
+def portkey_plane_b_chat_api(body: PortkeyPlaneBChatRequest) -> dict:
+    """Optional inference proxy through the user's Portkey gateway key."""
+    result = proxy_portkey_chat(
+        body.session_id,
+        messages=body.messages,
+        model=body.model,
+        provider=body.provider,
+    )
+    if not result.get("ok"):
+        status = 401 if result.get("needs_sign_in") else 400
+        raise HTTPException(status_code=status, detail=result.get("message", "Portkey proxy failed"))
+    return result
+
+
+@app.get("/api/portkey/plane-b/guardrail-setup")
+def portkey_plane_b_guardrail_setup_api(
+    session_id: str = Query(..., min_length=8, max_length=160),
+    public_base_url: str = Query(..., min_length=8, max_length=500),
+    fixture: str = Query("ai_spend_budget_overrun", max_length=120),
+    requested_mode: str = Query("model_request", max_length=80),
+    format: str = Query("json", max_length=20),
+) -> dict:
+    """Export Plane A guardrail setup merged with Plane B session status."""
+    try:
+        setup = build_plane_b_guardrail_setup(
+            session_id,
+            public_base_url=public_base_url,
+            fixture=fixture,
+            requested_mode=requested_mode,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    payload = {"ok": True, "setup": setup}
+    if format == "markdown":
+        payload["markdown"] = render_plane_b_guardrail_setup_markdown(setup)
+    return payload
 
 
 @app.get("/api/sponsor-readiness/matrix")
@@ -3740,6 +3864,12 @@ def approval_receipt_index(run_id: str) -> HTMLResponse:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     receipt["portkey_live_proof"] = build_review_run_portkey_live_proof(run)
     return HTMLResponse(_render_review_run_approval_receipt_html(receipt, run))
+
+
+@app.get("/portkey/signin")
+def portkey_signin_page() -> FileResponse:
+    """Optional Plane B BYOK surface — separate from ReviewRun governance."""
+    return FileResponse(STATIC_DIR / "portkey_signin.html")
 
 
 @app.get("/proofgraph", response_class=HTMLResponse)

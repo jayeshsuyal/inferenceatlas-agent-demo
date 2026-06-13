@@ -70,6 +70,41 @@ body {
   backdrop-filter: blur(8px);
 }
 
+.btn-portkey-connect.portkey-connected {
+  border-color: rgba(113, 213, 139, 0.55);
+  color: #71d58b;
+  background: rgba(113, 213, 139, 0.08);
+}
+
+.btn-portkey-connect.portkey-pending {
+  border-color: rgba(242, 184, 75, 0.55);
+  color: #f2b84b;
+}
+
+.portkey-build-banner {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.82rem;
+  color: #71d58b;
+  background: rgba(113, 213, 139, 0.08);
+  border-bottom: 1px solid rgba(113, 213, 139, 0.2);
+}
+
+.portkey-welcome-toast {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.65rem 1.25rem;
+  font-size: 0.88rem;
+  color: #e8edf4;
+  background: rgba(61, 156, 245, 0.12);
+  border-bottom: 1px solid rgba(61, 156, 245, 0.25);
+}
+
+body[data-portkey-mode="governance-build"] .first-run-start-link {
+  box-shadow: 0 0 0 1px rgba(113, 213, 139, 0.35);
+}
+
 .brand {
   display: flex;
   align-items: center;

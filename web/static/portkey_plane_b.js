@@ -1,5 +1,5 @@
 const STORAGE_KEY = "ia_session_id";
-const { normalizeProvider, resolvedModel, writeStatusCache, clearStatusCache, readStatusCache } =
+const { normalizeProvider, normalizeModelInput, resolvedModel, writeStatusCache, clearStatusCache, readStatusCache } =
   window.PortkeyConnect || {};
 
 let sessionId = localStorage.getItem(STORAGE_KEY) || crypto.randomUUID();
@@ -177,8 +177,17 @@ async function refreshStatus() {
 
 async function connectPortkey() {
   const apiKey = (apiKeyInput?.value || "").trim();
-  const provider = normalizeProvider(providerInput?.value);
-  const model = (modelInput?.value || "").trim();
+  const normalized = normalizeModelInput(providerInput?.value, modelInput?.value);
+  const provider = normalized.providerSlug;
+  const model = normalized.modelSuffix;
+
+  if (providerInput && normalized.providerSlug !== normalizeProvider(providerInput.value)) {
+    providerInput.value = normalized.providerSlug;
+  }
+  if (modelInput && normalized.modelSuffix !== (modelInput.value || "").trim()) {
+    modelInput.value = normalized.modelSuffix;
+  }
+  updateModelPreview();
 
   if (!apiKey && !hasSavedKey) {
     showResult({
@@ -251,9 +260,13 @@ async function connectPortkey() {
     }
     showResult({
       title: data.next_action?.title || "Check provider and model",
-      detail:
-        (data.next_action?.detail || data.message) +
-        " Your key is saved — fix slug/model above and click Save & test again (no re-paste needed).",
+      detail: [
+        data.next_action?.detail || data.message,
+        data.verification?.detail ? `Portkey: ${data.verification.detail}` : "",
+        "Your key is saved — fix slug/model above and click Save & test again (no re-paste needed).",
+      ]
+        .filter(Boolean)
+        .join(" "),
       action: data.next_action,
     });
   } catch (err) {

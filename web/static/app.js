@@ -172,6 +172,7 @@ const repoIndexTracker = document.getElementById("repo-index-tracker");
 const repoIndexTrackerLabel = document.getElementById("repo-index-tracker-label");
 const repoIndexTrackerBar = document.getElementById("repo-index-tracker-bar");
 const btnShowIndexSummary = document.getElementById("btn-show-index-summary");
+const btnResetRepoIndex = document.getElementById("btn-reset-repo-index");
 const repoIndexDetailModal = document.getElementById("repo-index-detail-modal");
 const repoIndexDetailBackdrop = document.getElementById("repo-index-detail-backdrop");
 const repoIndexDetailClose = document.getElementById("repo-index-detail-close");
@@ -1346,13 +1347,20 @@ function renderRepoIndexTracker(job) {
   if (repoIndexTrackerBar) repoIndexTrackerBar.value = pct;
   const phase = job.phase ? job.phase.replace(/_/g, " ") : "indexing";
   if (repoIndexTrackerLabel) {
+    const files = Number(job.files_indexed || 0);
+    const chars = Number(job.digest_chars || 0);
     repoIndexTrackerLabel.textContent =
       status === "completed"
-        ? `Indexed ${job.files_indexed || 0} files · ${(job.digest_chars || 0).toLocaleString()} chars`
+        ? files === 0 && chars > 0
+          ? `Quick attach · ${chars.toLocaleString()} chars · re-index for files`
+          : `Indexed ${files} files · ${chars.toLocaleString()} chars`
         : `${phase}… ${pct}%`;
   }
   if (btnShowIndexSummary) {
     btnShowIndexSummary.hidden = status !== "completed" || !job.summary;
+  }
+  if (btnResetRepoIndex) {
+    btnResetRepoIndex.hidden = !currentIndexedRepoName() || status === "queued" || status === "running";
   }
   if (status === "completed" && job.summary) {
     pendingIndexSummary = job.summary;
@@ -1577,11 +1585,51 @@ async function pollRepoIndexJob(jobId) {
 
 function startRepoIndexPolling(jobId) {
   currentRepoIndexJobId = jobId || "";
+  if (repoIndexPollTimer) clearInterval(repoIndexPollTimer);
   if (!jobId) return;
   localStorage.setItem(INDEX_JOB_STORAGE_KEY, jobId);
-  if (repoIndexPollTimer) clearInterval(repoIndexPollTimer);
   void pollRepoIndexJob(jobId);
-  repoIndexPollTimer = setInterval(() => pollRepoIndexJob(jobId), 1800);
+  repoIndexPollTimer = window.setInterval(() => pollRepoIndexJob(jobId), 1800);
+}
+
+async function resetRepoIndex() {
+  const repo = currentIndexedRepoName();
+  if (!repo || !currentReviewRun?.run_id || !sessionId) return;
+  if (btnResetRepoIndex) {
+    btnResetRepoIndex.disabled = true;
+    btnResetRepoIndex.textContent = "Re-indexing…";
+  }
+  try {
+    localStorage.removeItem(INDEX_JOB_STORAGE_KEY);
+    currentRepoIndexJobId = "";
+    pendingIndexSummary = null;
+    pendingIndexReport = null;
+    if (repoIndexPollTimer) {
+      clearInterval(repoIndexPollTimer);
+      repoIndexPollTimer = null;
+    }
+    renderRepoIndexTracker({ status: "queued", progress_pct: 0, phase: "queued", files_indexed: 0, digest_chars: 0 });
+    const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/repo-index/start`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, full_name: repo }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.detail || "Index restart failed");
+    currentRepoIndexJobId = data.job_id || "";
+    localStorage.setItem(INDEX_JOB_STORAGE_KEY, currentRepoIndexJobId);
+    startRepoIndexPolling(currentRepoIndexJobId);
+    await refreshReviewRunContextBundle();
+  } catch (err) {
+    if (repoIndexTrackerLabel) {
+      repoIndexTrackerLabel.textContent = String(err.message || err);
+    }
+  } finally {
+    if (btnResetRepoIndex) {
+      btnResetRepoIndex.disabled = false;
+      btnResetRepoIndex.textContent = "Reset index";
+    }
+  }
 }
 
 async function startBackgroundRepoIndex(fullName) {
@@ -2019,14 +2067,8 @@ function reviewRunUiStage(packet = packetDetail) {
 }
 
 function reviewRunActiveScreen(stage) {
-  if (reviewRunScreenOverride === "proof_workbench" && (stage === "packet_generated" || stage === "proof_attached")) {
-    return "proof_workbench";
-  }
-  if (
-    reviewRunScreenOverride === "portkey_gate"
-    && ["packet_generated", "proof_attached", "packet_regenerated", "portkey_tested"].includes(stage)
-  ) {
-    return "portkey_gate";
+  if (reviewRunScreenOverride) {
+    return reviewRunScreenOverride;
   }
   if (stage === "portkey_tested") return "portkey_gate";
   if (stage === "packet_regenerated" || stage === "export_ready") return "packet_rerun";
@@ -2208,16 +2250,46 @@ function discardFutureFlowAfter(screenId) {
   }
 }
 
-function branchReviewRunAtScreen(screenId) {
+async function branchReviewRunAtScreen(screenId) {
   if (!screenId || !reviewRunScreenAccessible(screenId)) return false;
   const naturalIdx = reviewRunNaturalScreenIndex();
   const targetIdx = REVIEW_FLOW_STEPS.findIndex((step) => step.id === screenId);
   reviewRunReadOnlyScreen = null;
   if (targetIdx >= 0 && targetIdx < naturalIdx) {
     discardFutureFlowAfter(screenId);
+    if (currentReviewRun?.run_id) {
+      try {
+        const res = await fetch(`/api/review-runs/${encodeURIComponent(currentReviewRun.run_id)}/rewind`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target_screen: screenId }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          currentReviewRun = data.run || currentReviewRun;
+          currentReviewRunPortkeyTest = null;
+          currentReviewRunPortkeyReceipt = null;
+          currentReviewRunApprovalReceipt = null;
+          if (data.packet) {
+            packetDetail = {
+              ...data.packet,
+              sponsor_proof_trace: packetDetail?.sponsor_proof_trace,
+            };
+          }
+          if (data.portkey !== undefined) {
+            packetPortkeyPreview = data.portkey;
+          }
+        }
+      } catch (_) {
+        /* local discard still applied */
+      }
+    }
   }
   navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
   updateReviewRunReadonlyChrome();
+  if (packetDetail) {
+    renderRepoProofCockpit(packetDetail, packetPortkeyPreview, packetPortkeyProofLoop);
+  }
   void refreshReviewRunRail();
   return true;
 }
@@ -2227,6 +2299,7 @@ function viewReviewRunScreen(screenId) {
   reviewRunReadOnlyScreen = isReviewRunScreenReadOnly(screenId) ? screenId : null;
   const ok = navigateReviewRunScreen(screenId, { pushHistory: true, force: true });
   updateReviewRunReadonlyChrome();
+  updateReviewRunStageScreens(reviewRunUiStage());
   renderReviewFlowProgress();
   return ok;
 }
@@ -2602,7 +2675,7 @@ function initReviewRunFlowNavigation() {
   });
   btnNewReviewRun?.addEventListener("click", () => restartReviewRunInSession());
   btnBranchReviewRunStep?.addEventListener("click", () => {
-    if (reviewRunReadOnlyScreen) branchReviewRunAtScreen(reviewRunReadOnlyScreen);
+    if (reviewRunReadOnlyScreen) void branchReviewRunAtScreen(reviewRunReadOnlyScreen);
   });
 }
 
@@ -7902,6 +7975,9 @@ repoCoachBackdrop?.addEventListener("click", () => setReviewCoachMaximized(false
 
 btnShowIndexSummary?.addEventListener("click", () => {
   void openRepoIndexDetailModal();
+});
+btnResetRepoIndex?.addEventListener("click", () => {
+  void resetRepoIndex();
 });
 repoIndexDetailClose?.addEventListener("click", closeRepoIndexDetailModal);
 repoIndexDetailBackdrop?.addEventListener("click", closeRepoIndexDetailModal);

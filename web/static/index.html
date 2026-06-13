@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InferenceAtlas — Packet Authority Review</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='8' y='8' width='16' height='16' rx='2' fill='%233d9cf5' transform='rotate(45 16 16)'/%3E%3Crect x='11' y='11' width='10' height='10' rx='1' fill='%230c0f14' transform='rotate(45 16 16)'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/static/style.css?v=59" />
+    <link rel="stylesheet" href="/static/style.css?v=60" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -27,17 +27,21 @@
         <div class="repo-index-tracker" id="repo-index-tracker" hidden aria-live="polite">
           <span class="repo-index-tracker-label" id="repo-index-tracker-label">Indexing repo…</span>
           <progress id="repo-index-tracker-bar" max="100" value="0"></progress>
-          <button type="button" class="btn-ghost btn-index-summary" id="btn-show-index-summary" hidden>
-            Show summary
-          </button>
+          <div class="repo-index-tracker-actions">
+            <button type="button" class="btn-ghost btn-index-summary" id="btn-show-index-summary" hidden>
+              Show summary
+            </button>
+            <button type="button" class="btn-ghost btn-index-reset" id="btn-reset-repo-index" hidden>
+              Reset index
+            </button>
+          </div>
         </div>
-        <a class="btn-ghost btn-portkey-connect" id="btn-portkey-connect" href="/portkey/signin">Connect PortKey</a>
+        <div class="portkey-connect-wrap" id="portkey-connect-wrap">
+          <a class="btn-ghost btn-portkey-connect" id="btn-portkey-connect" href="/portkey/signin">Connect PortKey</a>
+          <span class="portkey-connect-meta" id="portkey-connect-meta" hidden></span>
+        </div>
         <button type="button" class="btn-ghost" id="btn-reset">New chat</button>
       </header>
-      <p class="portkey-build-banner" id="portkey-build-banner" hidden role="status"></p>
-      <p class="portkey-welcome-toast" id="portkey-welcome-toast" hidden role="status">
-        Portkey successfully connected — ReviewRun is now in governance + build mode.
-      </p>
 
       <aside class="sidebar">
         <nav class="sidebar-tabs" aria-label="Sidebar sections">
@@ -692,7 +696,7 @@
 
     <div id="connector-toast" class="connector-toast" hidden role="status" aria-live="polite"></div>
     <div class="repo-coach-backdrop" id="repo-coach-backdrop" hidden></div>
-    <script src="/static/portkey_connect_shared.js?v=1"></script>
-    <script src="/static/app.js?v=89"></script>
+    <script src="/static/portkey_connect_shared.js?v=3"></script>
+    <script src="/static/app.js?v=90"></script>
   </body>
 </html>

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import unittest
+import urllib.error
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -59,6 +61,25 @@ class PortkeyPlaneBTests(unittest.TestCase):
         self.assertEqual(result["connection_state"], "verify_failed")
         self.assertIn("portkey", data.get("connections", {}))
         self.assertIn("next_action", result)
+        self.assertEqual(result["next_action"]["title"], "Check provider slug and model")
+
+    def test_normalize_provider_model_from_route(self) -> None:
+        from agent.portkey_plane_b import _normalize_provider_model, _resolve_portkey_model
+
+        slug, model = _normalize_provider_model("openai-prod", "@iaagent1/babbage-002")
+        self.assertEqual(slug, "openai-prod")
+        self.assertEqual(model, "babbage-002")
+        resolved, header = _resolve_portkey_model("@iaagent1/babbage-002", "")
+        self.assertEqual(resolved, "@iaagent1/babbage-002")
+        self.assertEqual(header, "iaagent1")
+
+    @patch("agent.portkey_plane_b._portkey_request")
+    def test_portkey_request_sends_user_agent(self, request: object) -> None:
+        from agent.portkey_plane_b import PORTKEY_HTTP_USER_AGENT, _portkey_headers
+
+        headers = _portkey_headers("pk-test-key", provider="iaagent1")
+        self.assertEqual(headers["User-Agent"], PORTKEY_HTTP_USER_AGENT)
+        self.assertEqual(headers["x-portkey-provider"], "iaagent1")
 
     def test_connect_without_provider_saves_key(self) -> None:
         session_id = "plane-b-test-session-02c"
@@ -102,6 +123,31 @@ class PortkeyPlaneBTests(unittest.TestCase):
         result = verify_portkey_api_key("pk-test-key-12345678", provider="openai-prod")
         self.assertTrue(result["ok"])
         self.assertEqual(result["model"], "@openai-prod/gpt-4o-mini")
+        self.assertEqual(result["inference_surface"], "/chat/completions")
+
+    @patch("agent.portkey_plane_b._portkey_request")
+    def test_verify_falls_back_to_completions(self, request: object) -> None:
+        def side_effect(method, path, **kwargs):
+            if path == "/chat/completions":
+                raise urllib.error.HTTPError(
+                    url="x",
+                    code=404,
+                    msg="not chat",
+                    hdrs=None,
+                    fp=io.BytesIO(
+                        b'{"message":"not a chat model","type":"invalid_request_error"}'
+                    ),
+                )
+            return {"choices": [{"text": "connected"}], "provider": "openai"}
+
+        request.side_effect = side_effect
+        result = verify_portkey_api_key(
+            "pk-test-key-12345678",
+            provider="iaagent1",
+            model="babbage-002",
+        )
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["inference_surface"], "/completions")
 
     @patch("agent.portkey_plane_b._portkey_request")
     @patch("agent.portkey_plane_b.verify_portkey_api_key", return_value={"ok": True, "model": "@openai-prod/gpt-4o-mini"})

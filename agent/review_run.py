@@ -829,6 +829,71 @@ def attach_review_run_proof(
     return next_run
 
 
+def rewind_review_run_for_branch(run: ReviewRun, *, target_screen: str) -> ReviewRun:
+    """Rewind durable run state when the user edits an earlier ReviewRun step."""
+    screen = str(target_screen or "").strip()
+    target_stage_by_screen = {
+        "repo_setup": "request_entered",
+        "packet_decision": "packet_generated",
+        "proof_workbench": "packet_generated",
+        "packet_rerun": "proof_attached",
+        "portkey_gate": "ready_to_export",
+    }
+    target_stage = target_stage_by_screen.get(screen)
+    if not target_stage:
+        raise ValueError("unknown branch screen")
+
+    packet = copy.deepcopy(run.packet)
+    attached_proof = list(run.attached_proof or [])
+    portkey_preview = copy.deepcopy(run.portkey_preview)
+
+    if screen in {"proof_workbench", "packet_decision"}:
+        attached_proof = []
+        packet["ready_for_rerun"] = False
+        if run.stage == "ready_to_export":
+            review_delta = _latest_review_rerun_delta(run)
+            previous_revision = packet.get("previous_revision_id") or review_delta.get("previous_revision_id")
+            if previous_revision:
+                packet["revision_id"] = str(previous_revision)
+                packet["revision_number"] = max(1, int(packet.get("revision_number") or 2) - 1)
+                packet.pop("previous_revision_id", None)
+                previous_verdict = review_delta.get("previous_verdict")
+                if previous_verdict:
+                    packet["verdict"] = str(previous_verdict)
+            previous_portkey_state = review_delta.get("previous_portkey_state")
+            if previous_portkey_state and isinstance(portkey_preview, dict):
+                guardrail = dict(portkey_preview.get("portkey_guardrail_response") or {})
+                guardrail["verdict"] = previous_portkey_state not in {"Block", "block", False}
+                portkey_preview["portkey_guardrail_response"] = guardrail
+
+    if screen == "repo_setup":
+        attached_proof = []
+        packet = _default_packet()
+        portkey_preview = None
+
+    data = run.to_dict()
+    data["stage"] = target_stage
+    data["packet"] = packet
+    data["attached_proof"] = attached_proof
+    data["portkey_preview"] = portkey_preview
+    data["updated_at"] = _utcnow()
+    data["ask_ia_state"] = _ask_ia_state(
+        target_stage,
+        run_id=run.run_id,
+        selected_repo=data.get("selected_repo"),
+    )
+    events = list(data.get("audit_events") or [])
+    events.append(
+        _audit_event(
+            "flow_rewound",
+            stage=target_stage,
+            details={"target_screen": screen, "from_stage": run.stage},
+        )
+    )
+    data["audit_events"] = events
+    return ReviewRun.from_dict(data)
+
+
 def rerun_review_run_packet(
     run: ReviewRun,
     *,

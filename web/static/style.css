@@ -71,9 +71,21 @@ body {
 }
 
 .btn-portkey-connect.portkey-connected {
-  border-color: rgba(113, 213, 139, 0.55);
-  color: #71d58b;
-  background: rgba(113, 213, 139, 0.08);
+  border-color: rgba(113, 213, 139, 0.75);
+  color: #eafff0;
+  background: linear-gradient(135deg, rgba(56, 142, 88, 0.95), rgba(113, 213, 139, 0.82));
+  box-shadow: 0 0 14px rgba(113, 213, 139, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  animation: portkey-connected-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes portkey-connected-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(113, 213, 139, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(113, 213, 139, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
 }
 
 .btn-portkey-connect.portkey-pending {
@@ -81,24 +93,26 @@ body {
   color: #f2b84b;
 }
 
-.portkey-build-banner {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 0.55rem 1.25rem;
-  font-size: 0.82rem;
-  color: #71d58b;
-  background: rgba(113, 213, 139, 0.08);
-  border-bottom: 1px solid rgba(113, 213, 139, 0.2);
+.portkey-connect-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
 }
 
+.portkey-connect-meta {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: #71d58b;
+  max-width: 15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portkey-build-banner,
 .portkey-welcome-toast {
-  grid-column: 1 / -1;
-  margin: 0;
-  padding: 0.65rem 1.25rem;
-  font-size: 0.88rem;
-  color: #e8edf4;
-  background: rgba(61, 156, 245, 0.12);
-  border-bottom: 1px solid rgba(61, 156, 245, 0.25);
+  display: none !important;
 }
 
 body[data-portkey-mode="governance-build"] .first-run-start-link {
@@ -8706,7 +8720,14 @@ body.coach-resize-active * {
   height: 0.35rem;
 }
 
-.btn-index-summary {
+.repo-index-tracker-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.btn-index-summary,
+.btn-index-reset {
   font-size: 0.72rem !important;
   padding: 0.2rem 0.45rem !important;
 }

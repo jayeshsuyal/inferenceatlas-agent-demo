@@ -29,6 +29,7 @@ from agent.review_run import (
     record_review_run_portkey_preview,
     rerun_review_run_packet,
     review_run_packet_projection,
+    rewind_review_run_for_branch,
     select_review_run_repo,
     write_review_run_record,
 )
@@ -732,3 +733,31 @@ class ReviewRunContractTests(TestCase):
             self.assertEqual(len(run_ids), 20)
             self.assertEqual(len(set(run_ids)), 20)
             self.assertEqual(len(list(store_dir.glob("*.json"))), 20)
+
+    def test_rewind_review_run_for_branch_restores_packet_generated(self) -> None:
+        run = create_review_run(selected_repo=_selected_repo())
+        run = select_review_run_repo(run, _selected_repo(), repo_index_summary=_indexed_summary())
+        run = record_review_run_access_request(run, DEFAULT_REVIEW_RUN_ACCESS_REQUEST)
+        run = generate_initial_review_run_packet(run)
+        initial_revision = run.packet["revision_id"]
+        proof_items = [
+            {"id": "repo_owner_approval", "label": "Repo owner approval", "owner": "Support Ops"},
+            {"id": "rollback_offswitch", "label": "Rollback/off-switch proof", "owner": "Engineering"},
+            {"id": "environment_boundary", "label": "Environment boundary", "owner": "Security"},
+        ]
+        proofed = attach_review_run_proof(run, proof_items)
+        rerun = rerun_review_run_packet(
+            proofed,
+            revision_id=f"{initial_revision}-rerun",
+            verdict="ready_with_gates",
+            movement_classes=_movement(),
+            portkey_preview={"portkey_guardrail_response": {"verdict": True}},
+        )
+        self.assertEqual(rerun.stage, "ready_to_export")
+
+        rewound = rewind_review_run_for_branch(rerun, target_screen="proof_workbench")
+        self.assertEqual(rewound.stage, "packet_generated")
+        self.assertEqual(rewound.attached_proof, [])
+        self.assertFalse(rewound.packet.get("ready_for_rerun"))
+        self.assertEqual(rewound.packet.get("revision_id"), initial_revision)
+        attach_review_run_proof(rewound, proof_items)

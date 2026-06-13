@@ -8,10 +8,29 @@
     return String(value || "").trim().replace(/^@+/, "");
   }
 
+  function normalizeModelInput(provider, modelSuffix) {
+    let providerSlug = normalizeProvider(provider);
+    let model = String(modelSuffix || "").trim();
+    if (model.startsWith("@")) {
+      const route = model.replace(/^@+/, "");
+      const slash = route.indexOf("/");
+      if (slash > 0) {
+        const routeSlug = route.slice(0, slash).trim();
+        const routeModel = route.slice(slash + 1).trim();
+        if (!providerSlug) providerSlug = routeSlug;
+        model = routeModel;
+      } else {
+        model = route;
+      }
+    }
+    return { providerSlug, modelSuffix: model };
+  }
+
   function resolvedModel(provider, modelSuffix) {
-    const slug = normalizeProvider(provider) || "your-provider";
-    const model = String(modelSuffix || "gpt-4o-mini").trim().replace(/^@+/, "");
-    return `@${slug}/${model}`;
+    const { providerSlug, modelSuffix: model } = normalizeModelInput(provider, modelSuffix);
+    const slug = providerSlug || "your-provider";
+    const name = model || "gpt-4o-mini";
+    return `@${slug}/${name}`;
   }
 
   function readStatusCache() {
@@ -78,20 +97,34 @@
 
   function updatePortkeyNavButton(verified, status) {
     const btn = document.getElementById("btn-portkey-connect");
+    const meta = document.getElementById("portkey-connect-meta");
     if (!btn) return;
     if (verified) {
       btn.textContent = "Portkey connected";
       btn.classList.add("portkey-connected");
+      btn.classList.remove("portkey-pending");
       btn.title = `Gateway: ${status?.resolved_model || resolvedModel(status?.provider_slug, status?.model_suffix)}`;
+      if (meta) {
+        meta.hidden = false;
+        meta.textContent = `Governance + build · ${status?.resolved_model || resolvedModel(status?.provider_slug, status?.model_suffix)}`;
+      }
     } else if (status?.has_saved_key || status?.connected) {
       btn.textContent = "Finish Portkey setup";
       btn.classList.remove("portkey-connected");
       btn.classList.add("portkey-pending");
       btn.title = "Key saved — finish provider setup";
+      if (meta) {
+        meta.hidden = true;
+        meta.textContent = "";
+      }
     } else {
       btn.textContent = "Connect PortKey";
       btn.classList.remove("portkey-connected", "portkey-pending");
       btn.title = "Connect your Portkey account";
+      if (meta) {
+        meta.hidden = true;
+        meta.textContent = "";
+      }
     }
     btn.href = "/portkey/signin";
   }
@@ -99,7 +132,6 @@
   function updateReviewRunBuildMode(verified, status) {
     const tagline = document.getElementById("header-tagline");
     const steps = document.getElementById("reviewrun-steps");
-    const banner = document.getElementById("portkey-build-banner");
     if (tagline) {
       tagline.textContent = verified
         ? "Governance + build — packet authority with your Portkey gateway"
@@ -115,12 +147,7 @@
            <li><strong>Run IA:</strong> generate the packet-backed review.</li>
            <li><strong>Act:</strong> follow the one named human action.</li>`;
     }
-    if (banner) {
-      banner.hidden = !verified;
-      if (verified) {
-        banner.textContent = `Portkey connected — ReviewRun is in governance + build mode (${status?.resolved_model || "gateway ready"}).`;
-      }
-    }
+    updatePortkeyNavButton(verified, status);
   }
 
   function updatePortkeyStackPill(verified, status) {
@@ -146,12 +173,16 @@
   function showPortkeyWelcomeToast() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("portkey") !== "connected") return;
-    const toast = document.getElementById("portkey-welcome-toast");
-    if (toast) {
-      toast.hidden = false;
-      setTimeout(() => {
-        toast.hidden = true;
-      }, 6000);
+    const meta = document.getElementById("portkey-connect-meta");
+    if (meta) {
+      meta.hidden = false;
+      meta.textContent = "Connected — governance + build mode active";
+      window.setTimeout(() => {
+        const cache = readStatusCache();
+        if (cache.verified) {
+          meta.textContent = `Governance + build · ${cache.resolved_model || resolvedModel(cache.provider_slug, cache.model_suffix)}`;
+        }
+      }, 3200);
     }
     params.delete("portkey");
     const next = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
@@ -163,6 +194,7 @@
     MODEL_KEY,
     STATUS_KEY,
     normalizeProvider,
+    normalizeModelInput,
     resolvedModel,
     readStatusCache,
     writeStatusCache,

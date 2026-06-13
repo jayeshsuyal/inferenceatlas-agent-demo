@@ -19,6 +19,10 @@ PORTKEY_AUTH_DOC_URL = "https://portkey.ai/docs/api-reference/inference-api/auth
 PORTKEY_JWT_DOC_URL = "https://portkey.ai/docs/product/enterprise-offering/org-management/jwt"
 PORTKEY_APP_MODEL_CATALOG_URL = "https://app.portkey.ai/model-catalog"
 PORTKEY_APP_API_KEYS_URL = "https://app.portkey.ai/api-keys"
+PORTKEY_HTTP_USER_AGENT = os.getenv(
+    "PORTKEY_HTTP_USER_AGENT",
+    "InferenceAtlas/1.0 (+https://github.com/jayeshsuyal/inferenceatlas-agent-demo)",
+)
 DEFAULT_PROXY_MODEL = os.getenv("PORTKEY_PLANE_B_DEFAULT_MODEL", "gpt-4o-mini")
 DEFAULT_VERIFY_MODEL = os.getenv("PORTKEY_PLANE_B_VERIFY_MODEL", DEFAULT_PROXY_MODEL)
 DEFAULT_TEST_PROMPT = "Reply with exactly: connected"
@@ -43,7 +47,7 @@ def _wizard_steps() -> list[dict[str, str]]:
         {
             "step": "1",
             "title": "Add an AI provider in Portkey (one-time)",
-            "detail": "Connect OpenAI or another model. Name it e.g. openai-prod.",
+            "detail": "Connect OpenAI or another model. Note the slug (e.g. iaagent1) from API Setup.",
             "action_label": "Open Model Catalog",
             "action_url": PORTKEY_APP_MODEL_CATALOG_URL,
         },
@@ -64,18 +68,51 @@ def _wizard_steps() -> list[dict[str, str]]:
     ]
 
 
+def _is_cloudflare_access_denied(detail: str) -> bool:
+    lowered = detail.lower()
+    return (
+        "error_1010" in lowered
+        or "browser_signature_banned" in lowered
+        or "cloudflare_error" in lowered
+    )
+
+
 def _next_action_for_verify_failure(verification: dict[str, Any]) -> dict[str, str]:
     code = verification.get("http_status")
+    detail = str(verification.get("detail") or verification.get("message") or "").strip()
+    lowered = detail.lower()
+
+    if _is_cloudflare_access_denied(detail):
+        return {
+            "title": "Portkey gateway blocked this request",
+            "detail": (
+                "Cloudflare rejected the verify call from this server (not your API key). "
+                "Update InferenceAtlas and retry — a User-Agent header is now sent on verify."
+            ),
+            "action_label": "Open API Keys",
+            "action_url": PORTKEY_APP_API_KEYS_URL,
+        }
+    if code == 401 or "invalid api key" in lowered:
+        return {
+            "title": "Check your Portkey API key",
+            "detail": detail or "Portkey rejected the API key. Reveal and copy the default workspace key.",
+            "action_label": "Open API Keys",
+            "action_url": PORTKEY_APP_API_KEYS_URL,
+        }
     if code == 403:
         return {
-            "title": "Add a model provider in Portkey first",
-            "detail": "Your API key is saved here. Portkey cannot route chat until step 1 is done.",
+            "title": "Check provider slug and model",
+            "detail": detail
+            or (
+                "Use the provider slug from Portkey (e.g. iaagent1) and model name only "
+                "(e.g. babbage-002), not the full @slug/model path in both fields."
+            ),
             "action_label": "Open Model Catalog",
             "action_url": PORTKEY_APP_MODEL_CATALOG_URL,
         }
     return {
-        "title": "Check your Portkey API key",
-        "detail": verification.get("detail") or verification.get("message", "Verification failed."),
+        "title": "Check your Portkey setup",
+        "detail": detail or verification.get("message", "Verification failed."),
         "action_label": "Open API Keys",
         "action_url": PORTKEY_APP_API_KEYS_URL,
     }
@@ -103,8 +140,7 @@ def _save_portkey_session(
     saved = save_user_api_key(session_id, PORTKEY_CONNECTOR_ID, api_key)
     if not saved.get("ok"):
         return saved
-    slug = provider.strip().lstrip("@")
-    model_suffix = model.strip() or DEFAULT_VERIFY_MODEL
+    slug, model_suffix = _normalize_provider_model(provider, model.strip() or DEFAULT_VERIFY_MODEL)
     patch: dict[str, Any] = {"provider_slug": slug, "model_suffix": model_suffix}
     if slug:
         patch["resolved_model"] = _resolve_portkey_model(model_suffix, slug)[0]
@@ -125,8 +161,7 @@ def connect_portkey(
     if len(key) < 8:
         return {"ok": False, "message": "Portkey API key too short."}
 
-    slug = provider.strip().lstrip("@")
-    model_suffix = model.strip() or DEFAULT_VERIFY_MODEL
+    slug, model_suffix = _normalize_provider_model(provider, model.strip() or DEFAULT_VERIFY_MODEL)
     saved = _save_portkey_session(session_id, key, provider=slug, model=model_suffix)
     if not saved.get("ok"):
         return saved
@@ -228,8 +263,10 @@ def reconnect_portkey(
             "message": "No saved key. Paste your Portkey API key first.",
             "needs_sign_in": True,
         }
-    slug = provider.strip().lstrip("@") or str(conn.get("provider_slug", "")).strip()
-    model_suffix = model.strip() or str(conn.get("model_suffix", "")).strip() or DEFAULT_VERIFY_MODEL
+    slug, model_suffix = _normalize_provider_model(
+        provider.strip() or str(conn.get("provider_slug", "")).strip(),
+        model.strip() or str(conn.get("model_suffix", "")).strip() or DEFAULT_VERIFY_MODEL,
+    )
     return connect_portkey(
         session_id,
         key,
@@ -296,6 +333,7 @@ def _portkey_headers(api_key: str, *, provider: str = "") -> dict[str, str]:
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
+        "User-Agent": PORTKEY_HTTP_USER_AGENT,
         "x-portkey-api-key": api_key,
     }
     if provider.strip():
@@ -303,14 +341,91 @@ def _portkey_headers(api_key: str, *, provider: str = "") -> dict[str, str]:
     return headers
 
 
-def _resolve_portkey_model(model: str, provider: str) -> tuple[str, str]:
+def _normalize_provider_model(provider: str, model: str) -> tuple[str, str]:
+    """Accept slug + model, or a pasted Portkey route like @iaagent1/babbage-002."""
     provider = provider.strip().lstrip("@")
+    model = model.strip()
+    if model.startswith("@"):
+        route = model.lstrip("@")
+        if "/" in route:
+            route_slug, route_model = route.split("/", 1)
+            if not provider:
+                provider = route_slug.strip()
+            model = route_model.lstrip("/")
+        else:
+            model = route
+    return provider, model
+
+
+def _resolve_portkey_model(model: str, provider: str) -> tuple[str, str]:
+    provider, model = _normalize_provider_model(provider, model)
     if provider:
-        slug = f"@{provider}"
-        if not model.startswith("@"):
-            return f"{slug}/{model.lstrip('/')}", provider
-        return model, provider
+        return f"@{provider}/{model.lstrip('/')}", provider
     return model, ""
+
+
+def _wants_completions_endpoint(detail: str) -> bool:
+    lowered = detail.lower()
+    return "not a chat model" in lowered or "v1/completions" in lowered
+
+
+def _messages_to_prompt(messages: list[dict[str, Any]]) -> str:
+    parts: list[str] = []
+    for msg in messages:
+        content = str(msg.get("content", "")).strip()
+        if content:
+            parts.append(content)
+    return "\n".join(parts)
+
+
+def _extract_inference_reply(payload: dict[str, Any], *, surface: str) -> str:
+    choice = (payload.get("choices") or [{}])[0]
+    if surface == "/completions":
+        return str(choice.get("text", ""))
+    message = choice.get("message") or {}
+    return str(message.get("content", ""))
+
+
+def _portkey_infer(
+    api_key: str,
+    *,
+    resolved_model: str,
+    provider_header: str,
+    messages: list[dict[str, Any]],
+    max_tokens: int = 8,
+) -> tuple[dict[str, Any], str]:
+    """Try chat/completions first; fall back to /completions for legacy models."""
+    chat_body = {
+        "model": resolved_model,
+        "messages": messages,
+        "max_tokens": max_tokens,
+    }
+    try:
+        payload = _portkey_request(
+            "POST",
+            "/chat/completions",
+            api_key=api_key,
+            body=chat_body,
+            provider=provider_header,
+        )
+        return payload, "/chat/completions"
+    except urllib.error.HTTPError as exc:
+        detail = _read_http_error(exc)
+        if not _wants_completions_endpoint(detail):
+            raise
+        completion_body = {
+            "model": resolved_model,
+            "prompt": _messages_to_prompt(messages),
+            "max_tokens": max_tokens,
+        }
+        payload = _portkey_request(
+            "POST",
+            "/completions",
+            api_key=api_key,
+            body=completion_body,
+            provider=provider_header,
+        )
+        return payload, "/completions"
 
 
 def verify_portkey_api_key(
@@ -320,18 +435,13 @@ def verify_portkey_api_key(
     provider: str = "",
 ) -> dict[str, Any]:
     resolved_model, provider_header = _resolve_portkey_model(model, provider)
-    body = {
-        "model": resolved_model,
-        "messages": [{"role": "user", "content": DEFAULT_TEST_PROMPT}],
-        "max_tokens": 8,
-    }
+    messages = [{"role": "user", "content": DEFAULT_TEST_PROMPT}]
     try:
-        payload = _portkey_request(
-            "POST",
-            "/chat/completions",
-            api_key=api_key,
-            body=body,
-            provider=provider_header,
+        payload, surface = _portkey_infer(
+            api_key,
+            resolved_model=resolved_model,
+            provider_header=provider_header,
+            messages=messages,
         )
     except urllib.error.HTTPError as exc:
         detail = _read_http_error(exc)
@@ -344,14 +454,13 @@ def verify_portkey_api_key(
         }
     except Exception as exc:
         return {"ok": False, "message": str(exc), "model": resolved_model}
-    choice = (payload.get("choices") or [{}])[0]
-    message = choice.get("message") or {}
     return {
         "ok": True,
         "message": "Portkey gateway responded.",
         "model": resolved_model,
-        "sample_reply": str(message.get("content", ""))[:120],
+        "sample_reply": _extract_inference_reply(payload, surface=surface)[:120],
         "provider_trace": payload.get("provider", ""),
+        "inference_surface": surface,
     }
 
 
@@ -379,14 +488,12 @@ def proxy_portkey_chat(
         if stored_model:
             model = stored_model
     resolved_model, provider_header = _resolve_portkey_model(model, provider)
-    body = {"model": resolved_model, "messages": messages}
     try:
-        payload = _portkey_request(
-            "POST",
-            "/chat/completions",
-            api_key=api_key,
-            body=body,
-            provider=provider_header,
+        payload, surface = _portkey_infer(
+            api_key,
+            resolved_model=resolved_model,
+            provider_header=provider_header,
+            messages=messages,
         )
     except urllib.error.HTTPError as exc:
         return {
@@ -400,20 +507,18 @@ def proxy_portkey_chat(
     except Exception as exc:
         return {"ok": False, "message": str(exc), "safety_boundary": _plane_b_safety()}
 
-    choice = (payload.get("choices") or [{}])[0]
-    message = choice.get("message") or {}
     usage = payload.get("usage") or {}
     return {
         "ok": True,
         "schema_version": PORTKEY_PLANE_B_SCHEMA_VERSION,
         "model": resolved_model,
         "provider": provider or None,
-        "reply": message.get("content", ""),
-        "finish_reason": choice.get("finish_reason"),
+        "reply": _extract_inference_reply(payload, surface=surface),
+        "finish_reason": (payload.get("choices") or [{}])[0].get("finish_reason"),
         "usage": usage,
         "gateway": {
             "surface": "inference_api",
-            "url": f"{PORTKEY_GATEWAY_URL}/chat/completions",
+            "url": f"{PORTKEY_GATEWAY_URL}{surface}",
             "auth": "user_api_key_byok",
         },
         "safety_boundary": _plane_b_safety(),

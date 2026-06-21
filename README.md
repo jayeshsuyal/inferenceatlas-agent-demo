@@ -14,6 +14,8 @@ AI agents are getting repos, tools, budgets, models, and production paths faster
 
 Every agent demo shows the agent taking action. InferenceAtlas shows the proof packet before an agent is allowed to act.
 
+> Historical public hackathon demo. Current product site: https://inferenceatlas.ai/. IA is AI decision infrastructure, not an inference engine, model gateway, router, or enforcement system.
+
 InferenceAtlas turns every AI movement request into one reviewable packet: what can move, what stays blocked, what proof is missing, who must review it, and what downstream gates like Portkey should enforce.
 Downstream systems do not trust raw agent intent. They trust the IA Packet.
 AI movement is cross-functional. IA turns every team's proof into one packet downstream systems can trust.

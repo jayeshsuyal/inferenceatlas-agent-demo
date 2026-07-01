@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2 · A real agent obeys it</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<style>
+:root{
+--color-background-primary:#1a1a23;--color-background-secondary:#121218;--color-background-tertiary:#0d0d13;
+--color-background-info:rgba(124,107,255,0.17);--color-background-danger:rgba(240,90,90,0.16);--color-background-success:rgba(74,222,128,0.14);--color-background-warning:rgba(240,168,48,0.16);
+--color-text-primary:#f5f4f8;--color-text-secondary:rgba(245,244,248,0.66);--color-text-tertiary:rgba(245,244,248,0.42);
+--color-text-info:#b7acff;--color-text-danger:#ff9090;--color-text-success:#6fe6a2;--color-text-warning:#ffd07f;
+--color-border-tertiary:rgba(255,255,255,0.10);--color-border-secondary:rgba(255,255,255,0.18);--color-border-primary:rgba(255,255,255,0.26);
+--color-border-info:rgba(124,107,255,0.45);--color-border-danger:rgba(240,90,90,0.45);
+--font-sans:'Inter',-apple-system,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,monospace;
+--border-radius-md:8px;--border-radius-lg:12px;--border-radius-xl:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#09090d;color:var(--color-text-primary);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:28px 16px;min-height:100vh}
+.page{max-width:720px;margin:0 auto}
+.backlink{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--color-text-tertiary);text-decoration:none;margin-bottom:14px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+@keyframes lineIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+.caret{display:inline-block;width:7px;height:14px;background:var(--color-text-tertiary);vertical-align:-2px;margin-left:2px;animation:blink 1s step-end infinite}
+.tl{animation:lineIn .16s ease-out;white-space:pre-wrap;word-break:break-word}
+.seg{cursor:pointer;border:none;font-family:var(--font-mono);font-size:12px;padding:8px 12px;border-radius:var(--border-radius-md);background:transparent}
+</style>
+</head>
+<body>
+<div class="page">
+<a class="backlink" href="index.html"><i class="ti ti-arrow-left"></i>all four beats</a>
+<h2 class="sr-only">Live Ask IA Workbench: a confirmed packet controls a real agent. Toggle the packet posture between would_block and reference_only, run the agent, and watch its tool call get suppressed or allowed accordingly.</h2>
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.25rem;font-family:var(--font-sans)">
+
+  <div style="display:flex;align-items:center;gap:7px;margin-bottom:2px">
+    <span style="font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--color-text-tertiary)">ask ia · workbench</span>
+    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--color-text-success)"><span style="width:6px;height:6px;border-radius:50%;background:var(--color-text-success);display:inline-block"></span>live</span>
+  </div>
+  <div style="font-size:18px;font-weight:500;color:var(--color-text-primary);margin-bottom:4px">Watch the packet control a real agent</div>
+  <div style="font-size:13px;color:var(--color-text-secondary);margin-bottom:16px">You confirmed the draft. This is the packet — now flip its posture and try to break it.</div>
+
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-primary);border-radius:var(--border-radius-lg);padding:14px 16px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="display:inline-flex;align-items:center;gap:4px;background:var(--color-background-success);color:var(--color-text-success);font-size:11px;padding:3px 9px;border-radius:var(--border-radius-md)"><i class="ti ti-check" style="font-size:12px" aria-hidden="true"></i>Confirmed</span>
+        <span style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-tertiary)">pkt_2a64 · hash ✓</span>
+      </div>
+      <span id="postureBadge" style="font-family:var(--font-mono);font-size:11px;background:var(--color-background-danger);color:var(--color-text-danger);padding:3px 9px;border-radius:var(--border-radius-md)">would_block</span>
+    </div>
+    <div style="font-size:15px;font-weight:500;color:var(--color-text-primary);line-height:1.4;margin-bottom:8px">Support agent → billing repo access + paid enrichment API</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <span style="font-size:12px;color:var(--color-text-tertiary);margin-right:2px">missing proof</span>
+      <span style="border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:2px 8px;font-size:12px;color:var(--color-text-primary)">scope matrix</span>
+      <span style="border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:2px 8px;font-size:12px;color:var(--color-text-primary)">spend cap</span>
+      <span style="border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:2px 8px;font-size:12px;color:var(--color-text-primary)">security review</span>
+    </div>
+    <div style="font-size:11px;color:var(--color-text-tertiary);margin-top:10px">This is the packet the agent reads. IA is read-only — it never enters the agent's call path.</div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <i class="ti ti-arrows-transfer-up" style="font-size:17px;color:var(--color-text-secondary)" aria-hidden="true"></i>
+    <span style="font-size:14px;font-weight:500;color:var(--color-text-primary)">The obedience differential</span>
+    <span style="font-size:12px;color:var(--color-text-tertiary)">— flip the packet, then run</span>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px">
+    <div style="display:inline-flex;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:3px">
+      <button class="seg" id="seg-block" onclick="setPosture('would_block')">would_block</button>
+      <button class="seg" id="seg-ref" onclick="setPosture('reference_only')">reference_only</button>
+    </div>
+    <span id="postureMeaning" style="font-size:12px;color:var(--color-text-secondary)">blocked — proof missing</span>
+    <button id="runBtn" onclick="runAgent()" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:var(--color-background-info);color:var(--color-text-info);border:0.5px solid var(--color-border-info);border-radius:var(--border-radius-md);padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer"><i class="ti ti-player-play" style="font-size:15px" aria-hidden="true"></i>Run OpenAI Agents SDK agent</button>
+  </div>
+
+  <div style="background:var(--color-background-tertiary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px 14px">
+    <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:10px;color:var(--color-text-tertiary);margin-bottom:8px;letter-spacing:.5px"><i class="ti ti-terminal-2" style="font-size:13px" aria-hidden="true"></i>agent_runtime · trace</div>
+    <div id="trace" style="font-family:var(--font-mono);font-size:12px;line-height:1.75;color:var(--color-text-secondary);min-height:132px"><span style="color:var(--color-text-tertiary)">Press run to execute the agent against packet pkt_2a64.<span class="caret"></span></span></div>
+  </div>
+
+  <div id="banner" style="margin-top:12px"></div>
+
+  <div style="text-align:center;font-size:13px;color:var(--color-text-secondary);margin-top:16px;line-height:1.6">Same agent. Same prompt. You flipped the packet — the behaviour changed.<br><span style="color:var(--color-text-tertiary);font-size:12px">That is a proof a CTO can run, not a screenshot.</span></div>
+  <div style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin-top:8px">Messy work in. Confirmed packet out. IA never acts — the packet does the work downstream.</div>
+
+</div>
+</div>
+<script>function sendPrompt(t){console.log('sendPrompt:',t)}function openLink(u){window.open(u,'_blank')}</script>
+<script>
+(function(){
+  var posture='would_block';
+  var running=false;
+  var scripts={
+    would_block:[
+      {t:'agent      ▸ planning: call deploy_tool(target="billing_repo")',c:'dim'},
+      {t:'ia_guard   ▸ fetch packet pkt_2a64 — offline hash verified',c:'dim'},
+      {t:'ia_guard   ▸ posture = would_block',c:'danger'},
+      {t:'ia_guard   ▸ missing proof: scope · spend_cap · security_review',c:'danger'},
+      {t:'✕ tool call SUPPRESSED before execution',c:'danger'},
+      {t:'tool_call_made: false    external_action_taken: false',c:'dim'}
+    ],
+    reference_only:[
+      {t:'agent      ▸ planning: call deploy_tool(target="billing_repo")',c:'dim'},
+      {t:'ia_guard   ▸ fetch packet pkt_2a64 — offline hash verified',c:'dim'},
+      {t:'ia_guard   ▸ posture = reference_only',c:'ok'},
+      {t:'ia_guard   ▸ proof attached · owner confirmed',c:'ok'},
+      {t:'✓ tool call ALLOWED — executes, then logged to audit',c:'ok'},
+      {t:'tool_call_made: true     external_action_taken: true',c:'dim'}
+    ]
+  };
+  var banners={
+    would_block:{bg:'var(--color-background-danger)',fg:'var(--color-text-danger)',icon:'ti-shield-check',title:'Agent obeyed the packet — the tool never fired.',sub:"The agent's own guard suppressed its call after reading packet posture. IA never touched the agent."},
+    reference_only:{bg:'var(--color-background-success)',fg:'var(--color-text-success)',icon:'ti-circle-check',title:'Packet cleared — the agent proceeded.',sub:'Proof was attached, so the guard allowed the call. Every step landed in the read-only audit.'}
+  };
+  function col(c){return c==='danger'?'var(--color-text-danger)':c==='ok'?'var(--color-text-success)':c==='dim'?'var(--color-text-tertiary)':'var(--color-text-secondary)';}
+  function setPosture(p){
+    if(running)return;
+    posture=p;
+    var block=p==='would_block';
+    var b=document.getElementById('seg-block'),r=document.getElementById('seg-ref');
+    b.style.background=block?'var(--color-background-primary)':'transparent';
+    b.style.color=block?'var(--color-text-danger)':'var(--color-text-tertiary)';
+    r.style.background=block?'transparent':'var(--color-background-primary)';
+    r.style.color=block?'var(--color-text-tertiary)':'var(--color-text-success)';
+    var pb=document.getElementById('postureBadge');
+    pb.textContent=p;
+    pb.style.background=block?'var(--color-background-danger)':'var(--color-background-success)';
+    pb.style.color=block?'var(--color-text-danger)':'var(--color-text-success)';
+    document.getElementById('postureMeaning').textContent=block?'blocked — proof missing':'cleared — proof attached';
+    document.getElementById('trace').innerHTML='<span style="color:var(--color-text-tertiary)">Packet set to '+p+'. Press run.<span class="caret"></span></span>';
+    document.getElementById('banner').innerHTML='';
+  }
+  function runAgent(){
+    if(running)return;running=true;
+    var btn=document.getElementById('runBtn');
+    btn.style.opacity='0.55';btn.style.cursor='default';
+    btn.innerHTML='<i class="ti ti-loader-2" style="font-size:15px"></i>running…';
+    var trace=document.getElementById('trace');trace.innerHTML='';
+    document.getElementById('banner').innerHTML='';
+    var lines=scripts[posture],i=0;
+    (function step(){
+      if(i>0){var prev=trace.querySelector('.caret');if(prev)prev.remove();}
+      if(i>=lines.length){finish();return;}
+      var ln=lines[i];
+      var div=document.createElement('div');
+      div.className='tl';div.style.color=col(ln.c);
+      div.innerHTML=ln.t.replace(/</g,'&lt;')+'<span class="caret"></span>';
+      trace.appendChild(div);
+      i++;setTimeout(step,ln.c==='danger'||ln.c==='ok'?520:380);
+    })();
+    function finish(){
+      var bn=banners[posture];
+      document.getElementById('banner').innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;background:'+bn.bg+';border-radius:var(--border-radius-md);padding:12px 14px"><i class="ti '+bn.icon+'" style="font-size:19px;color:'+bn.fg+';margin-top:1px" aria-hidden="true"></i><div><div style="font-size:13px;font-weight:500;color:'+bn.fg+'">'+bn.title+'</div><div style="font-size:12px;color:'+bn.fg+';opacity:0.85;margin-top:3px;line-height:1.5">'+bn.sub+'</div></div></div>';
+      btn.style.opacity='1';btn.style.cursor='pointer';
+      btn.innerHTML='<i class="ti ti-refresh" style="font-size:15px"></i>Run again';
+      running=false;
+    }
+  }
+  window.setPosture=setPosture;window.runAgent=runAgent;
+  setPosture('would_block');
+})();
+</script>
+</body>
+</html>

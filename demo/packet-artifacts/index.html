@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InferenceAtlas — the packet demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3/dist/tabler-icons.min.css">
+<style>
+:root{
+--color-background-primary:#1a1a23;--color-background-secondary:#121218;--color-background-tertiary:#0d0d13;
+--color-background-info:rgba(124,107,255,0.17);--color-background-danger:rgba(240,90,90,0.16);--color-background-success:rgba(74,222,128,0.14);--color-background-warning:rgba(240,168,48,0.16);
+--color-text-primary:#f5f4f8;--color-text-secondary:rgba(245,244,248,0.66);--color-text-tertiary:rgba(245,244,248,0.42);
+--color-text-info:#b7acff;--color-text-danger:#ff9090;--color-text-success:#6fe6a2;--color-text-warning:#ffd07f;
+--color-border-tertiary:rgba(255,255,255,0.10);--color-border-secondary:rgba(255,255,255,0.18);--color-border-primary:rgba(255,255,255,0.26);
+--color-border-info:rgba(124,107,255,0.45);--color-border-danger:rgba(240,90,90,0.45);
+--font-sans:'Inter',-apple-system,system-ui,sans-serif;--font-mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,monospace;
+--border-radius-md:8px;--border-radius-lg:12px;--border-radius-xl:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#09090d;color:var(--color-text-primary);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;padding:28px 16px;min-height:100vh}
+.page{max-width:720px;margin:0 auto}
+.card{display:flex;align-items:center;gap:14px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px 18px;text-decoration:none;color:inherit;transition:border-color .15s}
+.card:hover{border-color:var(--color-border-info)}
+.num{width:30px;height:30px;flex:none;border-radius:50%;background:var(--color-background-info);color:var(--color-text-info);display:flex;align-items:center;justify-content:center;font-size:14px}
+</style>
+</head>
+<body>
+<div class="page">
+<div style="background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:1.5rem">
+  <div style="font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--color-text-tertiary);margin-bottom:6px">inferenceatlas · the packet demo</div>
+  <div style="font-size:22px;font-weight:500;margin-bottom:6px">Prove AI work before it moves.</div>
+  <div style="font-size:14px;color:var(--color-text-secondary);margin-bottom:22px;line-height:1.6">One packet. Many readers. Missing proof is the product. Four beats — each a standalone page. Open them in order.</div>
+  <div style="display:flex;flex-direction:column;gap:12px">
+    <a class="card" href="1-draft-receipt.html"><span class="num">1</span><div><div style="font-size:15px;font-weight:500">Bring your messy work</div><div style="font-size:13px;color:var(--color-text-secondary)">IA drafts a receipt-shaped packet. You confirm.</div></div><i class="ti ti-arrow-right" style="margin-left:auto;color:var(--color-text-tertiary)"></i></a>
+    <a class="card" href="2-agent-obeys.html"><span class="num">2</span><div><div style="font-size:15px;font-weight:500">A real agent obeys it</div><div style="font-size:13px;color:var(--color-text-secondary)">Flip the packet, run the agent, watch the tool call die.</div></div><i class="ti ti-arrow-right" style="margin-left:auto;color:var(--color-text-tertiary)"></i></a>
+    <a class="card" href="3-fleet-obeys.html"><span class="num">3</span><div><div style="font-size:15px;font-weight:500">The whole stack obeys it</div><div style="font-size:13px;color:var(--color-text-secondary)">One packet, four consumers, all respecting it at once.</div></div><i class="ti ti-arrow-right" style="margin-left:auto;color:var(--color-text-tertiary)"></i></a>
+    <a class="card" href="4-tamper-proof.html"><span class="num">4</span><div><div style="font-size:15px;font-weight:500">You can't forge it</div><div style="font-size:13px;color:var(--color-text-secondary)">Edit the packet to cheat — every reader rejects it.</div></div><i class="ti ti-arrow-right" style="margin-left:auto;color:var(--color-text-tertiary)"></i></a>
+  </div>
+  <div style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin-top:22px">Messy work in. Confirmed packet out. IA never acts — the packet does the work downstream.</div>
+</div>
+</div>
+</body>
+</html>
